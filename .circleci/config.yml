@@ -85,7 +85,7 @@ workflows:
           filters:
             branches:
               only:
-                  - feature/pipeline-setup
+                  - master
       - publish-github-release:
           context: general-vars
           requires:
@@ -93,4 +93,4 @@ workflows:
           filters:
             branches:
               only:
-                  - feature/pipeline-setup
+                  - master
