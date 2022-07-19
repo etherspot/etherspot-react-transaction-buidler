@@ -46,7 +46,7 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$ETHERSPOT_NPM_TOKEN" > ~/etherspot-react-transaction-buidler/.npmrc
       - run:
           name: Build Etherpot React Transaction BUIDLer
-           command: npm run rollup:build
+          command: npm run rollup:build
       - run:
           name: Publish package to npm
           command: npm publish
