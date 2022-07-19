@@ -49,7 +49,7 @@ jobs:
           command: npm run rollup:build
       - run:
           name: Publish package to npm
-          command: npm publish
+          command: npm publish --access=public
       - run:
           name: Announce Publish
           command: |
