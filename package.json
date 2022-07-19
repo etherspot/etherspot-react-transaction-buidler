@@ -1,5 +1,5 @@
 {
-  "name": "etherspot-react-transaction-buidler",
+  "name": "@etherspot/react-transaction-buidler",
   "version": "0.0.1",
   "description": "Etherspot React component.",
   "main": "dist/cjs/index.js",
