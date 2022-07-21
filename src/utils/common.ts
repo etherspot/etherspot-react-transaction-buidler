@@ -18,3 +18,8 @@ export const formatAssetAmountInput = (
 
   return `${integer}.${fixedFraction}`;
 };
+
+export const formatAmountDisplay = (amount: string): string => {
+  // TODO: handle small amounts that have more than 2 digits after decimal
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
+};

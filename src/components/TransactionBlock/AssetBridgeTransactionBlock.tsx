@@ -7,8 +7,6 @@ import React, {
 import styled from 'styled-components';
 import {
   CrossChainBridgeSupportedChain,
-  SocketTokenDirection,
-  CrossChainBridgeToken
 } from 'etherspot';
 
 import TextInput from '../TextInput';
@@ -16,6 +14,7 @@ import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import { formatAssetAmountInput } from '../../utils/common';
 import { ErrorMessages } from '../../utils/validation';
+import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -53,10 +52,11 @@ const AssetBridgeTransactionBlock = ({
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<SelectOption | null>(null);
   const [selectedToNetwork, setSelectedToNetwork] = useState<SelectOption | null>(null);
   const [availableNetworks, setAvailableNetworks] = useState<CrossChainBridgeSupportedChain[] | null>(null);
-  const [availableFromAssets, setAvailableFromAssets] = useState<CrossChainBridgeToken[] | null>(null);
-  const [availableToAssets, setAvailableToAssets] = useState<CrossChainBridgeToken[] | null>(null);
+  const [availableFromAssets, setAvailableFromAssets] = useState<TokenListToken[] | null>(null);
+  const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
   const [isLoadingAvailableNetworks, setIsLoadingAvailableNetworks] = useState<boolean>(false);
-  const [isLoadingAvailableAssets, setIsLoadingAvailableAssets] = useState<boolean>(false);
+  const [isLoadingAvailableFromAssets, setIsLoadingAvailableFromAssets] = useState<boolean>(false);
+  const [isLoadingAvailableToAssets, setIsLoadingAvailableToAssets] = useState<boolean>(false);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
@@ -85,8 +85,15 @@ const AssetBridgeTransactionBlock = ({
     setSelectedFromAsset(null);
     setAmount('');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'asset');
-  }, [selectedToNetwork]);
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
+  }, [selectedFromNetwork]);
+
+  useEffect(() => {
+    setSelectedToAsset(null);
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
+  }, [selectedToNetwork, selectedFromNetwork]);
 
   const updateAvailableNetworks = useCallback(async () => {
     if (!sdk) return;
@@ -104,32 +111,38 @@ const AssetBridgeTransactionBlock = ({
     updateAvailableNetworks();
   }, [updateAvailableNetworks]);
 
-  const updateAvailableAssets = useCallback(async () => {
-    if (!sdk || !selectedFromNetwork || !selectedToNetwork) return;
-    setIsLoadingAvailableAssets(true);
+  const updateAvailableFromAssets = useCallback(async () => {
+    if (!sdk || !selectedFromNetwork) return;
+    setIsLoadingAvailableFromAssets(true);
     try {
-      const fromAssets = await sdk.getCrossChainBridgeTokenList({
-        direction: SocketTokenDirection.From,
-        fromChainId: +selectedFromNetwork.value,
-        toChainId: +selectedToNetwork.value,
+      const { items: fromAssets } = await sdk.getExchangeSupportedAssets({
+        chainId: +selectedFromNetwork.value,
       });
       setAvailableFromAssets(fromAssets);
+    } catch (e) {
+      console.log(e)
+      //
+    }
+    setIsLoadingAvailableFromAssets(false);
+  }, [sdk, selectedFromNetwork]);
 
-      const toAssets = await sdk.getCrossChainBridgeTokenList({
-        direction: SocketTokenDirection.To,
-        fromChainId: +selectedFromNetwork.value,
-        toChainId: +selectedToNetwork.value,
+  useEffect(() => { updateAvailableFromAssets(); }, [updateAvailableFromAssets]);
+
+  const updateAvailableToAssets = useCallback(async () => {
+    if (!sdk || !selectedFromNetwork || !selectedToNetwork) return;
+    setIsLoadingAvailableToAssets(true);
+    try {
+      const { items: toAssets } = await sdk.getExchangeSupportedAssets({
+        chainId: +selectedToNetwork.value,
       });
       setAvailableToAssets(toAssets);
     } catch (e) {
       //
     }
-    setIsLoadingAvailableAssets(false);
+    setIsLoadingAvailableToAssets(false);
   }, [sdk, selectedToNetwork, selectedFromNetwork]);
 
-  useEffect(() => {
-    updateAvailableAssets();
-  }, [updateAvailableAssets]);
+  useEffect(() => {  updateAvailableToAssets(); }, [updateAvailableToAssets]);
 
   const availableFromAssetsOptions = useMemo(
     () => availableFromAssets?.map((availableAsset) => ({
@@ -198,21 +211,10 @@ const AssetBridgeTransactionBlock = ({
         }}
         errorMessage={errorMessages?.fromChainId}
       />
-      <SelectInput
-        label="To network"
-        options={toNetworkOptions ?? []}
-        isLoading={isLoadingAvailableNetworks}
-        selectedOption={selectedToNetwork}
-        onOptionSelect={(option) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toChainId');
-          setSelectedToNetwork(option);
-        }}
-        errorMessage={errorMessages?.toChainId}
-      />
-      {!!selectedToNetwork && !!selectedFromNetwork && (
+      {!!selectedFromNetwork && (
         <TextInput
           label={`From asset on ${selectedFromNetwork.title}`}
-          isLoading={isLoadingAvailableAssets}
+          isLoading={isLoadingAvailableFromAssets}
           selectOptions={availableFromAssetsOptions ?? []}
           selectedOption={selectedFromAsset}
           selectedOptionDisplayValue={selectedFromAssetDisplayValue}
@@ -225,16 +227,29 @@ const AssetBridgeTransactionBlock = ({
           }}
           errorMessage={
             errorMessages?.amount
-              || errorMessages?.fromAssetDecimals
-              || errorMessages?.fromAssetAddress
+            || errorMessages?.fromAssetDecimals
+            || errorMessages?.fromAssetAddress
           }
         />
       )}
-      {!!selectedToNetwork && !!selectedFromNetwork && (
+      {!!selectedFromNetwork && (
+        <SelectInput
+          label="To network"
+          options={toNetworkOptions ?? []}
+          isLoading={isLoadingAvailableNetworks}
+          selectedOption={selectedToNetwork}
+          onOptionSelect={(option) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'toChainId');
+            setSelectedToNetwork(option);
+          }}
+          errorMessage={errorMessages?.toChainId}
+        />
+      )}
+      {!!selectedToNetwork && (
         <SelectInput
           label={`Asset to receive on ${selectedToNetwork.title}`}
           options={availableToAssetsOptions ?? []}
-          isLoading={isLoadingAvailableAssets}
+          isLoading={isLoadingAvailableToAssets}
           selectedOption={selectedToAsset}
           onOptionSelect={(option) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');

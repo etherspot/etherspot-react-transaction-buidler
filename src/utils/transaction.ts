@@ -1,42 +1,46 @@
 import { Sdk as EtherspotSdk } from 'etherspot';
-import { ethers } from 'ethers';
+import {
+  BigNumberish,
+  ethers,
+} from 'ethers';
+import { TransactionRequest } from '@ethersproject/abstract-provider';
+import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
 import { TransactionBlock } from '../providers/TransactionBuilderContextProvider';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 
-interface AssetBridgeTransactionsPreview {
+
+interface ERC20Contract {
+  encodeApprove?(spender: string, value: BigNumberish): TransactionRequest;
+  callAllowance?(owner: string, spender: string): Promise<string>;
+}
+
+interface AssetTransfer {
+  address: string;
+  decimals: number;
+  symbol: string;
+  amount: string;
+}
+
+interface AssetBridgeTransactionPreview {
   fromChainId: number;
   toChainId: number;
-  fromAssetAddress: string;
-  toAssetAddress: string;
-  fromAssetDecimals: number;
-  toAssetDecimals: number;
-  fromAssetSymbol: string;
-  toAssetSymbol: string;
-  fromAssetAmount: string;
-  toAssetAmount: string;
+  fromAsset: AssetTransfer,
+  toAsset: AssetTransfer,
 }
 
-type TransactionsDraftPreview = AssetBridgeTransactionsPreview;
+export type DraftTransactionPreview = AssetBridgeTransactionPreview;
 
-interface TransactionsDraftTransaction {
-  data: string;
-  to: string;
-  value: string;
-  from: string;
-  chainId: number;
-}
-
-interface TransactionsDraft {
+export interface DraftTransaction {
   type: string;
-  preview: TransactionsDraftPreview;
-  transactions: TransactionsDraftTransaction[];
+  preview: DraftTransactionPreview;
+  transactions: TransactionRequest[];
 }
 
-export const buildTransactionsDraft = async (
+export const buildDraftTransaction = async (
   sdk: EtherspotSdk,
   transactionBlock: TransactionBlock,
-): Promise<{ errorMessage?: string; transactionsDraft?: TransactionsDraft; }> => {
+): Promise<{ errorMessage?: string; draftTransaction?: DraftTransaction; }> => {
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION
     && transactionBlock?.values?.fromChainId
     && transactionBlock?.values?.toChainId
@@ -64,90 +68,59 @@ export const buildTransactionsDraft = async (
         toTokenAddress,
       });
 
-      console.log(items)
       const [quote] = items;
 
       const preview = {
         fromChainId,
         toChainId,
-        fromAssetAddress: quote.estimate.data.fromToken.address,
-        toAssetAddress: quote.estimate.data.fromToken.address,
-        fromAssetDecimals: quote.estimate.data.fromToken.decimals,
-        toAssetDecimals: quote.estimate.data.toToken.decimals,
-        fromAssetSymbol: quote.estimate.data.fromToken.symbol,
-        toAssetSymbol: quote.estimate.data.toToken.symbol,
-        fromAssetAmount: quote.estimate.fromAmount,
-        toAssetAmount: quote.estimate.toAmount,
+        fromAsset: {
+          address: quote.estimate.data.fromToken.address,
+          decimals: quote.estimate.data.fromToken.decimals,
+          symbol: quote.estimate.data.fromToken.symbol,
+          amount: quote.estimate.fromAmount,
+        },
+        toAsset: {
+          address: quote.estimate.data.toToken.address,
+          decimals: quote.estimate.data.toToken.decimals,
+          symbol: quote.estimate.data.toToken.symbol,
+          amount: quote.estimate.toAmount,
+        },
       };
 
-      let transactions = [quote.transaction];
 
-      const transactionsDraft: TransactionsDraft = {
+
+      const { to, value, data }: TransactionRequest = quote.transaction;
+      const bridgeTransaction = { to, value, data };
+
+      let transactions = [bridgeTransaction];
+
+      const approvalAddress = quote?.approvalData?.approvalAddress;
+      const approvalAmount = quote?.approvalData?.amount;
+      const assetContractAddress = quote.estimate.data.fromToken.address;
+      if (approvalAddress
+        && approvalAmount
+        && ethers.utils.isAddress(assetContractAddress)
+        && assetContractAddress.toLowerCase() !== ethers.constants.AddressZero) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20Contract>('erc20Contract', abi, assetContractAddress);
+        const approvalTransaction = erc20Contract?.encodeApprove?.(approvalAddress, approvalAmount);
+        if (approvalTransaction) {
+          // @ts-ignore
+          // TODO: check confusing type mismatch later
+          transactions = [approvalTransaction, ...transactions];
+        }
+      }
+
+      const draftTransaction: DraftTransaction = {
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION,
         preview,
         transactions,
       };
 
-      return { transactionsDraft };
+      console.log(draftTransaction)
 
-      // const assetAddress = quote.estimate.data.fromToken.address;
-      // const approvalAddress = quote.approvalData.approvalAddress;
-      // const amount = quote.approvalData.amount;
-
-      // {
-      //   "provider": "lifi",
-      //   "approvalData": {
-      //   "approvalAddress": "0x362fA9D0bCa5D19f743Db50738345ce2b40eC99f",
-      //     "amount": "1000000"
-      // },
-      //   "transaction": {
-      //   "data": "0x2722a4a8000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001800000000000000000000000000000000000000000000000000000000000000740c64f61bb6f2c63939a4dacfa9faecb364d108820b1d2ce9329c7f018377465e300000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c2132d05d31c914a87c6611c10748aeb04b58e8f00000000000000000000000019e4195a6cbdcb9a7c28d175e12d190fb6fe39c4000000000000000000000000000000000000000000000000000000000000008900000000000000000000000000000000000000000000000000000000000f4240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000a2398842f37465f89540430bdc00219fa9e4d28a000000000000000000000000cb859ea579b28e02b87a1fde08d087ab9dbe5149000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000000000000000000000000000000000000000f424000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000004847617b389000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000125c20000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000001c00000000000000000000000000000000000000000000000000000000000000240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000062d150cf000000000000000000000000000000000000000000000000000000000000000300000000000000000000000050d148d0908c602a56884b8628a36470a875eeb200000000000000000000000050d148d0908c602a56884b8628a36470a875eeb200000000000000000000000050d148d0908c602a56884b8628a36470a875eeb200000000000000000000000000000000000000000000000000000000000000030000000000000000000000006f81d90e771b551451382b4c8b41c86b978d3420000000000000000000000000cffdded873554f362ac02f8fb1f02e5ada10516f000000000000000000000000703b120f15ab77b986a24c6f9262364d02f9432f00000000000000000000000000000000000000000000000000000000000000040000000000000000000000006f81d90e771b551451382b4c8b41c86b978d3420000000000000000000000000cffdded873554f362ac02f8fb1f02e5ada10516f000000000000000000000000703b120f15ab77b986a24c6f9262364d02f9432f000000000000000000000000362fa9d0bca5d19f743db50738345ce2b40ec99f0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000027100000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000027100000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012000000000000000000000000019e4195a6cbdcb9a7c28d175e12d190fb6fe39c400000000000000000000000000000000000000000000000000000000000000890000000000000000000000000000000000000000000000000000000000125c210000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011d6200000000000000000000000000000000000000000000000000000000062d29b48000000000000000000000000000000000000000000000000000000000011d6200000000000000000000000000000000000000000000000000000000062d29b4800000000000000000000000000000000000000000000000000000000000000045553445400000000000000000000000000000000000000000000000000000000",
-      //     "to": "0x362fA9D0bCa5D19f743Db50738345ce2b40eC99f",
-      //     "value": "0x00",
-      //     "from": "0x19e4195a6CBdCb9A7C28d175E12d190fB6fE39C4",
-      //     "chainId": 1
-      // },
-      //   "estimate": {
-      //   "approvalAddress": "1000000",
-      //     "fromAmount": "1000000",
-      //     "toAmount": "1205080",
-      //     "gasCosts": {
-      //     "limit": "662500",
-      //       "amountUSD": "8.41",
-      //       "token": {
-      //       "address": "0x0000000000000000000000000000000000000000",
-      //         "symbol": "ETH",
-      //         "decimals": 18,
-      //         "logoURI": "https://static.debank.com/image/token/logo_url/eth/935ae4e4d1d12d59a99717a24f2540b5.png",
-      //         "chainId": 1,
-      //         "name": "ETH"
-      //     }
-      //   },
-      //   "data": {
-      //     "fromToken": {
-      //       "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-      //         "symbol": "USDC",
-      //         "decimals": 6,
-      //         "logoURI": "https://static.debank.com/image/eth_token/logo_url/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48/fffcd27b9efff5a86ab942084c05924d.png",
-      //         "chainId": 1,
-      //         "name": "USDC"
-      //     },
-      //     "toToken": {
-      //       "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
-      //         "symbol": "USDT",
-      //         "decimals": 6,
-      //         "logoURI": "https://static.debank.com/image/matic_token/logo_url/0xc2132d05d31c914a87c6611c10748aeb04b58e8f/66eadee7b7bb16b75e02b570ab8d5c01.png",
-      //         "chainId": 137,
-      //         "name": "USDT"
-      //     },
-      //     "toTokenAmount": "1205080",
-      //       "estimatedGas": "6890000000000000"
-      //   }
-      // }
-      // }
-
+      return { draftTransaction };
     } catch (e) {
-      console.log(e)
       return { errorMessage: 'Failed to get bridge quote!' };
     }
   }

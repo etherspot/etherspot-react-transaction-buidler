@@ -9,6 +9,7 @@ const ModalOverlay = styled.div`
   height: calc(100% - 30px);
   padding: 15px;
   background: rgba(0, 0, 0, 0.4);
+  border-radius: 15px;
 `;
 
 const ModalContentWrapper = styled.div`

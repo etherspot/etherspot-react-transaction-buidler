@@ -23,7 +23,6 @@ const ComponentWrapper = styled.div`
   width: 400px;
   text-align: center;
   position: relative;
-  overflow: hidden;
 `;
 
 const ComponentStyle = createGlobalStyle`
