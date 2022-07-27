@@ -2,13 +2,16 @@ import React, {
   ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
 import {
   WalletProviderLike,
   Sdk as EtherspotSdk,
-  EnvNames as EtherspotEnvNames
+  EnvNames as EtherspotEnvNames,
+  isWalletProvider,
+  Web3WalletProvider,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
@@ -16,7 +19,7 @@ import { EtherspotContext } from '../contexts';
 
 const EtherspotContextProvider = ({
   children,
-  provider,
+  provider: defaultProvider,
   chainId = 1,
 }: {
   children: ReactNode;
@@ -32,7 +35,25 @@ const EtherspotContextProvider = ({
   const initialized = useMemo(() => true, []);
 
   const [account, setAccount] = useState<string | null>(null);
+  const [provider, setProvider] = useState<WalletProviderLike | null>(null);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
+
+  // map from generic web3 provider if needed
+  const setMappedProvider = useCallback(async () => {
+    if (!defaultProvider) return;
+
+    if (isWalletProvider(defaultProvider)) {
+      setProvider(defaultProvider);
+      return;
+    }
+
+    // @ts-ignore
+    const mappedProvider = await Web3WalletProvider.connect(defaultProvider);
+
+    setProvider(mappedProvider);
+  }, [defaultProvider]);
+
+  useEffect(() => { setMappedProvider(); }, [setMappedProvider]);
 
   const sdk = useMemo(() => {
     if (!provider) return null;

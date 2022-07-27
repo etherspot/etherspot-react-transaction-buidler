@@ -90,7 +90,7 @@ export const buildDraftTransaction = async (
 
 
       const { to, value, data }: TransactionRequest = quote.transaction;
-      const bridgeTransaction = { to, value, data };
+      const bridgeTransaction = { to, value, data, chainId: fromChainId };
 
       let transactions = [bridgeTransaction];
 
@@ -107,7 +107,7 @@ export const buildDraftTransaction = async (
         if (approvalTransaction) {
           // @ts-ignore
           // TODO: check confusing type mismatch later
-          transactions = [approvalTransaction, ...transactions];
+          transactions = [{ chainId: fromChainId, ...approvalTransaction }, ...transactions];
         }
       }
 
@@ -116,8 +116,6 @@ export const buildDraftTransaction = async (
         preview,
         transactions,
       };
-
-      console.log(draftTransaction)
 
       return { draftTransaction };
     } catch (e) {

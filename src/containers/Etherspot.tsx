@@ -6,6 +6,7 @@ import {
   TransactionBuilderContextProvider,
   EtherspotContextProvider,
   TransactionBuilderModalContextProvider,
+  TransactionsDispatcherContextProvider,
 } from '../providers';
 
 import { TransactionBlock } from '../providers/TransactionBuilderContextProvider';
@@ -37,7 +38,9 @@ const Etherspot = ({ defaultTransactionBlocks, provider, chainId }: EtherspotPro
     <ComponentStyle />
     <ComponentWrapper>
       <TransactionBuilderModalContextProvider>
-        <TransactionBuilderContextProvider defaultTransactionBlocks={defaultTransactionBlocks} />
+        <TransactionsDispatcherContextProvider>
+          <TransactionBuilderContextProvider defaultTransactionBlocks={defaultTransactionBlocks} />
+        </TransactionsDispatcherContextProvider>
       </TransactionBuilderModalContextProvider>
     </ComponentWrapper>
   </EtherspotContextProvider>
