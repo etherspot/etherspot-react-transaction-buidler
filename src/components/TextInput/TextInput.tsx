@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 import styled from 'styled-components';
@@ -117,6 +118,18 @@ const TextInput = ({
     showSelectModal(selectOptions, onOptionSelect)
   }, [isLoading, selectOptions]);
 
+
+  const selectedOptionTitle = useMemo(() => {
+    if (!selectOptions?.length) return 'NO OPTIONS';
+    return selectedOption?.title
+      ? selectedOptionDisplayValue ?? selectedOption?.title
+      : null;
+  }, [
+    selectedOption,
+    selectOptions,
+    isLoading,
+  ]);
+
   return (
     <Wrapper>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
@@ -127,9 +140,9 @@ const TextInput = ({
           onChange={(event) => onValueChange && onValueChange(event?.target?.value ?? '')}
         />
         {hasSelect && (
-          <SelectWrapper onClick={onSelectClick} disabled={isLoading}>
-            {!isLoading && !!selectedOption?.value && <SelectedOption>{selectedOptionDisplayValue ?? selectedOption?.value}</SelectedOption>}
-            {!isLoading && !selectedOption?.value && <SelectedOption placeholderText>SELECT</SelectedOption>}
+          <SelectWrapper onClick={onSelectClick} disabled={isLoading || !selectOptions?.length}>
+            {!isLoading && !!selectedOptionTitle && <SelectedOption>{selectedOptionTitle}</SelectedOption>}
+            {!isLoading && !selectedOptionTitle && <SelectedOption placeholderText>SELECT</SelectedOption>}
             {isLoading && <BeatLoader size={6} />}
           </SelectWrapper>
         )}

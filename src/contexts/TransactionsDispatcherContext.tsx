@@ -1,19 +1,21 @@
 import React, { createContext } from 'react';
-import { DraftTransaction } from '../utils/transaction';
+import { CrossChainAction } from '../utils/transaction';
 
 export interface TransactionsDispatcherContextData {
   initialized: boolean;
   data: {
-    dispatchedTransactions: DraftTransaction[];
-    dispatchTransactions: (transactions: DraftTransaction[]) => void;
+    crossChainActions: CrossChainAction[];
+    dispatchCrossChainActions: (transactions: CrossChainAction[]) => void;
+    processingDispatched: boolean;
   }
 }
 
 const TransactionsDispatcherContext = createContext<TransactionsDispatcherContextData>({
   initialized: false,
   data: {
-    dispatchedTransactions: [],
-    dispatchTransactions: () => {},
+    crossChainActions: [],
+    dispatchCrossChainActions: () => {},
+    processingDispatched: false,
   }
 });
 

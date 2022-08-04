@@ -60,20 +60,20 @@ const AssetBridgeTransactionBlock = ({
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { sdk } = useEtherspot();
+  const { sdk, getSupportedAssetsForChainId } = useEtherspot();
 
   const fromNetworkOptions = useMemo(
     () => availableNetworks
-    ?.filter((network) => network.sendingEnabled)
-    ?.map(mapAvailableNetworkToSelectOption),
+      ?.filter((network) => network.sendingEnabled)
+      ?.map(mapAvailableNetworkToSelectOption),
     [availableNetworks],
   );
 
   const toNetworkOptions = useMemo(
     () => availableNetworks
-        ?.filter((network) => network.receivingEnabled)
-        ?.map(mapAvailableNetworkToSelectOption)
-        ?.filter((option) => option.value !== selectedFromNetwork?.value),
+      ?.filter((network) => network.receivingEnabled)
+      ?.map(mapAvailableNetworkToSelectOption)
+      ?.filter((option) => option.value !== selectedFromNetwork?.value),
     [selectedFromNetwork, availableNetworks],
   );
 
@@ -99,7 +99,7 @@ const AssetBridgeTransactionBlock = ({
     if (!sdk) return;
     setIsLoadingAvailableNetworks(true);
     try {
-      const networks = await sdk.getCrossChainBridgeSupportedChains();
+      const networks = await sdk.getCrossChainBridgeSupportedChains({});
       setAvailableNetworks(networks);
     } catch (e) {
       //
@@ -115,9 +115,7 @@ const AssetBridgeTransactionBlock = ({
     if (!sdk || !selectedFromNetwork) return;
     setIsLoadingAvailableFromAssets(true);
     try {
-      const { items: fromAssets } = await sdk.getExchangeSupportedAssets({
-        chainId: +selectedFromNetwork.value,
-      });
+      const fromAssets = await getSupportedAssetsForChainId(+selectedFromNetwork.value);
       setAvailableFromAssets(fromAssets);
     } catch (e) {
       console.log(e)
@@ -132,9 +130,7 @@ const AssetBridgeTransactionBlock = ({
     if (!sdk || !selectedFromNetwork || !selectedToNetwork) return;
     setIsLoadingAvailableToAssets(true);
     try {
-      const { items: toAssets } = await sdk.getExchangeSupportedAssets({
-        chainId: +selectedToNetwork.value,
-      });
+      const toAssets = await getSupportedAssetsForChainId(+selectedToNetwork.value);
       setAvailableToAssets(toAssets);
     } catch (e) {
       //

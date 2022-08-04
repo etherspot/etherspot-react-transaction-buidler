@@ -22,8 +22,8 @@ import {
   validateTransactionBlockValues,
 } from '../utils/validation';
 import {
-  buildDraftTransaction,
-  DraftTransaction,
+  buildCrossChainAction,
+  CrossChainAction,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -134,11 +134,11 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [draftTransactions, setDraftTransactions] = useState<DraftTransaction[] | null>(null);
+  const [draftTransactions, setDraftTransactions] = useState<CrossChainAction[] | null>(null);
 
   const { account, connect, isConnecting, sdk } = useEtherspot();
   const { showConfirmModal, showAlertModal } = useTransactionBuilderModal();
-  const { dispatchTransactions } = useTransactionsDispatcher();
+  const { dispatchCrossChainActions, processingDispatched } = useTransactionsDispatcher();
 
   const onContinueClick = useCallback(async () => {
     if (!sdk) {
@@ -162,17 +162,17 @@ const TransactionBuilderContextProvider = ({
 
     setTransactionBlockValidationErrors(validationErrors);
 
-    let newDraftTransactions: DraftTransaction[] = [];
+    let newDraftTransactions: CrossChainAction[] = [];
     let errorMessage;
     if (Object.keys(validationErrors).length === 0) {
       // keep blocks in order
       for (const transactionBlock of transactionBlocks) {
-        const transaction = await buildDraftTransaction(sdk, transactionBlock);
-        if (!transaction?.draftTransaction || transaction?.errorMessage) {
+        const transaction = await buildCrossChainAction(sdk, transactionBlock);
+        if (!transaction?.crossChainAction || transaction?.errorMessage) {
           errorMessage = transaction?.errorMessage ?? `Failed to build ${transactionBlock?.title ?? 'a'} transaction!`;
           break;
         }
-        newDraftTransactions = [...newDraftTransactions, transaction.draftTransaction];
+        newDraftTransactions = [...newDraftTransactions, transaction.crossChainAction];
       }
     }
 
@@ -190,8 +190,14 @@ const TransactionBuilderContextProvider = ({
       if (isSubmitting) return;
       setIsSubmitting(true);
 
-      const transactionsToDispatch = draftTransactions?.filter(({ transactions }) => !!transactions?.length)
 
+      if (!draftTransactions) {
+        setIsSubmitting(false);
+        showAlertModal('Unable to dispatch transactions.');
+        return;
+      }
+
+      const transactionsToDispatch = draftTransactions.filter(({ transactions }) => !!transactions?.length)
       if (!transactionsToDispatch?.length) {
         setIsSubmitting(false);
         showAlertModal('Unable to dispatch transactions.');
@@ -199,9 +205,10 @@ const TransactionBuilderContextProvider = ({
       }
 
       setDraftTransactions([]);
-      dispatchTransactions(transactionsToDispatch);
+      setTransactionBlocks([]);
+      dispatchCrossChainActions(transactionsToDispatch);
       setIsSubmitting(false);
-    }, [dispatchTransactions, draftTransactions, showAlertModal, isSubmitting]);
+    }, [dispatchCrossChainActions, draftTransactions, showAlertModal, isSubmitting]);
 
     const setTransactionBlockValues = useCallback((transactionBlockId: number, values: TransactionBlockValues) => {
     setTransactionBlocks((current) => {
@@ -231,7 +238,12 @@ const TransactionBuilderContextProvider = ({
 
   return (
     <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
-      {!draftTransactions?.length && (
+      {processingDispatched && (
+        <PrimaryButton disabled marginTop={30} marginBottom={30}>
+          Processing transactions...
+        </PrimaryButton>
+      )}
+      {!draftTransactions?.length && !processingDispatched && (
         <>
           {transactionBlocks.map((transactionBlock, transactionBlockId) => (
             <TransactionBlockWrapper
@@ -283,7 +295,7 @@ const TransactionBuilderContextProvider = ({
                     setTransactionBlocks((current) => current.concat(availableTransactionBlock));
                     setShowTransactionBlockSelect(false);
                   }}
-                  disabled={availableTransactionBlock.disabled}
+                  disabled={!!availableTransactionBlock.disabled}
                 >
                   &bull; {availableTransactionBlock.title}
                 </TransactionBlockListItemWrapper>
@@ -292,7 +304,7 @@ const TransactionBuilderContextProvider = ({
           )}
         </>
       )}
-      {!!draftTransactions?.length && (
+      {!!draftTransactions?.length && !processingDispatched && (
         <>
           <PreviewWrapper>
             {draftTransactions.map((draftTransaction) => (

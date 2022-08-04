@@ -1,6 +1,6 @@
 import React, {
-  ReactNode,
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 import styled from 'styled-components';
@@ -99,12 +99,22 @@ const SelectInput = ({
     showSelectModal(options, onOptionSelect)
   }, [isLoading, options]);
 
+  const selectedOptionTitle = useMemo(() => {
+    if (isLoading && !selectedOption?.title) return 'Loading options...';
+    if (!isLoading && !options?.length) return 'No options';
+    return selectedOption?.title ?? 'None';
+  }, [
+    selectedOption,
+    options,
+    isLoading,
+  ]);
+
   return (
     <Wrapper>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <InputWrapper onClick={onSelectClick}>
-        {selectedOption?.title ?? 'None'}
-        <SelectWrapper disabled={isLoading}>
+        {selectedOptionTitle}
+        <SelectWrapper disabled={!!isLoading}>
           {!isLoading && <SelectButton size={15} />}
           {isLoading && <BeatLoader size={6} />}
         </SelectWrapper>

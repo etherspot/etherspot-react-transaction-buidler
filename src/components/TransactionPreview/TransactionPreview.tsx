@@ -2,7 +2,7 @@ import React, {
 } from 'react';
 import styled from 'styled-components';
 
-import { DraftTransactionPreview } from '../../utils/transaction';
+import { CrossChainActionPreview } from '../../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { formatAmountDisplay } from '../../utils/common';
@@ -19,7 +19,7 @@ const TransactionAction = styled.p`
   font-size: 14px;
 `;
 
-const TransactionPreview = ({ data, type }: { data: DraftTransactionPreview , type: string}) => {
+const TransactionPreview = ({ data, type }: { data: CrossChainActionPreview , type: string}) => {
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION) {
     const { fromAsset, toAsset, fromChainId, toChainId } = data;
 
