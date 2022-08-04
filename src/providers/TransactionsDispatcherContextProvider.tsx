@@ -105,8 +105,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       return;
     }
 
-    console.log(sdkForChain?.state)
-
     let batchHash: string = '';
     let errorMessage;
 
@@ -128,7 +126,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       const result = await sdkForChain.submitGatewayBatch();
       ({ hash: batchHash } = result);
     } catch (e) {
-      console.log(e)
       errorMessage = parseEtherspotErrorMessageIfAvailable(e);
       if (!errorMessage && e instanceof Error) {
         errorMessage = e?.message

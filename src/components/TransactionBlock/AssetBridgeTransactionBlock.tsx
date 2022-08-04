@@ -6,15 +6,21 @@ import React, {
 } from 'react';
 import styled from 'styled-components';
 import {
+  AccountBalance,
   CrossChainBridgeSupportedChain,
 } from 'etherspot';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import { formatAssetAmountInput } from '../../utils/common';
+import {
+  addressesEqual,
+  formatAmountDisplay,
+  formatAssetAmountInput,
+} from '../../utils/common';
 import { ErrorMessages } from '../../utils/validation';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
+import { ethers } from 'ethers';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -53,6 +59,7 @@ const AssetBridgeTransactionBlock = ({
   const [selectedToNetwork, setSelectedToNetwork] = useState<SelectOption | null>(null);
   const [availableNetworks, setAvailableNetworks] = useState<CrossChainBridgeSupportedChain[] | null>(null);
   const [availableFromAssets, setAvailableFromAssets] = useState<TokenListToken[] | null>(null);
+  const [availableFromAssetsBalances, setAvailableFromAssetsBalances] = useState<AccountBalance[] | null>(null);
   const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
   const [isLoadingAvailableNetworks, setIsLoadingAvailableNetworks] = useState<boolean>(false);
   const [isLoadingAvailableFromAssets, setIsLoadingAvailableFromAssets] = useState<boolean>(false);
@@ -60,7 +67,7 @@ const AssetBridgeTransactionBlock = ({
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { sdk, getSupportedAssetsForChainId } = useEtherspot();
+  const { sdk, getSupportedAssetsForChainId, getAssetsBalancesForChainId } = useEtherspot();
 
   const fromNetworkOptions = useMemo(
     () => availableNetworks
@@ -116,9 +123,16 @@ const AssetBridgeTransactionBlock = ({
     setIsLoadingAvailableFromAssets(true);
     try {
       const fromAssets = await getSupportedAssetsForChainId(+selectedFromNetwork.value);
-      setAvailableFromAssets(fromAssets);
+      const fromAssetsBalances = await getAssetsBalancesForChainId(fromAssets, +selectedFromNetwork.value);
+
+      const fromAssetsWithPositiveBalances = fromAssets.filter((asset) => fromAssetsBalances.some((fromAssetBalance) => {
+        if (addressesEqual(asset.address, ethers.constants.AddressZero) && fromAssetBalance.token === null) return true;
+        return addressesEqual(asset.address, fromAssetBalance.token);
+      }));
+
+      setAvailableFromAssets(fromAssetsWithPositiveBalances);
+      setAvailableFromAssetsBalances(fromAssetsBalances);
     } catch (e) {
-      console.log(e)
       //
     }
     setIsLoadingAvailableFromAssets(false);
@@ -140,13 +154,21 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {  updateAvailableToAssets(); }, [updateAvailableToAssets]);
 
-  const availableFromAssetsOptions = useMemo(
-    () => availableFromAssets?.map((availableAsset) => ({
-      title: `${availableAsset.name} (${availableAsset.symbol})`,
+  const availableFromAssetsOptions = useMemo(() => availableFromAssets?.map((availableAsset) => {
+    const assetBalance = availableFromAssetsBalances?.find((fromAssetBalance) => {
+      if (addressesEqual(availableAsset.address, ethers.constants.AddressZero) && fromAssetBalance.token === null) return true;
+      return addressesEqual(availableAsset.address, fromAssetBalance.token);
+    });
+
+    const assetBalanceFormatted = assetBalance
+      ? formatAmountDisplay(ethers.utils.formatUnits(assetBalance.balance, availableAsset.decimals))
+      : '0.00';
+
+    return ({
+      title: `${availableAsset.name} (${assetBalanceFormatted} ${availableAsset.symbol})`,
       value: availableAsset.address,
-    })),
-    [availableFromAssets],
-  );
+    })
+  }), [availableFromAssets, availableFromAssetsBalances]);
 
   const availableToAssetsOptions = useMemo(
     () => availableToAssets?.map((availableAsset) => ({

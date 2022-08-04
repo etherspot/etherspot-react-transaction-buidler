@@ -18,6 +18,11 @@ import { ethers } from 'ethers';
 
 import { EtherspotContext } from '../contexts';
 import {  nativeAssetPerChainId } from '../utils/chain';
+import {
+  addressesEqual,
+  isCaseInsensitiveMatch,
+} from '../utils/common';
+import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 
 const EtherspotContextProvider = ({
   children,
@@ -111,6 +116,52 @@ const EtherspotContextProvider = ({
     return [];
   }, [sdk]);
 
+  const getAssetsBalancesForChainId = useCallback(async (assets: TokenListToken[], assetsChainId: number) => {
+    if (!sdk) return [];
+
+    let computedAccount;
+    if (!account) {
+      try {
+        ({ address: computedAccount } = await sdk.computeContractAccount({ sync: true }));
+      } catch (e) {
+        //
+      }
+    }
+
+    if (!account && !computedAccount) return [];
+
+    // 0x0...0 is default native token address in our assets, but it's not a ERC20 token
+    const assetAddressesWithoutZero = assets
+      .filter((asset) => !addressesEqual(asset.address, ethers.constants.AddressZero))
+      .map((asset) => asset.address);
+
+    try {
+      const { items: balances } = await sdk.getAccountBalances({
+        account: account ?? computedAccount,
+        tokens: assetAddressesWithoutZero,
+        chainId: assetsChainId,
+      });
+
+      return balances.filter((assetBalance) => {
+        const { balance, token: balanceAssetAddress } = assetBalance;
+
+        const supportedAsset = assets.find(({ symbol: supportedSymbol, address: supportedAddress }) => {
+          // `token === null` means it's chain native token
+          if (balanceAssetAddress === null) return isCaseInsensitiveMatch(supportedSymbol, nativeAssetPerChainId[chainId].symbol);
+          return addressesEqual(supportedAddress, balanceAssetAddress);
+        });
+
+        if (!supportedAsset) return false;
+
+        return +ethers.utils.formatUnits(balance, supportedAsset.decimals) > 0;
+      });
+    } catch (e) {
+      //
+    }
+
+    return [];
+  }, [sdk, account]);
+
   const contextData = useMemo(
     () => ({
       connect,
@@ -121,6 +172,7 @@ const EtherspotContextProvider = ({
       setChainId,
       getSdkForChainId,
       getSupportedAssetsForChainId,
+      getAssetsBalancesForChainId,
     }),
     [
       connect,
@@ -131,6 +183,7 @@ const EtherspotContextProvider = ({
       setChainId,
       getSdkForChainId,
       getSupportedAssetsForChainId,
+      getAssetsBalancesForChainId,
     ],
   );
 

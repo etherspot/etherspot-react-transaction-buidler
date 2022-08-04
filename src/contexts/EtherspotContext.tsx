@@ -1,6 +1,7 @@
 import React, { createContext } from 'react';
 import { Sdk as EtherspotSdk } from 'etherspot/dist/sdk/sdk';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
+import { AccountBalance } from 'etherspot';
 
 export interface EtherspotContextData {
   initialized: boolean;
@@ -13,6 +14,7 @@ export interface EtherspotContextData {
     isConnecting: boolean;
     sdk: EtherspotSdk | null;
     getSupportedAssetsForChainId: (chainId: number) => Promise<TokenListToken[]>;
+    getAssetsBalancesForChainId: (assets: TokenListToken[], chainId: number) => Promise<AccountBalance[]>;
   }
 }
 
@@ -27,6 +29,7 @@ const EtherspotContext = createContext<EtherspotContextData>({
     isConnecting: false,
     sdk: null,
     getSupportedAssetsForChainId: () => new Promise(() => []),
+    getAssetsBalancesForChainId: () => new Promise(() => []),
   }
 });
 

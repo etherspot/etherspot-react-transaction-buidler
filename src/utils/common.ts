@@ -23,3 +23,16 @@ export const formatAmountDisplay = (amount: string): string => {
   // TODO: handle small amounts that have more than 2 digits after decimal
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
 };
+
+export const isCaseInsensitiveMatch = (a: string | undefined, b: string | undefined): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.toLowerCase() === b.toLowerCase();
+};
+
+export const addressesEqual = (address1: string | undefined, address2: string | undefined): boolean => {
+  if (address1 === address2) return true;
+  if (!address1 || !address2) return false;
+
+  return isCaseInsensitiveMatch(address1, address2);
+};
