@@ -13,7 +13,7 @@ import {
   CrossChainAction,
   CrossChainActionTransaction,
 } from '../utils/transaction';
-import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../constants/TransactionDispatcherConstants';
+import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import {
   useEtherspot,
   useTransactionBuilderModal,
