@@ -7,7 +7,8 @@ export interface EtherspotContextData {
   initialized: boolean;
   data: {
     account: string | null;
-    connect: () => Promise<void>;
+    providerWalletAddress: string | null;
+    connect: () => Promise<string | undefined>;
     chainId: number;
     setChainId: (chainId: number) => void;
     getSdkForChainId: (chainId: number) => EtherspotSdk | null;
@@ -22,7 +23,8 @@ const EtherspotContext = createContext<EtherspotContextData>({
   initialized: false,
   data: {
     account: null,
-    connect: () => new Promise(() => null),
+    providerWalletAddress: null,
+    connect: () => new Promise(() => undefined),
     chainId: 0,
     setChainId: () => null,
     getSdkForChainId: () => null,

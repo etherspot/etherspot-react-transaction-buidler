@@ -83,6 +83,12 @@ const EtherspotContextProvider = ({
     return getSdkForChainId(chainId);
   }, [getSdkForChainId, chainId]);
 
+  const providerWalletAddress = useMemo(() => {
+    if (!provider) return null;
+    // @ts-ignore
+    return provider?.address ?? provider?.address();
+  }, [provider]);
+
   const connect = useCallback(async () => {
     if (!sdk || isConnecting) return;
     setIsConnecting(true);
@@ -90,6 +96,8 @@ const EtherspotContextProvider = ({
     try {
       const computed = await sdk.computeContractAccount({ sync: true });
       if (computed?.address) setAccount(computed.address);
+      setIsConnecting(false);
+      return computed?.address;
     } catch (e) {
       //
     }
@@ -122,7 +130,7 @@ const EtherspotContextProvider = ({
     let computedAccount;
     if (!account) {
       try {
-        ({ address: computedAccount } = await sdk.computeContractAccount({ sync: true }));
+        computedAccount = await connect();
       } catch (e) {
         //
       }
@@ -173,6 +181,7 @@ const EtherspotContextProvider = ({
       getSdkForChainId,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
+      providerWalletAddress,
     }),
     [
       connect,
@@ -184,6 +193,7 @@ const EtherspotContextProvider = ({
       getSdkForChainId,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
+      providerWalletAddress,
     ],
   );
 

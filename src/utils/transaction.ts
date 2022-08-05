@@ -38,6 +38,7 @@ export interface CrossChainActionTransaction extends ExecuteAccountTransactionDt
 }
 
 export interface CrossChainAction {
+  id: number;
   type: string;
   preview: CrossChainActionPreview;
   transactions: CrossChainActionTransaction[];
@@ -129,6 +130,7 @@ export const buildCrossChainAction = async (
       }
 
       const crossChainAction: CrossChainAction = {
+        id: +new Date(),
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION,
         preview,
         transactions,

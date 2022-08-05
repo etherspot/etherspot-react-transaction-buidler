@@ -5,6 +5,7 @@ import React, {
   useState,
 } from 'react';
 import styled from 'styled-components';
+import { HiDotsHorizontal } from 'react-icons/hi';
 
 import {
   PrimaryButton,
@@ -29,6 +30,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { TransactionBuilderContext } from '../contexts';
 import { AssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
 import { TransactionPreview } from '../components/TransactionPreview';
+import { humanizeHexString } from '../utils/common';
 
 export type TransactionBlockValues = AssetBridgeTransactionBlockValues;
 
@@ -95,6 +97,58 @@ const PreviewWrapper = styled.div`
   text-align: left;
 `;
 
+const TopNavigation = styled.div`
+  padding: 0px 5px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+  color: #fff;
+  font-size: 14px;
+`;
+
+const WalletAddress = styled.span`
+  margin-right: 20px;
+`;
+
+const MenuButton = styled(HiDotsHorizontal)`
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.5;
+  }
+`;
+
+const MenuWrapper = styled.div`
+  position: absolute;
+  top: 40px;
+  right: 15px;
+  background: #fff;
+  border-radius: 5px;
+  padding: 15px 20px;
+  font-size: 14px;
+  text-align: left;
+  box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
+`;
+
+const MenuItem = styled.div`
+  margin-bottom: 10px;
+  cursor: pointer;
+
+  a, a:visited {
+    color: #000;
+    text-decoration: none;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
 const availableTransactionBlocks: TransactionBlock[] = [
   {
     title: 'Asset bridge',
@@ -135,8 +189,9 @@ const TransactionBuilderContextProvider = ({
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [draftTransactions, setDraftTransactions] = useState<CrossChainAction[] | null>(null);
+  const [showMenu, setShowMenu] = useState<boolean>(false);
 
-  const { account, connect, isConnecting, sdk } = useEtherspot();
+  const { account, connect, isConnecting, sdk, providerWalletAddress } = useEtherspot();
   const { showConfirmModal, showAlertModal } = useTransactionBuilderModal();
   const { dispatchCrossChainActions, processingDispatched } = useTransactionsDispatcher();
 
@@ -236,95 +291,115 @@ const TransactionBuilderContextProvider = ({
     ],
   );
 
+  const hideMenu = () => setShowMenu(false);
+
   return (
     <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
-      {processingDispatched && (
-        <PrimaryButton disabled marginTop={30} marginBottom={30}>
-          Processing transactions...
-        </PrimaryButton>
-      )}
-      {!draftTransactions?.length && !processingDispatched && (
-        <>
-          {transactionBlocks.map((transactionBlock, transactionBlockId) => (
-            <TransactionBlockWrapper
-              key={`transaction-block-${transactionBlockId}`}
-              last={transactionBlocks.length === transactionBlockId + 1}
-            >
-              <CloseButton
-                onClick={() => showConfirmModal(
-                  'Are you sure you want to remove selected transaction?',
-                  () => {
-                    setTransactionBlocks((current) => {
-                      const updated = [...current];
-                      updated.splice(transactionBlockId, 1);
-                      return updated;
-                    });
-                  },
-                )}
-              />
-              {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION && (
-                <AssetBridgeTransactionBlock
-                  key={`block-${transactionBlockId}`}
-                  id={transactionBlockId}
-                  errorMessages={transactionBlockValidationErrors[transactionBlockId]}
-                />
-              )}
-            </TransactionBlockWrapper>
-          ))}
-          {!showTransactionBlockSelect && (
-            <SecondaryButton onClick={() => setShowTransactionBlockSelect(true)}>
-              Add transaction
-            </SecondaryButton>
-          )}
-          {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
-            <>
-              <br/>
-              <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-                {isChecking ? 'Checking...' : 'Continue'}
-              </PrimaryButton>
-            </>
-          )}
-          {showTransactionBlockSelect && (
-            <TransactionBlockSelectWrapper>
-              <CloseButton onClick={() => setShowTransactionBlockSelect(false)} />
-              {availableTransactionBlocks.map((availableTransactionBlock) => (
-                <TransactionBlockListItemWrapper
-                  key={availableTransactionBlock.title}
-                  onClick={() => {
-                    if (availableTransactionBlock.disabled || !availableTransactionBlock.type) return;
-                    setTransactionBlocks((current) => current.concat(availableTransactionBlock));
-                    setShowTransactionBlockSelect(false);
-                  }}
-                  disabled={!!availableTransactionBlock.disabled}
-                >
-                  &bull; {availableTransactionBlock.title}
-                </TransactionBlockListItemWrapper>
-              ))}
-            </TransactionBlockSelectWrapper>
-          )}
-        </>
-      )}
-      {!!draftTransactions?.length && !processingDispatched && (
-        <>
-          <PreviewWrapper>
-            {draftTransactions.map((draftTransaction) => (
-              <TransactionPreview
-                data={draftTransaction.preview}
-                type={draftTransaction.type}
-              />
-            ))}
-          </PreviewWrapper>
-          <PrimaryButton marginTop={30} onClick={onSubmitClick} disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : 'Submit'}
+      <TopNavigation>
+        <div onClick={hideMenu}>
+          <WalletAddress>Wallet: {providerWalletAddress ? humanizeHexString(providerWalletAddress) : 'Not connected'}</WalletAddress>
+          {account && <WalletAddress>Account: {humanizeHexString(account)}</WalletAddress>}
+          {!account && <WalletAddress>Account: <SecondaryButton onClick={connect} disabled={isConnecting} noPadding>Connect</SecondaryButton></WalletAddress>}
+        </div>
+        <MenuButton size={20} onClick={() => setShowMenu(!showMenu)} />
+      </TopNavigation>
+      <div onClick={hideMenu}>
+        {processingDispatched && (
+          <PrimaryButton disabled marginTop={30} marginBottom={30}>
+            Processing transactions...
           </PrimaryButton>
-          <br/>
-          <SecondaryButton
-            marginTop={10}
-            onClick={() => setDraftTransactions([])}
-          >
-            Go back
-          </SecondaryButton>
-        </>
+        )}
+        {!draftTransactions?.length && !processingDispatched && (
+          <>
+            {transactionBlocks.map((transactionBlock, transactionBlockId) => (
+              <TransactionBlockWrapper
+                key={`transaction-block-${transactionBlockId}`}
+                last={transactionBlocks.length === transactionBlockId + 1}
+              >
+                <CloseButton
+                  onClick={() => showConfirmModal(
+                    'Are you sure you want to remove selected transaction?',
+                    () => {
+                      setTransactionBlocks((current) => {
+                        const updated = [...current];
+                        updated.splice(transactionBlockId, 1);
+                        return updated;
+                      });
+                    },
+                  )}
+                />
+                {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION && (
+                  <AssetBridgeTransactionBlock
+                    key={`block-${transactionBlockId}`}
+                    id={transactionBlockId}
+                    errorMessages={transactionBlockValidationErrors[transactionBlockId]}
+                  />
+                )}
+              </TransactionBlockWrapper>
+            ))}
+            {!showTransactionBlockSelect && (
+              <SecondaryButton onClick={() => setShowTransactionBlockSelect(true)} marginTop={transactionBlocks?.length ? 0 : 30}>
+                Add transaction
+              </SecondaryButton>
+            )}
+            {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
+              <>
+                <br/>
+                <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
+                  {isChecking ? 'Checking...' : 'Continue'}
+                </PrimaryButton>
+              </>
+            )}
+            {showTransactionBlockSelect && (
+              <TransactionBlockSelectWrapper>
+                <CloseButton onClick={() => setShowTransactionBlockSelect(false)} />
+                {availableTransactionBlocks.map((availableTransactionBlock) => (
+                  <TransactionBlockListItemWrapper
+                    key={availableTransactionBlock.title}
+                    onClick={() => {
+                      if (availableTransactionBlock.disabled || !availableTransactionBlock.type) return;
+                      setTransactionBlocks((current) => current.concat(availableTransactionBlock));
+                      setShowTransactionBlockSelect(false);
+                    }}
+                    disabled={!!availableTransactionBlock.disabled}
+                  >
+                    &bull; {availableTransactionBlock.title}
+                  </TransactionBlockListItemWrapper>
+                ))}
+              </TransactionBlockSelectWrapper>
+            )}
+          </>
+        )}
+        {!!draftTransactions?.length && !processingDispatched && (
+          <>
+            <PreviewWrapper>
+              {draftTransactions.map((draftTransaction) => (
+                <TransactionPreview
+                  key={`preview-${draftTransaction.id}`}
+                  data={draftTransaction.preview}
+                  type={draftTransaction.type}
+                />
+              ))}
+            </PreviewWrapper>
+            <PrimaryButton marginTop={30} onClick={onSubmitClick} disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </PrimaryButton>
+            <br/>
+            <SecondaryButton
+              marginTop={10}
+              onClick={() => setDraftTransactions([])}
+            >
+              Go back
+            </SecondaryButton>
+          </>
+        )}
+      </div>
+      {showMenu && (
+        <MenuWrapper>
+          <MenuItem><a href="https://dashboard.etherspot.io" title="Dashboard" target="_blank">Dashboard</a></MenuItem>
+          <MenuItem>History</MenuItem>
+          <MenuItem><a href="https://etherspot.io/" title="About Etherspot" target="_blank">About Etherspot</a></MenuItem>
+        </MenuWrapper>
       )}
     </TransactionBuilderContext.Provider>
   );

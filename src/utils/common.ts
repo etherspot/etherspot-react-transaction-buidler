@@ -36,3 +36,22 @@ export const addressesEqual = (address1: string | undefined, address2: string | 
 
   return isCaseInsensitiveMatch(address1, address2);
 };
+
+export const humanizeHexString = (
+  hexString: string,
+  startCharsCount: number = 5,
+  endCharsCount: number = 4,
+  separator: string = '...',
+) => {
+  const totalTruncatedSum = startCharsCount + endCharsCount + separator.length;
+
+  const words = hexString.toString().split(' ');
+  const firstWord = words[0];
+
+  if (words.length === 1) {
+    if (firstWord.length <= totalTruncatedSum) return firstWord;
+    return `${firstWord.slice(0, startCharsCount)}${separator}${firstWord.slice(-endCharsCount)}`;
+  }
+
+  return hexString;
+};
