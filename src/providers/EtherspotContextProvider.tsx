@@ -7,17 +7,18 @@ import React, {
   useState,
 } from 'react';
 import {
-  WalletProviderLike,
-  Sdk as EtherspotSdk,
+  AccountTypes,
   EnvNames as EtherspotEnvNames,
   isWalletProvider,
+  Sdk as EtherspotSdk,
+  WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { ethers } from 'ethers';
 
 import { EtherspotContext } from '../contexts';
-import {  nativeAssetPerChainId } from '../utils/chain';
+import { nativeAssetPerChainId } from '../utils/chain';
 import {
   addressesEqual,
   isCaseInsensitiveMatch,
@@ -41,9 +42,10 @@ const EtherspotContextProvider = ({
 
   const initialized = useMemo(() => true, []);
 
-  const [account, setAccount] = useState<string | null>(null);
+  const [accountAddress, setAccountAddress] = useState<string | null>(null);
+  const [providerAddress, setProviderAddress] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number>(defaultChainId);
-  const [provider, setProvider] = useState<WalletProviderLike | null>(null);
+  const [provider, setProvider] = useState<WalletProviderLike | Web3WalletProvider | null>(null);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
 
   // map from generic web3 provider if needed
@@ -56,8 +58,8 @@ const EtherspotContextProvider = ({
     }
 
     // @ts-ignore
-    const mappedProvider = await Web3WalletProvider.connect(defaultProvider);
-
+    const mappedProvider = new Web3WalletProvider(defaultProvider);
+    await mappedProvider.refresh();
     setProvider(mappedProvider);
   }, [defaultProvider]);
 
@@ -80,14 +82,26 @@ const EtherspotContextProvider = ({
 
   const sdk = useMemo(() => {
     if (!chainId) return null;
+
     return getSdkForChainId(chainId);
   }, [getSdkForChainId, chainId]);
 
-  const providerWalletAddress = useMemo(() => {
-    if (!provider) return null;
-    // @ts-ignore
-    return provider?.address ?? provider?.address();
-  }, [provider]);
+  useEffect(() => {
+    if (!sdk) return;
+
+    sdk.state$.subscribe((sdkState) => {
+      if (sdkState?.account?.type === AccountTypes.Key) {
+        setProviderAddress(sdkState.account.address);
+        return;
+      }
+      if (sdkState?.account?.type === AccountTypes.Contract) {
+        setAccountAddress(sdkState.account.address);
+        return;
+      }
+    });
+
+    return () => sdk.state$.unsubscribe();
+  }, [sdk]);
 
   const connect = useCallback(async () => {
     if (!sdk || isConnecting) return;
@@ -95,7 +109,6 @@ const EtherspotContextProvider = ({
 
     try {
       const computed = await sdk.computeContractAccount({ sync: true });
-      if (computed?.address) setAccount(computed.address);
       setIsConnecting(false);
       return computed?.address;
     } catch (e) {
@@ -128,7 +141,7 @@ const EtherspotContextProvider = ({
     if (!sdk) return [];
 
     let computedAccount;
-    if (!account) {
+    if (!accountAddress) {
       try {
         computedAccount = await connect();
       } catch (e) {
@@ -136,7 +149,7 @@ const EtherspotContextProvider = ({
       }
     }
 
-    if (!account && !computedAccount) return [];
+    if (!accountAddress && !computedAccount) return [];
 
     // 0x0...0 is default native token address in our assets, but it's not a ERC20 token
     const assetAddressesWithoutZero = assets
@@ -145,7 +158,7 @@ const EtherspotContextProvider = ({
 
     try {
       const { items: balances } = await sdk.getAccountBalances({
-        account: account ?? computedAccount,
+        account: accountAddress ?? computedAccount,
         tokens: assetAddressesWithoutZero,
         chainId: assetsChainId,
       });
@@ -168,32 +181,32 @@ const EtherspotContextProvider = ({
     }
 
     return [];
-  }, [sdk, account]);
+  }, [sdk, accountAddress]);
 
   const contextData = useMemo(
     () => ({
       connect,
       isConnecting,
-      account,
+      accountAddress,
       sdk,
       chainId,
       setChainId,
       getSdkForChainId,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
-      providerWalletAddress,
+      providerAddress,
     }),
     [
       connect,
       isConnecting,
-      account,
+      accountAddress,
       sdk,
       chainId,
       setChainId,
       getSdkForChainId,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
-      providerWalletAddress,
+      providerAddress,
     ],
   );
 

@@ -6,8 +6,8 @@ import { AccountBalance } from 'etherspot';
 export interface EtherspotContextData {
   initialized: boolean;
   data: {
-    account: string | null;
-    providerWalletAddress: string | null;
+    accountAddress: string | null;
+    providerAddress: string | null;
     connect: () => Promise<string | undefined>;
     chainId: number;
     setChainId: (chainId: number) => void;
@@ -22,8 +22,8 @@ export interface EtherspotContextData {
 const EtherspotContext = createContext<EtherspotContextData>({
   initialized: false,
   data: {
-    account: null,
-    providerWalletAddress: null,
+    accountAddress: null,
+    providerAddress: null,
     connect: () => new Promise(() => undefined),
     chainId: 0,
     setChainId: () => null,

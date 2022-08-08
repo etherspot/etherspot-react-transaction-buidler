@@ -191,7 +191,7 @@ const TransactionBuilderContextProvider = ({
   const [draftTransactions, setDraftTransactions] = useState<CrossChainAction[] | null>(null);
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
-  const { account, connect, isConnecting, sdk, providerWalletAddress } = useEtherspot();
+  const { accountAddress, connect, isConnecting, sdk, providerAddress } = useEtherspot();
   const { showConfirmModal, showAlertModal } = useTransactionBuilderModal();
   const { dispatchCrossChainActions, processingDispatched } = useTransactionsDispatcher();
 
@@ -204,7 +204,7 @@ const TransactionBuilderContextProvider = ({
     if (isChecking || isConnecting) return;
     setIsChecking(true);
 
-    if (!account) {
+    if (!accountAddress) {
       await connect();
     }
 
@@ -239,7 +239,7 @@ const TransactionBuilderContextProvider = ({
     }
 
     setDraftTransactions(newDraftTransactions);
-  }, [transactionBlocks, isChecking, sdk, connect, account, isConnecting]);
+  }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
 
     const onSubmitClick = useCallback(async () => {
       if (isSubmitting) return;
@@ -297,9 +297,9 @@ const TransactionBuilderContextProvider = ({
     <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
       <TopNavigation>
         <div onClick={hideMenu}>
-          <WalletAddress>Wallet: {providerWalletAddress ? humanizeHexString(providerWalletAddress) : 'Not connected'}</WalletAddress>
-          {account && <WalletAddress>Account: {humanizeHexString(account)}</WalletAddress>}
-          {!account && <WalletAddress>Account: <SecondaryButton onClick={connect} disabled={isConnecting} noPadding>Connect</SecondaryButton></WalletAddress>}
+          <WalletAddress>Wallet: {providerAddress ? humanizeHexString(providerAddress) : 'Not connected'}</WalletAddress>
+          {accountAddress && <WalletAddress>Account: {humanizeHexString(accountAddress)}</WalletAddress>}
+          {!accountAddress && <WalletAddress>Account: <SecondaryButton onClick={connect} disabled={isConnecting} noPadding>Connect</SecondaryButton></WalletAddress>}
         </div>
         <MenuButton size={20} onClick={() => setShowMenu(!showMenu)} />
       </TopNavigation>
