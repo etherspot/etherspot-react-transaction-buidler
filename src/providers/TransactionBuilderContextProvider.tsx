@@ -11,6 +11,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   CloseButton,
+  CopyButton,
 } from '../components/Button';
 import {
   useEtherspot,
@@ -297,8 +298,19 @@ const TransactionBuilderContextProvider = ({
     <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
       <TopNavigation>
         <div onClick={hideMenu}>
-          <WalletAddress>Wallet: {providerAddress ? humanizeHexString(providerAddress) : 'Not connected'}</WalletAddress>
-          {accountAddress && <WalletAddress>Account: {humanizeHexString(accountAddress)}</WalletAddress>}
+          {providerAddress && (
+            <WalletAddress>
+              Wallet: {humanizeHexString(providerAddress)}
+              <CopyButton valueToCopy={providerAddress} marginLeft={5} />
+            </WalletAddress>
+          )}
+          {!providerAddress && <WalletAddress>Wallet: Not connected</WalletAddress>}
+          {accountAddress && (
+            <WalletAddress>
+              Account: {humanizeHexString(accountAddress)}
+              <CopyButton valueToCopy={accountAddress} marginLeft={5} />
+            </WalletAddress>
+          )}
           {!accountAddress && <WalletAddress>Account: <SecondaryButton onClick={connect} disabled={isConnecting} noPadding>Connect</SecondaryButton></WalletAddress>}
         </div>
         <MenuButton size={20} onClick={() => setShowMenu(!showMenu)} />

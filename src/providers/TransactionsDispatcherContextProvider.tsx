@@ -19,6 +19,13 @@ import {
   useTransactionBuilderModal,
 } from '../hooks';
 import { parseEtherspotErrorMessageIfAvailable } from '../utils/etherspot';
+import {
+  STORED_GROUPED_CROSS_CHAIN_ACTIONS,
+} from '../constants/storageConstants';
+import {
+  getItem,
+  setItem,
+} from '../services/storage';
 
 export interface DispatchedCrossChainActionTransaction extends CrossChainActionTransaction {
   id: number;
@@ -42,6 +49,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
   const [processingDispatched, setProcessingDispatched] = useState<boolean>(false);
   const [crossChainActions, setCrossChainActions] = useState<DispatchedCrossChainAction[]>([]);
+  const [dispatchId, setDispatchId] = useState<number | null>(null);
 
   const { getSdkForChainId } = useEtherspot();
   const { showAlertModal } = useTransactionBuilderModal();
@@ -56,18 +64,20 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         status: DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT,
       })),
     })));
+    setDispatchId(+new Date())
   }, [setCrossChainActions]);
 
   const resetCrossChainActions = useCallback((errorMessage?: string) => {
     setProcessingDispatched(false);
     setCrossChainActions([]);
+    setDispatchId(null);
 
     if (!errorMessage) return;
     showAlertModal(errorMessage)
   }, []);
 
   const processDispatchedTransactions = useCallback(async () => {
-    if (!crossChainActions?.length) return;
+    if (!crossChainActions?.length || !dispatchId) return;
 
     const hasPending = crossChainActions.some(({ transactions }) => transactions.some(({ status }) => status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING))
     if (hasPending) return;
@@ -137,7 +147,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       return;
     }
 
-    setCrossChainActions(crossChainActions.map((crossChainAction) => {
+    const updatedCrossChainActions = crossChainActions.map((crossChainAction) => {
       const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransaction, id) => {
         if (!chainTransactions.some((chainTransaction) => chainTransaction.id === id)) return crossChainActionTransaction;
         return {
@@ -148,11 +158,24 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       });
 
       return { ...crossChainAction, transactions: updatedTransactions };
-    }));
+    })
+
+    setCrossChainActions(updatedCrossChainActions);
 
     showAlertModal('Transaction sent!');
+
+    try {
+      const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
+      let storedGroupedCrossChainActions = {};
+      if (storedGroupedCrossChainActionsRaw) storedGroupedCrossChainActions = JSON.parse(storedGroupedCrossChainActionsRaw)
+      setItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS, JSON.stringify({ ...storedGroupedCrossChainActions, [dispatchId]: updatedCrossChainActions }));
+    } catch (e) {
+      //
+    }
+
     setProcessingDispatched(false);
-  }, [crossChainActions, getSdkForChainId, processingDispatched, resetCrossChainActions]);
+
+  }, [crossChainActions, getSdkForChainId, processingDispatched, resetCrossChainActions, dispatchId]);
 
   useEffect(() => { processDispatchedTransactions(); }, [processDispatchedTransactions]);
 
