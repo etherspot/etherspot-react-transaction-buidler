@@ -55,7 +55,7 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
   const initialized = useMemo(() => true, []);
 
   const [confirmModal, setConfirmModal] = useState<string | null>(null);
-  const [alertModal, setAlertModal] = useState<string | null>(null);
+  const [alertModal, setAlertModal] = useState<ReactNode | null>(null);
   const [selectModalOptions, setSelectModalOptions] = useState<SelectOption[] | null>(null);
   const [selectModalSearchText, setSelectModalSearchText] = useState<string>('');
 
@@ -84,8 +84,8 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
         setConfirmModal(message);
         confirmCallback = callback;
       },
-      showAlertModal: (message: string) => {
-        setAlertModal(message);
+      showAlertModal: (content: ReactNode) => {
+        setAlertModal(content);
       },
       hideSelectModal,
       hideConfirmModal,

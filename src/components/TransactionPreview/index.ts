@@ -1,1 +1,1 @@
-export { default as TransactionPreview } from './TransactionPreview';
+export { default as ActionPreview } from './ActionPreview';

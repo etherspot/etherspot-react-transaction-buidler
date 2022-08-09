@@ -24,7 +24,7 @@ const ComponentWrapper = styled.div`
   width: 400px;
   text-align: center;
   position: relative;
-  min-height: 120px;
+  min-height: 200px;
 `;
 
 const ComponentStyle = createGlobalStyle`

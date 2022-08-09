@@ -30,8 +30,9 @@ import {
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { AssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
-import { TransactionPreview } from '../components/TransactionPreview';
+import { ActionPreview } from '../components/TransactionPreview';
 import { humanizeHexString } from '../utils/common';
+import History from '../components/History';
 
 export type TransactionBlockValues = AssetBridgeTransactionBlockValues;
 
@@ -108,8 +109,17 @@ const TopNavigation = styled.div`
   font-size: 14px;
 `;
 
+const WalletAddressesWrapper = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+`;
+
 const WalletAddress = styled.span`
   margin-right: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const MenuButton = styled(HiDotsHorizontal)`
@@ -294,10 +304,12 @@ const TransactionBuilderContextProvider = ({
 
   const hideMenu = () => setShowMenu(false);
 
+  const hasTransactionBlockAdded = transactionBlocks.some((transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION);
+
   return (
     <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
       <TopNavigation>
-        <div onClick={hideMenu}>
+        <WalletAddressesWrapper onClick={hideMenu}>
           {providerAddress && (
             <WalletAddress>
               Wallet: {humanizeHexString(providerAddress)}
@@ -312,7 +324,7 @@ const TransactionBuilderContextProvider = ({
             </WalletAddress>
           )}
           {!accountAddress && <WalletAddress>Account: <SecondaryButton onClick={connect} disabled={isConnecting} noPadding>Connect</SecondaryButton></WalletAddress>}
-        </div>
+        </WalletAddressesWrapper>
         <MenuButton size={20} onClick={() => setShowMenu(!showMenu)} />
       </TopNavigation>
       <div onClick={hideMenu}>
@@ -365,19 +377,27 @@ const TransactionBuilderContextProvider = ({
             {showTransactionBlockSelect && (
               <TransactionBlockSelectWrapper>
                 <CloseButton onClick={() => setShowTransactionBlockSelect(false)} />
-                {availableTransactionBlocks.map((availableTransactionBlock) => (
-                  <TransactionBlockListItemWrapper
-                    key={availableTransactionBlock.title}
-                    onClick={() => {
-                      if (availableTransactionBlock.disabled || !availableTransactionBlock.type) return;
-                      setTransactionBlocks((current) => current.concat(availableTransactionBlock));
-                      setShowTransactionBlockSelect(false);
-                    }}
-                    disabled={!!availableTransactionBlock.disabled}
-                  >
-                    &bull; {availableTransactionBlock.title}
-                  </TransactionBlockListItemWrapper>
-                ))}
+                {availableTransactionBlocks.map((availableTransactionBlock) => {
+                  const isBridgeTransactionBlock = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION;
+                  const isBridgeTransactionBlockAndDisabled = isBridgeTransactionBlock && hasTransactionBlockAdded;
+                  const isDisabled = !!availableTransactionBlock.disabled || isBridgeTransactionBlockAndDisabled;
+                  const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
+                    ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
+                    : availableTransactionBlock.title
+                  return (
+                    <TransactionBlockListItemWrapper
+                      key={availableTransactionBlock.title}
+                      onClick={() => {
+                        if (availableTransactionBlock.disabled || !availableTransactionBlock.type) return;
+                        setTransactionBlocks((current) => current.concat(availableTransactionBlock));
+                        setShowTransactionBlockSelect(false);
+                      }}
+                      disabled={isDisabled}
+                    >
+                      &bull; {availableTransactionBlockTitle}
+                    </TransactionBlockListItemWrapper>
+                  )
+                })}
               </TransactionBlockSelectWrapper>
             )}
           </>
@@ -386,7 +406,7 @@ const TransactionBuilderContextProvider = ({
           <>
             <PreviewWrapper>
               {draftTransactions.map((draftTransaction) => (
-                <TransactionPreview
+                <ActionPreview
                   key={`preview-${draftTransaction.id}`}
                   data={draftTransaction.preview}
                   type={draftTransaction.type}
@@ -409,7 +429,14 @@ const TransactionBuilderContextProvider = ({
       {showMenu && (
         <MenuWrapper>
           <MenuItem><a href="https://dashboard.etherspot.io" title="Dashboard" target="_blank">Dashboard</a></MenuItem>
-          <MenuItem>History</MenuItem>
+          <MenuItem
+            onClick={() => {
+              hideMenu();
+              showAlertModal(<History />);
+            }}
+          >
+            History
+          </MenuItem>
           <MenuItem><a href="https://etherspot.io/" title="About Etherspot" target="_blank">About Etherspot</a></MenuItem>
         </MenuWrapper>
       )}

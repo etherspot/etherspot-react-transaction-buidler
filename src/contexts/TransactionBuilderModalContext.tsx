@@ -1,4 +1,7 @@
-import React, { createContext } from 'react';
+import React, {
+  createContext,
+  ReactNode,
+} from 'react';
 
 import { SelectOption } from '../components/SelectInput/SelectInput';
 
@@ -9,7 +12,7 @@ export interface TransactionBuilderModalContextData {
     hideSelectModal: () => void;
     showConfirmModal: (message: string, callback: () => void) => void;
     hideConfirmModal: () => void;
-    showAlertModal: (message: string) => void;
+    showAlertModal: (content: ReactNode) => void;
     hideAlertModal: () => void;
   }
 }
