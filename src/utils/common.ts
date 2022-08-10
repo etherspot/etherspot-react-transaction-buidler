@@ -1,3 +1,6 @@
+import { ethers } from 'ethers';
+import { add } from 'lodash';
+
 export const formatAssetAmountInput = (
   amount: string,
   decimals: number = 18,
@@ -54,4 +57,16 @@ export const humanizeHexString = (
   }
 
   return hexString;
+};
+
+export const isValidEthereumAddress = (address: string | undefined): boolean => {
+  if (!address) return false;
+
+  try {
+    return ethers.utils.isAddress(address);
+  } catch (e) {
+    //
+  }
+
+  return false;
 };

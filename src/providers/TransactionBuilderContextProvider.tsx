@@ -18,7 +18,10 @@ import {
   useTransactionBuilderModal,
   useTransactionsDispatcher,
 } from '../hooks';
-import { AssetBridgeTransactionBlock } from '../components/TransactionBlock';
+import {
+  AssetBridgeTransactionBlock,
+  SendAssetTransactionBlock,
+} from '../components/TransactionBlock';
 import {
   ErrorMessages,
   validateTransactionBlockValues,
@@ -30,11 +33,12 @@ import {
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { AssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
+import { SendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
 import { ActionPreview } from '../components/TransactionPreview';
 import { humanizeHexString } from '../utils/common';
 import History from '../components/History';
 
-export type TransactionBlockValues = AssetBridgeTransactionBlockValues;
+export type TransactionBlockValues = AssetBridgeTransactionBlockValues | SendAssetTransactionBlockValues;
 
 export interface TransactionBlock {
   title?: string;
@@ -164,6 +168,10 @@ const availableTransactionBlocks: TransactionBlock[] = [
   {
     title: 'Asset bridge',
     type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION,
+  },
+  {
+    title: 'Send asset',
+    type: TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION,
   },
   {
     title: 'LiFi staking (not yet available)',
@@ -354,6 +362,13 @@ const TransactionBuilderContextProvider = ({
                 />
                 {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION && (
                   <AssetBridgeTransactionBlock
+                    key={`block-${transactionBlockId}`}
+                    id={transactionBlockId}
+                    errorMessages={transactionBlockValidationErrors[transactionBlockId]}
+                  />
+                )}
+                {transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION && (
+                  <SendAssetTransactionBlock
                     key={`block-${transactionBlockId}`}
                     id={transactionBlockId}
                     errorMessages={transactionBlockValidationErrors[transactionBlockId]}
