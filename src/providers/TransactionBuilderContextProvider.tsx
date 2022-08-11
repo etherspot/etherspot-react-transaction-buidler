@@ -38,7 +38,7 @@ import { ActionPreview } from '../components/TransactionPreview';
 import { humanizeHexString } from '../utils/common';
 import History from '../components/History';
 
-export type TransactionBlockValues = AssetBridgeTransactionBlockValues | SendAssetTransactionBlockValues;
+export type TransactionBlockValues = SendAssetTransactionBlockValues & AssetBridgeTransactionBlockValues;
 
 export interface TransactionBlock {
   title?: string;

@@ -1,21 +1,15 @@
 import { Sdk as EtherspotSdk } from 'etherspot';
-import {
-  BigNumberish,
-  ethers,
-} from 'ethers';
-import { TransactionRequest } from '@ethersproject/abstract-provider';
+import { ethers } from 'ethers';
+import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
+
 import { ExecuteAccountTransactionDto } from 'etherspot/dist/sdk/dto/execute-account-transaction.dto';
 
 import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
 import { TransactionBlock } from '../providers/TransactionBuilderContextProvider';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
+import { addressesEqual } from './common';
 
-
-interface ERC20Contract {
-  encodeApprove?(spender: string, value: BigNumberish): TransactionRequest;
-  callAllowance?(owner: string, spender: string): Promise<string>;
-}
 
 interface AssetTransfer {
   address: string;
@@ -27,11 +21,17 @@ interface AssetTransfer {
 interface AssetBridgeActionPreview {
   fromChainId: number;
   toChainId: number;
-  fromAsset: AssetTransfer,
-  toAsset: AssetTransfer,
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
 }
 
-export type CrossChainActionPreview = AssetBridgeActionPreview;
+interface SendAssetActionPreview {
+  chainId: number;
+  asset: AssetTransfer;
+  receiverAddress: string;
+}
+
+export type CrossChainActionPreview = AssetBridgeActionPreview | SendAssetActionPreview;
 
 export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {
   chainId: number;
@@ -111,9 +111,9 @@ export const buildCrossChainAction = async (
       if (approvalAddress
         && approvalAmount
         && ethers.utils.isAddress(assetContractAddress)
-        && assetContractAddress.toLowerCase() !== ethers.constants.AddressZero) {
+        && !addressesEqual(assetContractAddress, ethers.constants.AddressZero)) {
         const abi = getContractAbi(ContractNames.ERC20Token);
-        const erc20Contract = sdk.registerContract<ERC20Contract>('erc20Contract', abi, assetContractAddress);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, assetContractAddress);
         const approvalTransactionRequest = erc20Contract?.encodeApprove?.(approvalAddress, approvalAmount);
         if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
           return { errorMessage: 'Failed build bridge approval transaction!' };
@@ -121,9 +121,9 @@ export const buildCrossChainAction = async (
 
         const approvalTransaction = {
           to: approvalTransactionRequest.to,
-          value: approvalTransactionRequest.value,
           data: approvalTransactionRequest.data,
           chainId: fromChainId,
+          value: 0,
         };
 
         transactions = [approvalTransaction, ...transactions];
@@ -139,6 +139,72 @@ export const buildCrossChainAction = async (
       return { crossChainAction };
     } catch (e) {
       return { errorMessage: 'Failed to get bridge quote!' };
+    }
+  }
+
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION
+    && !!transactionBlock?.values?.chainId
+    && !!transactionBlock?.values?.assetAddress
+    && !!transactionBlock?.values?.assetDecimals
+    && !!transactionBlock?.values?.receiverAddress
+    && !!transactionBlock?.values?.amount) {
+    try {
+      const {
+        values: {
+          chainId,
+          assetAddress,
+          assetDecimals,
+          receiverAddress,
+          amount,
+        },
+      } = transactionBlock;
+
+
+      const preview = {
+        chainId,
+        receiverAddress,
+        asset: {
+          address: assetAddress,
+          decimals: assetDecimals,
+          symbol: '$$$',
+          amount,
+        },
+      };
+
+      const amountBN = ethers.utils.parseUnits(amount, assetDecimals);
+
+      let transferTransaction: CrossChainActionTransaction = {
+        chainId,
+        to: receiverAddress,
+        value: amountBN,
+      };
+
+      if (ethers.utils.isAddress(assetAddress) && !addressesEqual(assetAddress, ethers.constants.AddressZero)) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, assetAddress);
+        const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, amountBN);
+        if (!transferTransactionRequest || !transferTransactionRequest.to) {
+          return { errorMessage: 'Failed build transfer transaction!' };
+        }
+
+        transferTransaction = {
+          chainId,
+          to: transferTransactionRequest.to,
+          data: transferTransactionRequest.data,
+          value: 0,
+        }
+      }
+
+      const crossChainAction: CrossChainAction = {
+        id: +new Date(),
+        type: TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION,
+        preview,
+        transactions: [transferTransaction],
+      };
+
+      return { crossChainAction };
+    } catch (e) {
+      return { errorMessage: 'Failed to get create asset transfer!' };
     }
   }
 
