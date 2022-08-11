@@ -121,20 +121,29 @@ const EtherspotContextProvider = ({
   const getSupportedAssetsForChainId = useCallback(async (assetsChainId: number) => {
     if (!sdk) return [];
 
-    try {
-      const { items: assets } = await sdk.getExchangeSupportedAssets({
-        chainId: assetsChainId,
-      });
+    let assets: TokenListToken[] = [];
 
-      const nativeAsset = nativeAssetPerChainId[assetsChainId];
-      const hasNativeAsset = assets.some((asset) => asset.symbol === nativeAsset.symbol || asset.address.toLowerCase() === ethers.constants.AddressZero);
-
-      return hasNativeAsset ? assets : [nativeAsset, ...assets];
-    } catch (e) {
-      //
+    let loadMoreAssets = true;
+    let page = 1;
+    while (loadMoreAssets) {
+      try {
+        const { items: paginatedAssets } = await sdk.getExchangeSupportedAssets({
+          chainId: assetsChainId,
+          limit: 100,
+          page,
+        });
+        assets = [...assets, ...paginatedAssets];
+        loadMoreAssets = paginatedAssets?.length === 100;
+        page++;
+      } catch (e) {
+        //
+      }
     }
 
-    return [];
+    const nativeAsset = nativeAssetPerChainId[assetsChainId];
+    const hasNativeAsset = assets.some((asset) => isCaseInsensitiveMatch(asset.symbol, nativeAsset.symbol) || addressesEqual(asset.address, ethers.constants.AddressZero))
+
+    return hasNativeAsset ? assets : [nativeAsset, ...assets];
   }, [sdk]);
 
   const getAssetsBalancesForChainId = useCallback(async (assets: TokenListToken[], assetsChainId: number) => {
@@ -168,7 +177,7 @@ const EtherspotContextProvider = ({
 
         const supportedAsset = assets.find(({ symbol: supportedSymbol, address: supportedAddress }) => {
           // `token === null` means it's chain native token
-          if (balanceAssetAddress === null) return isCaseInsensitiveMatch(supportedSymbol, nativeAssetPerChainId[chainId].symbol);
+          if (balanceAssetAddress === null) return isCaseInsensitiveMatch(supportedSymbol, nativeAssetPerChainId[assetsChainId].symbol);
           return addressesEqual(supportedAddress, balanceAssetAddress);
         });
 
