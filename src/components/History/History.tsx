@@ -19,7 +19,9 @@ const History = () => {
     //
   }
 
-  const storedGroupedCrossChainActionsIds = Object.keys(storedGroupedCrossChainActions);
+  const storedGroupedCrossChainActionsIds = Object.keys(storedGroupedCrossChainActions)
+    .sort()
+    .reverse();
 
   return (
     <div>

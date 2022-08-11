@@ -14,11 +14,13 @@ import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import {
-  addressesEqual,
   formatAmountDisplay,
   formatAssetAmountInput,
 } from '../../utils/common';
-import { ErrorMessages } from '../../utils/validation';
+import {
+  addressesEqual,
+  ErrorMessages,
+} from '../../utils/validation';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 
@@ -27,6 +29,7 @@ export interface SendAssetTransactionBlockValues {
   chainId?: number;
   assetAddress?: string;
   assetDecimals?: number;
+  assetSymbol?: string;
   amount?: string;
 }
 
@@ -78,6 +81,7 @@ const SendAssetTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'assetDecimals');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
   }, [selectedNetwork]);
 
   const updateAvailableNetworks = useCallback(async () => {
@@ -154,8 +158,10 @@ const SendAssetTransactionBlock = ({
       setTransactionBlockValues(transactionBlockId, {
         chainId: selectedNetwork?.value,
         assetAddress: asset?.address,
+        assetSymbol: asset?.symbol,
         assetDecimals: asset?.decimals,
         amount,
+        receiverAddress,
       });
     }
   }, [
@@ -163,6 +169,7 @@ const SendAssetTransactionBlock = ({
     selectedNetwork,
     availableAssets,
     selectedAsset,
+    receiverAddress,
     amount,
   ]);
 
@@ -197,12 +204,14 @@ const SendAssetTransactionBlock = ({
           onOptionSelect={(option) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'assetDecimals');
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
             setSelectedAsset(option);
           }}
           errorMessage={
             errorMessages?.amount
-            || errorMessages?.assetDecimals
-            || errorMessages?.assetAddress
+              || errorMessages?.assetDecimals
+              || errorMessages?.assetAddress
+              || errorMessages?.assetSymbol
           }
         />
       )}

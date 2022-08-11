@@ -8,7 +8,7 @@ import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
 import { TransactionBlock } from '../providers/TransactionBuilderContextProvider';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { addressesEqual } from './common';
+import { addressesEqual } from './validation';
 
 
 interface AssetTransfer {
@@ -146,6 +146,7 @@ export const buildCrossChainAction = async (
     && !!transactionBlock?.values?.chainId
     && !!transactionBlock?.values?.assetAddress
     && !!transactionBlock?.values?.assetDecimals
+    && !!transactionBlock?.values?.assetSymbol
     && !!transactionBlock?.values?.receiverAddress
     && !!transactionBlock?.values?.amount) {
     try {
@@ -154,11 +155,13 @@ export const buildCrossChainAction = async (
           chainId,
           assetAddress,
           assetDecimals,
+          assetSymbol,
           receiverAddress,
           amount,
         },
       } = transactionBlock;
 
+      const amountBN = ethers.utils.parseUnits(amount, assetDecimals);
 
       const preview = {
         chainId,
@@ -166,12 +169,10 @@ export const buildCrossChainAction = async (
         asset: {
           address: assetAddress,
           decimals: assetDecimals,
-          symbol: '$$$',
-          amount,
+          symbol: assetSymbol,
+          amount: amountBN.toString(),
         },
       };
-
-      const amountBN = ethers.utils.parseUnits(amount, assetDecimals);
 
       let transferTransaction: CrossChainActionTransaction = {
         chainId,

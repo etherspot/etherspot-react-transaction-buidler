@@ -207,7 +207,7 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [draftTransactions, setDraftTransactions] = useState<CrossChainAction[] | null>(null);
+  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[] | null>(null);
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
   const { accountAddress, connect, isConnecting, sdk, providerAddress } = useEtherspot();
@@ -236,7 +236,7 @@ const TransactionBuilderContextProvider = ({
 
     setTransactionBlockValidationErrors(validationErrors);
 
-    let newDraftTransactions: CrossChainAction[] = [];
+    let newCrossChainActions: CrossChainAction[] = [];
     let errorMessage;
     if (Object.keys(validationErrors).length === 0) {
       // keep blocks in order
@@ -246,18 +246,22 @@ const TransactionBuilderContextProvider = ({
           errorMessage = transaction?.errorMessage ?? `Failed to build ${transactionBlock?.title ?? 'a'} transaction!`;
           break;
         }
-        newDraftTransactions = [...newDraftTransactions, transaction.crossChainAction];
+        newCrossChainActions = [...newCrossChainActions, transaction.crossChainAction];
       }
     }
 
     setIsChecking(false);
+
+    if (!errorMessage && !newCrossChainActions?.length) {
+      errorMessage = `Failed to proceed with selected cross chain actions!`
+    }
 
     if (errorMessage) {
       showAlertModal(errorMessage);
       return;
     }
 
-    setDraftTransactions(newDraftTransactions);
+    setCrossChainActions(newCrossChainActions);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
 
     const onSubmitClick = useCallback(async () => {
@@ -265,24 +269,24 @@ const TransactionBuilderContextProvider = ({
       setIsSubmitting(true);
 
 
-      if (!draftTransactions) {
+      if (!crossChainActions) {
         setIsSubmitting(false);
         showAlertModal('Unable to dispatch transactions.');
         return;
       }
 
-      const transactionsToDispatch = draftTransactions.filter(({ transactions }) => !!transactions?.length)
+      const transactionsToDispatch = crossChainActions.filter(({ transactions }) => !!transactions?.length)
       if (!transactionsToDispatch?.length) {
         setIsSubmitting(false);
         showAlertModal('Unable to dispatch transactions.');
         return;
       }
 
-      setDraftTransactions([]);
+      setCrossChainActions([]);
       setTransactionBlocks([]);
       dispatchCrossChainActions(transactionsToDispatch);
       setIsSubmitting(false);
-    }, [dispatchCrossChainActions, draftTransactions, showAlertModal, isSubmitting]);
+    }, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting]);
 
     const setTransactionBlockValues = useCallback((transactionBlockId: number, values: TransactionBlockValues) => {
     setTransactionBlocks((current) => {
@@ -341,7 +345,7 @@ const TransactionBuilderContextProvider = ({
             Processing transactions...
           </PrimaryButton>
         )}
-        {!draftTransactions?.length && !processingDispatched && (
+        {!crossChainActions?.length && !processingDispatched && (
           <>
             {transactionBlocks.map((transactionBlock, transactionBlockId) => (
               <TransactionBlockWrapper
@@ -417,14 +421,14 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {!!draftTransactions?.length && !processingDispatched && (
+        {!!crossChainActions?.length && !processingDispatched && (
           <>
             <PreviewWrapper>
-              {draftTransactions.map((draftTransaction) => (
+              {crossChainActions.map((crossChainAction) => (
                 <ActionPreview
-                  key={`preview-${draftTransaction.id}`}
-                  data={draftTransaction.preview}
-                  type={draftTransaction.type}
+                  key={`preview-${crossChainAction.id}`}
+                  data={crossChainAction.preview}
+                  type={crossChainAction.type}
                 />
               ))}
             </PreviewWrapper>
@@ -434,7 +438,7 @@ const TransactionBuilderContextProvider = ({
             <br/>
             <SecondaryButton
               marginTop={10}
-              onClick={() => setDraftTransactions([])}
+              onClick={() => setCrossChainActions([])}
             >
               Go back
             </SecondaryButton>

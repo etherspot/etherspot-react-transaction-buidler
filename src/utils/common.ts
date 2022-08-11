@@ -1,6 +1,3 @@
-import { ethers } from 'ethers';
-import { add } from 'lodash';
-
 export const formatAssetAmountInput = (
   amount: string,
   decimals: number = 18,
@@ -27,19 +24,6 @@ export const formatAmountDisplay = (amount: string): string => {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
 };
 
-export const isCaseInsensitiveMatch = (a: string | undefined, b: string | undefined): boolean => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  return a.toLowerCase() === b.toLowerCase();
-};
-
-export const addressesEqual = (address1: string | undefined, address2: string | undefined): boolean => {
-  if (address1 === address2) return true;
-  if (!address1 || !address2) return false;
-
-  return isCaseInsensitiveMatch(address1, address2);
-};
-
 export const humanizeHexString = (
   hexString: string,
   startCharsCount: number = 5,
@@ -59,14 +43,3 @@ export const humanizeHexString = (
   return hexString;
 };
 
-export const isValidEthereumAddress = (address: string | undefined): boolean => {
-  if (!address) return false;
-
-  try {
-    return ethers.utils.isAddress(address);
-  } catch (e) {
-    //
-  }
-
-  return false;
-};

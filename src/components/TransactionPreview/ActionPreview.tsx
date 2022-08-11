@@ -2,14 +2,10 @@ import React from 'react';
 import styled from 'styled-components';
 import { ethers } from 'ethers';
 
-import {
-  CrossChainActionPreview,
-} from '../../utils/transaction';
+import { CrossChainActionPreview } from '../../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
-import {
-  formatAmountDisplay,
-} from '../../utils/common';
+import { formatAmountDisplay } from '../../utils/common';
 import { DispatchedCrossChainActionTransaction } from '../../providers/TransactionsDispatcherContextProvider';
 import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../../constants/transactionDispatcherConstants';
 
@@ -36,7 +32,23 @@ const ActionPreview = ({
   type,
   transactions,
 }: TransactionPreviewInterface) => {
+  const allStatuses: string[] = transactions?.reduce((statuses: string[], transaction) => {
+    if (statuses.includes(transaction.status)) return statuses;
+    return statuses.concat(transaction.status);
+  }, []) ?? [];
+
+  let actionStatus = allStatuses?.length && DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT;
+  if (allStatuses.includes(DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED)) {
+    actionStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED
+  } else if (allStatuses.includes(DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING)) {
+    actionStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING;
+  } else if (allStatuses.includes(DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED)) {
+    actionStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
+  }
+
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION) {
+    // @ts-ignore
+    // TODO: fix type
     const { fromAsset, toAsset, fromChainId, toChainId } = data;
 
     const fromChainTitle = CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
@@ -70,6 +82,36 @@ const ActionPreview = ({
           To receive:
           &nbsp;<strong>{toAmount} ${toAsset.symbol}</strong>
           &nbsp;on <strong>{toChainTitle}</strong>
+        </TransactionAction>
+        {!!actionStatus && (
+          <TransactionAction>
+            Status:
+            &nbsp;<strong>{actionStatus}</strong>
+          </TransactionAction>
+        )}
+      </TransactionActionsWrapper>
+    );
+  }
+
+  if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION) {
+    // @ts-ignore
+    // TODO: fix type
+    const { asset, chainId, receiverAddress } = data;
+
+    const chainTitle = CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
+
+    const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
+
+    return (
+      <TransactionActionsWrapper>
+        <TransactionAction>
+          To send:
+          &nbsp;<strong>{amount} ${asset.symbol}</strong>
+          &nbsp;on <strong>{chainTitle}</strong>
+        </TransactionAction>
+        <TransactionAction>
+          Receiver address:
+          &nbsp;<strong>{receiverAddress}</strong>
         </TransactionAction>
         {!!actionStatus && (
           <TransactionAction>

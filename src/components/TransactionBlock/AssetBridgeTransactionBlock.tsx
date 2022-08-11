@@ -14,11 +14,13 @@ import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import {
-  addressesEqual,
   formatAmountDisplay,
   formatAssetAmountInput,
 } from '../../utils/common';
-import { ErrorMessages } from '../../utils/validation';
+import {
+  addressesEqual,
+  ErrorMessages,
+} from '../../utils/validation';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 

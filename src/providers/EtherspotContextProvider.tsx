@@ -19,11 +19,11 @@ import { ethers } from 'ethers';
 
 import { EtherspotContext } from '../contexts';
 import { nativeAssetPerChainId } from '../utils/chain';
+import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import {
   addressesEqual,
   isCaseInsensitiveMatch,
-} from '../utils/common';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
+} from '../utils/validation';
 
 const EtherspotContextProvider = ({
   children,
