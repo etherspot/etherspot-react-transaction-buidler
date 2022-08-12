@@ -13,6 +13,9 @@ export const CHAIN_ID = {
   MUMBAI: 80001,
   OPTIMISM: 10,
   OPTIMISM_KOVAN: 69,
+  ARBITRUM: 42161,
+  AURORA: 1313161554,
+  FANTOM: 250,
 };
 
 export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
@@ -63,5 +66,29 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     symbol: 'ETH',
     decimals: 18,
     logoURI: 'https://tokens.1inch.io/0x4200000000000000000000000000000000000042.png',
+  },
+  [CHAIN_ID.AURORA]: {
+    chainId: CHAIN_ID.AURORA,
+    address: ethers.constants.AddressZero,
+    name: 'Aurora',
+    symbol: 'ETH',
+    decimals: 18,
+    logoURI: 'https://app.1inch.io/assets/images/network-logos/aurora.svg',
+  },
+  [CHAIN_ID.ARBITRUM]: {
+    chainId: CHAIN_ID.ARBITRUM,
+    address: ethers.constants.AddressZero,
+    name: 'Arbitrum',
+    symbol: 'ETH',
+    decimals: 18,
+    logoURI: 'https://app.1inch.io/assets/images/network-logos/arbitrum.svg',
+  },
+  [CHAIN_ID.FANTOM]: {
+    chainId: CHAIN_ID.FANTOM,
+    address: ethers.constants.AddressZero,
+    name: 'Fantom',
+    symbol: 'FTM',
+    decimals: 18,
+    logoURI: 'https://app.1inch.io/assets/images/network-logos/fantom.svg',
   },
 };
