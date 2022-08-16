@@ -341,10 +341,6 @@ const TransactionBuilderContextProvider = ({
     return dispatchedCrossChainActions?.find((crossChainAction) => crossChainAction.id === processingCrossChainActionId);
   }, [processingCrossChainActionId, dispatchedCrossChainActions]);
 
-  console.log({ dispatchedCrossChainActions })
-  console.log({ processingCrossChainActionId })
-  console.log({ crossChainActionInProcessing })
-
   return (
     <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
       <TopNavigation>

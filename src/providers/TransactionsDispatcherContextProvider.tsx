@@ -74,15 +74,36 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     setDispatchId(newDispatchId)
   }, [setCrossChainActions]);
 
+  const updatedStoredCrossChainActions = useCallback((dispatchIdToUpdate: string, crossChainActionsToUpdate: DispatchedCrossChainAction[]) => {
+    try {
+      const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
+      let storedGroupedCrossChainActions = {};
+      if (storedGroupedCrossChainActionsRaw) storedGroupedCrossChainActions = JSON.parse(storedGroupedCrossChainActionsRaw)
+      setItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS, JSON.stringify({ ...storedGroupedCrossChainActions, [dispatchIdToUpdate]: crossChainActionsToUpdate }));
+    } catch (e) {
+      //
+    }
+  }, []);
+
   const resetCrossChainActions = useCallback((errorMessage?: string) => {
-    setProcessingCrossChainActionId(null);
-    console.log('setCrossChainActions resetCrossChainActions =!!')
+    if (dispatchId && crossChainActions?.length) {
+      const updatedCrossChainActions = crossChainActions.map((crossChainAction) => {
+        const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransactions) => ({
+          ...crossChainActionTransactions,
+          status: DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED,
+        }))
+        return { ...crossChainAction, transactions: updatedTransactions };
+      });
+      updatedStoredCrossChainActions(dispatchId, updatedCrossChainActions);
+    }
+
     setCrossChainActions([]);
+    setProcessingCrossChainActionId(null);
     setDispatchId(null);
 
     if (!errorMessage) return;
     showAlertModal(errorMessage)
-  }, []);
+  }, [dispatchId, crossChainActions]);
 
   const processDispatchedCrossChainActions = useCallback(async () => {
     if (!crossChainActions?.length || !dispatchId) return;
@@ -163,7 +184,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       return { ...crossChainAction, transactions: updatedTransactions };
     });
 
-    console.log('setCrossChainActions processDispatchedCrossChainActions!!')
     setCrossChainActions(updatedCrossChainActions);
 
     showAlertModal('Transaction sent!');
@@ -175,15 +195,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
   useEffect(() => {
     if (!dispatchId || !crossChainActions?.length) return;
-
-    try {
-      const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
-      let storedGroupedCrossChainActions = {};
-      if (storedGroupedCrossChainActionsRaw) storedGroupedCrossChainActions = JSON.parse(storedGroupedCrossChainActionsRaw)
-      setItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS, JSON.stringify({ ...storedGroupedCrossChainActions, [dispatchId]: crossChainActions }));
-    } catch (e) {
-      //
-    }
+    updatedStoredCrossChainActions(dispatchId, crossChainActions);
   }, [crossChainActions, dispatchId]);
 
   const restoreProcessing = useCallback(async () => {
@@ -255,7 +267,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     // set oldest pending
     if (oldestGroupedCrossChainActionsId) {
       setDispatchId(oldestGroupedCrossChainActionsId);
-      console.log('setCrossChainActions restoreProcessing!!')
       setCrossChainActions(storedGroupedCrossChainActions[oldestGroupedCrossChainActionsId]);
     }
 
@@ -298,7 +309,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
           if (!updatedStatus && !updatedTransactionHash) return;
 
-          console.log('setCrossChainActions subscribe!!')
           setCrossChainActions((current) => current.map((crossChainAction) => {
             const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransaction) => {
               if (pendingCrossChainActionTransaction.id !== crossChainActionTransaction.id) return crossChainActionTransaction;
