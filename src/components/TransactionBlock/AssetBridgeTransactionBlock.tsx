@@ -51,7 +51,7 @@ const AssetBridgeTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
 }: {
-  id: number;
+  id: string;
   errorMessages?: ErrorMessages;
 }) => {
   const [amount, setAmount] = useState<string>('');

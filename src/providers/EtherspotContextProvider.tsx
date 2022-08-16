@@ -25,6 +25,8 @@ import {
   isCaseInsensitiveMatch,
 } from '../utils/validation';
 
+let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
+
 const EtherspotContextProvider = ({
   children,
   provider: defaultProvider,
@@ -65,7 +67,9 @@ const EtherspotContextProvider = ({
 
   useEffect(() => { setMappedProvider(); }, [setMappedProvider]);
 
-  const getSdkForChainId = useCallback((sdkChainId: number) => {
+  const getSdkForChainId = useCallback((sdkChainId: number, forceNewInstance: boolean = false) => {
+    if (sdkPerChain[sdkChainId] && !forceNewInstance) return sdkPerChain[sdkChainId];
+
     if (!provider) return null;
 
     const networkName = CHAIN_ID_TO_NETWORK_NAME[sdkChainId];
@@ -73,11 +77,18 @@ const EtherspotContextProvider = ({
 
     if (!networkName) return null;
 
-    return new EtherspotSdk(provider, {
+    const sdkForChain = new EtherspotSdk(provider, {
       networkName,
       env: envName,
       omitWalletProviderNetworkCheck: true,
     });
+
+    sdkPerChain = {
+      ...sdkPerChain,
+      [sdkChainId]: sdkForChain,
+    }
+
+    return sdkForChain;
   }, [provider]);
 
   const sdk = useMemo(() => {

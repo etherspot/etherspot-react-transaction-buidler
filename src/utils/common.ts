@@ -1,3 +1,5 @@
+import { uniqueId } from 'lodash';
+
 export const formatAssetAmountInput = (
   amount: string,
   decimals: number = 18,
@@ -42,4 +44,7 @@ export const humanizeHexString = (
 
   return hexString;
 };
+
+
+export const getTimeBasedUniqueId = (): string => uniqueId(`${+new Date()}-`);
 

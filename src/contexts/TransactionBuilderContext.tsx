@@ -5,8 +5,8 @@ import { TransactionBlockValues } from '../providers/TransactionBuilderContextPr
 export interface TransactionBuilderContextData {
   initialized: boolean;
   data: {
-    setTransactionBlockValues: (id: number, values: TransactionBlockValues) => void;
-    resetTransactionBlockFieldValidationError: (id: number, field: string) => void;
+    setTransactionBlockValues: (id: string, values: TransactionBlockValues) => void;
+    resetTransactionBlockFieldValidationError: (id: string, field: string) => void;
   }
 }
 

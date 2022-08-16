@@ -19,6 +19,7 @@ const History = () => {
     //
   }
 
+  // newest to oldest
   const storedGroupedCrossChainActionsIds = Object.keys(storedGroupedCrossChainActions)
     .sort()
     .reverse();
@@ -29,14 +30,17 @@ const History = () => {
         <p>No history.</p>
       )}
       {storedGroupedCrossChainActionsIds.map((id) => (
-        storedGroupedCrossChainActions[id].map((crossChainAction) => (
-          <ActionPreview
-            key={`action-preview-${id}-${crossChainAction.id}`}
-            data={crossChainAction.preview}
-            transactions={crossChainAction.transactions}
-            type={crossChainAction.type}
-          />
-        ))
+        storedGroupedCrossChainActions[id]
+          .sort()
+          .reverse()
+          .map((crossChainAction) => (
+            <ActionPreview
+              key={`action-preview-${id}-${crossChainAction.id}`}
+              data={crossChainAction.preview}
+              transactions={crossChainAction.transactions}
+              type={crossChainAction.type}
+            />
+          ))
       ))}
     </div>
   )

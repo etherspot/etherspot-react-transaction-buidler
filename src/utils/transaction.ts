@@ -1,5 +1,6 @@
 import { Sdk as EtherspotSdk } from 'etherspot';
 import { ethers } from 'ethers';
+import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
 import { ExecuteAccountTransactionDto } from 'etherspot/dist/sdk/dto/execute-account-transaction.dto';
@@ -38,7 +39,8 @@ export interface CrossChainActionTransaction extends ExecuteAccountTransactionDt
 }
 
 export interface CrossChainAction {
-  id: number;
+  id: string;
+  submitTimestamp: number;
   type: string;
   preview: CrossChainActionPreview;
   transactions: CrossChainActionTransaction[];
@@ -48,6 +50,9 @@ export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
   transactionBlock: TransactionBlock,
 ): Promise<{ errorMessage?: string; crossChainAction?: CrossChainAction; }> => {
+  const submitTimestamp = +new Date();
+  const crossChainActionId = uniqueId(`${submitTimestamp}-`);
+
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION
     && !!transactionBlock?.values?.fromChainId
     && !!transactionBlock?.values?.toChainId
@@ -130,7 +135,8 @@ export const buildCrossChainAction = async (
       }
 
       const crossChainAction: CrossChainAction = {
-        id: +new Date(),
+        id: crossChainActionId,
+        submitTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION,
         preview,
         transactions,
@@ -197,7 +203,8 @@ export const buildCrossChainAction = async (
       }
 
       const crossChainAction: CrossChainAction = {
-        id: +new Date(),
+        id: crossChainActionId,
+        submitTimestamp,
         type: TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION,
         preview,
         transactions: [transferTransaction],

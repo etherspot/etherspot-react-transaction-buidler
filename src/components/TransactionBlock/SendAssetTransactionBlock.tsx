@@ -51,7 +51,7 @@ const SendAssetTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
 }: {
-  id: number;
+  id: string;
   errorMessages?: ErrorMessages;
 }) => {
   const [receiverAddress, setReceiverAddress] = useState<string>('');

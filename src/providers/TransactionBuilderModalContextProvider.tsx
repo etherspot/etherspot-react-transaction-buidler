@@ -42,6 +42,10 @@ const ListItem = styled.div`
   }
 `;
 
+const AlertWrapper = styled.div`
+  margin: 15px 0;
+`;
+
 let confirmCallback: (() => void) | null = null;
 let optionSelectCallback: ((option: SelectOption) => void) | null = null;
 
@@ -146,7 +150,7 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
       {!!alertModal && (
         <Modal>
           <CloseButton onClick={hideAlertModal} top={12} right={20} />
-          <Paragraph marginTop={15}>{alertModal}</Paragraph>
+          <AlertWrapper>{alertModal}</AlertWrapper>
         </Modal>
       )}
     </TransactionBuilderModalContext.Provider>

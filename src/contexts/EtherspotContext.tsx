@@ -11,7 +11,7 @@ export interface EtherspotContextData {
     connect: () => Promise<string | undefined>;
     chainId: number;
     setChainId: (chainId: number) => void;
-    getSdkForChainId: (chainId: number) => EtherspotSdk | null;
+    getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
     isConnecting: boolean;
     sdk: EtherspotSdk | null;
     getSupportedAssetsForChainId: (chainId: number) => Promise<TokenListToken[]>;
