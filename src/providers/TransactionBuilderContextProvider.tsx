@@ -174,6 +174,12 @@ const MenuItem = styled.div`
   }
 `;
 
+const ProcessingTitle = styled.h3`
+  margin: 0 0 25px;
+  padding: 0 0 5px;
+  border-bottom: 1px solid #000;
+`;
+
 const availableTransactionBlocks: AvailableTransactionBlock[] = [
   {
     title: 'Asset bridge',
@@ -225,7 +231,7 @@ const TransactionBuilderContextProvider = ({
 
   const { accountAddress, connect, isConnecting, sdk, providerAddress } = useEtherspot();
   const { showConfirmModal, showAlertModal } = useTransactionBuilderModal();
-  const { dispatchCrossChainActions, processingDispatched } = useTransactionsDispatcher();
+  const { dispatchCrossChainActions, processingCrossChainActionId, dispatchedCrossChainActions } = useTransactionsDispatcher();
 
   const onContinueClick = useCallback(async () => {
     if (!sdk) {
@@ -330,6 +336,15 @@ const TransactionBuilderContextProvider = ({
 
   const hasTransactionBlockAdded = transactionBlocks.some((transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION);
 
+  const crossChainActionInProcessing = useMemo(() => {
+    if (!processingCrossChainActionId) return;
+    return dispatchedCrossChainActions?.find((crossChainAction) => crossChainAction.id === processingCrossChainActionId);
+  }, [processingCrossChainActionId, dispatchedCrossChainActions]);
+
+  console.log({ dispatchedCrossChainActions })
+  console.log({ processingCrossChainActionId })
+  console.log({ crossChainActionInProcessing })
+
   return (
     <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
       <TopNavigation>
@@ -337,14 +352,14 @@ const TransactionBuilderContextProvider = ({
           {providerAddress && (
             <WalletAddress>
               Wallet: {humanizeHexString(providerAddress)}
-              <CopyButton valueToCopy={providerAddress} marginLeft={5} />
+              <CopyButton valueToCopy={providerAddress} left={5} />
             </WalletAddress>
           )}
           {!providerAddress && <WalletAddress>Wallet: Not connected</WalletAddress>}
           {accountAddress && (
             <WalletAddress>
               Account: {humanizeHexString(accountAddress)}
-              <CopyButton valueToCopy={accountAddress} marginLeft={5} />
+              <CopyButton valueToCopy={accountAddress} left={5} />
             </WalletAddress>
           )}
           {!accountAddress && <WalletAddress>Account: <SecondaryButton onClick={connect} disabled={isConnecting} noPadding>Connect</SecondaryButton></WalletAddress>}
@@ -352,25 +367,29 @@ const TransactionBuilderContextProvider = ({
         <MenuButton size={20} onClick={() => setShowMenu(!showMenu)} />
       </TopNavigation>
       <div onClick={hideMenu}>
-        {processingDispatched && (
+        {!!processingCrossChainActionId && (
           <>
-            {crossChainActions && (
+            {crossChainActionInProcessing && (
               <PreviewWrapper>
-                {crossChainActions.map((crossChainAction) => (
-                  <ActionPreview
-                    key={`preview-${crossChainAction.id}`}
-                    data={crossChainAction.preview}
-                    type={crossChainAction.type}
-                  />
-                ))}
+                <ProcessingTitle>
+                  Action
+                  &nbsp;{dispatchedCrossChainActions?.map((crossChainAction) => crossChainAction.id).indexOf(processingCrossChainActionId) + 1}
+                  &nbsp;of {dispatchedCrossChainActions?.length}
+                </ProcessingTitle>
+                <ActionPreview
+                  key={`preview-${crossChainActionInProcessing.id}`}
+                  data={crossChainActionInProcessing.preview}
+                  type={crossChainActionInProcessing.type}
+                  noBottomBorder
+                />
               </PreviewWrapper>
             )}
             <PrimaryButton disabled marginTop={30} marginBottom={30}>
-              Processing transactions...
+              Processing...
             </PrimaryButton>
           </>
         )}
-        {!crossChainActions?.length && !processingDispatched && (
+        {!crossChainActions?.length && !processingCrossChainActionId && (
           <>
             {transactionBlocks.map((transactionBlock, id) => (
               <TransactionBlockWrapper
@@ -446,7 +465,7 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {!!crossChainActions?.length && !processingDispatched && (
+        {!!crossChainActions?.length && !processingCrossChainActionId && (
           <>
             <PreviewWrapper>
               {crossChainActions.map((crossChainAction) => (

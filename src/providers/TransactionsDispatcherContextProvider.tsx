@@ -52,7 +52,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
   const initialized = useMemo(() => true, []);
 
-  const [processingDispatched, setProcessingDispatched] = useState<boolean>(false);
+  const [processingCrossChainActionId, setProcessingCrossChainActionId] = useState<string | null>(null);
   const [crossChainActions, setCrossChainActions] = useState<DispatchedCrossChainAction[]>([]);
   const [dispatchId, setDispatchId] = useState<string | null>(null);
 
@@ -75,7 +75,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }, [setCrossChainActions]);
 
   const resetCrossChainActions = useCallback((errorMessage?: string) => {
-    setProcessingDispatched(false);
+    setProcessingCrossChainActionId(null);
+    console.log('setCrossChainActions resetCrossChainActions =!!')
     setCrossChainActions([]);
     setDispatchId(null);
 
@@ -97,8 +98,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     const sdkForChain = getSdkForChainId(targetChainId);
     if (!sdkForChain) return;
 
-    if (processingDispatched) return;
-    setProcessingDispatched(true);
+    if (processingCrossChainActionId) return;
+    setProcessingCrossChainActionId(firstUnsentCrossChainAction.id);
 
     if (!targetChainId) {
       resetCrossChainActions('Unable to find target chain ID!')
@@ -162,12 +163,13 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       return { ...crossChainAction, transactions: updatedTransactions };
     });
 
+    console.log('setCrossChainActions processDispatchedCrossChainActions!!')
     setCrossChainActions(updatedCrossChainActions);
 
     showAlertModal('Transaction sent!');
 
-    setProcessingDispatched(false);
-  }, [crossChainActions, getSdkForChainId, processingDispatched, resetCrossChainActions, dispatchId]);
+    setProcessingCrossChainActionId(null);
+  }, [crossChainActions, getSdkForChainId, processingCrossChainActionId, resetCrossChainActions, dispatchId]);
 
   useEffect(() => { processDispatchedCrossChainActions(); }, [processDispatchedCrossChainActions]);
 
@@ -253,6 +255,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     // set oldest pending
     if (oldestGroupedCrossChainActionsId) {
       setDispatchId(oldestGroupedCrossChainActionsId);
+      console.log('setCrossChainActions restoreProcessing!!')
       setCrossChainActions(storedGroupedCrossChainActions[oldestGroupedCrossChainActionsId]);
     }
 
@@ -295,6 +298,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
           if (!updatedStatus && !updatedTransactionHash) return;
 
+          console.log('setCrossChainActions subscribe!!')
           setCrossChainActions((current) => current.map((crossChainAction) => {
             const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransaction) => {
               if (pendingCrossChainActionTransaction.id !== crossChainActionTransaction.id) return crossChainActionTransaction;
@@ -324,14 +328,14 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
   const contextData = useMemo(
     () => ({
-      crossChainActions,
+      dispatchedCrossChainActions: crossChainActions,
       dispatchCrossChainActions,
-      processingDispatched,
+      processingCrossChainActionId,
     }),
     [
       crossChainActions,
       dispatchCrossChainActions,
-      processingDispatched,
+      processingCrossChainActionId,
     ],
   );
 

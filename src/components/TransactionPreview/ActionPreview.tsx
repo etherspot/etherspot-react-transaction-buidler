@@ -5,32 +5,39 @@ import { ethers } from 'ethers';
 import { CrossChainActionPreview } from '../../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
-import { formatAmountDisplay } from '../../utils/common';
+import {
+  formatAmountDisplay,
+  humanizeHexString,
+} from '../../utils/common';
 import { DispatchedCrossChainActionTransaction } from '../../providers/TransactionsDispatcherContextProvider';
 import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../../constants/transactionDispatcherConstants';
+import { CopyButton } from '../Button';
 
-const TransactionActionsWrapper = styled.div`
+const TransactionActionsWrapper = styled.div<{ noBottomBorder?: boolean }>`
   padding-bottom: 15px;
   margin-bottom: 15px;
-  border-bottom: 1px solid #000;
+  ${({ noBottomBorder }) => !noBottomBorder && 'border-bottom: 1px solid #000;'}
   text-align: left;
 `;
 
 const TransactionAction = styled.p`
   margin-bottom: 5px;
   font-size: 14px;
+  word-break: break-all;
 `;
 
 interface TransactionPreviewInterface {
   data: CrossChainActionPreview;
   type: string;
   transactions?: DispatchedCrossChainActionTransaction[];
+  noBottomBorder?: boolean;
 }
 
 const ActionPreview = ({
   data,
   type,
   transactions,
+  noBottomBorder,
 }: TransactionPreviewInterface) => {
   const allStatuses: string[] = transactions?.reduce((statuses: string[], transaction) => {
     if (statuses.includes(transaction.status)) return statuses;
@@ -72,7 +79,7 @@ const ActionPreview = ({
     }
 
     return (
-      <TransactionActionsWrapper>
+      <TransactionActionsWrapper noBottomBorder={noBottomBorder}>
         <TransactionAction>
           To send:
           &nbsp;<strong>{fromAmount} ${fromAsset.symbol}</strong>
@@ -103,7 +110,7 @@ const ActionPreview = ({
     const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
 
     return (
-      <TransactionActionsWrapper>
+      <TransactionActionsWrapper noBottomBorder={noBottomBorder}>
         <TransactionAction>
           To send:
           &nbsp;<strong>{amount} ${asset.symbol}</strong>
@@ -111,7 +118,7 @@ const ActionPreview = ({
         </TransactionAction>
         <TransactionAction>
           Receiver address:
-          &nbsp;<strong>{receiverAddress}</strong>
+          &nbsp;<strong>{humanizeHexString(receiverAddress)}<CopyButton valueToCopy={receiverAddress} left={5} top={1} /></strong>
         </TransactionAction>
         {!!actionStatus && (
           <TransactionAction>

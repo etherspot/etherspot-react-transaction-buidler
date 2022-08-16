@@ -6,8 +6,13 @@ import React, {
 import { FaClipboardCheck, FaRegClipboard } from 'react-icons/fa';
 
 
-const Wrapper = styled.span<{ marginLeft?: number }>`
-  ${({ marginLeft }) => !!marginLeft && `margin-left: ${marginLeft}px;`}
+const Wrapper = styled.span<{
+  left?: number;
+  top?: number;
+}>`
+  position: relative;
+  ${({ left }) => !!left && `left: ${left}px;`}
+  ${({ top }) => !!top && `top: ${top}px;`}
 `;
 
 const CopyButtonIcon = styled(FaRegClipboard)`
@@ -24,10 +29,11 @@ const CopiedButtonIcon = styled(FaClipboardCheck)`
 
 interface CopyButtonProps {
   valueToCopy: string;
-  marginLeft?: number;
+  left?: number;
+  top?: number;
 }
 
-const CopyButton = ({ valueToCopy, marginLeft }: CopyButtonProps) => {
+const CopyButton = ({ valueToCopy, left, top }: CopyButtonProps) => {
   const [copied, setCopied] = useState(false);
 
   const onCopy = useCallback(() => {
@@ -37,7 +43,7 @@ const CopyButton = ({ valueToCopy, marginLeft }: CopyButtonProps) => {
   }, []);
 
   return (
-    <Wrapper marginLeft={marginLeft}>
+    <Wrapper left={left} top={top}>
       {!copied && <CopyButtonIcon onClick={onCopy} size={15} />}
       {copied && <CopiedButtonIcon onClick={() => setCopied(false)} size={15} />}
     </Wrapper>
