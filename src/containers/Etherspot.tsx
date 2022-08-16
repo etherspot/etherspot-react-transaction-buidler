@@ -9,10 +9,10 @@ import {
   TransactionsDispatcherContextProvider,
 } from '../providers';
 
-import { TransactionBlock } from '../providers/TransactionBuilderContextProvider';
+import { AvailableTransactionBlock } from '../providers/TransactionBuilderContextProvider';
 
 interface EtherspotProps {
-  defaultTransactionBlocks?: TransactionBlock[];
+  defaultTransactionBlocks?: AvailableTransactionBlock[];
   provider: WalletProviderLike;
   chainId?: number;
 }

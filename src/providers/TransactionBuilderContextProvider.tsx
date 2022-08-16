@@ -59,7 +59,7 @@ export interface AvailableTransactionBlock {
 }
 
 export interface TransactionBuilderContextProps {
-  defaultTransactionBlocks?: TransactionBlock[];
+  defaultTransactionBlocks?: AvailableTransactionBlock[];
 }
 
 const TransactionBlockWrapper = styled.div<{ last?: boolean }>`
