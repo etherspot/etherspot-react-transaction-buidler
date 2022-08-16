@@ -53,7 +53,7 @@ export interface TransactionBlock {
 }
 
 export interface AvailableTransactionBlock {
-  title: string;
+  title?: string;
   type?: string;
   disabled?: boolean;
 }
