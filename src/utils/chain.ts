@@ -4,19 +4,26 @@ import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-tok
 // Based on: https://chainid.network/
 export const CHAIN_ID = {
   ETHEREUM_MAINNET: 1,
-  ETHEREUM_KOVAN: 42,
   POLYGON: 137,
   BINANCE: 56,
   XDAI: 100,
   AVALANCHE: 43114,
-  FUJI: 43113,
-  MUMBAI: 80001,
   OPTIMISM: 10,
-  OPTIMISM_KOVAN: 69,
   ARBITRUM: 42161,
   AURORA: 1313161554,
   FANTOM: 250,
 };
+
+export const supportedChains = [
+  { chainId: CHAIN_ID.ETHEREUM_MAINNET, title: 'Ethereum' },
+  { chainId: CHAIN_ID.POLYGON, title: 'Polygon' },
+  { chainId: CHAIN_ID.BINANCE, title: 'Binance Smart Chain' },
+  { chainId: CHAIN_ID.XDAI, title: 'Gnosis Chain (xDai)' },
+  { chainId: CHAIN_ID.OPTIMISM, title: 'Optimism' },
+  { chainId: CHAIN_ID.ARBITRUM, title: 'Arbitrum' },
+  { chainId: CHAIN_ID.AURORA, title: 'Aurora' },
+  { chainId: CHAIN_ID.FANTOM, title: 'Fantom' },
+];
 
 export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
   [CHAIN_ID.ETHEREUM_MAINNET]: {

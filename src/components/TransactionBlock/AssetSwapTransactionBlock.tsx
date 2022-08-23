@@ -7,9 +7,11 @@ import React, {
 import styled from 'styled-components';
 import {
   AccountBalance,
-  CrossChainBridgeSupportedChain,
   ExchangeOffer,
 } from 'etherspot';
+import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
+import { ethers } from 'ethers';
+import { debounce } from 'lodash';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
@@ -22,9 +24,7 @@ import {
   addressesEqual,
   ErrorMessages,
 } from '../../utils/validation';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
-import { ethers } from 'ethers';
-import { debounce } from 'lodash';
+import { supportedChains } from '../../utils/chain';
 
 export interface SwapAssetTransactionBlockValues {
   chainId?: number;
@@ -44,10 +44,10 @@ const Title = styled.h3`
   border-bottom: 1px solid #000;
 `;
 
-const mapAvailableNetworkToSelectOption = ({
-  name: title,
+const mapSupportedChainToSelectOption = ({
+  title,
   chainId: value,
-}: CrossChainBridgeSupportedChain): SelectOption => ({
+}: { title: string; chainId: number; }): SelectOption => ({
   title,
   value,
 });
@@ -64,25 +64,16 @@ const AssetSwapTransactionBlock = ({
   const [selectedToAsset, setSelectedToAsset] = useState<SelectOption | null>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<SelectOption | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(null);
-  const [availableNetworks, setAvailableNetworks] = useState<CrossChainBridgeSupportedChain[] | null>(null);
   const [availableFromAssets, setAvailableFromAssets] = useState<TokenListToken[] | null>(null);
   const [availableFromAssetsBalances, setAvailableFromAssetsBalances] = useState<AccountBalance[] | null>(null);
   const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(null);
-  const [isLoadingAvailableNetworks, setIsLoadingAvailableNetworks] = useState<boolean>(false);
   const [isLoadingAvailableAssets, setIsLoadingAvailableAssets] = useState<boolean>(false);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
   const { sdk, getSupportedAssetsForChainId, getAssetsBalancesForChainId, getSdkForChainId } = useEtherspot();
-
-  const networkOptions = useMemo(
-    () => availableNetworks
-      ?.filter((network) => network.sendingEnabled)
-      ?.map(mapAvailableNetworkToSelectOption),
-    [availableNetworks],
-  );
 
   useEffect(() => {
     setSelectedFromAsset(null);
@@ -97,19 +88,6 @@ const AssetSwapTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
   }, [selectedNetwork]);
 
-  const updateAvailableNetworks = useCallback(async () => {
-    if (!sdk) return;
-    setIsLoadingAvailableNetworks(true);
-    try {
-      const networks = await sdk.getCrossChainBridgeSupportedChains();
-      setAvailableNetworks(networks);
-    } catch (e) {
-      //
-    }
-    setIsLoadingAvailableNetworks(false);
-  }, [sdk]);
-
-  useEffect(() => { updateAvailableNetworks(); }, [updateAvailableNetworks]);
 
   const updateAvailableOffers = useCallback(debounce(async () => {
     setSelectedOffer(null);
@@ -252,8 +230,7 @@ const AssetSwapTransactionBlock = ({
       <Title>Swap asset</Title>
       <SelectInput
         label="Network"
-        options={networkOptions ?? []}
-        isLoading={isLoadingAvailableNetworks}
+        options={supportedChains.map(mapSupportedChainToSelectOption)}
         selectedOption={selectedNetwork}
         onOptionSelect={(option) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
