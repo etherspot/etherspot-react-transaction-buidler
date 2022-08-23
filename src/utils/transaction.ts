@@ -7,7 +7,7 @@ import { ExecuteAccountTransactionDto } from 'etherspot/dist/sdk/dto/execute-acc
 
 import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
-import { TransactionBlock } from '../providers/TransactionBuilderContextProvider';
+import { AddedTransactionBlock } from '../providers/TransactionBuilderContextProvider';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual } from './validation';
 
@@ -32,7 +32,16 @@ interface SendAssetActionPreview {
   receiverAddress: string;
 }
 
-export type CrossChainActionPreview = AssetBridgeActionPreview | SendAssetActionPreview;
+interface AssetSwapActionPreview {
+  chainId: number;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  providerName: string;
+}
+
+export type CrossChainActionPreview = AssetBridgeActionPreview
+  | SendAssetActionPreview
+  | AssetSwapActionPreview;
 
 export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {
   chainId: number;
@@ -48,12 +57,12 @@ export interface CrossChainAction {
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
-  transactionBlock: TransactionBlock,
+  transactionBlock: AddedTransactionBlock,
 ): Promise<{ errorMessage?: string; crossChainAction?: CrossChainAction; }> => {
   const submitTimestamp = +new Date();
   const crossChainActionId = uniqueId(`${submitTimestamp}-`);
 
-  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE
     && !!transactionBlock?.values?.fromChainId
     && !!transactionBlock?.values?.toChainId
     && !!transactionBlock?.values?.toAssetAddress
@@ -137,7 +146,7 @@ export const buildCrossChainAction = async (
       const crossChainAction: CrossChainAction = {
         id: crossChainActionId,
         submitTimestamp,
-        type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION,
+        type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
         preview,
         transactions,
       };
@@ -148,7 +157,7 @@ export const buildCrossChainAction = async (
     }
   }
 
-  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
     && !!transactionBlock?.values?.chainId
     && !!transactionBlock?.values?.assetAddress
     && !!transactionBlock?.values?.assetDecimals
@@ -205,7 +214,7 @@ export const buildCrossChainAction = async (
       const crossChainAction: CrossChainAction = {
         id: crossChainActionId,
         submitTimestamp,
-        type: TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION,
+        type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
         preview,
         transactions: [transferTransaction],
       };
@@ -213,6 +222,67 @@ export const buildCrossChainAction = async (
       return { crossChainAction };
     } catch (e) {
       return { errorMessage: 'Failed to get create asset transfer!' };
+    }
+  }
+
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP
+    && !!transactionBlock?.values?.chainId
+    && !!transactionBlock?.values?.fromAssetAddress
+    && !!transactionBlock?.values?.fromAssetDecimals
+    && !!transactionBlock?.values?.fromAssetSymbol
+    && !!transactionBlock?.values?.toAssetAddress
+    && !!transactionBlock?.values?.toAssetDecimals
+    && !!transactionBlock?.values?.toAssetSymbol
+    && !!transactionBlock?.values?.amount
+    && !!transactionBlock?.values?.offer) {
+    try {
+      const {
+        values: {
+          amount,
+          chainId,
+          fromAssetAddress,
+          fromAssetDecimals,
+          fromAssetSymbol,
+          toAssetAddress,
+          toAssetDecimals,
+          toAssetSymbol,
+          offer,
+        },
+      } = transactionBlock;
+
+      const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      const preview = {
+        chainId,
+        fromAsset: {
+          address: fromAssetAddress,
+          decimals: fromAssetDecimals,
+          symbol: fromAssetSymbol,
+          amount: fromAmountBN.toString(),
+        },
+        toAsset: {
+          address: toAssetAddress,
+          decimals: toAssetDecimals,
+          symbol: toAssetSymbol,
+          amount: offer.receiveAmount.toString(),
+        },
+        providerName: offer.provider,
+      };
+
+      const crossChainAction: CrossChainAction = {
+        id: crossChainActionId,
+        submitTimestamp,
+        type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
+        preview,
+        transactions: offer.transactions.map((transaction) => ({
+          ...transaction,
+          chainId,
+        })),
+      };
+
+      return { crossChainAction };
+    } catch (e) {
+      return { errorMessage: 'Failed to build swap transaction!' };
     }
   }
 

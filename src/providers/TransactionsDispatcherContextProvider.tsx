@@ -232,7 +232,9 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
               } catch (e) {
                 //
               }
-            } else if (transactionHash) {
+            }
+
+            if (transactionHash) {
               try {
                 const submittedTransaction = await sdkForChain.getTransaction({ hash: transactionHash });
                 if (submittedTransaction?.status === TransactionStatuses.Completed) {

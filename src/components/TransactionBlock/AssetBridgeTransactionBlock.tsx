@@ -108,7 +108,7 @@ const AssetBridgeTransactionBlock = ({
     if (!sdk) return;
     setIsLoadingAvailableNetworks(true);
     try {
-      const networks = await sdk.getCrossChainBridgeSupportedChains({});
+      const networks = await sdk.getCrossChainBridgeSupportedChains();
       setAvailableNetworks(networks);
     } catch (e) {
       //

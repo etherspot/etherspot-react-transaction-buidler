@@ -7,6 +7,7 @@ export interface TransactionBuilderContextData {
   data: {
     setTransactionBlockValues: (id: string, values: TransactionBlockValues) => void;
     resetTransactionBlockFieldValidationError: (id: string, field: string) => void;
+    resetAllTransactionBlockFieldValidationError: (id: string) => void;
   }
 }
 
@@ -15,6 +16,7 @@ const TransactionBuilderContext = createContext<TransactionBuilderContextData>({
   data: {
     setTransactionBlockValues: () => {},
     resetTransactionBlockFieldValidationError: () => {},
+    resetAllTransactionBlockFieldValidationError: () => {},
   }
 });
 

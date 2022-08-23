@@ -18,10 +18,7 @@ import {
   useTransactionBuilderModal,
   useTransactionsDispatcher,
 } from '../hooks';
-import {
-  AssetBridgeTransactionBlock,
-  SendAssetTransactionBlock,
-} from '../components/TransactionBlock';
+import TransactionBlock from '../components/TransactionBlock';
 import {
   ErrorMessages,
   validateTransactionBlockValues,
@@ -34,6 +31,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { TransactionBuilderContext } from '../contexts';
 import { AssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
 import { SendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
+import { SwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
 import { ActionPreview } from '../components/TransactionPreview';
 import {
   getTimeBasedUniqueId,
@@ -41,21 +39,20 @@ import {
 } from '../utils/common';
 import History from '../components/History';
 
-export type TransactionBlockValues = SendAssetTransactionBlockValues & AssetBridgeTransactionBlockValues;
+export type TransactionBlockValues = SendAssetTransactionBlockValues
+  & AssetBridgeTransactionBlockValues
+  & SwapAssetTransactionBlockValues;
 
-export interface TransactionBlock {
+export interface AddedTransactionBlock {
   id: string;
-  title?: string;
-  type?: string;
+  type: string;
   values?: TransactionBlockValues;
   errorMessages?: ErrorMessages;
-  disabled?: boolean;
 }
 
 export interface AvailableTransactionBlock {
   title?: string;
-  type?: string;
-  disabled?: boolean;
+  type: string;
 }
 
 export interface TransactionBuilderContextProps {
@@ -183,27 +180,31 @@ const ProcessingTitle = styled.h3`
 const availableTransactionBlocks: AvailableTransactionBlock[] = [
   {
     title: 'Asset bridge',
-    type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION,
+    type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
   },
   {
     title: 'Send asset',
-    type: TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION,
+    type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
+  },
+  {
+    title: 'Swap asset',
+    type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
   },
   {
     title: 'LiFi staking (not yet available)',
-    disabled: true,
+    type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
     title: 'Uniswap LP (not yet available)',
-    disabled: true,
+    type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
     title: 'Sushiswap LP (not yet available)',
-    disabled: true,
+    type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
     title: 'Quickswap LP (not yet available)',
-    disabled: true,
+    type: TRANSACTION_BLOCK_TYPE.DISABLED,
   }
 ];
 
@@ -218,7 +219,7 @@ const TransactionBuilderContextProvider = ({
 
   const initialized = useMemo(() => true, []);
 
-  const [transactionBlocks, setTransactionBlocks] = useState<TransactionBlock[]>(
+  const [transactionBlocks, setTransactionBlocks] = useState<AddedTransactionBlock[]>(
     defaultTransactionBlocks?.map((defaultTransactionBlock) => ({ ...defaultTransactionBlock, id: getTimeBasedUniqueId() })) ?? []
   );
 
@@ -262,7 +263,7 @@ const TransactionBuilderContextProvider = ({
       for (const transactionBlock of transactionBlocks) {
         const transaction = await buildCrossChainAction(sdk, transactionBlock);
         if (!transaction?.crossChainAction || transaction?.errorMessage) {
-          errorMessage = transaction?.errorMessage ?? `Failed to build ${transactionBlock?.title ?? 'a'} transaction!`;
+          errorMessage = transaction?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
         }
         newCrossChainActions = [...newCrossChainActions, transaction.crossChainAction];
@@ -321,20 +322,29 @@ const TransactionBuilderContextProvider = ({
     }));
   }
 
+  const resetAllTransactionBlockFieldValidationError = (transactionBlockId: string) => {
+    setTransactionBlockValidationErrors((current) => ({
+      ...current,
+      [transactionBlockId]: {},
+    }));
+  }
+
   const contextData = useMemo(
     () => ({
       setTransactionBlockValues,
       resetTransactionBlockFieldValidationError,
+      resetAllTransactionBlockFieldValidationError,
     }),
     [
       setTransactionBlockValues,
       resetTransactionBlockFieldValidationError,
+      resetAllTransactionBlockFieldValidationError,
     ],
   );
 
   const hideMenu = () => setShowMenu(false);
 
-  const hasTransactionBlockAdded = transactionBlocks.some((transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION);
+  const hasTransactionBlockAdded = transactionBlocks.some((transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE);
 
   const crossChainActionInProcessing = useMemo(() => {
     if (!processingCrossChainActionId) return;
@@ -400,20 +410,12 @@ const TransactionBuilderContextProvider = ({
                     ) => current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)),
                   )}
                 />
-                {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION && (
-                  <AssetBridgeTransactionBlock
-                    key={`block-${transactionBlock.id}`}
-                    id={transactionBlock.id}
-                    errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
-                  />
-                )}
-                {transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET_TRANSACTION && (
-                  <SendAssetTransactionBlock
-                    key={`block-${transactionBlock.id}`}
-                    id={transactionBlock.id}
-                    errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
-                  />
-                )}
+                <TransactionBlock
+                  key={`block-${transactionBlock.id}`}
+                  id={transactionBlock.id}
+                  type={transactionBlock.type}
+                  errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                />
               </TransactionBlockWrapper>
             ))}
             {!showTransactionBlockSelect && (
@@ -433,9 +435,9 @@ const TransactionBuilderContextProvider = ({
               <TransactionBlockSelectWrapper>
                 <CloseButton onClick={() => setShowTransactionBlockSelect(false)} />
                 {availableTransactionBlocks.map((availableTransactionBlock) => {
-                  const isBridgeTransactionBlock = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE_TRANSACTION;
+                  const isBridgeTransactionBlock = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
                   const isBridgeTransactionBlockAndDisabled = isBridgeTransactionBlock && hasTransactionBlockAdded;
-                  const isDisabled = !!availableTransactionBlock.disabled || isBridgeTransactionBlockAndDisabled;
+                  const isDisabled = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled;
                   const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
                     ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
                     : availableTransactionBlock.title
@@ -443,7 +445,7 @@ const TransactionBuilderContextProvider = ({
                     <TransactionBlockListItemWrapper
                       key={availableTransactionBlock.title}
                       onClick={() => {
-                        if (availableTransactionBlock.disabled || !availableTransactionBlock.type) return;
+                        if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED) return;
                         const transactionBlock = {
                           ...availableTransactionBlock,
                           id: getTimeBasedUniqueId(),
