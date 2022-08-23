@@ -23,6 +23,7 @@ import {
 import {
   addressesEqual,
   ErrorMessages,
+  isCaseInsensitiveMatch,
 } from '../../utils/validation';
 import { supportedChains } from '../../utils/chain';
 
@@ -177,10 +178,14 @@ const AssetSwapTransactionBlock = ({
   const availableOffersOptions = useMemo(
     () => {
       const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
-      return availableOffers?.map((availableOffer) => ({
-        title: `${availableOffer.provider}: ${formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals))} ${toAsset?.symbol}`,
-        value: availableOffer.provider,
-      }));
+
+      // TODO: remove lifi filter once approval tx is added
+      return availableOffers
+        ?.filter((availableOffer) => !isCaseInsensitiveMatch(availableOffer.provider, 'lifi'))
+        ?.map((availableOffer) => ({
+          title: `${availableOffer.provider}: ${formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals))} ${toAsset?.symbol}`,
+          value: availableOffer.provider,
+        }));
     },
     [availableOffers, availableToAssets],
   );
