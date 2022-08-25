@@ -7,8 +7,14 @@ import React, {
 import styled from 'styled-components';
 import {
   AccountBalance,
+  BridgingQuote,
   CrossChainBridgeSupportedChain,
 } from 'etherspot';
+import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
+import { ethers } from 'ethers';
+import {
+  debounce,
+} from 'lodash';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
@@ -21,8 +27,6 @@ import {
   addressesEqual,
   ErrorMessages,
 } from '../../utils/validation';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
-import { ethers } from 'ethers';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -31,6 +35,7 @@ export interface AssetBridgeTransactionBlockValues {
   toAssetAddress?: string;
   fromAssetDecimals?: number;
   amount?: string;
+  quote?: BridgingQuote;
 }
 
 const Title = styled.h3`
@@ -59,13 +64,16 @@ const AssetBridgeTransactionBlock = ({
   const [selectedToAsset, setSelectedToAsset] = useState<SelectOption | null>(null);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<SelectOption | null>(null);
   const [selectedToNetwork, setSelectedToNetwork] = useState<SelectOption | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<SelectOption | null>(null);
   const [availableNetworks, setAvailableNetworks] = useState<CrossChainBridgeSupportedChain[] | null>(null);
   const [availableFromAssets, setAvailableFromAssets] = useState<TokenListToken[] | null>(null);
   const [availableFromAssetsBalances, setAvailableFromAssetsBalances] = useState<AccountBalance[] | null>(null);
   const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
+  const [availableQuotes, setAvailableQuotes] = useState<BridgingQuote[] | null>(null);
   const [isLoadingAvailableNetworks, setIsLoadingAvailableNetworks] = useState<boolean>(false);
   const [isLoadingAvailableFromAssets, setIsLoadingAvailableFromAssets] = useState<boolean>(false);
   const [isLoadingAvailableToAssets, setIsLoadingAvailableToAssets] = useState<boolean>(false);
+  const [isLoadingAvailableQuotes, setIsLoadingAvailableQuotes] = useState<boolean>(false);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
@@ -100,6 +108,8 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {
     setSelectedToAsset(null);
+    setSelectedQuote(null);
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
   }, [selectedToNetwork, selectedFromNetwork]);
@@ -172,6 +182,38 @@ const AssetBridgeTransactionBlock = ({
     })
   }), [availableFromAssets, availableFromAssetsBalances]);
 
+  const updateAvailableQuotes = useCallback(debounce(async () => {
+    setSelectedQuote(null);
+    setAvailableQuotes([]);
+
+    if (!sdk || !selectedToAsset || !selectedFromAsset || !amount || !selectedFromNetwork?.value || !selectedToNetwork?.value) return;
+
+    setIsLoadingAvailableQuotes(true);
+
+    try {
+      const fromAsset = availableFromAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedFromAsset?.value));
+      if (!fromAsset) {
+        setIsLoadingAvailableQuotes(false);
+        return;
+      }
+
+      const { items: quotes } = await sdk.getCrossChainQuotes({
+        fromChainId: +selectedFromNetwork.value,
+        toChainId: +selectedToNetwork?.value,
+        fromAmount: ethers.utils.parseUnits(amount, fromAsset.decimals),
+        fromTokenAddress: selectedFromAsset?.value,
+        toTokenAddress: selectedToAsset?.value,
+      });
+      setAvailableQuotes(quotes);
+    } catch (e) {
+      //
+    }
+
+    setIsLoadingAvailableQuotes(false);
+  }, 200), [sdk, selectedFromAsset, selectedToAsset, amount, availableFromAssets, selectedFromNetwork, selectedToNetwork]);
+
+  useEffect(() => { updateAvailableQuotes(); }, [updateAvailableQuotes]);
+
   const availableToAssetsOptions = useMemo(
     () => availableToAssets?.map((availableAsset) => ({
       title: `${availableAsset.name} (${availableAsset.symbol})`,
@@ -215,6 +257,18 @@ const AssetBridgeTransactionBlock = ({
   const selectedFromAssetDisplayValue = useMemo(
     () => availableFromAssets?.find((availableAsset) => availableAsset.address === selectedFromAsset?.value)?.symbol,
     [availableFromAssets, selectedFromAsset]
+  );
+
+  const availableQuotesOptions = useMemo(
+    () => {
+      const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
+      return availableQuotes
+        ?.map((availableQuote) => ({
+          title: `${availableQuote.provider.toUpperCase()}: ${formatAmountDisplay(ethers.utils.formatUnits(availableQuote.estimate.toAmount, toAsset?.decimals))} ${toAsset?.symbol}`,
+          value: availableQuote.provider,
+        }));
+    },
+    [availableQuotes, availableToAssets],
   );
 
   return (
@@ -276,6 +330,19 @@ const AssetBridgeTransactionBlock = ({
             setSelectedToAsset(option);
           }}
           errorMessage={errorMessages?.toAssetAddress}
+        />
+      )}
+      {!!selectedToAsset && selectedFromAsset && (
+        <SelectInput
+          label={`Accepted quote`}
+          options={availableQuotesOptions ?? []}
+          isLoading={isLoadingAvailableQuotes}
+          selectedOption={selectedQuote}
+          onOptionSelect={(option) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
+            setSelectedQuote(option);
+          }}
+          errorMessage={errorMessages?.offer}
         />
       )}
     </>

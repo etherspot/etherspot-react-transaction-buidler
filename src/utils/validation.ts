@@ -41,6 +41,7 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.fromAssetAddress) errors.fromAssetAddress = 'Invalid source asset selected!';
     if (!transactionBlockValues?.fromAssetDecimals) errors.fromAssetDecimals = 'Invalid source asset selected!';
     if (!transactionBlockValues?.toAssetAddress) errors.toAssetAddress = 'Invalid destination asset selected!';
+    if (!transactionBlockValues?.quote) errors.toAssetAddress = 'No quote selected!';
   }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {

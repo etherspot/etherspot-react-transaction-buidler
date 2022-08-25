@@ -9,7 +9,10 @@ import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
 import { AddedTransactionBlock } from '../providers/TransactionBuilderContextProvider';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { addressesEqual } from './validation';
+import {
+  addressesEqual,
+} from './validation';
+import { nativeAssetPerChainId } from './chain';
 
 
 interface AssetTransfer {
@@ -83,15 +86,19 @@ export const buildCrossChainAction = async (
 
       const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-      const { items } = await sdk.getCrossChainQuotes({
-        fromChainId,
-        toChainId,
-        fromAmount: amountBN,
-        fromTokenAddress,
-        toTokenAddress,
-      });
-
-      const [quote] = items;
+      let quote;
+      if (!transactionBlock?.values?.quote) {
+        const { items } = await sdk.getCrossChainQuotes({
+          fromChainId,
+          toChainId,
+          fromAmount: amountBN,
+          fromTokenAddress,
+          toTokenAddress,
+        });
+        ([quote] = items);
+      } else {
+        quote = transactionBlock.values.quote;
+      }
 
       const preview = {
         fromChainId,
@@ -269,15 +276,36 @@ export const buildCrossChainAction = async (
         providerName: offer.provider,
       };
 
+      let transactions: CrossChainActionTransaction[] = offer.transactions.map((transaction) => ({
+        ...transaction,
+        chainId,
+      }));
+
+      // not native asset and no erc20 approval transaction included
+      if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[chainId].address) && transactions.length === 1) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, fromAmountBN);
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build bridge approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          chainId,
+          value: 0,
+        };
+
+        transactions = [approvalTransaction, ...transactions];
+      }
+
       const crossChainAction: CrossChainAction = {
         id: crossChainActionId,
         submitTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
         preview,
-        transactions: offer.transactions.map((transaction) => ({
-          ...transaction,
-          chainId,
-        })),
+        transactions,
       };
 
       return { crossChainAction };
