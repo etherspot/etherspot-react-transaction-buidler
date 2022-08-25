@@ -13,6 +13,7 @@ import { AvailableTransactionBlock } from '../providers/TransactionBuilderContex
 
 interface EtherspotProps {
   defaultTransactionBlocks?: AvailableTransactionBlock[];
+  hiddenTransactionBlockTypes?: string[];
   provider: WalletProviderLike;
   chainId?: number;
 }
@@ -34,13 +35,21 @@ const ComponentStyle = createGlobalStyle`
   }
 `;
 
-const Etherspot = ({ defaultTransactionBlocks, provider, chainId }: EtherspotProps) => (
+const Etherspot = ({
+  defaultTransactionBlocks,
+  provider,
+  chainId,
+  hiddenTransactionBlockTypes,
+}: EtherspotProps) => (
   <EtherspotContextProvider provider={provider} chainId={chainId}>
     <ComponentStyle />
     <ComponentWrapper>
       <TransactionBuilderModalContextProvider>
         <TransactionsDispatcherContextProvider>
-          <TransactionBuilderContextProvider defaultTransactionBlocks={defaultTransactionBlocks} />
+          <TransactionBuilderContextProvider
+            defaultTransactionBlocks={defaultTransactionBlocks}
+            hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
+          />
         </TransactionsDispatcherContextProvider>
       </TransactionBuilderModalContextProvider>
     </ComponentWrapper>

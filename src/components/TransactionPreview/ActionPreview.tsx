@@ -119,7 +119,7 @@ const ActionPreview = ({
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
     // @ts-ignore
     // TODO: fix type
-    const { fromAsset, toAsset, chainId, providerName } = data;
+    const { fromAsset, toAsset, chainId, providerName, receiverAddress } = data;
 
     const chainTitle = CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
@@ -136,6 +136,12 @@ const ActionPreview = ({
           To receive:
           &nbsp;<strong>{toAmount} ${toAsset.symbol}</strong>
         </TransactionAction>
+        {!!receiverAddress && (
+          <TransactionAction>
+            Receiver address:
+            &nbsp;<strong>{humanizeHexString(receiverAddress)}<CopyButton valueToCopy={receiverAddress} left={5} top={1} /></strong>
+          </TransactionAction>
+        )}
         <TransactionAction>
           Network:
           &nbsp;<strong>{chainTitle}</strong>

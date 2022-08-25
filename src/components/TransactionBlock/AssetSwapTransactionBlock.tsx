@@ -35,6 +35,8 @@ export interface SwapAssetTransactionBlockValues {
   toAssetDecimals?: number
   toAssetSymbol?: string;
   amount?: string;
+  receiverAddress?: string;
+  isDifferentReceiverAddress?: boolean;
   offer?: ExchangeOffer;
 }
 
@@ -70,6 +72,8 @@ const AssetSwapTransactionBlock = ({
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(null);
   const [isLoadingAvailableAssets, setIsLoadingAvailableAssets] = useState<boolean>(false);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
+  const [showReceiverInput, setShowReceiverInput] = useState<boolean>(false);
+  const [receiverAddress, setReceiverAddress] = useState<string>('');
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
@@ -206,7 +210,9 @@ const AssetSwapTransactionBlock = ({
         toAssetSymbol: toAsset?.symbol,
         toAssetDecimals: toAsset?.decimals,
         amount,
+        receiverAddress,
         offer,
+        isDifferentReceiverAddress: showReceiverInput,
       });
     }
   }, [
@@ -217,6 +223,8 @@ const AssetSwapTransactionBlock = ({
     selectedToAsset,
     amount,
     selectedOffer,
+    receiverAddress,
+    showReceiverInput,
   ]);
 
   const selectedFromAssetDisplayValue = useMemo(
@@ -273,6 +281,27 @@ const AssetSwapTransactionBlock = ({
             }}
             errorMessage={errorMessages?.toAssetAddress}
           />
+          {/* TODO: unhide once offer spread or min amount is fixed from SDK side */}
+          {/* <Checkbox */}
+          {/*   label={`Set different receiver address`} */}
+          {/*   isChecked={showReceiverInput} */}
+          {/*   onChange={(isChecked) => { */}
+          {/*     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress'); */}
+          {/*     setShowReceiverInput(isChecked); */}
+          {/*     if (!isChecked) setReceiverAddress(''); */}
+          {/*   }} */}
+          {/* /> */}
+          {showReceiverInput && (
+            <TextInput
+              label={`Receiver address`}
+              value={receiverAddress}
+              onValueChange={(value) => {
+                resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+                setReceiverAddress(value);
+              }}
+              errorMessage={errorMessages?.receiverAddress}
+            />
+          )}
         </>
       )}
       {!!selectedToAsset && selectedFromAsset && (

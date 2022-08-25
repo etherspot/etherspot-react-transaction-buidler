@@ -11,6 +11,7 @@ import { AddedTransactionBlock } from '../providers/TransactionBuilderContextPro
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import {
   addressesEqual,
+  isValidEthereumAddress,
 } from './validation';
 import { nativeAssetPerChainId } from './chain';
 
@@ -40,6 +41,7 @@ interface AssetSwapActionPreview {
   fromAsset: AssetTransfer;
   toAsset: AssetTransfer;
   providerName: string;
+  receiverAddress?: string;
 }
 
 export type CrossChainActionPreview = AssetBridgeActionPreview
@@ -254,12 +256,13 @@ export const buildCrossChainAction = async (
           toAssetDecimals,
           toAssetSymbol,
           offer,
+          receiverAddress,
         },
       } = transactionBlock;
 
       const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-      const preview = {
+      let preview = {
         chainId,
         fromAsset: {
           address: fromAssetAddress,
@@ -274,6 +277,7 @@ export const buildCrossChainAction = async (
           amount: offer.receiveAmount.toString(),
         },
         providerName: offer.provider,
+        receiverAddress,
       };
 
       let transactions: CrossChainActionTransaction[] = offer.transactions.map((transaction) => ({
@@ -298,6 +302,24 @@ export const buildCrossChainAction = async (
         };
 
         transactions = [approvalTransaction, ...transactions];
+      }
+
+      if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, offer.receiveAmount);
+        if (!transferTransactionRequest || !transferTransactionRequest.to) {
+          return { errorMessage: 'Failed build transfer transaction!' };
+        }
+
+        const transferTransaction = {
+          chainId,
+          to: transferTransactionRequest.to,
+          data: transferTransactionRequest.data,
+          value: 0,
+        }
+
+        transactions = [...transactions, transferTransaction];
       }
 
       const crossChainAction: CrossChainAction = {

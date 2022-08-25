@@ -57,6 +57,7 @@ export interface AvailableTransactionBlock {
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: AvailableTransactionBlock[];
+  hiddenTransactionBlockTypes?: string[];
 }
 
 const TransactionBlockWrapper = styled.div<{ last?: boolean }>`
@@ -210,6 +211,7 @@ const availableTransactionBlocks: AvailableTransactionBlock[] = [
 
 const TransactionBuilderContextProvider = ({
   defaultTransactionBlocks,
+  hiddenTransactionBlockTypes,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -434,31 +436,34 @@ const TransactionBuilderContextProvider = ({
             {showTransactionBlockSelect && (
               <TransactionBlockSelectWrapper>
                 <CloseButton onClick={() => setShowTransactionBlockSelect(false)} />
-                {availableTransactionBlocks.map((availableTransactionBlock) => {
-                  const isBridgeTransactionBlock = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
-                  const isBridgeTransactionBlockAndDisabled = isBridgeTransactionBlock && hasTransactionBlockAdded;
-                  const isDisabled = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled;
-                  const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
-                    ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
-                    : availableTransactionBlock.title
-                  return (
-                    <TransactionBlockListItemWrapper
-                      key={availableTransactionBlock.title}
-                      onClick={() => {
-                        if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED) return;
-                        const transactionBlock = {
-                          ...availableTransactionBlock,
-                          id: getTimeBasedUniqueId(),
-                        };
-                        setTransactionBlocks((current) => current.concat(transactionBlock));
-                        setShowTransactionBlockSelect(false);
-                      }}
-                      disabled={isDisabled}
-                    >
-                      &bull; {availableTransactionBlockTitle}
-                    </TransactionBlockListItemWrapper>
-                  )
-                })}
+                {availableTransactionBlocks
+                  .filter((availableTransactionBlock) => !hiddenTransactionBlockTypes?.includes(availableTransactionBlock.type))
+                  .map((availableTransactionBlock) => {
+                    const isBridgeTransactionBlock = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
+                    const isBridgeTransactionBlockAndDisabled = isBridgeTransactionBlock && hasTransactionBlockAdded;
+                    const isDisabled = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled;
+                    const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
+                      ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
+                      : availableTransactionBlock.title
+                    return (
+                      <TransactionBlockListItemWrapper
+                        key={availableTransactionBlock.title}
+                        onClick={() => {
+                          if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED) return;
+                          const transactionBlock = {
+                            ...availableTransactionBlock,
+                            id: getTimeBasedUniqueId(),
+                          };
+                          setTransactionBlocks((current) => current.concat(transactionBlock));
+                          setShowTransactionBlockSelect(false);
+                        }}
+                        disabled={isDisabled}
+                      >
+                        &bull; {availableTransactionBlockTitle}
+                      </TransactionBlockListItemWrapper>
+                    )
+                  })
+                }
               </TransactionBlockSelectWrapper>
             )}
           </>
