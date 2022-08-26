@@ -9,16 +9,18 @@ import {
   AccountBalance,
   BridgingQuote,
   CrossChainBridgeSupportedChain,
+  CrossChainServiceProvider,
 } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
-import {
-  debounce,
-} from 'lodash';
+import { debounce } from 'lodash';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import {
+  useEtherspot,
+  useTransactionBuilder,
+} from '../../hooks';
 import {
   formatAmountDisplay,
   formatAssetAmountInput,
@@ -118,7 +120,8 @@ const AssetBridgeTransactionBlock = ({
     if (!sdk) return;
     setIsLoadingAvailableNetworks(true);
     try {
-      const networks = await sdk.getCrossChainBridgeSupportedChains();
+      // TODO: remove serviceProvider once it is fixed on SDK side
+      const networks = await sdk.getCrossChainBridgeSupportedChains({ serviceProvider: CrossChainServiceProvider.LiFi});
       setAvailableNetworks(networks);
     } catch (e) {
       //
