@@ -23,7 +23,9 @@ export const formatAssetAmountInput = (
 
 export const formatAmountDisplay = (amount: string): string => {
   // TODO: handle small amounts that have more than 2 digits after decimal
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
+  return +amount < 0.01
+    ? amount
+    : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
 };
 
 export const humanizeHexString = (
