@@ -111,7 +111,7 @@ const EtherspotContextProvider = ({
       }
     });
 
-    return () => sdk.state$.unsubscribe();
+    return () => sdk.state$.closed ? undefined : sdk.state$.unsubscribe();
   }, [sdk]);
 
   const connect = useCallback(async () => {
