@@ -100,18 +100,30 @@ const EtherspotContextProvider = ({
   useEffect(() => {
     if (!sdk) return;
 
-    sdk.state$.subscribe((sdkState) => {
-      if (sdkState?.account?.type === AccountTypes.Key) {
-        setProviderAddress(sdkState.account.address);
-        return;
-      }
-      if (sdkState?.account?.type === AccountTypes.Contract) {
-        setAccountAddress(sdkState.account.address);
-        return;
-      }
-    });
+    try {
+      sdk.state$.subscribe((sdkState) => {
+        if (sdkState?.account?.type === AccountTypes.Key) {
+          setProviderAddress(sdkState.account.address);
+          return;
+        }
+        if (sdkState?.account?.type === AccountTypes.Contract) {
+          setAccountAddress(sdkState.account.address);
+          return;
+        }
+      });
+    } catch (e) {
+      //
+    }
 
-    return () => sdk.state$.closed ? undefined : sdk.state$.unsubscribe();
+    return () => {
+      try {
+        if (sdk?.state$?.closed) return;
+        // TODO: check why subscription in the above cannot be resubscribed
+        // sdk.state$.unsubscribe();
+      } catch (e) {
+        //
+      }
+    };
   }, [sdk]);
 
   const connect = useCallback(async () => {
