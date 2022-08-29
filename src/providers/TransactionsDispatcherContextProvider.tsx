@@ -13,6 +13,7 @@ import {
   TransactionStatuses,
 } from 'etherspot';
 import { map as rxjsMap } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 import { TransactionsDispatcherContext } from '../contexts';
 import {
@@ -285,8 +286,9 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     const sdkForChain = getSdkForChainId(pendingCrossChainActionTransaction.chainId);
     if (!sdkForChain) return;
 
+    let subscription: Subscription;
     try {
-      const subscription = sdkForChain.notifications$
+      subscription = sdkForChain.notifications$
       .pipe(rxjsMap(async (notification) => {
         //   // @ts-ignore
         //   // TODO: fix type
@@ -329,11 +331,18 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         }
       }))
       .subscribe();
-
-      return () => subscription.closed ? undefined : subscription.unsubscribe();
     } catch (e) {
       //
     }
+
+    return () => {
+      try {
+        if (subscription?.closed) return;
+        subscription.unsubscribe();
+      } catch (e) {
+        //
+      }
+    };
   }, [crossChainActions, getSdkForChainId]);
 
   useEffect(() => { restoreProcessing(); }, [restoreProcessing]);
