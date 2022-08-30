@@ -38,11 +38,9 @@ const EtherspotContextProvider = ({
 }) => {
   const context = useContext(EtherspotContext);
 
-  if (context.initialized) {
+  if (context !== null) {
     throw new Error('<EtherspotContextProvider /> has already been declared.')
   }
-
-  const initialized = useMemo(() => true, []);
 
   const [accountAddress, setAccountAddress] = useState<string | null>(null);
   const [providerAddress, setProviderAddress] = useState<string | null>(null);
@@ -169,11 +167,15 @@ const EtherspotContextProvider = ({
     return hasNativeAsset ? assets : [nativeAsset, ...assets];
   }, [sdk]);
 
-  const getAssetsBalancesForChainId = useCallback(async (assets: TokenListToken[], assetsChainId: number) => {
+  const getAssetsBalancesForChainId = useCallback(async (
+    assets: TokenListToken[],
+    assetsChainId: number,
+    balancesForAddress: string | null = accountAddress,
+  ) => {
     if (!sdk) return [];
 
     let computedAccount;
-    if (!accountAddress) {
+    if (!balancesForAddress) {
       try {
         computedAccount = await connect();
       } catch (e) {
@@ -181,7 +183,7 @@ const EtherspotContextProvider = ({
       }
     }
 
-    if (!accountAddress && !computedAccount) return [];
+    if (!balancesForAddress && !computedAccount) return [];
 
     // 0x0...0 is default native token address in our assets, but it's not a ERC20 token
     const assetAddressesWithoutZero = assets
@@ -190,7 +192,7 @@ const EtherspotContextProvider = ({
 
     try {
       const { items: balances } = await sdk.getAccountBalances({
-        account: accountAddress ?? computedAccount,
+        account: balancesForAddress ?? computedAccount,
         tokens: assetAddressesWithoutZero,
         chainId: assetsChainId,
       });
@@ -227,6 +229,7 @@ const EtherspotContextProvider = ({
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       providerAddress,
+      web3Provider: provider,
     }),
     [
       connect,
@@ -239,11 +242,12 @@ const EtherspotContextProvider = ({
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       providerAddress,
+      provider,
     ],
   );
 
   return (
-    <EtherspotContext.Provider value={{ initialized, data: contextData }}>
+    <EtherspotContext.Provider value={{ data: contextData }}>
       {children}
     </EtherspotContext.Provider>
   );

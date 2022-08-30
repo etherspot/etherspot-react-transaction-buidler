@@ -52,11 +52,9 @@ let optionSelectCallback: ((option: SelectOption) => void) | null = null;
 const TransactionBuilderModalContextProvider = ({ children }: { children: ReactNode }) => {
   const context = useContext(TransactionBuilderModalContext);
 
-  if (context.initialized) {
+  if (context !== null) {
     throw new Error('<TransactionBuilderContextProvider /> has already been declared.')
   }
-
-  const initialized = useMemo(() => true, []);
 
   const [confirmModal, setConfirmModal] = useState<string | null>(null);
   const [alertModal, setAlertModal] = useState<ReactNode | null>(null);
@@ -106,7 +104,7 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
   }, [selectModalOptions, selectModalSearchText])
 
   return (
-    <TransactionBuilderModalContext.Provider value={{ initialized, data: contextData }}>
+    <TransactionBuilderModalContext.Provider value={{ data: contextData }}>
       {children}
       {!!selectModalOptions?.length && (
         <Modal>

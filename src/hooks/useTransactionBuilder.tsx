@@ -1,10 +1,9 @@
 import React, { useContext } from 'react';
 
 import { TransactionBuilderContext } from '../contexts';
-import { TransactionBuilderContextData } from '../contexts/TransactionBuilderContext';
 
 const useTransactionBuilder = () => {
-  const context = useContext<TransactionBuilderContextData>(TransactionBuilderContext);
+  const context = useContext(TransactionBuilderContext);
 
   if (context === null) {
     throw new Error('No parent <TransactionBuilderContextProvider />');

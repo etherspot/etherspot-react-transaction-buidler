@@ -74,6 +74,7 @@ interface SelectInputProps {
   options: SelectOption[];
   selectedOption?: SelectOption | null;
   onOptionSelect?: (option: SelectOption) => void;
+  disabled?: boolean;
 }
 
 const SelectInput = ({
@@ -83,13 +84,14 @@ const SelectInput = ({
   options,
   selectedOption,
   onOptionSelect,
+  disabled = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-select-input-'));
 
   const { showSelectModal, hideSelectModal } = useTransactionBuilderModal();
 
   const onSelectClick = useCallback(() => {
-    if (isLoading) return;
+    if (isLoading || disabled) return;
 
     if (!onOptionSelect) {
       showSelectModal(options, () => hideSelectModal());
@@ -97,7 +99,7 @@ const SelectInput = ({
     }
 
     showSelectModal(options, onOptionSelect)
-  }, [isLoading, options]);
+  }, [isLoading, options, disabled]);
 
   const selectedOptionTitle = useMemo(() => {
     if (isLoading && !selectedOption?.title) return 'Loading options...';
@@ -114,7 +116,7 @@ const SelectInput = ({
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <InputWrapper onClick={onSelectClick}>
         {selectedOptionTitle}
-        <SelectWrapper disabled={!!isLoading}>
+        <SelectWrapper disabled={!!isLoading || disabled}>
           {!isLoading && <SelectButton size={15} />}
           {isLoading && <BeatLoader size={6} />}
         </SelectWrapper>

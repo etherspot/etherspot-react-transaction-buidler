@@ -1,10 +1,9 @@
 import React, { useContext } from 'react';
 
 import { TransactionsDispatcherContext } from '../contexts';
-import { TransactionsDispatcherContextData } from '../contexts/TransactionsDispatcherContext';
 
 const useTransactionsDispatcher = () => {
-  const context = useContext<TransactionsDispatcherContextData>(TransactionsDispatcherContext);
+  const context = useContext(TransactionsDispatcherContext);
 
   if (context === null) {
     throw new Error('No parent <TransactionsDispatcherContextProvider />');

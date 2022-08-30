@@ -3,7 +3,6 @@ import { CrossChainAction } from '../utils/transaction';
 import { DispatchedCrossChainAction } from '../providers/TransactionsDispatcherContextProvider';
 
 export interface TransactionsDispatcherContextData {
-  initialized: boolean;
   data: {
     dispatchedCrossChainActions: DispatchedCrossChainAction[];
     dispatchCrossChainActions: (transactions: CrossChainAction[]) => void;
@@ -11,13 +10,6 @@ export interface TransactionsDispatcherContextData {
   }
 }
 
-const TransactionsDispatcherContext = createContext<TransactionsDispatcherContextData>({
-  initialized: false,
-  data: {
-    dispatchedCrossChainActions: [],
-    dispatchCrossChainActions: () => {},
-    processingCrossChainActionId: null,
-  }
-});
+const TransactionsDispatcherContext = createContext<TransactionsDispatcherContextData | null>(null);
 
 export default TransactionsDispatcherContext;

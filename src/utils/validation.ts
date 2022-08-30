@@ -50,6 +50,7 @@ export const validateTransactionBlockValues = (
     if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
     if (!transactionBlockValues?.assetAddress) errors.assetAddress = 'Invalid asset selected!';
     if (!transactionBlockValues?.assetDecimals) errors.assetDecimals = 'Invalid asset selected!';
+    if (!isValidEthereumAddress(transactionBlockValues?.fromAddress)) errors.fromAddress = 'Invalid source address!';
     if (!isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
   }
 

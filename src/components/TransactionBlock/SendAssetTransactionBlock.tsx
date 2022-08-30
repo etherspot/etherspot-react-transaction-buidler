@@ -23,14 +23,17 @@ import {
   ErrorMessages,
 } from '../../utils/validation';
 import { supportedChains } from '../../utils/chain';
+import Checkbox from '../Checkbox';
 
 export interface SendAssetTransactionBlockValues {
+  fromAddress?: string;
   receiverAddress?: string;
   chainId?: number;
   assetAddress?: string;
   assetDecimals?: number;
   assetSymbol?: string;
   amount?: string;
+  isFromEtherspotWallet?: boolean;
 }
 
 const Title = styled.h3`
@@ -61,10 +64,18 @@ const SendAssetTransactionBlock = ({
   const [availableAssets, setAvailableAssets] = useState<TokenListToken[] | null>(null);
   const [availableAssetsBalances, setAvailableAssetsBalances] = useState<AccountBalance[] | null>(null);
   const [isLoadingAvailableAssets, setIsLoadingAvailableAssets] = useState<boolean>(false);
+  const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(true);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { sdk, getSupportedAssetsForChainId, getAssetsBalancesForChainId } = useEtherspot();
+  const {
+    sdk,
+    getSupportedAssetsForChainId,
+    getAssetsBalancesForChainId,
+    providerAddress,
+    accountAddress,
+    chainId,
+  } = useEtherspot();
 
   useEffect(() => {
     setSelectedAsset(null);
@@ -76,12 +87,21 @@ const SendAssetTransactionBlock = ({
   }, [selectedNetwork]);
 
   const updateAvailableAssets = useCallback(async () => {
-    if (!sdk || !selectedNetwork) return;
+    if (!sdk) return;
+    if ((isFromEtherspotWallet && !selectedNetwork) || !providerAddress) return;
     setIsLoadingAvailableAssets(true);
 
+    const chainIdToLoad = isFromEtherspotWallet
+      ? +selectedNetwork?.value
+      : chainId;
+
+    const addressToCheck = isFromEtherspotWallet
+      ? accountAddress
+      : providerAddress;
+
     try {
-      const assets = await getSupportedAssetsForChainId(+selectedNetwork.value);
-      const assetsBalances = await getAssetsBalancesForChainId(assets, +selectedNetwork.value);
+      const assets = await getSupportedAssetsForChainId(chainIdToLoad);
+      const assetsBalances = await getAssetsBalancesForChainId(assets, chainIdToLoad, addressToCheck);
 
       const assetsWithPositiveBalances = assets.filter((asset) => assetsBalances.some((assetBalance) => {
         if (addressesEqual(asset.address, ethers.constants.AddressZero) && assetBalance.token === null) return true;
@@ -94,7 +114,7 @@ const SendAssetTransactionBlock = ({
       //
     }
     setIsLoadingAvailableAssets(false);
-  }, [sdk, selectedNetwork]);
+  }, [sdk, selectedNetwork, isFromEtherspotWallet, providerAddress, accountAddress, chainId]);
 
   useEffect(() => { updateAvailableAssets(); }, [updateAvailableAssets]);
 
@@ -131,12 +151,14 @@ const SendAssetTransactionBlock = ({
     if (setTransactionBlockValues) {
       const asset = availableAssets?.find((availableAsset) => availableAsset.address === selectedAsset?.value);
       setTransactionBlockValues(transactionBlockId, {
-        chainId: selectedNetwork?.value,
+        chainId: isFromEtherspotWallet ? selectedNetwork?.value : chainId,
         assetAddress: asset?.address,
         assetSymbol: asset?.symbol,
         assetDecimals: asset?.decimals,
         amount,
         receiverAddress,
+        isFromEtherspotWallet,
+        fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
       });
     }
   }, [
@@ -146,6 +168,9 @@ const SendAssetTransactionBlock = ({
     selectedAsset,
     receiverAddress,
     amount,
+    isFromEtherspotWallet,
+    accountAddress,
+    providerAddress,
   ]);
 
   const selectedAssetDisplayValue = useMemo(
@@ -156,19 +181,38 @@ const SendAssetTransactionBlock = ({
   return (
     <>
       <Title>Send asset</Title>
-      <SelectInput
-        label="Network"
-        options={supportedChains.map(mapSupportedChainToSelectOption)}
-        selectedOption={selectedNetwork}
-        onOptionSelect={(option) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
-          setSelectedNetwork(option);
+      <Checkbox
+        label={`Send from Etherspot account`}
+        isChecked={isFromEtherspotWallet}
+        onChange={(isChecked) => {
+          setIsFromEtherspotWallet(isChecked);
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
         }}
-        errorMessage={errorMessages?.chainId}
+        errorMessage={errorMessages?.fromAddress}
       />
-      {!!selectedNetwork && (
+      {isFromEtherspotWallet && (
+        <SelectInput
+          label="Network"
+          options={supportedChains.map(mapSupportedChainToSelectOption)}
+          selectedOption={selectedNetwork}
+          onOptionSelect={(option) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
+            setSelectedNetwork(option);
+          }}
+          errorMessage={errorMessages?.chainId}
+        />
+      )}
+      {!isFromEtherspotWallet && (
         <TextInput
-          label={`Asset on ${selectedNetwork.title}`}
+          label="Network"
+          disabled
+          value={supportedChains.find((chain) => +chainId === +chain.chainId)?.title}
+          errorMessage={errorMessages?.chainId}
+        />
+      )}
+      {(!!selectedNetwork || !isFromEtherspotWallet) && (
+        <TextInput
+          label={`Asset`}
           isLoading={isLoadingAvailableAssets}
           selectOptions={availableAssetsOptions ?? []}
           selectedOption={selectedAsset}
@@ -189,7 +233,7 @@ const SendAssetTransactionBlock = ({
           }
         />
       )}
-      {!!selectedNetwork && (
+      {!!selectedNetwork || !isFromEtherspotWallet && (
         <TextInput
           label={`Receiver address`}
           value={receiverAddress}

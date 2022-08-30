@@ -33,7 +33,9 @@ interface AssetBridgeActionPreview {
 interface SendAssetActionPreview {
   chainId: number;
   asset: AssetTransfer;
+  fromAddress: string;
   receiverAddress: string;
+  isFromEtherspotWallet: boolean;
 }
 
 interface AssetSwapActionPreview {
@@ -50,6 +52,7 @@ export type CrossChainActionPreview = AssetBridgeActionPreview
 
 export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {
   chainId: number;
+  useWeb3Provider?: boolean;
 }
 
 export interface CrossChainAction {
@@ -172,6 +175,8 @@ export const buildCrossChainAction = async (
     && !!transactionBlock?.values?.assetDecimals
     && !!transactionBlock?.values?.assetSymbol
     && !!transactionBlock?.values?.receiverAddress
+    && !!transactionBlock?.values?.fromAddress
+    && transactionBlock?.values?.isFromEtherspotWallet !== undefined
     && !!transactionBlock?.values?.amount) {
     try {
       const {
@@ -182,6 +187,8 @@ export const buildCrossChainAction = async (
           assetSymbol,
           receiverAddress,
           amount,
+          fromAddress,
+          isFromEtherspotWallet,
         },
       } = transactionBlock;
 
@@ -190,6 +197,8 @@ export const buildCrossChainAction = async (
       const preview = {
         chainId,
         receiverAddress,
+        fromAddress,
+        isFromEtherspotWallet,
         asset: {
           address: assetAddress,
           decimals: assetDecimals,
@@ -202,6 +211,7 @@ export const buildCrossChainAction = async (
         chainId,
         to: receiverAddress,
         value: amountBN,
+        useWeb3Provider: !isFromEtherspotWallet,
       };
 
       if (ethers.utils.isAddress(assetAddress) && !addressesEqual(assetAddress, ethers.constants.AddressZero)) {
@@ -213,7 +223,7 @@ export const buildCrossChainAction = async (
         }
 
         transferTransaction = {
-          chainId,
+          ...transferTransaction,
           to: transferTransactionRequest.to,
           data: transferTransactionRequest.data,
           value: 0,

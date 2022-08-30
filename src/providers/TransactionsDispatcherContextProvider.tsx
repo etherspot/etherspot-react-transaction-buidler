@@ -32,6 +32,7 @@ import {
   setItem,
 } from '../services/storage';
 import { getTimeBasedUniqueId } from '../utils/common';
+import { ethers } from 'ethers';
 
 export interface DispatchedCrossChainActionTransaction extends CrossChainActionTransaction {
   id: string;
@@ -47,17 +48,15 @@ export interface DispatchedCrossChainAction extends CrossChainAction {
 const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNode }) => {
   const context = useContext(TransactionsDispatcherContext);
 
-  if (context.initialized) {
+  if (context !== null) {
     throw new Error('<TransactionsDispatcherContextProvider /> has already been declared.')
   }
-
-  const initialized = useMemo(() => true, []);
 
   const [processingCrossChainActionId, setProcessingCrossChainActionId] = useState<string | null>(null);
   const [crossChainActions, setCrossChainActions] = useState<DispatchedCrossChainAction[]>([]);
   const [dispatchId, setDispatchId] = useState<string | null>(null);
 
-  const { getSdkForChainId } = useEtherspot();
+  const { getSdkForChainId, web3Provider, providerAddress } = useEtherspot();
   const { showAlertModal } = useTransactionBuilderModal();
 
   const dispatchCrossChainActions = useCallback((crossChainActionsToDispatch: CrossChainAction[]) => {
@@ -141,33 +140,59 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     });
 
     let batchHash: string = '';
+    let transactionHash: string = '';
     let errorMessage;
 
-    try {
-      if (!sdkForChain?.state?.account?.type || sdkForChain.state.account.type === AccountTypes.Key) {
-        await sdkForChain.computeContractAccount({ sync: true });
-      }
+    const etherspotCrossChainActionTransactionsToSend = crossChainActionTransactionsToSend.filter((transaction) => !transaction.useWeb3Provider);
+    if (etherspotCrossChainActionTransactionsToSend?.length) {
+      try {
+        if (!sdkForChain?.state?.account?.type || sdkForChain.state.account.type === AccountTypes.Key) {
+          await sdkForChain.computeContractAccount({ sync: true });
+        }
 
-      sdkForChain.clearGatewayBatch();
+        sdkForChain.clearGatewayBatch();
 
-      // sequential
-      for (const transactionsToSend of crossChainActionTransactionsToSend) {
-        const { to, value, data } = transactionsToSend;
-        await sdkForChain.batchExecuteAccountTransaction({ to, value, data });
-      }
+        // sequential
+        for (const transactionsToSend of etherspotCrossChainActionTransactionsToSend) {
+          const { to, value, data } = transactionsToSend;
+          await sdkForChain.batchExecuteAccountTransaction({ to, value, data });
+        }
 
-      await sdkForChain.estimateGatewayBatch();
+        await sdkForChain.estimateGatewayBatch();
 
-      const result = await sdkForChain.submitGatewayBatch();
-      ({ hash: batchHash } = result);
-    } catch (e) {
-      errorMessage = parseEtherspotErrorMessageIfAvailable(e);
-      if (!errorMessage && e instanceof Error) {
-        errorMessage = e?.message
+        const result = await sdkForChain.submitGatewayBatch();
+        ({ hash: batchHash } = result);
+      } catch (e) {
+        errorMessage = parseEtherspotErrorMessageIfAvailable(e);
+        if (!errorMessage && e instanceof Error) {
+          errorMessage = e?.message;
+        }
       }
     }
 
-    if (!batchHash?.length) {
+    const providerCrossChainActionTransactionsToSend = crossChainActionTransactionsToSend.filter((transaction) => !!transaction.useWeb3Provider);
+    if (web3Provider && providerCrossChainActionTransactionsToSend?.length) {
+      try {
+        // sequential
+        for (const transactionsToSend of providerCrossChainActionTransactionsToSend) {
+          const { to, value, data } = transactionsToSend;
+          const tx = {
+            from: providerAddress,
+            to,
+            data,
+            value: ethers.BigNumber.isBigNumber(value) ? value.toHexString() : '0x0',
+          };
+          // @ts-ignore
+          transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+        }
+      } catch (e) {
+        if (e instanceof Error) {
+          errorMessage = e?.message;
+        }
+      }
+    }
+
+    if (!batchHash?.length && !transactionHash?.length) {
       resetCrossChainActions(errorMessage ?? 'Unable to send transaction!');
       return;
     }
@@ -179,6 +204,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
           ...crossChainActionTransaction,
           status: DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING,
           batchHash,
+          hash: transactionHash,
         };
       });
 
@@ -190,7 +216,14 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     showAlertModal('Transaction sent!');
 
     setProcessingCrossChainActionId(null);
-  }, [crossChainActions, getSdkForChainId, processingCrossChainActionId, resetCrossChainActions, dispatchId]);
+  }, [
+    crossChainActions,
+    getSdkForChainId,
+    processingCrossChainActionId,
+    resetCrossChainActions,
+    dispatchId,
+    providerAddress,
+  ]);
 
   useEffect(() => { processDispatchedCrossChainActions(); }, [processDispatchedCrossChainActions]);
 
@@ -220,7 +253,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       updatedStoredGroupedCrossChainActions[id] = await Promise.all(storedGroupedCrossChainActions[id].map(async (storedCrossChainAction) => {
         const updatedTransactions = await Promise.all(storedCrossChainAction.transactions.map(async (storedCrossChainActionTransaction) => {
           const sdkForChain = getSdkForChainId(storedCrossChainActionTransaction.chainId);
-          if (!sdkForChain) return storedCrossChainActionTransaction;
+          if (!sdkForChain || storedCrossChainActionTransaction.status !== DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING) return storedCrossChainActionTransaction;
 
           let transactionHash = storedCrossChainActionTransaction.transactionHash;
           let status = storedCrossChainActionTransaction.status;
@@ -361,7 +394,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   );
 
   return (
-    <TransactionsDispatcherContext.Provider value={{ initialized, data: contextData }}>
+    <TransactionsDispatcherContext.Provider value={{ data: contextData }}>
       {children}
     </TransactionsDispatcherContext.Provider>
   );

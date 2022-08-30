@@ -46,6 +46,10 @@ const Input = styled.input<TextInputProps>`
   &:focus {
     outline: none;
   }
+
+  ${({ disabled }) => disabled && `
+    opacity: 0.6;
+  `}
 `;
 
 const SelectedOption = styled.span<{ placeholderText?: boolean }>`
@@ -88,6 +92,7 @@ interface TextInputProps {
   selectedOptionDisplayValue?: string;
   onOptionSelect?: (option: SelectOption) => void;
   onValueChange?: (value: string) => void;
+  disabled?: boolean;
 }
 
 const TextInput = ({
@@ -100,6 +105,7 @@ const TextInput = ({
   onOptionSelect,
   onValueChange,
   isLoading = false,
+  disabled = false,
 }: TextInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-text-input-'));
 
@@ -108,7 +114,7 @@ const TextInput = ({
   const { showSelectModal, hideSelectModal } = useTransactionBuilderModal();
 
   const onSelectClick = useCallback(() => {
-    if (isLoading || !hasSelect) return;
+    if (isLoading || !hasSelect || disabled) return;
 
     if (!onOptionSelect) {
       showSelectModal(selectOptions, () => hideSelectModal());
@@ -116,7 +122,7 @@ const TextInput = ({
     }
 
     showSelectModal(selectOptions, onOptionSelect)
-  }, [isLoading, selectOptions]);
+  }, [isLoading, selectOptions, disabled]);
 
 
   const selectedOptionTitle = useMemo(() => {
@@ -137,10 +143,11 @@ const TextInput = ({
         <Input
           id={inputId}
           value={value ?? ''}
+          disabled={disabled}
           onChange={(event) => onValueChange && onValueChange(event?.target?.value ?? '')}
         />
         {hasSelect && (
-          <SelectWrapper onClick={onSelectClick} disabled={isLoading || !selectOptions?.length}>
+          <SelectWrapper onClick={onSelectClick} disabled={isLoading || !selectOptions?.length || disabled}>
             {!isLoading && !!selectedOptionTitle && <SelectedOption>{selectedOptionTitle}</SelectedOption>}
             {!isLoading && !selectedOptionTitle && <SelectedOption placeholderText>SELECT</SelectedOption>}
             {isLoading && <BeatLoader size={6} />}

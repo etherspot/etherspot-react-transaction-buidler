@@ -89,7 +89,7 @@ const ActionPreview = ({
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
     // @ts-ignore
     // TODO: fix type
-    const { asset, chainId, receiverAddress } = data;
+    const { asset, chainId, receiverAddress, fromAddress } = data;
 
     const chainTitle = CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
@@ -101,6 +101,10 @@ const ActionPreview = ({
           To send:
           &nbsp;<strong>{amount} ${asset.symbol}</strong>
           &nbsp;on <strong>{chainTitle}</strong>
+        </TransactionAction>
+        <TransactionAction>
+          From address:
+          &nbsp;<strong>{humanizeHexString(fromAddress)}<CopyButton valueToCopy={fromAddress} left={5} top={1} /></strong>
         </TransactionAction>
         <TransactionAction>
           Receiver address:

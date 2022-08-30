@@ -6,7 +6,6 @@ import React, {
 import { SelectOption } from '../components/SelectInput/SelectInput';
 
 export interface TransactionBuilderModalContextData {
-  initialized: boolean;
   data: {
     showSelectModal: (options: SelectOption[], callback: (option: SelectOption) => void) => void;
     hideSelectModal: () => void;
@@ -17,16 +16,6 @@ export interface TransactionBuilderModalContextData {
   }
 }
 
-const TransactionBuilderModalContext = createContext<TransactionBuilderModalContextData>({
-  initialized: false,
-  data: {
-    showSelectModal: () => {},
-    hideSelectModal: () => {},
-    hideConfirmModal: () => {},
-    showConfirmModal: () => {},
-    hideAlertModal: () => {},
-    showAlertModal: () => {},
-  }
-});
+const TransactionBuilderModalContext = createContext<TransactionBuilderModalContextData | null>(null);
 
 export default TransactionBuilderModalContext;

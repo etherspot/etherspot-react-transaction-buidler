@@ -215,11 +215,9 @@ const TransactionBuilderContextProvider = ({
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
-  if (context.initialized) {
+  if (context !== null) {
     throw new Error('<EtherspotContextProvider /> has already been declared.')
   }
-
-  const initialized = useMemo(() => true, []);
 
   const [transactionBlocks, setTransactionBlocks] = useState<AddedTransactionBlock[]>(
     defaultTransactionBlocks?.map((defaultTransactionBlock) => ({ ...defaultTransactionBlock, id: getTimeBasedUniqueId() })) ?? []
@@ -354,7 +352,7 @@ const TransactionBuilderContextProvider = ({
   }, [processingCrossChainActionId, dispatchedCrossChainActions]);
 
   return (
-    <TransactionBuilderContext.Provider value={{ initialized, data: contextData }}>
+    <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
         <WalletAddressesWrapper onClick={hideMenu}>
           {providerAddress && (
