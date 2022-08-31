@@ -213,7 +213,14 @@ const AssetBridgeTransactionBlock = ({
     }
 
     setIsLoadingAvailableQuotes(false);
-  }, 200), [sdk, selectedFromAsset, selectedToAsset, amount, availableFromAssets, selectedFromNetwork, selectedToNetwork]);
+  }, 200), [
+    sdk,
+    selectedFromAsset,
+    selectedToAsset, amount,
+    availableFromAssets,
+    selectedFromNetwork,
+    selectedToNetwork,
+  ]);
 
   useEffect(() => { updateAvailableQuotes(); }, [updateAvailableQuotes]);
 
