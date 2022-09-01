@@ -22,7 +22,10 @@ import {
   addressesEqual,
   ErrorMessages,
 } from '../../utils/validation';
-import { supportedChains } from '../../utils/chain';
+import {
+  nativeAssetPerChainId,
+  supportedChains,
+} from '../../utils/chain';
 import Checkbox from '../Checkbox';
 
 export interface SendAssetTransactionBlockValues {
@@ -104,7 +107,8 @@ const SendAssetTransactionBlock = ({
       const assetsBalances = await getAssetsBalancesForChainId(assets, chainIdToLoad, addressToCheck);
 
       const assetsWithPositiveBalances = assets.filter((asset) => assetsBalances.some((assetBalance) => {
-        if (addressesEqual(asset.address, ethers.constants.AddressZero) && assetBalance.token === null) return true;
+        console.log({ assetBalance })
+        if (addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address)) return true;
         return addressesEqual(asset.address, assetBalance.token);
       }));
 
@@ -120,7 +124,7 @@ const SendAssetTransactionBlock = ({
 
   const availableAssetsOptions = useMemo(() => availableAssets?.map((availableAsset) => {
     const assetBalance = availableAssetsBalances?.find((assetBalance) => {
-      if (addressesEqual(availableAsset.address, ethers.constants.AddressZero) && assetBalance.token === null) return true;
+      if (addressesEqual(availableAsset.address, nativeAssetPerChainId[chainId]?.address) && assetBalance.token === null) return true;
       return addressesEqual(availableAsset.address, assetBalance.token);
     });
 
@@ -233,7 +237,7 @@ const SendAssetTransactionBlock = ({
           }
         />
       )}
-      {!!selectedNetwork || !isFromEtherspotWallet && (
+      {(!!selectedNetwork || !isFromEtherspotWallet) && (
         <TextInput
           label={`Receiver address`}
           value={receiverAddress}

@@ -162,7 +162,7 @@ const EtherspotContextProvider = ({
     }
 
     const nativeAsset = nativeAssetPerChainId[assetsChainId];
-    const hasNativeAsset = assets.some((asset) => isCaseInsensitiveMatch(asset.symbol, nativeAsset.symbol) || addressesEqual(asset.address, ethers.constants.AddressZero))
+    const hasNativeAsset = assets.some((asset) => !asset.address || addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address));
 
     return hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
   }, [sdk]);
