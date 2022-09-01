@@ -107,7 +107,6 @@ const SendAssetTransactionBlock = ({
       const assetsBalances = await getAssetsBalancesForChainId(assets, chainIdToLoad, addressToCheck);
 
       const assetsWithPositiveBalances = assets.filter((asset) => assetsBalances.some((assetBalance) => {
-        console.log({ assetBalance })
         if (addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address)) return true;
         return addressesEqual(asset.address, assetBalance.token);
       }));

@@ -242,8 +242,9 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {
     if (setTransactionBlockValues) {
-      const fromAsset = availableFromAssets?.find((availableAsset) => availableAsset.address === selectedFromAsset?.value);
-      const toAsset = availableToAssets?.find((availableAsset) => availableAsset.address === selectedToAsset?.value);
+      const fromAsset = availableFromAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedFromAsset?.value));
+      const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
+      const quote = availableQuotes?.find((availableQuote) => availableQuote.provider === selectedQuote?.value);
       setTransactionBlockValues(transactionBlockId, {
         fromChainId: selectedFromNetwork?.value,
         toChainId: selectedToNetwork?.value,
@@ -251,6 +252,7 @@ const AssetBridgeTransactionBlock = ({
         fromAssetDecimals: fromAsset?.decimals,
         toAssetAddress: toAsset?.address,
         amount,
+        quote,
       });
     }
   }, [
@@ -262,10 +264,11 @@ const AssetBridgeTransactionBlock = ({
     selectedFromAsset,
     selectedToAsset,
     amount,
+    selectedQuote,
   ]);
 
   const selectedFromAssetDisplayValue = useMemo(
-    () => availableFromAssets?.find((availableAsset) => availableAsset.address === selectedFromAsset?.value)?.symbol,
+    () => availableFromAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedFromAsset?.value))?.symbol,
     [availableFromAssets, selectedFromAsset]
   );
 
@@ -352,7 +355,7 @@ const AssetBridgeTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
             setSelectedQuote(option);
           }}
-          errorMessage={errorMessages?.offer}
+          errorMessage={errorMessages?.quote}
         />
       )}
     </>

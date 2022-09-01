@@ -258,15 +258,16 @@ const TransactionBuilderContextProvider = ({
 
     let newCrossChainActions: CrossChainAction[] = [];
     let errorMessage;
+
     if (Object.keys(validationErrors).length === 0) {
       // keep blocks in order
       for (const transactionBlock of transactionBlocks) {
-        const transaction = await buildCrossChainAction(sdk, transactionBlock);
-        if (!transaction?.crossChainAction || transaction?.errorMessage) {
-          errorMessage = transaction?.errorMessage ?? `Failed to build a cross chain action!`;
+        const result = await buildCrossChainAction(sdk, transactionBlock);
+        if (!result?.crossChainAction || result?.errorMessage) {
+          errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
         }
-        newCrossChainActions = [...newCrossChainActions, transaction.crossChainAction];
+        newCrossChainActions = [...newCrossChainActions, result.crossChainAction];
       }
     }
 
