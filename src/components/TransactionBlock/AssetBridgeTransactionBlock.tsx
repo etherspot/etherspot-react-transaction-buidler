@@ -151,12 +151,12 @@ const AssetBridgeTransactionBlock = ({
       //
     }
     setIsLoadingAvailableFromAssets(false);
-  }, [sdk, selectedFromNetwork]);
+  }, [sdk, selectedFromNetwork, getSupportedAssetsForChainId, getAssetsBalancesForChainId]);
 
   useEffect(() => { updateAvailableFromAssets(); }, [updateAvailableFromAssets]);
 
   const updateAvailableToAssets = useCallback(async () => {
-    if (!sdk || !selectedFromNetwork || !selectedToNetwork) return;
+    if (!sdk || !selectedToNetwork) return;
     setIsLoadingAvailableToAssets(true);
     try {
       const toAssets = await getSupportedAssetsForChainId(+selectedToNetwork.value);
@@ -165,7 +165,7 @@ const AssetBridgeTransactionBlock = ({
       //
     }
     setIsLoadingAvailableToAssets(false);
-  }, [sdk, selectedToNetwork, selectedFromNetwork]);
+  }, [sdk, selectedToNetwork, getSupportedAssetsForChainId]);
 
   useEffect(() => {  updateAvailableToAssets(); }, [updateAvailableToAssets]);
 

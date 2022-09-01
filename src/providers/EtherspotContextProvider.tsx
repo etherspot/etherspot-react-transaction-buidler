@@ -157,14 +157,14 @@ const EtherspotContextProvider = ({
         loadMoreAssets = paginatedAssets?.length === 100;
         page++;
       } catch (e) {
-        //
+        loadMoreAssets = false;
       }
     }
 
     const nativeAsset = nativeAssetPerChainId[assetsChainId];
     const hasNativeAsset = assets.some((asset) => isCaseInsensitiveMatch(asset.symbol, nativeAsset.symbol) || addressesEqual(asset.address, ethers.constants.AddressZero))
 
-    return hasNativeAsset ? assets : [nativeAsset, ...assets];
+    return hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
   }, [sdk]);
 
   const getAssetsBalancesForChainId = useCallback(async (
@@ -202,7 +202,7 @@ const EtherspotContextProvider = ({
 
         const supportedAsset = assets.find(({ symbol: supportedSymbol, address: supportedAddress }) => {
           // `token === null` means it's chain native token
-          if (balanceAssetAddress === null) return isCaseInsensitiveMatch(supportedSymbol, nativeAssetPerChainId[assetsChainId].symbol);
+          if (balanceAssetAddress === null) return isCaseInsensitiveMatch(supportedSymbol, nativeAssetPerChainId[assetsChainId]?.symbol);
           return addressesEqual(supportedAddress, balanceAssetAddress);
         });
 

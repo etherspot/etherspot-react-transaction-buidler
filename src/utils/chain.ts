@@ -12,6 +12,8 @@ export const CHAIN_ID = {
   ARBITRUM: 42161,
   AURORA: 1313161554,
   FANTOM: 250,
+  CELO: 42220,
+  MOONBEAM: 1284,
 };
 
 export const supportedChains = [
@@ -23,6 +25,8 @@ export const supportedChains = [
   { chainId: CHAIN_ID.ARBITRUM, title: 'Arbitrum' },
   { chainId: CHAIN_ID.AURORA, title: 'Aurora' },
   { chainId: CHAIN_ID.FANTOM, title: 'Fantom' },
+  { chainId: CHAIN_ID.MOONBEAM, title: 'Moonbeam' },
+  { chainId: CHAIN_ID.CELO, title: 'CELO' },
 ];
 
 export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
@@ -97,5 +101,21 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     symbol: 'FTM',
     decimals: 18,
     logoURI: 'https://app.1inch.io/assets/images/network-logos/fantom.svg',
+  },
+  [CHAIN_ID.MOONBEAM]: {
+    chainId: CHAIN_ID.MOONBEAM,
+    address: ethers.constants.AddressZero,
+    name: 'Moonbeam',
+    symbol: 'GLMR',
+    decimals: 18,
+    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_moonbeam.jpg&w=64&q=75',
+  },
+  [CHAIN_ID.CELO]: {
+    chainId: CHAIN_ID.CELO,
+    address: ethers.constants.AddressZero,
+    name: 'Celo',
+    symbol: 'CELO',
+    decimals: 18,
+    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
   },
 };
