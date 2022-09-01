@@ -77,7 +77,7 @@ const AssetSwapTransactionBlock = ({
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { sdk, getSupportedAssetsForChainId, getAssetsBalancesForChainId, getSdkForChainId } = useEtherspot();
+  const { sdk, getSupportedAssetsForChainId, getAssetsBalancesForChainId, accountAddress } = useEtherspot();
 
   useEffect(() => {
     setSelectedFromAsset(null);
@@ -101,18 +101,18 @@ const AssetSwapTransactionBlock = ({
     setIsLoadingAvailableOffers(true);
 
     try {
-      const sdkForChain = getSdkForChainId(selectedNetwork.value);
       const fromAsset = availableFromAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedFromAsset?.value));
       const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
-      if (!fromAsset || !toAsset || !sdkForChain) {
+      if (!fromAsset || !toAsset) {
         setIsLoadingAvailableOffers(false);
         return;
       }
 
       // needed computed account address before calling getExchangeOffers
-      await sdkForChain.computeContractAccount();
+      if (!accountAddress) await sdk.computeContractAccount();
 
-      const offers = await sdkForChain.getExchangeOffers({
+      const offers = await sdk.getExchangeOffers({
+        fromChainId: +selectedNetwork.value,
         fromAmount: ethers.utils.parseUnits(amount, fromAsset.decimals),
         fromTokenAddress: fromAsset.address,
         toTokenAddress: toAsset.address,
@@ -124,7 +124,7 @@ const AssetSwapTransactionBlock = ({
     }
 
     setIsLoadingAvailableOffers(false);
-  }, 200), [sdk, selectedFromAsset, selectedToAsset, amount, availableFromAssets, selectedNetwork]);
+  }, 200), [sdk, selectedFromAsset, selectedToAsset, amount, availableFromAssets, selectedNetwork, accountAddress]);
 
   useEffect(() => { updateAvailableOffers(); }, [updateAvailableOffers]);
 
