@@ -102,10 +102,12 @@ const ActionPreview = ({
           &nbsp;<strong>{amount} ${asset.symbol}</strong>
           &nbsp;on <strong>{chainTitle}</strong>
         </TransactionAction>
-        <TransactionAction>
-          From address:
-          &nbsp;<strong>{humanizeHexString(fromAddress)}<CopyButton valueToCopy={fromAddress} left={5} top={1} /></strong>
-        </TransactionAction>
+        {!!fromAddress && (
+          <TransactionAction>
+            From address:
+            &nbsp;<strong>{humanizeHexString(fromAddress)}<CopyButton valueToCopy={fromAddress} left={5} top={1} /></strong>
+          </TransactionAction>
+        )}
         <TransactionAction>
           Receiver address:
           &nbsp;<strong>{humanizeHexString(receiverAddress)}<CopyButton valueToCopy={receiverAddress} left={5} top={1} /></strong>

@@ -274,7 +274,7 @@ const TransactionBuilderContextProvider = ({
     setIsChecking(false);
 
     if (!errorMessage && !newCrossChainActions?.length) {
-      errorMessage = `Failed to proceed with selected cross chain actions!`
+      errorMessage = `Failed to proceed with selected actions!`
     }
 
     if (errorMessage) {
