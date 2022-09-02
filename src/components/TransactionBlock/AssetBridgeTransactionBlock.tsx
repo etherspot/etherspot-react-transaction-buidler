@@ -13,7 +13,7 @@ import {
 } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
-import { debounce } from 'lodash';
+import debounce from 'debounce-promise';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
