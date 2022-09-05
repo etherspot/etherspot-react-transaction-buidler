@@ -1,5 +1,11 @@
-import { Sdk as EtherspotSdk } from 'etherspot';
-import { ethers } from 'ethers';
+import {
+  AccountTypes,
+  Sdk as EtherspotSdk,
+} from 'etherspot';
+import {
+  BigNumber,
+  ethers,
+} from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
@@ -14,6 +20,7 @@ import {
   isValidEthereumAddress,
 } from './validation';
 import { nativeAssetPerChainId } from './chain';
+import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 
 
 interface AssetTransfer {
@@ -50,17 +57,23 @@ export type CrossChainActionPreview = AssetBridgeActionPreview
   | SendAssetActionPreview
   | AssetSwapActionPreview;
 
-export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {
-  chainId: number;
-  useWeb3Provider?: boolean;
+export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {}
+
+export interface CrossChainActionEstimation {
+  gasCost?: BigNumber | null;
+  errorMessage?: string;
 }
 
 export interface CrossChainAction {
   id: string;
+  chainId: number;
   submitTimestamp: number;
   type: string;
   preview: CrossChainActionPreview;
   transactions: CrossChainActionTransaction[];
+  isEstimating: boolean;
+  estimated: CrossChainActionEstimation | null;
+  useWeb3Provider?: boolean;
 }
 
 export const buildCrossChainAction = async (
@@ -148,7 +161,6 @@ export const buildCrossChainAction = async (
         const approvalTransaction = {
           to: approvalTransactionRequest.to,
           data: approvalTransactionRequest.data,
-          chainId: fromChainId,
           value: 0,
         };
 
@@ -157,10 +169,13 @@ export const buildCrossChainAction = async (
 
       const crossChainAction: CrossChainAction = {
         id: crossChainActionId,
+        chainId: fromChainId,
         submitTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
         preview,
         transactions,
+        isEstimating: false,
+        estimated: null,
       };
 
       return { crossChainAction };
@@ -208,10 +223,8 @@ export const buildCrossChainAction = async (
       };
 
       let transferTransaction: CrossChainActionTransaction = {
-        chainId,
         to: receiverAddress,
         value: amountBN,
-        useWeb3Provider: !isFromEtherspotWallet,
       };
 
       if (ethers.utils.isAddress(assetAddress) && !addressesEqual(assetAddress, ethers.constants.AddressZero)) {
@@ -232,10 +245,14 @@ export const buildCrossChainAction = async (
 
       const crossChainAction: CrossChainAction = {
         id: crossChainActionId,
+        chainId,
         submitTimestamp,
         type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
         preview,
         transactions: [transferTransaction],
+        isEstimating: false,
+        estimated: null,
+        useWeb3Provider: !isFromEtherspotWallet,
       };
 
       return { crossChainAction };
@@ -323,7 +340,6 @@ export const buildCrossChainAction = async (
         }
 
         const transferTransaction = {
-          chainId,
           to: transferTransactionRequest.to,
           data: transferTransactionRequest.data,
           value: 0,
@@ -334,10 +350,13 @@ export const buildCrossChainAction = async (
 
       const crossChainAction: CrossChainAction = {
         id: crossChainActionId,
+        chainId,
         submitTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
         preview,
         transactions,
+        isEstimating: false,
+        estimated: null,
       };
 
       return { crossChainAction };
@@ -347,4 +366,42 @@ export const buildCrossChainAction = async (
   }
 
   return { errorMessage: 'Failed to build transaction!' }
+}
+
+export const estimateCrossChainAction = async (
+  sdk: EtherspotSdk | null,
+  crossChainAction: CrossChainAction,
+): Promise<CrossChainActionEstimation> => {
+  // TODO: add estimations for key based
+
+  let gasCost = null;
+  let errorMessage;
+
+  if (!sdk) {
+    return { errorMessage: 'Failed to estimate!' };
+  }
+
+  try {
+    if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
+      await sdk.computeContractAccount({ sync: true });
+    }
+
+    sdk.clearGatewayBatch();
+
+    // sequential
+    for (const transactionsToSend of crossChainAction.transactions) {
+      const { to, value, data } = transactionsToSend;
+      await sdk.batchExecuteAccountTransaction({ to, value, data });
+    }
+
+    const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch();
+    gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
+  } catch (e) {
+    errorMessage = parseEtherspotErrorMessageIfAvailable(e);
+    if (!errorMessage && e instanceof Error) {
+      errorMessage = e?.message;
+    }
+  }
+
+  return { gasCost, errorMessage }
 }

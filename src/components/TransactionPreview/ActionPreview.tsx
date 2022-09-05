@@ -2,7 +2,10 @@ import React from 'react';
 import styled from 'styled-components';
 import { ethers } from 'ethers';
 
-import { CrossChainActionPreview } from '../../utils/transaction';
+import {
+  CrossChainActionEstimation,
+  CrossChainActionPreview,
+} from '../../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import {
@@ -12,6 +15,7 @@ import {
 import { DispatchedCrossChainActionTransaction } from '../../providers/TransactionsDispatcherContextProvider';
 import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../../constants/transactionDispatcherConstants';
 import { CopyButton } from '../Button';
+import { nativeAssetPerChainId } from '../../utils/chain';
 
 const TransactionActionsWrapper = styled.div<{ noBottomBorder?: boolean }>`
   padding-bottom: 15px;
@@ -30,7 +34,10 @@ interface TransactionPreviewInterface {
   data: CrossChainActionPreview;
   type: string;
   transactions?: DispatchedCrossChainActionTransaction[];
+  estimation?: CrossChainActionEstimation | null;
+  isEstimating?: boolean;
   noBottomBorder?: boolean;
+  chainId: number;
 }
 
 const ActionPreview = ({
@@ -38,6 +45,9 @@ const ActionPreview = ({
   type,
   transactions,
   noBottomBorder,
+  estimation,
+  isEstimating,
+  chainId,
 }: TransactionPreviewInterface) => {
   const allStatuses: string[] = transactions?.reduce((statuses: string[], transaction) => {
     if (statuses.includes(transaction.status)) return statuses;
@@ -51,6 +61,13 @@ const ActionPreview = ({
     actionStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING;
   } else if (allStatuses.includes(DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED)) {
     actionStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
+  }
+
+  let cost = isEstimating && 'Estimating...';
+  if (estimation) {
+    cost = estimation.gasCost
+      ? `${formatAmountDisplay(ethers.utils.formatUnits(estimation.gasCost, nativeAssetPerChainId[chainId].decimals))} ${nativeAssetPerChainId[chainId].symbol}`
+      : estimation.errorMessage;
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
@@ -76,6 +93,12 @@ const ActionPreview = ({
           &nbsp;<strong>{toAmount} ${toAsset.symbol}</strong>
           &nbsp;on <strong>{toChainTitle}</strong>
         </TransactionAction>
+        {!!cost && (
+          <TransactionAction>
+            Cost:
+            &nbsp;<strong>{cost}</strong>
+          </TransactionAction>
+        )}
         {!!actionStatus && (
           <TransactionAction>
             Status:
@@ -112,6 +135,12 @@ const ActionPreview = ({
           Receiver address:
           &nbsp;<strong>{humanizeHexString(receiverAddress)}<CopyButton valueToCopy={receiverAddress} left={5} top={1} /></strong>
         </TransactionAction>
+        {!!cost && (
+          <TransactionAction>
+            Cost:
+            &nbsp;<strong>{cost}</strong>
+          </TransactionAction>
+        )}
         {!!actionStatus && (
           <TransactionAction>
             Status:
@@ -156,6 +185,12 @@ const ActionPreview = ({
           Provider:
           &nbsp;<strong>{providerName}</strong>
         </TransactionAction>
+        {!!cost && (
+          <TransactionAction>
+            Cost:
+            &nbsp;<strong>{cost}</strong>
+          </TransactionAction>
+        )}
         {!!actionStatus && (
           <TransactionAction>
             Status:
