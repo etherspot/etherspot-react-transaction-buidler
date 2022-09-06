@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -26,6 +27,7 @@ import {
 import {
   buildCrossChainAction,
   CrossChainAction,
+  estimateCrossChainAction,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -230,9 +232,16 @@ const TransactionBuilderContextProvider = ({
   const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[] | null>(null);
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
-  const { accountAddress, connect, isConnecting, sdk, providerAddress } = useEtherspot();
+  const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId } = useEtherspot();
   const { showConfirmModal, showAlertModal } = useTransactionBuilderModal();
   const { dispatchCrossChainActions, processingCrossChainActionId, dispatchedCrossChainActions } = useTransactionsDispatcher();
+
+  const isEstimatingCrossChainActions = useMemo(
+    () => crossChainActions?.some((crossChainAction) => crossChainAction.isEstimating) ?? false,
+    [crossChainActions],
+  );
+
+  console.log({ isEstimatingCrossChainActions, isSubmitting })
 
   const onContinueClick = useCallback(async () => {
     if (!sdk) {
@@ -285,8 +294,29 @@ const TransactionBuilderContextProvider = ({
     setCrossChainActions(newCrossChainActions);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
 
+  const estimateCrossChainActions = useCallback(async () => {
+    const unestimatedCrossChainActions = crossChainActions?.filter((crossChainAction) => !crossChainAction.isEstimating && !crossChainAction.estimated);
+    if (!unestimatedCrossChainActions?.length) return;
+
+    unestimatedCrossChainActions.map(async (crossChainAction) => {
+      setCrossChainActions((current) => current?.map((currentCrossChainAction) => {
+        if (crossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
+        return { ...crossChainAction, isEstimating: true };
+      }) || null);
+
+      const estimated = await estimateCrossChainAction(getSdkForChainId(crossChainAction.chainId), crossChainAction);
+
+      setCrossChainActions((current) => current?.map((currentCrossChainAction) => {
+        if (crossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
+        return { ...crossChainAction, isEstimating: false, estimated };
+      }) || null);
+    });
+  }, [crossChainActions, setCrossChainActions, getSdkForChainId]);
+
+  useEffect(() => { estimateCrossChainActions(); }, [estimateCrossChainActions]);
+
   const onSubmitClick = useCallback(async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isEstimatingCrossChainActions) return;
     setIsSubmitting(true);
 
 
@@ -307,7 +337,7 @@ const TransactionBuilderContextProvider = ({
     setTransactionBlocks([]);
     dispatchCrossChainActions(crossChainActionsToDispatch);
     setIsSubmitting(false);
-  }, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting]);
+  }, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting, isEstimatingCrossChainActions]);
 
   const setTransactionBlockValues = useCallback((transactionBlockId: string, values: TransactionBlockValues) => {
     setTransactionBlocks((current) => current.map((transactionBlock) => {
@@ -387,6 +417,8 @@ const TransactionBuilderContextProvider = ({
                   key={`preview-${crossChainActionInProcessing.id}`}
                   data={crossChainActionInProcessing.preview}
                   type={crossChainActionInProcessing.type}
+                  chainId={crossChainActionInProcessing.chainId}
+                  estimation={crossChainActionInProcessing.estimated}
                   noBottomBorder
                 />
               </PreviewWrapper>
@@ -475,11 +507,16 @@ const TransactionBuilderContextProvider = ({
                   key={`preview-${crossChainAction.id}`}
                   data={crossChainAction.preview}
                   type={crossChainAction.type}
+                  isEstimating={crossChainAction.isEstimating}
+                  estimation={crossChainAction.estimated}
+                  chainId={crossChainAction.chainId}
                 />
               ))}
             </PreviewWrapper>
-            <PrimaryButton marginTop={30} onClick={onSubmitClick} disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit'}
+            <PrimaryButton marginTop={30} onClick={onSubmitClick} disabled={isSubmitting || isEstimatingCrossChainActions}>
+              {isSubmitting && !isEstimatingCrossChainActions && 'Submitting...'}
+              {isEstimatingCrossChainActions && !isSubmitting && 'Estimating...'}
+              {!isSubmitting && !isEstimatingCrossChainActions && 'Submit'}
             </PrimaryButton>
             <br/>
             <SecondaryButton
