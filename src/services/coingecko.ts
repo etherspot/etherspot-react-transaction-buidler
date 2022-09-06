@@ -22,7 +22,7 @@ export const chainToCoinGeckoNativeCoinId = {
   [CHAIN_ID.AURORA]: 'ethereum', // gas paid in eth
   [CHAIN_ID.FANTOM]: 'fantom',
   [CHAIN_ID.CELO]: 'celo',
-  [CHAIN_ID.MOONBEAM]: 'moonbeam', // gas paid in eth
+  [CHAIN_ID.MOONBEAM]: 'moonbeam',
 };
 
 export const getNativeAssetPriceInUsd = async (chainId: number): Promise<number | null> => {
