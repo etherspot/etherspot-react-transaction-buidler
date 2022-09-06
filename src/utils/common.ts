@@ -22,10 +22,22 @@ export const formatAssetAmountInput = (
 };
 
 export const formatAmountDisplay = (amount: string): string => {
-  // TODO: handle small amounts that have more than 2 digits after decimal
-  return +amount < 0.01
-    ? amount
-    : new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
+  if (+amount < 0.01) {
+    const [,fraction] = amount.split('.');
+    let smallAmount = '~0.';
+    [...fraction].every((digitString) => {
+      if (digitString === '0') {
+        smallAmount = `${smallAmount}0`;
+        return true;
+      }
+      smallAmount = `${smallAmount}${digitString}`;
+      return false;
+    });
+    // const firstNonZeroDigit = BigNumber.from(fraction).toString()[0];
+    return smallAmount;
+  }
+
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
 };
 
 export const humanizeHexString = (

@@ -241,8 +241,6 @@ const TransactionBuilderContextProvider = ({
     [crossChainActions],
   );
 
-  console.log({ isEstimatingCrossChainActions, isSubmitting })
-
   const onContinueClick = useCallback(async () => {
     if (!sdk) {
       showAlertModal('Failed to retrieve Etherspot SDK!');

@@ -1,6 +1,6 @@
 {
   "name": "@etherspot/react-transaction-buidler",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Etherspot React component.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -33,6 +33,7 @@
   "author": "Etherspot",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.27.2",
     "debounce-promise": "^3.1.2",
     "ethers": "^5.6.9",
     "etherspot": "^1.35.4",

@@ -21,6 +21,7 @@ import {
 } from './validation';
 import { nativeAssetPerChainId } from './chain';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
+import { getNativeAssetPriceInUsd } from '../services/coingecko';
 
 
 interface AssetTransfer {
@@ -61,6 +62,7 @@ export interface CrossChainActionTransaction extends ExecuteAccountTransactionDt
 
 export interface CrossChainActionEstimation {
   gasCost?: BigNumber | null;
+  usdPrice?: number | null;
   errorMessage?: string;
 }
 
@@ -375,6 +377,7 @@ export const estimateCrossChainAction = async (
   // TODO: add estimations for key based
 
   let gasCost = null;
+  let usdPrice = null;
   let errorMessage;
 
   if (!sdk) {
@@ -403,5 +406,11 @@ export const estimateCrossChainAction = async (
     }
   }
 
-  return { gasCost, errorMessage }
+  try {
+    usdPrice = await getNativeAssetPriceInUsd(crossChainAction.chainId);
+  } catch (e) {
+    //
+  }
+
+  return { gasCost, errorMessage, usdPrice }
 }

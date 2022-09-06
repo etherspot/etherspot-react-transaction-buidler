@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import { ethers } from 'ethers';
 
@@ -63,12 +63,17 @@ const ActionPreview = ({
     actionStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
   }
 
-  let cost = isEstimating && 'Estimating...';
-  if (estimation) {
-    cost = estimation.gasCost
-      ? `${formatAmountDisplay(ethers.utils.formatUnits(estimation.gasCost, nativeAssetPerChainId[chainId].decimals))} ${nativeAssetPerChainId[chainId].symbol}`
-      : estimation.errorMessage;
-  }
+  const cost = useMemo(() => {
+    if (isEstimating) return 'Estimating...';
+    if (!estimation || !estimation?.gasCost) return estimation?.errorMessage;
+
+    const gasCostNumericString = ethers.utils.formatUnits(estimation.gasCost, nativeAssetPerChainId[chainId].decimals);
+    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol}`;
+    if (!estimation.usdPrice) return gasCostFormatted;
+
+    const gasPriceFormatted = formatAmountDisplay(`${+gasCostNumericString * +estimation.usdPrice}`);
+    return `${gasCostFormatted} (${gasPriceFormatted} USD)`;
+  }, [isEstimating, estimation]);
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
     // @ts-ignore
