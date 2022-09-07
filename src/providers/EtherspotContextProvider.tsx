@@ -24,6 +24,7 @@ import {
   addressesEqual,
   isCaseInsensitiveMatch,
 } from '../utils/validation';
+import { sessionStorageInstance } from '../services/etherspot';
 
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
 
@@ -78,6 +79,7 @@ const EtherspotContextProvider = ({
     const sdkForChain = new EtherspotSdk(provider, {
       networkName,
       env: envName,
+      sessionStorage: sessionStorageInstance,
       omitWalletProviderNetworkCheck: true,
     });
 
