@@ -1,11 +1,12 @@
 import React, { createContext } from 'react';
 import { Sdk as EtherspotSdk } from 'etherspot/dist/sdk/sdk';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import {
   AccountBalance,
   WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
+
+import { AssetWithBalance, Asset, TotalWorthPerAddress } from '../providers/EtherspotContextProvider';
 
 export interface EtherspotContextData {
   data: {
@@ -17,9 +18,11 @@ export interface EtherspotContextData {
     getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
     isConnecting: boolean;
     sdk: EtherspotSdk | null;
-    getSupportedAssetsForChainId: (chainId: number) => Promise<TokenListToken[]>;
-    getAssetsBalancesForChainId: (assets: TokenListToken[], chainId: number, address?: string | null) => Promise<AccountBalance[]>;
+    getSupportedAssetsForChainId: (chainId: number) => Promise<Asset[]>;
+    getAssetsBalancesForChainId: (assets: Asset[], chainId: number, address?: string | null) => Promise<AccountBalance[]>;
+    getSupportedAssetsWithBalancesForChainId: (chainId: number, positiveBalancesOnly?: boolean, address?: string | null) => Promise<AssetWithBalance[]>;
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
+    totalWorthPerAddress: TotalWorthPerAddress;
   }
 }
 

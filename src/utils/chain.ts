@@ -16,17 +16,24 @@ export const CHAIN_ID = {
   MOONBEAM: 1284,
 };
 
-export const supportedChains = [
-  { chainId: CHAIN_ID.ETHEREUM_MAINNET, title: 'Ethereum' },
-  { chainId: CHAIN_ID.POLYGON, title: 'Polygon' },
-  { chainId: CHAIN_ID.BINANCE, title: 'Binance Smart Chain' },
-  { chainId: CHAIN_ID.XDAI, title: 'Gnosis Chain (xDai)' },
-  { chainId: CHAIN_ID.OPTIMISM, title: 'Optimism' },
-  { chainId: CHAIN_ID.ARBITRUM, title: 'Arbitrum' },
-  { chainId: CHAIN_ID.AURORA, title: 'Aurora' },
-  { chainId: CHAIN_ID.FANTOM, title: 'Fantom' },
-  { chainId: CHAIN_ID.MOONBEAM, title: 'Moonbeam' },
-  { chainId: CHAIN_ID.CELO, title: 'CELO' },
+export interface Chain {
+  chainId: number;
+  title: string;
+  iconUrl: string;
+}
+
+export const supportedChains: Chain[] = [
+  { chainId: CHAIN_ID.ETHEREUM_MAINNET, title: 'Ethereum', iconUrl: 'https://tokens.1inch.exchange/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png' },
+  { chainId: CHAIN_ID.POLYGON, title: 'Polygon', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_polygon.jpg&w=64&q=75' },
+  { chainId: CHAIN_ID.BINANCE, title: 'Binance Smart Chain', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_binance.jpg&w=64&q=75' },
+  { chainId: CHAIN_ID.XDAI, title: 'Gnosis Chain (xDai)', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_xdai.jpg&w=64&q=75' },
+  { chainId: CHAIN_ID.AVALANCHE, title: 'Avalanche', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_avalanche.jpg&w=64&q=75' },
+  { chainId: CHAIN_ID.OPTIMISM, title: 'Optimism', iconUrl: 'https://tokens.1inch.io/0x4200000000000000000000000000000000000042.png' },
+  { chainId: CHAIN_ID.ARBITRUM, title: 'Arbitrum', iconUrl: 'https://app.1inch.io/assets/images/network-logos/arbitrum.svg' },
+  { chainId: CHAIN_ID.AURORA, title: 'Aurora', iconUrl: 'https://app.1inch.io/assets/images/network-logos/aurora.svg' },
+  { chainId: CHAIN_ID.FANTOM, title: 'Fantom', iconUrl: 'https://app.1inch.io/assets/images/network-logos/fantom.svg' },
+  { chainId: CHAIN_ID.MOONBEAM, title: 'Moonbeam', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_moonbeam.jpg&w=64&q=75' },
+  { chainId: CHAIN_ID.CELO, title: 'CELO', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75' },
 ];
 
 export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
@@ -52,7 +59,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'BNB',
     symbol: 'BNB',
     decimals: 18,
-    logoURI: 'https://tokens.1inch.exchange/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png',
+    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_binance.jpg&w=64&q=75',
   },
   [CHAIN_ID.XDAI]: {
     chainId: CHAIN_ID.XDAI,
@@ -68,7 +75,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Avalanche',
     symbol: 'AVAX',
     decimals: 18,
-    logoURI: 'https://image.pngaaa.com/19/5554019-middle.png',
+    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_avalanche.jpg&w=64&q=75',
   },
   [CHAIN_ID.OPTIMISM]: {
     chainId: CHAIN_ID.OPTIMISM,

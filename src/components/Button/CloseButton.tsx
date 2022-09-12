@@ -5,8 +5,8 @@ const CloseButton = styled.span<{
   right?: number;
 }>`
   position: absolute;
-  top: ${({ top }) => top ?? -3}px;
-  right: ${({ right }) => right ?? 5}px;
+  top: ${({ top }) => top ?? 5}px;
+  right: ${({ right }) => right ?? 12}px;
   transform: rotate(45deg);
   cursor: pointer;
   padding: 5px;
@@ -17,9 +17,9 @@ const CloseButton = styled.span<{
   
   &:after {
     content: "+";
-    color: #f43b40;
-    font-weight: 400;
-    font-size: 30px;
+    color: #0a1427;
+    font-weight: 300;
+    font-size: 26px;
     line-height: 30px;
   }
 `;

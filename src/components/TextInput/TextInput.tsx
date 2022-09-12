@@ -1,47 +1,49 @@
 import React, {
-  useCallback,
-  useMemo,
+  ReactNode,
   useState,
 } from 'react';
 import styled from 'styled-components';
 import { uniqueId } from 'lodash';
-import BeatLoader from 'react-spinners/BeatLoader'
-import { SelectOption } from '../SelectInput/SelectInput';
-import { useTransactionBuilderModal } from '../../hooks';
 
-const Wrapper = styled.div`
-  margin-bottom: 15px;
-`;
-
-const InputWrapper = styled.div<{ hasSelect?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean }>`
   position: relative;
-  overflow: hidden;
-  height: 42px;
-  padding: ${({ hasSelect }) => hasSelect ? '0 0 0 10px' : '0 10px'};
-  border: 1px solid #000;
-  border-radius: 5px;
+  margin-bottom: 18px;
+  background: #ffe6d9;
+  border-radius: 8px;
+  padding: 14px;
+  ${({ disabled }) => disabled && `opacity: 0.3;`}
+`;
+
+const InputWrapper = styled.div`
   display: flex;
+  justify-content: flex-start;
+  align-items: center;
   flex-direction: row;
-  align-items: flex-start;
-  justify-content: center;
 `;
 
-const Label = styled.label`
-  display: inline-block;
-  color: #000;
-  margin-bottom: 5px;
-  font-size: 14px;
-`;
-
-const Input = styled.input<TextInputProps>`
-  border: none;
-  background: #fff;
-  color: #000;
-  height: 32px;
-  font-size: 14px;
-  line-height: 20px;
+const InputWrapperRight = styled.div`
   flex: 1;
-  padding: 5px 0;
+`;
+
+const Label = styled.label<{ outside?: boolean }>`
+  display: inline-block;
+  color: #6e6b6a;
+  margin-bottom: ${({ outside }) => outside ? 11 : 14}px;
+  font-size: 14px;
+`;
+
+const Input = styled.input<{ smallerInput?: boolean }>`
+  width: 100%;
+  font-family: "PTRootUIWebMedium", sans-serif;
+  border: none;
+  background: transparent;
+  color: #000;
+  font-size: ${({ smallerInput }) => smallerInput ? 14 : 20}px;
+  padding: 0;
+
+  &::placeholder {
+    color: #6e6b6a;
+  }
 
   &:focus {
     outline: none;
@@ -52,28 +54,11 @@ const Input = styled.input<TextInputProps>`
   `}
 `;
 
-const SelectedOption = styled.span<{ placeholderText?: boolean }>`
-  font-size: ${({ placeholderText }) => placeholderText ? 9 : 12}px;
-  ${({ placeholderText }) => !placeholderText && `text-decoration: underline;`}
-`;
-
-const SelectWrapper = styled.div<{ disabled?: boolean }>`
-  height: 100%;
-  border-left: 1px solid #000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #dedede;
-  cursor: pointer;
-  padding: 0 5px;
-  min-width: 40px;
-
-  ${({ disabled }) => !disabled && `
-    &:hover {
-      opacity: 0.6;
-    }
-  `}
+const InputBottomText = styled.div`
+  font-family: "PTRootUIWebMedium", sans-serif;
+  font-size: 14px;
+  color: #6e6b6a;
+  margin-top: 4px;
 `;
 
 const ErrorMessage = styled.small`
@@ -86,76 +71,51 @@ interface TextInputProps {
   value?: string;
   label?: string;
   errorMessage?: string;
-  isLoading?: boolean;
-  selectOptions?: SelectOption[];
-  selectedOption?: SelectOption | null;
-  selectedOptionDisplayValue?: string;
-  onOptionSelect?: (option: SelectOption) => void;
   onValueChange?: (value: string) => void;
   disabled?: boolean;
+  placeholder?: string;
+  inputBottomText?: string;
+  inputLeftComponent?: ReactNode;
+  displayLabelOutside?: boolean
+  smallerInput?: boolean
 }
 
 const TextInput = ({
   label,
   errorMessage,
   value,
-  selectOptions,
-  selectedOption,
-  selectedOptionDisplayValue,
-  onOptionSelect,
   onValueChange,
-  isLoading = false,
   disabled = false,
+  placeholder,
+  inputBottomText,
+  inputLeftComponent,
+  displayLabelOutside = false,
+  smallerInput = false,
 }: TextInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-text-input-'));
 
-  const hasSelect = !!selectOptions;
-
-  const { showSelectModal, hideSelectModal } = useTransactionBuilderModal();
-
-  const onSelectClick = useCallback(() => {
-    if (isLoading || !hasSelect || disabled) return;
-
-    if (!onOptionSelect) {
-      showSelectModal(selectOptions, () => hideSelectModal());
-      return;
-    }
-
-    showSelectModal(selectOptions, onOptionSelect)
-  }, [isLoading, selectOptions, disabled]);
-
-
-  const selectedOptionTitle = useMemo(() => {
-    if (!selectOptions?.length) return 'NO OPTIONS';
-    return selectedOption?.title
-      ? selectedOptionDisplayValue ?? selectedOption?.title
-      : null;
-  }, [
-    selectedOption,
-    selectOptions,
-    isLoading,
-  ]);
-
   return (
-    <Wrapper>
-      {!!label && <Label htmlFor={inputId}>{label}</Label>}
-      <InputWrapper hasSelect={hasSelect}>
-        <Input
-          id={inputId}
-          value={value ?? ''}
-          disabled={disabled}
-          onChange={(event) => onValueChange && onValueChange(event?.target?.value ?? '')}
-        />
-        {hasSelect && (
-          <SelectWrapper onClick={onSelectClick} disabled={isLoading || !selectOptions?.length || disabled}>
-            {!isLoading && !!selectedOptionTitle && <SelectedOption>{selectedOptionTitle}</SelectedOption>}
-            {!isLoading && !selectedOptionTitle && <SelectedOption placeholderText>SELECT</SelectedOption>}
-            {isLoading && <BeatLoader size={6} />}
-          </SelectWrapper>
-        )}
-      </InputWrapper>
-      {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-    </Wrapper>
+    <>
+      {displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
+      <Wrapper disabled={disabled}>
+        {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
+        <InputWrapper>
+          {inputLeftComponent}
+          <InputWrapperRight>
+            <Input
+              id={inputId}
+              value={value ?? ''}
+              disabled={disabled}
+              placeholder={placeholder}
+              onChange={(event) => onValueChange && onValueChange(event?.target?.value ?? '')}
+              smallerInput={smallerInput}
+            />
+            {!!inputBottomText && <InputBottomText>{inputBottomText}</InputBottomText>}
+          </InputWrapperRight>
+        </InputWrapper>
+        {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+      </Wrapper>
+    </>
   );
 }
 

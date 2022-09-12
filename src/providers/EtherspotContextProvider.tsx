@@ -15,7 +15,10 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
-import { ethers } from 'ethers';
+import {
+  BigNumber,
+  ethers,
+} from 'ethers';
 
 import { EtherspotContext } from '../contexts';
 import { nativeAssetPerChainId } from '../utils/chain';
@@ -23,10 +26,29 @@ import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-tok
 import {
   addressesEqual,
   isCaseInsensitiveMatch,
+  isNativeAssetAddress,
+  isZeroAddress,
 } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
+import {
+  getAssetPriceKeyByAddress,
+  getAssetsPrices,
+  getNativeAssetPriceInUsd,
+} from '../services/coingecko';
+
+export type Asset = TokenListToken;
+
+export type AssetWithBalance = Asset & {
+  balance: BigNumber;
+  assetPriceUsd: number | null;
+  balanceWorthUsd: number | null;
+}
+
+export interface TotalWorthPerAddress { [address: string]: number }
 
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
+
+let supportedAssetsPerChainId: { [chainId: number]: TokenListToken[] } = {};
 
 const EtherspotContextProvider = ({
   children,
@@ -48,6 +70,7 @@ const EtherspotContextProvider = ({
   const [chainId, setChainId] = useState<number>(defaultChainId);
   const [provider, setProvider] = useState<WalletProviderLike | Web3WalletProvider | null>(null);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [totalWorthPerAddress] = useState<TotalWorthPerAddress>({});
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -141,8 +164,10 @@ const EtherspotContextProvider = ({
     setIsConnecting(false);
   }, [sdk, isConnecting]);
 
-  const getSupportedAssetsForChainId = useCallback(async (assetsChainId: number) => {
+  const getSupportedAssetsForChainId = useCallback(async (assetsChainId: number, force: boolean = false) => {
     if (!sdk) return [];
+
+    if (!force && supportedAssetsPerChainId[assetsChainId]?.length) return supportedAssetsPerChainId[assetsChainId];
 
     let assets: TokenListToken[] = [];
 
@@ -166,7 +191,11 @@ const EtherspotContextProvider = ({
     const nativeAsset = nativeAssetPerChainId[assetsChainId];
     const hasNativeAsset = assets.some((asset) => !asset.address || addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address));
 
-    return hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
+    supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset
+      ? assets
+      : [nativeAsset, ...assets]
+
+    return supportedAssetsPerChainId[assetsChainId];
   }, [sdk]);
 
   const getAssetsBalancesForChainId = useCallback(async (
@@ -189,7 +218,7 @@ const EtherspotContextProvider = ({
 
     // 0x0...0 is default native token address in our assets, but it's not a ERC20 token
     const assetAddressesWithoutZero = assets
-      .filter((asset) => !addressesEqual(asset.address, ethers.constants.AddressZero))
+      .filter((asset) => !isZeroAddress(asset.address))
       .map((asset) => asset.address);
 
     try {
@@ -219,6 +248,56 @@ const EtherspotContextProvider = ({
     return [];
   }, [sdk, accountAddress]);
 
+  const getSupportedAssetsWithBalancesForChainId = useCallback(async (
+    assetsChainId: number,
+    positiveBalancesOnly: boolean = false,
+    balancesForAddress: string | null = accountAddress,
+  ): Promise<AssetWithBalance[]> => {
+    const supportedAssets = await getSupportedAssetsForChainId(assetsChainId);
+    const fromAssetsBalances = await getAssetsBalancesForChainId(supportedAssets, assetsChainId, balancesForAddress);
+
+    // only get prices for assets with balances
+    const assetsPrices = await getAssetsPrices(assetsChainId, fromAssetsBalances.map((asset) => asset.token));
+
+    const assetsWithBalances = await Promise.all(supportedAssets.map(async (asset) => {
+      let balance = ethers.BigNumber.from(0);
+      let assetPriceUsd = null;
+      let balanceWorthUsd = null;
+
+      try {
+        const assetBalance = fromAssetsBalances.find((fromAssetBalance) => {
+          if (isNativeAssetAddress(asset.address, assetsChainId) && fromAssetBalance.token === null) return true;
+          return addressesEqual(asset.address, fromAssetBalance.token);
+        });
+        balance = assetBalance?.balance ?? ethers.BigNumber.from(0);
+
+        if (!balance.isZero()) {
+          assetPriceUsd = isNativeAssetAddress(asset.address, assetsChainId)
+            ? await getNativeAssetPriceInUsd(assetsChainId)
+            : assetsPrices?.[getAssetPriceKeyByAddress(asset.address)] ?? null;
+        }
+
+        balanceWorthUsd = assetPriceUsd
+          // isZero check to avoid underflow
+          ? +ethers.utils.formatUnits(balance, asset.decimals) * assetPriceUsd
+          : null;
+      } catch (e) {
+        //
+      }
+
+      return {
+        ...asset,
+        balance,
+        assetPriceUsd,
+        balanceWorthUsd,
+      };
+    }));
+
+    return positiveBalancesOnly
+      ? assetsWithBalances.filter((asset) => !asset.balance.isZero())
+      : assetsWithBalances;
+  }, [getSupportedAssetsForChainId, accountAddress, getAssetsBalancesForChainId]);
+
   const contextData = useMemo(
     () => ({
       connect,
@@ -230,8 +309,10 @@ const EtherspotContextProvider = ({
       getSdkForChainId,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
+      getSupportedAssetsWithBalancesForChainId,
       providerAddress,
       web3Provider: provider,
+      totalWorthPerAddress,
     }),
     [
       connect,
@@ -243,8 +324,10 @@ const EtherspotContextProvider = ({
       getSdkForChainId,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
+      getSupportedAssetsWithBalancesForChainId,
       providerAddress,
       provider,
+      totalWorthPerAddress,
     ],
   );
 

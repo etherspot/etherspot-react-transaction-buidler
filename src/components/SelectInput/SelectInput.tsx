@@ -4,55 +4,41 @@ import React, {
   useState,
 } from 'react';
 import styled from 'styled-components';
-import { AiFillCaretDown } from 'react-icons/ai';
+import { AiOutlineSearch } from 'react-icons/ai';
+import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icons/md';
 import { uniqueId } from 'lodash';
-import BeatLoader from 'react-spinners/BeatLoader'
 
-import { useTransactionBuilderModal } from '../../hooks';
+import { containsText } from '../../utils/validation';
 
-const Wrapper = styled.div`
-  margin-bottom: 15px;
-`
-
-const InputWrapper = styled.div`
+const Wrapper = styled.div<{ disabled: boolean }>`
   position: relative;
-  overflow: hidden;
-  height: 32px;
-  padding: 5px 60px 5px 10px;
-  border: 1px solid #000;
-  border-radius: 5px;
-  font-size: 14px;
-  line-height: 32px;
+  margin-bottom: 18px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px 14px;
+  ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
-const SelectButton = styled(AiFillCaretDown)`
-`;
-
-const SelectWrapper = styled.div<{ disabled?: boolean }>`
+const SelectWrapper = styled.div<{ disabled: boolean }>`
   position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
+  top: 10px;
+  right: 8px;
   width: 50px;
-  border-left: 1px solid #000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #dedede;
-  cursor: pointer;
+  text-align: right;
 
   ${({ disabled }) => !disabled && `
+    cursor: pointer;
+  
     &:hover {
-      opacity: 0.6;
+      opacity: 0.5;
     }
   `}
 `;
 
-const Label = styled.label`
+const Label = styled.label<{ outside?: boolean }>`
   display: inline-block;
-  color: #000;
-  margin-bottom: 5px;
+  color: #6e6b6a;
+  margin-bottom: ${({ outside }) => outside ? 11 : 14}px;
   font-size: 14px;
 `;
 
@@ -62,9 +48,83 @@ const ErrorMessage = styled.small`
   font-size: 12px;
 `;
 
+const SearchInputWrapper = styled.label`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  border-bottom: 1px solid #ffd2bb;
+  margin-bottom: 17px;
+  padding: 0 0 5px;
+`;
+
+const SearchInput = styled.input`
+  font-size: 16px;
+  width: calc(100% - 18px);
+  height: 20px;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0 8px;
+  font-family: "PTRootUIWebMedium", sans-serif;
+  color: #ff7733;
+  
+  &::placeholder {
+    color: #ff7733;
+  }
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+const OptionList = styled.div`
+  position: relative;
+`;
+
+const SelectedOption = styled.div<{ disabled: boolean }>`
+  color: #191726;
+  font-size: 16px;
+  font-family: "PTRootUIWebMedium", sans-serif;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+
+  ${({ disabled }) => !disabled && `
+    cursor: pointer;
+  
+    &:hover {
+      opacity: 0.5;
+    }
+  `}
+`;
+
+const OptionListItem = styled(SelectedOption)`
+  text-align: left;
+  margin-bottom: 15px;
+  cursor: pointer;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+
+const OptionImage = styled.img`
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 8px;
+`;
+
 export interface SelectOption {
   title: string;
   value: any;
+  iconUrl?: string;
 }
 
 interface SelectInputProps {
@@ -75,6 +135,9 @@ interface SelectInputProps {
   selectedOption?: SelectOption | null;
   onOptionSelect?: (option: SelectOption) => void;
   disabled?: boolean;
+  noSearch?: boolean;
+  placeholder?: string;
+  displayLabelOutside?: boolean
 }
 
 const SelectInput = ({
@@ -85,44 +148,82 @@ const SelectInput = ({
   selectedOption,
   onOptionSelect,
   disabled = false,
+  noSearch = false,
+  placeholder = 'None',
+  displayLabelOutside = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-select-input-'));
-
-  const { showSelectModal, hideSelectModal } = useTransactionBuilderModal();
+  const [searchInputId] = useState(uniqueId('etherspot-select-search-input-'));
+  const [showSelectModal, setShowSelectModal] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const onSelectClick = useCallback(() => {
     if (isLoading || disabled) return;
+    setShowSelectModal(!showSelectModal);
+  }, [isLoading, disabled, showSelectModal]);
 
-    if (!onOptionSelect) {
-      showSelectModal(options, () => hideSelectModal());
-      return;
-    }
-
-    showSelectModal(options, onOptionSelect)
-  }, [isLoading, options, disabled]);
+  const hideSelectModal = () => setShowSelectModal(false);
 
   const selectedOptionTitle = useMemo(() => {
     if (isLoading && !selectedOption?.title) return 'Loading options...';
     if (!isLoading && !options?.length) return 'No options';
-    return selectedOption?.title ?? 'None';
+    return selectedOption?.title ?? placeholder;
   }, [
     selectedOption,
     options,
     isLoading,
+    placeholder,
   ]);
 
+  const filteredSelectOptions: SelectOption[] = useMemo(
+    () => options.filter((selectOption) => containsText(selectOption?.title, searchQuery) || containsText(selectOption?.value , searchQuery)),
+    [options, searchQuery],
+  )
+
   return (
-    <Wrapper>
-      {!!label && <Label htmlFor={inputId}>{label}</Label>}
-      <InputWrapper onClick={onSelectClick}>
-        {selectedOptionTitle}
-        <SelectWrapper disabled={!!isLoading || disabled}>
-          {!isLoading && <SelectButton size={15} />}
-          {isLoading && <BeatLoader size={6} />}
-        </SelectWrapper>
-      </InputWrapper>
-      {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-    </Wrapper>
+    <>
+      {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
+      <Wrapper disabled={disabled}>
+        {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
+        {!isLoading && (
+          <SelectWrapper onClick={onSelectClick} disabled={disabled}>
+            {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color="#0a1427" />}
+            {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color="#0a1427" />}
+          </SelectWrapper>
+        )}
+        {!showSelectModal && (
+          <SelectedOption onClick={onSelectClick} disabled={disabled}>
+            {!!selectedOption?.iconUrl && <OptionImage src={selectedOption.iconUrl} alt={selectedOption.title} />}
+            {selectedOptionTitle}
+          </SelectedOption>
+        )}
+        {showSelectModal && (
+          <OptionList>
+            {!noSearch && options?.length > 5 && (
+              <SearchInputWrapper htmlFor={searchInputId}>
+                <AiOutlineSearch size={18} color="#ff7733" />
+                <SearchInput id={searchInputId} onChange={(e: any) => setSearchQuery(e?.target?.value)} placeholder="Search" />
+              </SearchInputWrapper>
+            )}
+            {!filteredSelectOptions?.length && <small>No results.</small>}
+            {filteredSelectOptions.map((option, index) => (
+              <OptionListItem
+                disabled={disabled}
+                key={`${option.value}-${index}`}
+                onClick={() => {
+                  if (onOptionSelect) onOptionSelect(option);
+                  hideSelectModal();
+                }}
+              >
+                {!!option.iconUrl && <OptionImage src={option.iconUrl} alt={option.title} />}
+                {option.title}
+              </OptionListItem>
+            ))}
+          </OptionList>
+        )}
+        {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+      </Wrapper>
+    </>
   );
 }
 

@@ -5,6 +5,7 @@ import { AddedTransactionBlock } from '../providers/TransactionBuilderContextPro
 import { AssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
 import { SendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
 import { SwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
+import { nativeAssetPerChainId } from './chain';
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {
   if (!address) return false;
@@ -85,4 +86,28 @@ export const addressesEqual = (address1: string | undefined, address2: string | 
   return isCaseInsensitiveMatch(address1, address2);
 };
 
-export const isZeroAddress = (address: string | undefined): boolean => addressesEqual(address, ethers.constants.AddressZero)
+const zeroAddressConstants = [
+  ethers.constants.AddressZero,
+  '0x000000000000000000000000000000000000dEaD',
+  '0xdeaDDeADDEaDdeaDdEAddEADDEAdDeadDEADDEaD',
+  '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+  '0xDDdDddDdDdddDDddDDddDDDDdDdDDdDDdDDDDDDd',
+  '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF',
+];
+
+// TODO: apply this to all zero addres checks
+export const isZeroAddress = (address: string | undefined): boolean => !!address && zeroAddressConstants.some((zeroAddress) => addressesEqual(address, zeroAddress));
+
+export const isNativeAssetAddress = (
+  address: string | undefined,
+  chainId: number,
+): boolean => !address || isZeroAddress(address) || addressesEqual(address, nativeAssetPerChainId[chainId]?.address);
+
+export const containsText = (text: string | undefined, query: string): boolean => {
+  try {
+    return !!text && text.toLowerCase().includes(query);
+  } catch (e) {
+    //
+  }
+  return false;
+}

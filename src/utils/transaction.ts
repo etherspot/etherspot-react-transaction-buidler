@@ -18,6 +18,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import {
   addressesEqual,
   isValidEthereumAddress,
+  isZeroAddress,
 } from './validation';
 import { nativeAssetPerChainId } from './chain';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
@@ -152,7 +153,7 @@ export const buildCrossChainAction = async (
       if (approvalAddress
         && approvalAmount
         && ethers.utils.isAddress(assetContractAddress)
-        && !addressesEqual(assetContractAddress, ethers.constants.AddressZero)) {
+        && !isZeroAddress(assetContractAddress)) {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, assetContractAddress);
         const approvalTransactionRequest = erc20Contract?.encodeApprove?.(approvalAddress, approvalAmount);

@@ -4,19 +4,19 @@ const SecondaryButton = styled.button<{
   disabled?: boolean;
   color?: string;
   marginTop?: number;
-  noPadding?: boolean;
+  fontSize?: number;
 }>`
+  font-family: "PTRootUIWebMedium", sans-serif;
   border: none;
   background: transparent;
-  font-size: 14px;
-  text-decoration: underline;
-  ${({ noPadding }) => !noPadding && `padding: 5px 25px;`};
+  font-size: 16px;
+  padding: 0;
   ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px`};
-  color: ${({ color }) => color || '#fff'};
+  color: ${({ color }) => color || '#ffeee6'};
   cursor: pointer;
 
   &:hover {
-    opacity: 0.5;
+    text-decoration: underline;
   }
 `;
 

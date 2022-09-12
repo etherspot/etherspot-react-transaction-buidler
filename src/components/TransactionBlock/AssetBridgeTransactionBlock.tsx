@@ -6,12 +6,8 @@ import React, {
 } from 'react';
 import styled from 'styled-components';
 import {
-  AccountBalance,
   BridgingQuote,
-  CrossChainBridgeSupportedChain,
-  CrossChainServiceProvider,
 } from 'etherspot';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
 
@@ -26,9 +22,14 @@ import {
   formatAssetAmountInput,
 } from '../../utils/common';
 import {
-  addressesEqual,
   ErrorMessages,
 } from '../../utils/validation';
+import SwitchInput from '../SwitchInput';
+import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
+import { Chain } from '../../utils/chain';
+import {
+  AssetWithBalance,
+} from '../../providers/EtherspotContextProvider';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -41,18 +42,40 @@ export interface AssetBridgeTransactionBlockValues {
 }
 
 const Title = styled.h3`
-  margin: 0 0 25px;
-  padding: 0 0 5px;
-  border-bottom: 1px solid #000;
+  margin: 0 0 18px;
+  padding: 0;
+  font-size: 16px;
+  color: #191726;
+  font-family: "PTRootUIWebBold", sans-serif;
 `;
 
-const mapAvailableNetworkToSelectOption = ({
-  name: title,
-  chainId: value,
-}: CrossChainBridgeSupportedChain): SelectOption => ({
-  title,
-  value,
-});
+const AssetImage = styled.img`
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  margin-right: 8px;
+`;
+
+const NetworkImage = styled.img`
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  margin-right: 11px;
+`;
+
+const NetworkAssetCombinedImagesWrapper = styled.div`
+  position: relative;
+
+  ${AssetImage} {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    height: 14px;
+    width: 14px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+  }
+`;
 
 const AssetBridgeTransactionBlock = ({
   id: transactionBlockId,
@@ -62,150 +85,59 @@ const AssetBridgeTransactionBlock = ({
   errorMessages?: ErrorMessages;
 }) => {
   const [amount, setAmount] = useState<string>('');
-  const [selectedFromAsset, setSelectedFromAsset] = useState<SelectOption | null>(null);
-  const [selectedToAsset, setSelectedToAsset] = useState<SelectOption | null>(null);
-  const [selectedFromNetwork, setSelectedFromNetwork] = useState<SelectOption | null>(null);
-  const [selectedToNetwork, setSelectedToNetwork] = useState<SelectOption | null>(null);
+  const [selectedFromAsset, setSelectedFromAsset] = useState<AssetWithBalance | null>(null);
+  const [selectedToAsset, setSelectedToAsset] = useState<AssetWithBalance | null>(null);
+  const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
+  const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<SelectOption | null>(null);
-  const [availableNetworks, setAvailableNetworks] = useState<CrossChainBridgeSupportedChain[] | null>(null);
-  const [availableFromAssets, setAvailableFromAssets] = useState<TokenListToken[] | null>(null);
-  const [availableFromAssetsBalances, setAvailableFromAssetsBalances] = useState<AccountBalance[] | null>(null);
-  const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
   const [availableQuotes, setAvailableQuotes] = useState<BridgingQuote[] | null>(null);
-  const [isLoadingAvailableNetworks, setIsLoadingAvailableNetworks] = useState<boolean>(false);
-  const [isLoadingAvailableFromAssets, setIsLoadingAvailableFromAssets] = useState<boolean>(false);
-  const [isLoadingAvailableToAssets, setIsLoadingAvailableToAssets] = useState<boolean>(false);
   const [isLoadingAvailableQuotes, setIsLoadingAvailableQuotes] = useState<boolean>(false);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { sdk, getSupportedAssetsForChainId, getAssetsBalancesForChainId } = useEtherspot();
-
-  const fromNetworkOptions = useMemo(
-    () => availableNetworks
-      ?.filter((network) => network.sendingEnabled)
-      ?.map(mapAvailableNetworkToSelectOption),
-    [availableNetworks],
-  );
-
-  const toNetworkOptions = useMemo(
-    () => availableNetworks
-      ?.filter((network) => network.receivingEnabled)
-      ?.map(mapAvailableNetworkToSelectOption)
-      ?.filter((option) => option.value !== selectedFromNetwork?.value),
-    [selectedFromNetwork, availableNetworks],
-  );
+  const {
+    sdk,
+    providerAddress,
+    accountAddress,
+    totalWorthPerAddress,
+  } = useEtherspot();
 
   useEffect(() => {
-    if (selectedFromNetwork?.value === selectedToNetwork?.value) setSelectedToNetwork(null);
+    if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
+      setSelectedToNetwork(null);
+      setSelectedToAsset(null);
+    }
   }, [selectedFromNetwork, selectedToNetwork]);
 
   useEffect(() => {
-    setSelectedFromAsset(null);
     setAmount('');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
-  }, [selectedFromNetwork]);
+  }, [selectedFromNetwork, selectedFromAsset]);
 
   useEffect(() => {
-    setSelectedToAsset(null);
     setSelectedQuote(null);
     resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
   }, [selectedToNetwork, selectedFromNetwork]);
 
-  const updateAvailableNetworks = useCallback(async () => {
-    if (!sdk) return;
-    setIsLoadingAvailableNetworks(true);
-    try {
-      // TODO: remove serviceProvider once it is fixed on SDK side
-      const networks = await sdk.getCrossChainBridgeSupportedChains({ serviceProvider: CrossChainServiceProvider.LiFi});
-      setAvailableNetworks(networks);
-    } catch (e) {
-      //
-    }
-    setIsLoadingAvailableNetworks(false);
-  }, [sdk]);
-
-  useEffect(() => {
-    updateAvailableNetworks();
-  }, [updateAvailableNetworks]);
-
-  const updateAvailableFromAssets = useCallback(async () => {
-    if (!sdk || !selectedFromNetwork) return;
-    setIsLoadingAvailableFromAssets(true);
-    try {
-      const fromAssets = await getSupportedAssetsForChainId(+selectedFromNetwork.value);
-      const fromAssetsBalances = await getAssetsBalancesForChainId(fromAssets, +selectedFromNetwork.value);
-
-      const fromAssetsWithPositiveBalances = fromAssets.filter((asset) => fromAssetsBalances.some((fromAssetBalance) => {
-        if (addressesEqual(asset.address, ethers.constants.AddressZero) && fromAssetBalance.token === null) return true;
-        return addressesEqual(asset.address, fromAssetBalance.token);
-      }));
-
-      setAvailableFromAssets(fromAssetsWithPositiveBalances);
-      setAvailableFromAssetsBalances(fromAssetsBalances);
-    } catch (e) {
-      //
-    }
-    setIsLoadingAvailableFromAssets(false);
-  }, [sdk, selectedFromNetwork, getSupportedAssetsForChainId, getAssetsBalancesForChainId]);
-
-  useEffect(() => { updateAvailableFromAssets(); }, [updateAvailableFromAssets]);
-
-  const updateAvailableToAssets = useCallback(async () => {
-    if (!sdk || !selectedToNetwork) return;
-    setIsLoadingAvailableToAssets(true);
-    try {
-      const toAssets = await getSupportedAssetsForChainId(+selectedToNetwork.value);
-      setAvailableToAssets(toAssets);
-    } catch (e) {
-      //
-    }
-    setIsLoadingAvailableToAssets(false);
-  }, [sdk, selectedToNetwork, getSupportedAssetsForChainId]);
-
-  useEffect(() => {  updateAvailableToAssets(); }, [updateAvailableToAssets]);
-
-  const availableFromAssetsOptions = useMemo(() => availableFromAssets?.map((availableAsset) => {
-    const assetBalance = availableFromAssetsBalances?.find((fromAssetBalance) => {
-      if (addressesEqual(availableAsset.address, ethers.constants.AddressZero) && fromAssetBalance.token === null) return true;
-      return addressesEqual(availableAsset.address, fromAssetBalance.token);
-    });
-
-    const assetBalanceFormatted = assetBalance
-      ? formatAmountDisplay(ethers.utils.formatUnits(assetBalance.balance, availableAsset.decimals))
-      : '0.00';
-
-    return ({
-      title: `${availableAsset.name} (${assetBalanceFormatted} ${availableAsset.symbol})`,
-      value: availableAsset.address,
-    })
-  }), [availableFromAssets, availableFromAssetsBalances]);
-
   const updateAvailableQuotes = useCallback(debounce(async () => {
     setSelectedQuote(null);
     setAvailableQuotes([]);
 
-    if (!sdk || !selectedToAsset || !selectedFromAsset || !amount || !selectedFromNetwork?.value || !selectedToNetwork?.value) return;
+    if (!sdk || !selectedToAsset || !selectedFromAsset || !amount || !selectedFromNetwork?.chainId || !selectedToNetwork?.chainId) return;
 
     setIsLoadingAvailableQuotes(true);
 
     try {
-      const fromAsset = availableFromAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedFromAsset?.value));
-      if (!fromAsset) {
-        setIsLoadingAvailableQuotes(false);
-        return;
-      }
-
       const { items: quotes } = await sdk.getCrossChainQuotes({
-        fromChainId: +selectedFromNetwork.value,
-        toChainId: +selectedToNetwork?.value,
-        fromAmount: ethers.utils.parseUnits(amount, fromAsset.decimals),
-        fromTokenAddress: selectedFromAsset?.value,
-        toTokenAddress: selectedToAsset?.value,
+        fromChainId: selectedFromNetwork.chainId,
+        toChainId: selectedToNetwork.chainId,
+        fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+        fromTokenAddress: selectedFromAsset.address,
+        toTokenAddress: selectedToAsset.address,
       });
       setAvailableQuotes(quotes);
     } catch (e) {
@@ -217,40 +149,28 @@ const AssetBridgeTransactionBlock = ({
     sdk,
     selectedFromAsset,
     selectedToAsset, amount,
-    availableFromAssets,
     selectedFromNetwork,
     selectedToNetwork,
   ]);
 
   useEffect(() => { updateAvailableQuotes(); }, [updateAvailableQuotes]);
 
-  const availableToAssetsOptions = useMemo(
-    () => availableToAssets?.map((availableAsset) => ({
-      title: `${availableAsset.name} (${availableAsset.symbol})`,
-      value: availableAsset.address,
-    })),
-    [availableToAssets],
-  );
-
   const onAmountChange = useCallback((newAmount: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    const asset = availableFromAssets?.find((availableAsset) => availableAsset.symbol === selectedFromAsset?.value);
-    const decimals = asset?.decimals ?? 18;
+    const decimals = selectedToAsset?.decimals ?? 18;
     const updatedAmount = formatAssetAmountInput(newAmount, decimals);
     setAmount(updatedAmount)
-  }, [selectedFromAsset, availableFromAssets]);
+  }, [selectedFromAsset, selectedToAsset]);
 
   useEffect(() => {
     if (setTransactionBlockValues) {
-      const fromAsset = availableFromAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedFromAsset?.value));
-      const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
       const quote = availableQuotes?.find((availableQuote) => availableQuote.provider === selectedQuote?.value);
       setTransactionBlockValues(transactionBlockId, {
-        fromChainId: selectedFromNetwork?.value,
-        toChainId: selectedToNetwork?.value,
-        fromAssetAddress: fromAsset?.address,
-        fromAssetDecimals: fromAsset?.decimals,
-        toAssetAddress: toAsset?.address,
+        fromChainId: selectedFromNetwork?.chainId,
+        toChainId: selectedToNetwork?.chainId,
+        fromAssetAddress: selectedFromAsset?.address,
+        fromAssetDecimals: selectedFromAsset?.decimals,
+        toAssetAddress: selectedToAsset?.address,
         amount,
         quote,
       });
@@ -259,90 +179,94 @@ const AssetBridgeTransactionBlock = ({
     setTransactionBlockValues,
     selectedFromNetwork,
     selectedToNetwork,
-    availableFromAssets,
-    availableToAssets,
     selectedFromAsset,
     selectedToAsset,
     amount,
     selectedQuote,
   ]);
 
-  const selectedFromAssetDisplayValue = useMemo(
-    () => availableFromAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedFromAsset?.value))?.symbol,
-    [availableFromAssets, selectedFromAsset]
-  );
-
   const availableQuotesOptions = useMemo(
     () => {
-      const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
       return availableQuotes
         ?.map((availableQuote) => ({
-          title: `${availableQuote.provider.toUpperCase()}: ${formatAmountDisplay(ethers.utils.formatUnits(availableQuote.estimate.toAmount, toAsset?.decimals))} ${toAsset?.symbol}`,
+          title: `${availableQuote.provider.toUpperCase()}`,
           value: availableQuote.provider,
         }));
     },
-    [availableQuotes, availableToAssets],
+    [availableQuotes],
   );
+
+  const walletOptions = [
+    { title: `Key based・$${formatAmountDisplay(totalWorthPerAddress[providerAddress as string] ?? 0)}`, value: 1 },
+    { title: `Etherspot・$${formatAmountDisplay(totalWorthPerAddress[accountAddress as string] ?? 0)}`, value: 2 },
+  ];
 
   return (
     <>
-      <Title>Asset bridge</Title>
-      <SelectInput
-        label="From network"
-        options={fromNetworkOptions ?? []}
-        isLoading={isLoadingAvailableNetworks}
-        selectedOption={selectedFromNetwork}
-        onOptionSelect={(option) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
-          setSelectedFromNetwork(option);
+      <Title>Asset Bridge</Title>
+      <SwitchInput
+        label="From wallet"
+        option1={walletOptions[0]}
+        option2={walletOptions[1]}
+        selectedOption={walletOptions[1]}
+        onChange={(option) => {
+          if (option.value === 1) alert('Unsupported yet!')
         }}
-        errorMessage={errorMessages?.fromChainId}
+        errorMessage={errorMessages?.fromWallet}
       />
-      {!!selectedFromNetwork && (
+      <NetworkAssetSelectInput
+        label="From"
+        onAssetSelect={(asset) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
+          setSelectedFromAsset(asset);
+        }}
+        onNetworkSelect={(network) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
+          setSelectedFromNetwork(network);
+        }}
+        selectedNetwork={selectedFromNetwork}
+        selectedAsset={selectedFromAsset}
+        errorMessage={errorMessages?.fromChainId
+          || errorMessages?.fromAssetAddress
+          || errorMessages?.fromAssetDecimals
+        }
+        showPositiveBalanceAssets
+      />
+      <NetworkAssetSelectInput
+        label="To"
+        onAssetSelect={(asset) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetDecimals');
+          setSelectedToAsset(asset);
+        }}
+        onNetworkSelect={(network) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'toChainId');
+          setSelectedToNetwork(network);
+        }}
+        selectedNetwork={selectedToNetwork}
+        selectedAsset={selectedToAsset}
+        errorMessage={errorMessages?.toChainId
+          || errorMessages?.toAssetAddress
+          || errorMessages?.toAssetDecimals
+        }
+        disabled={!selectedFromNetwork || !selectedFromAsset}
+        hideChainIds={selectedFromNetwork ? [selectedFromNetwork.chainId] : undefined}
+      />
+      {selectedFromAsset && selectedFromNetwork && (
         <TextInput
-          label={`From asset on ${selectedFromNetwork.title}`}
-          isLoading={isLoadingAvailableFromAssets}
-          selectOptions={availableFromAssetsOptions ?? []}
-          selectedOption={selectedFromAsset}
-          selectedOptionDisplayValue={selectedFromAssetDisplayValue}
+          label="You swap"
+          onValueChange={onAmountChange}
           value={amount}
-          onValueChange={(value) => onAmountChange(value)}
-          onOptionSelect={(option) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
-            setSelectedFromAsset(option);
-          }}
-          errorMessage={
-            errorMessages?.amount
-            || errorMessages?.fromAssetDecimals
-            || errorMessages?.fromAssetAddress
-          }
-        />
-      )}
-      {!!selectedFromNetwork && (
-        <SelectInput
-          label="To network"
-          options={toNetworkOptions ?? []}
-          isLoading={isLoadingAvailableNetworks}
-          selectedOption={selectedToNetwork}
-          onOptionSelect={(option) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'toChainId');
-            setSelectedToNetwork(option);
-          }}
-          errorMessage={errorMessages?.toChainId}
-        />
-      )}
-      {!!selectedToNetwork && (
-        <SelectInput
-          label={`Asset to receive on ${selectedToNetwork.title}`}
-          options={availableToAssetsOptions ?? []}
-          isLoading={isLoadingAvailableToAssets}
-          selectedOption={selectedToAsset}
-          onOptionSelect={(option) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
-            setSelectedToAsset(option);
-          }}
-          errorMessage={errorMessages?.toAssetAddress}
+          placeholder="0"
+          inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `$${+amount * selectedFromAsset.assetPriceUsd}` : undefined}
+          inputLeftComponent={(
+            <NetworkAssetCombinedImagesWrapper>
+              <NetworkImage src={selectedFromNetwork.iconUrl} alt={selectedFromNetwork.title} />
+              <AssetImage src={selectedFromAsset.logoURI} alt={selectedFromAsset.symbol} />
+            </NetworkAssetCombinedImagesWrapper>
+          )}
+          errorMessage={errorMessages?.amount}
         />
       )}
       {!!selectedToAsset && selectedFromAsset && (
@@ -355,7 +279,10 @@ const AssetBridgeTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
             setSelectedQuote(option);
           }}
+          placeholder="Select quote"
           errorMessage={errorMessages?.quote}
+          disabled={!availableQuotesOptions?.length || isLoadingAvailableQuotes}
+          displayLabelOutside
         />
       )}
     </>

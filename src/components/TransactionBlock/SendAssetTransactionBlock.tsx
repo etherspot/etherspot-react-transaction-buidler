@@ -1,32 +1,26 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 import styled from 'styled-components';
-import {
-  AccountBalance,
-} from 'etherspot';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
-import { ethers } from 'ethers';
 
 import TextInput from '../TextInput';
-import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import {
   formatAmountDisplay,
   formatAssetAmountInput,
 } from '../../utils/common';
 import {
-  addressesEqual,
   ErrorMessages,
 } from '../../utils/validation';
 import {
-  nativeAssetPerChainId,
+  Chain,
   supportedChains,
 } from '../../utils/chain';
-import Checkbox from '../Checkbox';
+import SwitchInput from '../SwitchInput';
+import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
+import { AssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 export interface SendAssetTransactionBlockValues {
   fromAddress?: string;
@@ -40,18 +34,40 @@ export interface SendAssetTransactionBlockValues {
 }
 
 const Title = styled.h3`
-  margin: 0 0 25px;
-  padding: 0 0 5px;
-  border-bottom: 1px solid #000;
+  margin: 0 0 18px;
+  padding: 0;
+  font-size: 16px;
+  color: #191726;
+  font-family: "PTRootUIWebBold", sans-serif;
 `;
 
-const mapSupportedChainToSelectOption = ({
-  title,
-  chainId: value,
-}: { title: string; chainId: number; }): SelectOption => ({
-  title,
-  value,
-});
+const AssetImage = styled.img`
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  margin-right: 8px;
+`;
+
+const NetworkImage = styled.img`
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  margin-right: 11px;
+`;
+
+const NetworkAssetCombinedImagesWrapper = styled.div`
+  position: relative;
+
+  ${AssetImage} {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    height: 14px;
+    width: 14px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+  }
+`;
 
 const SendAssetTransactionBlock = ({
   id: transactionBlockId,
@@ -62,26 +78,20 @@ const SendAssetTransactionBlock = ({
 }) => {
   const [receiverAddress, setReceiverAddress] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
-  const [selectedAsset, setSelectedAsset] = useState<SelectOption | null>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<SelectOption | null>(null);
-  const [availableAssets, setAvailableAssets] = useState<TokenListToken[] | null>(null);
-  const [availableAssetsBalances, setAvailableAssetsBalances] = useState<AccountBalance[] | null>(null);
-  const [isLoadingAvailableAssets, setIsLoadingAvailableAssets] = useState<boolean>(false);
+  const [selectedAsset, setSelectedAsset] = useState<AssetWithBalance | null>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(null);
   const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(true);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
   const {
-    sdk,
-    getSupportedAssetsForChainId,
-    getAssetsBalancesForChainId,
     providerAddress,
     accountAddress,
     chainId,
+    totalWorthPerAddress,
   } = useEtherspot();
 
   useEffect(() => {
-    setSelectedAsset(null);
     setAmount('');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
@@ -89,61 +99,12 @@ const SendAssetTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
   }, [selectedNetwork]);
 
-  const updateAvailableAssets = useCallback(async () => {
-    if (!sdk) return;
-    if ((isFromEtherspotWallet && !selectedNetwork) || !providerAddress) return;
-    setIsLoadingAvailableAssets(true);
-
-    const chainIdToLoad = isFromEtherspotWallet
-      ? +selectedNetwork?.value
-      : chainId;
-
-    const addressToCheck = isFromEtherspotWallet
-      ? accountAddress
-      : providerAddress;
-
-    try {
-      const assets = await getSupportedAssetsForChainId(chainIdToLoad);
-      const assetsBalances = await getAssetsBalancesForChainId(assets, chainIdToLoad, addressToCheck);
-
-      const assetsWithPositiveBalances = assets.filter((asset) => assetsBalances.some((assetBalance) => {
-        if (addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address)) return true;
-        return addressesEqual(asset.address, assetBalance.token);
-      }));
-
-      setAvailableAssets(assetsWithPositiveBalances);
-      setAvailableAssetsBalances(assetsBalances);
-    } catch (e) {
-      //
-    }
-    setIsLoadingAvailableAssets(false);
-  }, [sdk, selectedNetwork, isFromEtherspotWallet, providerAddress, accountAddress, chainId]);
-
-  useEffect(() => { updateAvailableAssets(); }, [updateAvailableAssets]);
-
-  const availableAssetsOptions = useMemo(() => availableAssets?.map((availableAsset) => {
-    const assetBalance = availableAssetsBalances?.find((assetBalance) => {
-      if (addressesEqual(availableAsset.address, nativeAssetPerChainId[chainId]?.address) && assetBalance.token === null) return true;
-      return addressesEqual(availableAsset.address, assetBalance.token);
-    });
-
-    const assetBalanceFormatted = assetBalance
-      ? formatAmountDisplay(ethers.utils.formatUnits(assetBalance.balance, availableAsset.decimals))
-      : '0.00';
-
-    return ({
-      title: `${availableAsset.name} (${assetBalanceFormatted} ${availableAsset.symbol})`,
-      value: availableAsset.address,
-    })
-  }), [availableAssets, availableAssetsBalances]);
-
   const onAmountChange = useCallback((newAmount: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    const asset = availableAssets?.find((availableAsset) => availableAsset.symbol === selectedAsset?.value);
-    const decimals = asset?.decimals ?? 18;
+    const decimals = selectedAsset?.decimals ?? 18;
     const updatedAmount = formatAssetAmountInput(newAmount, decimals);
     setAmount(updatedAmount)
-  }, [selectedAsset, availableAssets]);
+  }, [selectedAsset]);
 
   const onReceiverAddressChange = useCallback((newReceiverAddress: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
@@ -152,12 +113,11 @@ const SendAssetTransactionBlock = ({
 
   useEffect(() => {
     if (setTransactionBlockValues) {
-      const asset = availableAssets?.find((availableAsset) => availableAsset.address === selectedAsset?.value);
       setTransactionBlockValues(transactionBlockId, {
-        chainId: isFromEtherspotWallet ? selectedNetwork?.value : chainId,
-        assetAddress: asset?.address,
-        assetSymbol: asset?.symbol,
-        assetDecimals: asset?.decimals,
+        chainId: isFromEtherspotWallet ? selectedNetwork?.chainId : chainId,
+        assetAddress: selectedAsset?.address,
+        assetSymbol: selectedAsset?.symbol,
+        assetDecimals: selectedAsset?.decimals,
         amount,
         receiverAddress,
         isFromEtherspotWallet,
@@ -167,7 +127,6 @@ const SendAssetTransactionBlock = ({
   }, [
     setTransactionBlockValues,
     selectedNetwork,
-    availableAssets,
     selectedAsset,
     receiverAddress,
     amount,
@@ -176,74 +135,82 @@ const SendAssetTransactionBlock = ({
     providerAddress,
   ]);
 
-  const selectedAssetDisplayValue = useMemo(
-    () => availableAssets?.find((availableAsset) => availableAsset.address === selectedAsset?.value)?.symbol,
-    [availableAssets, selectedAsset]
-  );
+  const walletOptions = [
+    { title: `Key based・$${formatAmountDisplay(totalWorthPerAddress[providerAddress as string] ?? 0)}`, value: 1 },
+    { title: `Etherspot・$${formatAmountDisplay(totalWorthPerAddress[accountAddress as string] ?? 0)}`, value: 2 },
+  ];
+
+  const hideChainIds = !isFromEtherspotWallet
+    ? supportedChains
+      .map((supportedChain) => supportedChain.chainId)
+      .filter((supportedChainId) => supportedChainId !== chainId)
+    : undefined
 
   return (
     <>
       <Title>Send asset</Title>
-      <Checkbox
-        label={`Send from Etherspot account`}
-        isChecked={isFromEtherspotWallet}
-        onChange={(isChecked) => {
-          setIsFromEtherspotWallet(isChecked);
+      <SwitchInput
+        label="From wallet"
+        option1={walletOptions[0]}
+        option2={walletOptions[1]}
+        selectedOption={walletOptions[isFromEtherspotWallet ? 1 : 0]}
+        onChange={(option) => {
+          if (option.value === 1) {
+            setSelectedNetwork(null);
+            setSelectedAsset(null);
+          }
+          setIsFromEtherspotWallet(option.value === 2);
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
         }}
         errorMessage={errorMessages?.fromAddress}
       />
-      {isFromEtherspotWallet && (
-        <SelectInput
-          label="Network"
-          options={supportedChains.map(mapSupportedChainToSelectOption)}
-          selectedOption={selectedNetwork}
-          onOptionSelect={(option) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
-            setSelectedNetwork(option);
-          }}
-          errorMessage={errorMessages?.chainId}
-        />
-      )}
-      {!isFromEtherspotWallet && (
+      <NetworkAssetSelectInput
+        label="From"
+        onAssetSelect={(asset) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'assetDecimals');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
+          setSelectedAsset(asset);
+        }}
+        onNetworkSelect={(network) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
+          setSelectedNetwork(network);
+        }}
+        selectedNetwork={selectedNetwork}
+        selectedAsset={selectedAsset}
+        errorMessage={errorMessages?.chainId
+          || errorMessages?.assetDecimals
+          || errorMessages?.assetAddress
+          || errorMessages?.assetSymbol
+        }
+        hideChainIds={hideChainIds}
+        walletAddress={isFromEtherspotWallet ? accountAddress : providerAddress}
+        showPositiveBalanceAssets
+      />
+      {selectedAsset && selectedNetwork && (
         <TextInput
-          label="Network"
-          disabled
-          value={supportedChains.find((chain) => +chainId === +chain.chainId)?.title}
-          errorMessage={errorMessages?.chainId}
-        />
-      )}
-      {(!!selectedNetwork || !isFromEtherspotWallet) && (
-        <TextInput
-          label={`Asset`}
-          isLoading={isLoadingAvailableAssets}
-          selectOptions={availableAssetsOptions ?? []}
-          selectedOption={selectedAsset}
-          selectedOptionDisplayValue={selectedAssetDisplayValue}
+          label="You send"
+          onValueChange={onAmountChange}
           value={amount}
-          onValueChange={(value) => onAmountChange(value)}
-          onOptionSelect={(option) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'assetDecimals');
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
-            setSelectedAsset(option);
-          }}
-          errorMessage={
-            errorMessages?.amount
-              || errorMessages?.assetDecimals
-              || errorMessages?.assetAddress
-              || errorMessages?.assetSymbol
-          }
+          placeholder="0"
+          inputBottomText={selectedAsset?.assetPriceUsd && amount ? `$${+amount * selectedAsset.assetPriceUsd}` : undefined}
+          inputLeftComponent={(
+            <NetworkAssetCombinedImagesWrapper>
+              <NetworkImage src={selectedNetwork.iconUrl} alt={selectedNetwork.title} />
+              <AssetImage src={selectedAsset.logoURI} alt={selectedAsset.symbol} />
+            </NetworkAssetCombinedImagesWrapper>
+          )}
+          errorMessage={errorMessages?.amount}
         />
       )}
-      {(!!selectedNetwork || !isFromEtherspotWallet) && (
-        <TextInput
-          label={`Receiver address`}
-          value={receiverAddress}
-          onValueChange={(value) => onReceiverAddressChange(value)}
-          errorMessage={errorMessages?.receiverAddress}
-        />
-      )}
+      <TextInput
+        label={`Receiver address`}
+        value={receiverAddress}
+        onValueChange={(value) => onReceiverAddressChange(value)}
+        errorMessage={errorMessages?.receiverAddress}
+        displayLabelOutside
+        smallerInput
+      />
     </>
   );
 };

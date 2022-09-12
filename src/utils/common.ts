@@ -1,4 +1,9 @@
 import { uniqueId } from 'lodash';
+import { Asset } from '../providers/EtherspotContextProvider';
+import { SelectOption } from '../components/SelectInput/SelectInput';
+import {
+  Chain,
+} from './chain';
 
 export const formatAssetAmountInput = (
   amount: string,
@@ -21,10 +26,14 @@ export const formatAssetAmountInput = (
   return `${integer}.${fixedFraction}`;
 };
 
-export const formatAmountDisplay = (amount: string): string => {
-  if (+amount < 0.01) {
+export const formatAmountDisplay = (amountRaw: string | number): string => {
+  const amount = typeof amountRaw === 'number' ? `${amountRaw}` : amountRaw;
+
+  // check string to avoid underflow
+  if (amount.startsWith('0.01') || amount.startsWith('0.00')) {
     const [,fraction] = amount.split('.');
     let smallAmount = '~0.';
+
     [...fraction].every((digitString) => {
       if (digitString === '0') {
         smallAmount = `${smallAmount}0`;
@@ -33,7 +42,7 @@ export const formatAmountDisplay = (amount: string): string => {
       smallAmount = `${smallAmount}${digitString}`;
       return false;
     });
-    // const firstNonZeroDigit = BigNumber.from(fraction).toString()[0];
+
     return smallAmount;
   }
 
@@ -61,4 +70,16 @@ export const humanizeHexString = (
 
 
 export const getTimeBasedUniqueId = (): string => uniqueId(`${+new Date()}-`);
+
+export const mapAssetIntoSelectOption = (asset: Asset): SelectOption => ({
+  title: asset.symbol,
+  value: asset.address,
+  iconUrl: asset.logoURI,
+});
+
+export const mapChainIntoSelectOption = (chain: Chain): SelectOption => ({
+  value: chain.chainId,
+  title: chain.title,
+  iconUrl: chain.title,
+});
 

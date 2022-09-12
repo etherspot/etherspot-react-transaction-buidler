@@ -6,13 +6,13 @@ import React, {
   useState,
 } from 'react';
 import styled from 'styled-components';
-import { HiDotsHorizontal } from 'react-icons/hi';
+import { HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { AiOutlinePlusCircle } from 'react-icons/ai';
 
 import {
   PrimaryButton,
   SecondaryButton,
   CloseButton,
-  CopyButton,
 } from '../components/Button';
 import {
   useEtherspot,
@@ -63,14 +63,15 @@ export interface TransactionBuilderContextProps {
 }
 
 const TransactionBlockWrapper = styled.div<{ last?: boolean }>`
-  background: #fff;
-  border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 15px;
+  background: #fff7f2;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
   color: #000;
   position: relative;
-  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
   text-align: left;
+  user-select: none;
 
   ${CloseButton} { display: none; }
 
@@ -114,7 +115,7 @@ const PreviewWrapper = styled.div`
 `;
 
 const TopNavigation = styled.div`
-  padding: 0px 5px 15px;
+  padding: 0px 5px 25px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -129,14 +130,28 @@ const WalletAddressesWrapper = styled.div`
   align-items: center;
 `;
 
-const WalletAddress = styled.span`
-  margin-right: 20px;
+const WalletAddress = styled.span<{ disabled?: boolean }>`
+  margin-right: 40px;
   display: flex;
   justify-content: center;
   align-items: center;
+  user-select: none;
+  font-size: 14px;
+
+  ${({ disabled }) => !disabled && `
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  
+    &:active {
+      opacity: 0.5;
+    }
+  `}
 `;
 
-const MenuButton = styled(HiDotsHorizontal)`
+const MenuButton = styled(HiOutlineDotsHorizontal)`
   cursor: pointer;
 
   &:hover {
@@ -175,9 +190,31 @@ const MenuItem = styled.div`
 `;
 
 const ProcessingTitle = styled.h3`
-  margin: 0 0 25px;
-  padding: 0 0 5px;
-  border-bottom: 1px solid #000;
+  margin: 0 0 18px;
+  padding: 0;
+  font-size: 16px;
+  color: #191726;
+  font-family: "PTRootUIWebBold", sans-serif;
+`;
+
+const ConnectButton = styled(SecondaryButton)`
+  font-size: 14px;
+  margin-left: 5px;
+`;
+
+const AddTransactionButton = styled(SecondaryButton)`
+  text-align: center;
+
+  span {
+    position: relative;
+    top: -5px;
+    margin-left: 6px;
+  }
+
+  &:hover {
+    opacity: 0.5;
+    text-decoration: none;
+  }
 `;
 
 const availableTransactionBlocks: AvailableTransactionBlock[] = [
@@ -231,6 +268,15 @@ const TransactionBuilderContextProvider = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[] | null>(null);
   const [showMenu, setShowMenu] = useState<boolean>(false);
+
+  const onCopy = async (valueToCopy: string) => {
+    try {
+      await navigator.clipboard.writeText(valueToCopy);
+      alert('Copied!');
+    } catch (e) {
+      //
+    }
+  };
 
   const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId } = useEtherspot();
   const { showConfirmModal, showAlertModal } = useTransactionBuilderModal();
@@ -385,21 +431,23 @@ const TransactionBuilderContextProvider = ({
       <TopNavigation>
         <WalletAddressesWrapper onClick={hideMenu}>
           {providerAddress && (
-            <WalletAddress>
+            <WalletAddress onClick={() => onCopy(providerAddress)}>
               Wallet: {humanizeHexString(providerAddress)}
-              <CopyButton valueToCopy={providerAddress} left={5} />
             </WalletAddress>
           )}
-          {!providerAddress && <WalletAddress>Wallet: Not connected</WalletAddress>}
+          {!providerAddress && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
           {accountAddress && (
-            <WalletAddress>
+            <WalletAddress onClick={() => onCopy(accountAddress)}>
               Account: {humanizeHexString(accountAddress)}
-              <CopyButton valueToCopy={accountAddress} left={5} />
             </WalletAddress>
           )}
-          {!accountAddress && <WalletAddress>Account: <SecondaryButton onClick={connect} disabled={isConnecting} noPadding>Connect</SecondaryButton></WalletAddress>}
+          {!accountAddress && (
+            <WalletAddress disabled>
+              Account: <ConnectButton onClick={connect} disabled={isConnecting}>Connect</ConnectButton>
+            </WalletAddress>
+          )}
         </WalletAddressesWrapper>
-        <MenuButton size={20} onClick={() => setShowMenu(!showMenu)} />
+        <MenuButton size={22} onClick={() => setShowMenu(!showMenu)} />
       </TopNavigation>
       <div onClick={hideMenu}>
         {!!processingCrossChainActionId && (
@@ -450,15 +498,16 @@ const TransactionBuilderContextProvider = ({
               </TransactionBlockWrapper>
             ))}
             {!showTransactionBlockSelect && (
-              <SecondaryButton onClick={() => setShowTransactionBlockSelect(true)} marginTop={transactionBlocks?.length ? 0 : 30}>
-                Add transaction
-              </SecondaryButton>
+              <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
+                <AiOutlinePlusCircle size={24} />
+                <span>Add transaction</span>
+              </AddTransactionButton>
             )}
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br/>
                 <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-                  {isChecking ? 'Checking...' : 'Continue'}
+                  {isChecking ? 'Checking...' : 'Review'}
                 </PrimaryButton>
               </>
             )}
