@@ -11,10 +11,10 @@ import { uniqueId } from 'lodash';
 import { containsText } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 
-const Wrapper = styled.div<{ disabled: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
   position: relative;
   margin-bottom: 18px;
-  background: ${({ theme }) => theme.color.background.selectInput};
+    background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
@@ -186,7 +186,7 @@ const SelectInput = ({
   return (
     <>
       {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
-      <Wrapper disabled={disabled}>
+      <Wrapper disabled={disabled} expanded={showSelectModal}>
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         {!isLoading && (
           <SelectWrapper onClick={onSelectClick} disabled={disabled}>

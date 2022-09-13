@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
 
@@ -40,6 +40,7 @@ import {
   humanizeHexString,
 } from '../utils/common';
 import History from '../components/History';
+import { Theme } from '../utils/theme';
 
 export type TransactionBlockValues = SendAssetTransactionBlockValues
   & AssetBridgeTransactionBlockValues
@@ -271,6 +272,8 @@ const TransactionBuilderContextProvider = ({
   const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[] | null>(null);
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
+  const theme: Theme = useTheme();
+
   const onCopy = async (valueToCopy: string) => {
     try {
       await navigator.clipboard.writeText(valueToCopy);
@@ -449,7 +452,7 @@ const TransactionBuilderContextProvider = ({
             </WalletAddress>
           )}
         </WalletAddressesWrapper>
-        <MenuButton size={22} onClick={() => setShowMenu(!showMenu)} />
+        <MenuButton size={22} onClick={() => setShowMenu(!showMenu)} color={theme?.color?.background?.topMenuButton} />
       </TopNavigation>
       <div onClick={hideMenu}>
         {!!processingCrossChainActionId && (

@@ -25,10 +25,10 @@ import { containsText } from '../../utils/validation';
 import { formatAmountDisplay } from '../../utils/common';
 import { Theme } from '../../utils/theme';
 
-const Wrapper = styled.div<{ disabled: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
   position: relative;
   margin-bottom: 18px;
-  background: ${({ theme }) => theme.color.background.selectInput};
+  background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
@@ -300,7 +300,7 @@ const NetworkAssetSelectInput = ({
   }, [selectedNetworkAssets, assetSearchQuery, showPositiveBalanceAssets]);
 
   return (
-    <Wrapper disabled={disabled}>
+    <Wrapper disabled={disabled} expanded={showSelectModal}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
         {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
