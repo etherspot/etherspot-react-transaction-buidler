@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { RoundedImage } from './index';
+
+import RoundedImage from './RoundedImage';
 
 const CombinedImagesWrapper = styled.div<{ size?: number }>`
   position: relative;
