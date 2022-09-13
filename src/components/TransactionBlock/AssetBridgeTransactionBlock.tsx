@@ -4,7 +4,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import {
   BridgingQuote,
 } from 'etherspot';
@@ -31,6 +31,8 @@ import {
   AssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages } from '../Image';
+import { Pill } from '../Text';
+import { Theme } from '../../utils/theme';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -67,6 +69,7 @@ const AssetBridgeTransactionBlock = ({
   const [isLoadingAvailableQuotes, setIsLoadingAvailableQuotes] = useState<boolean>(false);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
+  const theme: Theme = useTheme();
 
   const {
     sdk,
@@ -174,6 +177,15 @@ const AssetBridgeTransactionBlock = ({
     { title: `Etherspot・$${formatAmountDisplay(totalWorthPerAddress[accountAddress as string] ?? 0)}`, value: 2 },
   ];
 
+  const remainingSelectedFromAssetBalance = useMemo(() => {
+    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
+
+    if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals);
+
+    const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
+    return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals);
+  }, [amount, selectedFromAsset]);
+
   return (
     <>
       <Title>Asset Bridge</Title>
@@ -239,6 +251,13 @@ const AssetBridgeTransactionBlock = ({
               url2={selectedFromNetwork.iconUrl}
               title1={selectedFromAsset.symbol}
               title2={selectedFromNetwork.title}
+            />
+          }
+          inputTopRightComponent={
+            <Pill
+              label="Remaining"
+              value={`${formatAmountDisplay(remainingSelectedFromAssetBalance ?? 0)} ${selectedFromAsset.symbol}`}
+              valueColor={(remainingSelectedFromAssetBalance ?? 0) <= 0 ? theme.color?.text?.errorMessage : undefined}
             />
           }
           errorMessage={errorMessages?.amount}

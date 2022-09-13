@@ -18,6 +18,7 @@ export interface Theme {
       switchInputInactiveTab?: string,
       button?: string,
       closeButton?: string,
+      pill?: string,
     },
     text?: {
       main?: string,
@@ -41,6 +42,8 @@ export interface Theme {
       errorMessage?: string,
       searchInput?: string,
       searchInputSecondary?: string,
+      pill?: string,
+      pillValue?: string,
     },
   }
 }
@@ -65,6 +68,7 @@ export const defaultTheme: Theme = {
       switchInputInactiveTab: 'transparent',
       button: '#fff',
       closeButton: '#0a1427',
+      pill: '#fff7f2',
     },
     text: {
       main: '#fff',
@@ -88,6 +92,8 @@ export const defaultTheme: Theme = {
       errorMessage: '#ff0000',
       searchInput: '#ff7733',
       searchInputSecondary: '#ff7733',
+      pill: '#6e6b6a',
+      pillValue: '#191726',
     },
   }
 };

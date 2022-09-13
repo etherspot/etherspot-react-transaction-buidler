@@ -1,9 +1,11 @@
 import React, {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
+import { ethers } from 'ethers';
 
 import TextInput from '../TextInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
@@ -22,6 +24,8 @@ import SwitchInput from '../SwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { AssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages } from '../Image';
+import { Pill } from '../Text';
+import { Theme } from '../../utils/theme';
 
 export interface SendAssetTransactionBlockValues {
   fromAddress?: string;
@@ -55,6 +59,7 @@ const SendAssetTransactionBlock = ({
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(null);
   const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(true);
 
+  const theme: Theme = useTheme();
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
   const {
@@ -117,7 +122,16 @@ const SendAssetTransactionBlock = ({
     ? supportedChains
       .map((supportedChain) => supportedChain.chainId)
       .filter((supportedChainId) => supportedChainId !== chainId)
-    : undefined
+    : undefined;
+
+  const remainingSelectedAssetBalance = useMemo(() => {
+    if (!selectedAsset?.balance || selectedAsset.balance.isZero()) return 0;
+
+    if (!amount) return +ethers.utils.formatUnits(selectedAsset.balance, selectedAsset.decimals);
+
+    const assetAmountBN = ethers.utils.parseUnits(amount, selectedAsset.decimals);
+    return +ethers.utils.formatUnits(selectedAsset.balance.sub(assetAmountBN), selectedAsset.decimals);
+  }, [amount, selectedAsset]);
 
   return (
     <>
@@ -173,6 +187,13 @@ const SendAssetTransactionBlock = ({
               url2={selectedNetwork.iconUrl}
               title1={selectedAsset.symbol}
               title2={selectedNetwork.title}
+            />
+          }
+          inputTopRightComponent={
+            <Pill
+              label="Remaining"
+              value={`${formatAmountDisplay(remainingSelectedAssetBalance ?? 0)} ${selectedAsset.symbol}`}
+              valueColor={(remainingSelectedAssetBalance ?? 0) <= 0 ? theme.color?.text?.errorMessage : undefined}
             />
           }
           errorMessage={errorMessages?.amount}

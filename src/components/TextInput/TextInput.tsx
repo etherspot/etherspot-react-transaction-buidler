@@ -11,7 +11,7 @@ const Wrapper = styled.div<{ disabled: boolean }>`
   background: ${({ theme }) => theme.color.background.textInput};
   color: ${({ theme }) => theme.color.text.textInput};
   border-radius: 8px;
-  padding: 14px;
+  padding: 8px 14px 14px;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
@@ -68,6 +68,12 @@ const ErrorMessage = styled.small`
   font-size: 12px;
 `;
 
+const InputTopRight = styled.div`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+`;
+
 interface TextInputProps {
   value?: string;
   label?: string;
@@ -77,6 +83,7 @@ interface TextInputProps {
   placeholder?: string;
   inputBottomText?: string;
   inputLeftComponent?: ReactNode;
+  inputTopRightComponent?: ReactNode;
   displayLabelOutside?: boolean
   smallerInput?: boolean
 }
@@ -90,6 +97,7 @@ const TextInput = ({
   placeholder,
   inputBottomText,
   inputLeftComponent,
+  inputTopRightComponent,
   displayLabelOutside = false,
   smallerInput = false,
 }: TextInputProps) => {
@@ -115,6 +123,7 @@ const TextInput = ({
           </InputWrapperRight>
         </InputWrapper>
         {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+        {inputTopRightComponent && <InputTopRight>{inputTopRightComponent}</InputTopRight>}
       </Wrapper>
     </>
   );

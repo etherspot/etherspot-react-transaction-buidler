@@ -12,7 +12,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../components/Button';
-import Paragraph from '../components/Paragraph';
+import { Paragraph } from '../components/Text';
 import { TransactionBuilderModalContext } from '../contexts';
 import { Theme } from '../utils/theme';
 
