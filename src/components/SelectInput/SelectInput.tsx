@@ -10,6 +10,7 @@ import { uniqueId } from 'lodash';
 
 import { containsText } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
+import { RoundedImage } from '../Image';
 
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
   position: relative;
@@ -116,13 +117,6 @@ const OptionListItem = styled(SelectedOption)`
   }
 `;
 
-
-const OptionImage = styled.img`
-  height: 24px;
-  border-radius: 50%;
-  margin-right: 8px;
-`;
-
 export interface SelectOption {
   title: string;
   value: any;
@@ -196,7 +190,7 @@ const SelectInput = ({
         )}
         {!showSelectModal && (
           <SelectedOption onClick={onSelectClick} disabled={disabled}>
-            {!!selectedOption?.iconUrl && <OptionImage src={selectedOption.iconUrl} alt={selectedOption.title} />}
+            {!!selectedOption?.iconUrl && <RoundedImage url={selectedOption.iconUrl} title={selectedOption.title} size={24} />}
             {selectedOptionTitle}
           </SelectedOption>
         )}
@@ -218,7 +212,7 @@ const SelectInput = ({
                   hideSelectModal();
                 }}
               >
-                {!!option.iconUrl && <OptionImage src={option.iconUrl} alt={option.title} />}
+                {!!option.iconUrl && <RoundedImage url={option.iconUrl} title={option.title} size={24} />}
                 {option.title}
               </OptionListItem>
             ))}

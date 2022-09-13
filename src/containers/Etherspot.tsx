@@ -31,6 +31,10 @@ const ComponentWrapper = styled.div`
   position: relative;
   min-height: 200px;
   font-family: "PTRootUIWebRegular", sans-serif;
+
+  @media (max-width: 500px) {
+    width: calc(100% - 40px);
+  }
 `;
 
 const Etherspot = ({
@@ -39,29 +43,26 @@ const Etherspot = ({
   chainId,
   hiddenTransactionBlockTypes,
   themeOverride,
-}: EtherspotProps) => {
-  console.log(merge({}, defaultTheme, themeOverride));
-  return (
-    <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
-      <EtherspotContextProvider provider={provider} chainId={chainId}>
-        <style>
-          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
-          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
-          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
-        </style>
-        <ComponentWrapper>
-          <TransactionBuilderModalContextProvider>
-            <TransactionsDispatcherContextProvider>
-              <TransactionBuilderContextProvider
-                defaultTransactionBlocks={defaultTransactionBlocks}
-                hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
-              />
-            </TransactionsDispatcherContextProvider>
-          </TransactionBuilderModalContextProvider>
-        </ComponentWrapper>
-      </EtherspotContextProvider>
-    </ThemeProvider>
-  );
-}
+}: EtherspotProps) => (
+  <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
+    <EtherspotContextProvider provider={provider} chainId={chainId}>
+      <style>
+        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
+        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
+        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
+      </style>
+      <ComponentWrapper>
+        <TransactionBuilderModalContextProvider>
+          <TransactionsDispatcherContextProvider>
+            <TransactionBuilderContextProvider
+              defaultTransactionBlocks={defaultTransactionBlocks}
+              hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
+            />
+          </TransactionsDispatcherContextProvider>
+        </TransactionBuilderModalContextProvider>
+      </ComponentWrapper>
+    </EtherspotContextProvider>
+  </ThemeProvider>
+);
 
 export default Etherspot;

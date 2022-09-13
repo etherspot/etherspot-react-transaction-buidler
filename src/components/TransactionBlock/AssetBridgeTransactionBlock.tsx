@@ -30,6 +30,7 @@ import { Chain } from '../../utils/chain';
 import {
   AssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
+import { CombinedRoundedImages } from '../Image';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -47,34 +48,6 @@ const Title = styled.h3`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: "PTRootUIWebBold", sans-serif;
-`;
-
-const AssetImage = styled.img`
-  height: 24px;
-  width: 24px;
-  border-radius: 50%;
-  margin-right: 8px;
-`;
-
-const NetworkImage = styled.img`
-  height: 32px;
-  width: 32px;
-  border-radius: 50%;
-  margin-right: 11px;
-`;
-
-const NetworkAssetCombinedImagesWrapper = styled.div`
-  position: relative;
-
-  ${AssetImage} {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    height: 14px;
-    width: 14px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-  }
 `;
 
 const AssetBridgeTransactionBlock = ({
@@ -260,12 +233,14 @@ const AssetBridgeTransactionBlock = ({
           value={amount}
           placeholder="0"
           inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `$${+amount * selectedFromAsset.assetPriceUsd}` : undefined}
-          inputLeftComponent={(
-            <NetworkAssetCombinedImagesWrapper>
-              <NetworkImage src={selectedFromNetwork.iconUrl} alt={selectedFromNetwork.title} />
-              <AssetImage src={selectedFromAsset.logoURI} alt={selectedFromAsset.symbol} />
-            </NetworkAssetCombinedImagesWrapper>
-          )}
+          inputLeftComponent={
+            <CombinedRoundedImages
+              url1={selectedFromAsset.logoURI}
+              url2={selectedFromNetwork.iconUrl}
+              title1={selectedFromAsset.symbol}
+              title2={selectedFromNetwork.title}
+            />
+          }
           errorMessage={errorMessages?.amount}
         />
       )}

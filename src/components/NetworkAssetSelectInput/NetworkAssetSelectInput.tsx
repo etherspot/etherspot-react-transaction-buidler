@@ -24,6 +24,8 @@ import {
 import { containsText } from '../../utils/validation';
 import { formatAmountDisplay } from '../../utils/common';
 import { Theme } from '../../utils/theme';
+import { RoundedImage } from '../Image';
+import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
   position: relative;
@@ -159,48 +161,6 @@ const LargeOptionDetailsBottom = styled.div`
   font-family: "PTRootUIWebRegular", sans-serif;
 `;
 
-const OptionImage = styled.img`
-  height: 24px;
-  width: 24px;
-  border-radius: 50%;
-  margin-right: 8px;
-`;
-
-const LargeOptionImage = styled.img`
-  height: 32px;
-  width: 32px;
-  border-radius: 50%;
-  margin-right: 11px;
-`;
-
-const NetworkAssetCombinedImagesWrapper = styled.div`
-  position: relative;
-
-  ${OptionImage} {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    height: 14px;
-    width: 14px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-  }
-`;
-
-const PlaceholderOptionImage = styled.div`
-  font-family: "PTRootUIWebBold", sans-serif;
-  font-size: 16px;
-  line-height: 32px;
-  height: 32px;
-  width: 32px;
-  border-radius: 50%;
-  margin-right: 8px;
-  background: ${({ theme }) => theme.color.background.selectInputImagePlaceholder};
-  color: ${({ theme }) => theme.color.text.selectInputImagePlaceholder};
-  text-align: center;
-  text-transform: uppercase;
-`;
-
 const OptionsScroll = styled.div`
   max-height: 200px;
   overflow-x: hidden;
@@ -260,7 +220,6 @@ const NetworkAssetSelectInput = ({
   const [assetSearchQuery, setAssetSearchQuery] = useState<string>('');
   const [selectedNetworkAssets, setSelectedNetworkAssets] = useState<AssetWithBalance[]>([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
-  const [noImageAssets, setNoImageAssets] = useState<{ [assetId: string]: boolean }>({});
   const theme: Theme = useTheme();
 
   const { sdk, getSupportedAssetsForChainId, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
@@ -313,10 +272,12 @@ const NetworkAssetSelectInput = ({
       )}
       {!showSelectModal && !!selectedNetwork && !!selectedAsset && (
         <LargeSelectedOption onClick={onSelectClick} disabled={disabled}>
-          <NetworkAssetCombinedImagesWrapper>
-            <LargeOptionImage src={selectedNetwork.iconUrl} alt={selectedNetwork.title} />
-            <OptionImage src={selectedAsset.logoURI} alt={selectedAsset.symbol} />
-          </NetworkAssetCombinedImagesWrapper>
+          <CombinedRoundedImages
+            url1={selectedAsset.logoURI}
+            url2={selectedNetwork.iconUrl}
+            title1={selectedAsset.symbol}
+            title2={selectedNetwork.title}
+          />
           <LargeOptionDetails>
             <div>{selectedAsset.symbol}</div>
             <LargeOptionDetailsBottom>On {selectedNetwork.title}</LargeOptionDetailsBottom>
@@ -325,7 +286,7 @@ const NetworkAssetSelectInput = ({
       )}
       {showSelectModal && preselectedNetwork && (
         <SelectedOption onClick={() => setPreselectedNetwork(null)} disabled={disabled}>
-          {!!preselectedNetwork?.iconUrl && <OptionImage src={preselectedNetwork?.iconUrl} alt={preselectedNetwork.title} />}
+          {!!preselectedNetwork?.iconUrl && <RoundedImage url={preselectedNetwork?.iconUrl} title={preselectedNetwork.title} size={24} />}
           {preselectedNetwork.title}
         </SelectedOption>
       )}
@@ -339,7 +300,7 @@ const NetworkAssetSelectInput = ({
                 key={`${supportedChain.chainId}`}
                 onClick={() => setPreselectedNetwork(supportedChain)}
               >
-                {!!supportedChain.iconUrl && <OptionImage src={supportedChain.iconUrl} alt={supportedChain.title} />}
+                {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
                 {supportedChain.title}
               </OptionListItem>
           ))}
@@ -358,44 +319,31 @@ const NetworkAssetSelectInput = ({
                 </SearchInputWrapper>
               )}
               <OptionsScroll>
-                {filteredSelectedNetworkAssets.map((asset, index) => {
-                  const assetId = `${preselectedNetwork.chainId}-${asset.address}`;
-                  return (
-                    <LargeOptionListItem
-                      disabled={disabled}
-                      key={`${asset.address ?? '0x'}-${index}`}
-                      onClick={() => {
-                        if (onAssetSelect) onAssetSelect(asset);
-                        if (onNetworkSelect) onNetworkSelect(preselectedNetwork);
-                        setShowSelectModal(false);
-                        setPreselectedNetwork(null);
-                        setAssetSearchQuery('');
-                      }}
-                    >
-                      {(!asset.logoURI || noImageAssets[assetId]) && <PlaceholderOptionImage>{asset.symbol[0]}</PlaceholderOptionImage>}
-                      {!!asset.logoURI && !noImageAssets[assetId] && (
-                        <LargeOptionImage
-                          src={asset.logoURI}
-                          alt={asset.name}
-                          onError={({ currentTarget }) => {
-                            currentTarget.onerror = null;
-                            setNoImageAssets((current) => ({ ...current, [assetId]: true }));
-                          }}
-                        />
-                      )}
-                      <LargeOptionDetails>
-                        <div>
-                          {asset.name}
-                          {asset?.assetPriceUsd && `・$${formatAmountDisplay(asset.assetPriceUsd)}`}
-                        </div>
-                        <LargeOptionDetailsBottom>
-                          {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))} {asset.symbol}
-                          {!asset.balance.isZero() && asset?.balanceWorthUsd && `・$${formatAmountDisplay(asset.balanceWorthUsd)}`}
-                        </LargeOptionDetailsBottom>
-                      </LargeOptionDetails>
-                    </LargeOptionListItem>
-                  )
-                })}
+                {filteredSelectedNetworkAssets.map((asset, index) => (
+                  <LargeOptionListItem
+                    disabled={disabled}
+                    key={`${asset.address ?? '0x'}-${index}`}
+                    onClick={() => {
+                      if (onAssetSelect) onAssetSelect(asset);
+                      if (onNetworkSelect) onNetworkSelect(preselectedNetwork);
+                      setShowSelectModal(false);
+                      setPreselectedNetwork(null);
+                      setAssetSearchQuery('');
+                    }}
+                  >
+                    <RoundedImage url={asset.logoURI} title={asset.name} />
+                    <LargeOptionDetails>
+                      <div>
+                        {asset.name}
+                        {asset?.assetPriceUsd && `・$${formatAmountDisplay(asset.assetPriceUsd)}`}
+                      </div>
+                      <LargeOptionDetailsBottom>
+                        {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))} {asset.symbol}
+                        {!asset.balance.isZero() && asset?.balanceWorthUsd && `・$${formatAmountDisplay(asset.balanceWorthUsd)}`}
+                      </LargeOptionDetailsBottom>
+                    </LargeOptionDetails>
+                  </LargeOptionListItem>
+                ))}
               </OptionsScroll>
             </>
           )}

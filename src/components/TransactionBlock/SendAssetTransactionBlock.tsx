@@ -21,6 +21,7 @@ import {
 import SwitchInput from '../SwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { AssetWithBalance } from '../../providers/EtherspotContextProvider';
+import { CombinedRoundedImages } from '../Image';
 
 export interface SendAssetTransactionBlockValues {
   fromAddress?: string;
@@ -39,34 +40,6 @@ const Title = styled.h3`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: "PTRootUIWebBold", sans-serif;
-`;
-
-const AssetImage = styled.img`
-  height: 24px;
-  width: 24px;
-  border-radius: 50%;
-  margin-right: 8px;
-`;
-
-const NetworkImage = styled.img`
-  height: 32px;
-  width: 32px;
-  border-radius: 50%;
-  margin-right: 11px;
-`;
-
-const NetworkAssetCombinedImagesWrapper = styled.div`
-  position: relative;
-
-  ${AssetImage} {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    height: 14px;
-    width: 14px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-  }
 `;
 
 const SendAssetTransactionBlock = ({
@@ -194,12 +167,14 @@ const SendAssetTransactionBlock = ({
           value={amount}
           placeholder="0"
           inputBottomText={selectedAsset?.assetPriceUsd && amount ? `$${+amount * selectedAsset.assetPriceUsd}` : undefined}
-          inputLeftComponent={(
-            <NetworkAssetCombinedImagesWrapper>
-              <NetworkImage src={selectedNetwork.iconUrl} alt={selectedNetwork.title} />
-              <AssetImage src={selectedAsset.logoURI} alt={selectedAsset.symbol} />
-            </NetworkAssetCombinedImagesWrapper>
-          )}
+          inputLeftComponent={
+            <CombinedRoundedImages
+              url1={selectedAsset.logoURI}
+              url2={selectedNetwork.iconUrl}
+              title1={selectedAsset.symbol}
+              title2={selectedNetwork.title}
+            />
+          }
           errorMessage={errorMessages?.amount}
         />
       )}
