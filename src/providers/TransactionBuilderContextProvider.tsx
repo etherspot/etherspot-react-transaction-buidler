@@ -63,11 +63,11 @@ export interface TransactionBuilderContextProps {
 }
 
 const TransactionBlockWrapper = styled.div<{ last?: boolean }>`
-  background: #fff7f2;
+  background: ${({ theme }) => theme.color.background.card};
+  color: ${({ theme }) => theme.color.text.card};
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 20px;
-  color: #000;
   position: relative;
   box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
   text-align: left;
@@ -79,7 +79,8 @@ const TransactionBlockWrapper = styled.div<{ last?: boolean }>`
 `;
 
 const TransactionBlockSelectWrapper = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.color.background.card};
+  color: ${({ theme }) => theme.color.text.card};
   border-radius: 15px;
   padding: 25px;
   position: relative;
@@ -87,7 +88,7 @@ const TransactionBlockSelectWrapper = styled.div`
 `;
 
 const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
-  color: ${({ disabled }) => disabled ? '#ddd' : '#000'};
+  ${({ theme, disabled }) => disabled && `color: ${theme.color.text.cardDisabled}`};
   text-align: left;
   margin-bottom: 15px;
   cursor: pointer;
@@ -104,11 +105,11 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
 `;
 
 const PreviewWrapper = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.color.background.card};
+  color: ${({ theme }) => theme.color.text.card};
   border-radius: 15px;
   padding: 25px;
   margin-bottom: 15px;
-  color: #000;
   position: relative;
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
   text-align: left;
@@ -120,7 +121,7 @@ const TopNavigation = styled.div`
   justify-content: space-between;
   align-items: center;
   flex-direction: row;
-  color: #fff;
+  color: ${({ theme }) => theme.color.text.topBar};
   font-size: 14px;
 `;
 
@@ -163,7 +164,8 @@ const MenuWrapper = styled.div`
   position: absolute;
   top: 40px;
   right: 15px;
-  background: #fff;
+  background: ${({ theme }) => theme.color.background.topMenu};
+  color: ${({ theme }) => theme.color.text.topMenu};
   border-radius: 5px;
   padding: 15px 20px;
   font-size: 14px;
@@ -176,7 +178,7 @@ const MenuItem = styled.div`
   cursor: pointer;
 
   a, a:visited {
-    color: #000;
+    color: ${({ theme }) => theme.color.text.topMenu};
     text-decoration: none;
   }
 
@@ -193,7 +195,7 @@ const ProcessingTitle = styled.h3`
   margin: 0 0 18px;
   padding: 0;
   font-size: 16px;
-  color: #191726;
+  color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: "PTRootUIWebBold", sans-serif;
 `;
 

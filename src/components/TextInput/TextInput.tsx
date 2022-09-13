@@ -8,7 +8,8 @@ import { uniqueId } from 'lodash';
 const Wrapper = styled.div<{ disabled: boolean }>`
   position: relative;
   margin-bottom: 18px;
-  background: #ffe6d9;
+  background: ${({ theme }) => theme.color.background.textInput};
+  color: ${({ theme }) => theme.color.text.textInput};
   border-radius: 8px;
   padding: 14px;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
@@ -27,7 +28,7 @@ const InputWrapperRight = styled.div`
 
 const Label = styled.label<{ outside?: boolean }>`
   display: inline-block;
-  color: #6e6b6a;
+  color: ${({ theme, outside }) => outside ? theme.color.text.outerLabel : theme.color.text.innerLabel};
   margin-bottom: ${({ outside }) => outside ? 11 : 14}px;
   font-size: 14px;
 `;
@@ -37,12 +38,12 @@ const Input = styled.input<{ smallerInput?: boolean }>`
   font-family: "PTRootUIWebMedium", sans-serif;
   border: none;
   background: transparent;
-  color: #000;
+  color: ${({ theme }) => theme.color.text.textInput};
   font-size: ${({ smallerInput }) => smallerInput ? 14 : 20}px;
   padding: 0;
 
   &::placeholder {
-    color: #6e6b6a;
+    color: ${({ theme }) => theme.color.text.textInputSecondary};
   }
 
   &:focus {
@@ -57,12 +58,12 @@ const Input = styled.input<{ smallerInput?: boolean }>`
 const InputBottomText = styled.div`
   font-family: "PTRootUIWebMedium", sans-serif;
   font-size: 14px;
-  color: #6e6b6a;
+  color: ${({ theme }) => theme.color.text.textInputSecondary};
   margin-top: 4px;
 `;
 
 const ErrorMessage = styled.small`
-  color: #ff0000;
+  color: ${({ theme }) => theme.color.text.errorMessage};
   margin-top: 5px;
   font-size: 12px;
 `;

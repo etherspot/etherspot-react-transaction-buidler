@@ -10,7 +10,7 @@ const Wrapper = styled.div`
 const InputWrapper = styled.div`
   padding: 2px;
   border-radius: 8px;
-  background: #ffd2bb;
+  background: ${({ theme }) => theme.color.background.switchInput};
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -20,7 +20,8 @@ const InputWrapper = styled.div`
 const SwitchOption = styled.div<{ isActive: boolean; }>`
   font-family: "PTRootUIWebMedium", sans-serif;
   font-size: 16px;
-  color: #6e6b6a;
+  color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
+  background: ${({ theme }) => theme.color.background.switchInputInactiveTab};
   padding: 0 13px;
   width: 50%;
   text-align: center;
@@ -35,24 +36,24 @@ const SwitchOption = styled.div<{ isActive: boolean; }>`
     }
   `}
 
-  ${({ isActive }) => isActive && `
+  ${({ isActive, theme }) => isActive && `
     padding: 0 23px;
     border-radius: 6px;
     box-shadow: 0.5px 0 2px 0 rgba(107, 107, 107, 0.44);
-    color: #191726;
-    background: #fff;
+    color: ${theme.color.text.switchInputActiveTab};
+    background: ${theme.color.background.switchInputActiveTab};
   `}
 `;
 
 const Label = styled.label`
   display: inline-block;
-  color: #6e6b6a;
+  color: ${({ theme }) => theme.color.text.label};
   margin-bottom: 11px;
   font-size: 14px;
 `;
 
 const ErrorMessage = styled.small`
-  color: #ff0000;
+  color: ${({ theme }) => theme.color.text.errorMessage};
   margin-top: 5px;
   font-size: 12px;
 `;

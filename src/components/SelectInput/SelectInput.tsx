@@ -3,17 +3,19 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { AiOutlineSearch } from 'react-icons/ai';
 import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icons/md';
 import { uniqueId } from 'lodash';
 
 import { containsText } from '../../utils/validation';
+import { Theme } from '../../utils/theme';
 
 const Wrapper = styled.div<{ disabled: boolean }>`
   position: relative;
   margin-bottom: 18px;
-  background: #fff;
+  background: ${({ theme }) => theme.color.background.selectInput};
+  color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
@@ -37,13 +39,13 @@ const SelectWrapper = styled.div<{ disabled: boolean }>`
 
 const Label = styled.label<{ outside?: boolean }>`
   display: inline-block;
-  color: #6e6b6a;
+  color: ${({ theme, outside }) => outside ? theme.color.text.outerLabel : theme.color.text.innerLabel};
   margin-bottom: ${({ outside }) => outside ? 11 : 14}px;
   font-size: 14px;
 `;
 
 const ErrorMessage = styled.small`
-  color: #ff0000;
+  color: ${({ theme }) => theme.color.text.errorMessage};
   margin-top: 5px;
   font-size: 12px;
 `;
@@ -67,10 +69,10 @@ const SearchInput = styled.input`
   margin: 0;
   padding: 0 8px;
   font-family: "PTRootUIWebMedium", sans-serif;
-  color: #ff7733;
-  
+  color: ${({ theme }) => theme.color.text.searchInput};
+
   &::placeholder {
-    color: #ff7733;
+    color: ${({ theme }) => theme.color.text.searchInputSecondary};
   }
 
   &:focus {
@@ -83,7 +85,7 @@ const OptionList = styled.div`
 `;
 
 const SelectedOption = styled.div<{ disabled: boolean }>`
-  color: #191726;
+  color: ${({ theme }) => theme.color.text.selectInputOption};
   font-size: 16px;
   font-family: "PTRootUIWebMedium", sans-serif;
   display: flex;
@@ -156,6 +158,7 @@ const SelectInput = ({
   const [searchInputId] = useState(uniqueId('etherspot-select-search-input-'));
   const [showSelectModal, setShowSelectModal] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const theme: Theme = useTheme();
 
   const onSelectClick = useCallback(() => {
     if (isLoading || disabled) return;
@@ -187,8 +190,8 @@ const SelectInput = ({
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         {!isLoading && (
           <SelectWrapper onClick={onSelectClick} disabled={disabled}>
-            {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color="#0a1427" />}
-            {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color="#0a1427" />}
+            {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
+            {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />}
           </SelectWrapper>
         )}
         {!showSelectModal && (
@@ -201,7 +204,7 @@ const SelectInput = ({
           <OptionList>
             {!noSearch && options?.length > 5 && (
               <SearchInputWrapper htmlFor={searchInputId}>
-                <AiOutlineSearch size={18} color="#ff7733" />
+                <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
                 <SearchInput id={searchInputId} onChange={(e: any) => setSearchQuery(e?.target?.value)} placeholder="Search" />
               </SearchInputWrapper>
             )}

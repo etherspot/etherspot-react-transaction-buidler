@@ -20,7 +20,8 @@ const ModalContentWrapper = styled.div`
   scrollbar-width: none;
   border-radius: 15px;
   padding: 15px;
-  background: #fff;
+  background: ${({ theme }) => theme.color.background.card};
+  color: ${({ theme }) => theme.color.text.card};
 
   &::-webkit-scrollbar {
     display: none;

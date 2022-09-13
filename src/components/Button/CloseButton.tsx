@@ -17,7 +17,7 @@ const CloseButton = styled.span<{
   
   &:after {
     content: "+";
-    color: #0a1427;
+    color: ${({ theme }) => theme.color.background.closeButton};
     font-weight: 300;
     font-size: 26px;
     line-height: 30px;

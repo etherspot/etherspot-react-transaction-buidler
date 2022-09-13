@@ -4,7 +4,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { AiOutlineSearch } from 'react-icons/ai';
 import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icons/md';
 import {
@@ -23,11 +23,13 @@ import {
 } from '../../providers/EtherspotContextProvider';
 import { containsText } from '../../utils/validation';
 import { formatAmountDisplay } from '../../utils/common';
+import { Theme } from '../../utils/theme';
 
 const Wrapper = styled.div<{ disabled: boolean }>`
   position: relative;
   margin-bottom: 18px;
-  background: #fff;
+  background: ${({ theme }) => theme.color.background.selectInput};
+  color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
@@ -51,13 +53,13 @@ const SelectWrapper = styled.div<{ disabled: boolean }>`
 
 const Label = styled.label`
   display: inline-block;
-  color: #6e6b6a;
+  color: ${({ theme }) => theme.color.text.innerLabel};
   margin-bottom: 14px;
   font-size: 14px;
 `;
 
 const ErrorMessage = styled.small`
-  color: #ff0000;
+  color: ${({ theme }) => theme.color.text.errorMessage};
   margin-top: 5px;
   font-size: 12px;
 `;
@@ -81,10 +83,10 @@ const SearchInput = styled.input`
   margin: 0;
   padding: 0 8px;
   font-family: "PTRootUIWebMedium", sans-serif;
-  color: #ff7733;
+  color: ${({ theme }) => theme.color.text.searchInput};
   
   &::placeholder {
-    color: #ff7733;
+    color: ${({ theme }) => theme.color.text.searchInputSecondary};
   }
 
   &:focus {
@@ -101,7 +103,7 @@ const LargeOptionList = styled.div`
 `;
 
 const SelectedOption = styled.div<{ disabled: boolean }>`
-  color: #191726;
+  color: ${({ theme }) => theme.color.text.selectInputOption};
   font-size: 16px;
   font-family: "PTRootUIWebMedium", sans-serif;
   display: flex;
@@ -153,7 +155,7 @@ const LargeOptionDetails = styled.div`
 const LargeOptionDetailsBottom = styled.div`
   margin-top: 5px;
   font-size: 12px;
-  color: #191726;
+  color: ${({ theme }) => theme.color.text.selectInputOptionSecondary};
   font-family: "PTRootUIWebRegular", sans-serif;
 `;
 
@@ -193,8 +195,8 @@ const PlaceholderOptionImage = styled.div`
   width: 32px;
   border-radius: 50%;
   margin-right: 8px;
-  background: #ffe6d9;
-  color: #6e6b6a;
+  background: ${({ theme }) => theme.color.background.selectInputImagePlaceholder};
+  color: ${({ theme }) => theme.color.text.selectInputImagePlaceholder};
   text-align: center;
   text-transform: uppercase;
 `;
@@ -213,16 +215,16 @@ const OptionsScroll = styled.div`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #ff7733;
+    background: ${({ theme }) => theme.color.background.selectInputScrollbar};
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 119, 51, 0.8);
+    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarHover};
   }
 
   ::-webkit-scrollbar-thumb:active {
-    background-color: rgba(255, 119, 51, 0.5);
+    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarActive};
   }
 `;
 
@@ -259,6 +261,7 @@ const NetworkAssetSelectInput = ({
   const [selectedNetworkAssets, setSelectedNetworkAssets] = useState<AssetWithBalance[]>([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
   const [noImageAssets, setNoImageAssets] = useState<{ [assetId: string]: boolean }>({});
+  const theme: Theme = useTheme();
 
   const { sdk, getSupportedAssetsForChainId, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
 
@@ -300,8 +303,8 @@ const NetworkAssetSelectInput = ({
     <Wrapper disabled={disabled}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
-        {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color="#0a1427" />}
-        {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color="#0a1427" />}
+        {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
+        {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />}
       </SelectWrapper>
       {!showSelectModal && (!selectedAsset || !selectedNetwork) && (
         <SelectedOption onClick={onSelectClick} disabled={disabled}>
@@ -350,7 +353,7 @@ const NetworkAssetSelectInput = ({
             <>
               {selectedNetworkAssets?.length > 5 && (
                 <SearchInputWrapper htmlFor={searchInputId}>
-                  <AiOutlineSearch size={18} color="#ff7733" />
+                  <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
                   <SearchInput id={searchInputId} onChange={(e: any) => setAssetSearchQuery(e?.target?.value)} placeholder="Search" />
                 </SearchInputWrapper>
               )}

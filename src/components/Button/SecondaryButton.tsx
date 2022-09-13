@@ -12,7 +12,7 @@ const SecondaryButton = styled.button<{
   font-size: 16px;
   padding: 0;
   ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px`};
-  color: ${({ color }) => color || '#ffeee6'};
+  color: ${({ color, theme }) => color || theme.color.text.buttonSecondary};
   cursor: pointer;
 
   &:hover {

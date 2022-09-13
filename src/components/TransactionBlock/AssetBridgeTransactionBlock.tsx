@@ -45,7 +45,7 @@ const Title = styled.h3`
   margin: 0 0 18px;
   padding: 0;
   font-size: 16px;
-  color: #191726;
+  color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: "PTRootUIWebBold", sans-serif;
 `;
 

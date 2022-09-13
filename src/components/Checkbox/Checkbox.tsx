@@ -9,13 +9,11 @@ const Wrapper = styled.div`
   margin-bottom: 15px;
 `;
 
-const InputWrapper = styled.div<{ hasSelect?: boolean }>`
-  
-`;
+const InputWrapper = styled.div<{ hasSelect?: boolean }>``;
 
 const Label = styled.label`
   display: inline-block;
-  color: #000;
+  color: ${({ theme }) => theme.color.text.outerLabel};
   margin-left: 5px;
   font-size: 14px;
 `;
@@ -23,12 +21,12 @@ const Label = styled.label`
 const StyledCheckbox = styled.input.attrs({ type: 'checkbox' })``;
 
 const ErrorMessage = styled.small`
-  color: #ff0000;
+  color: ${({ theme }) => theme.color.text.errorMessage};
   margin-top: 5px;
   font-size: 12px;
 `;
 
-interface TextInputProps {
+interface CheckboxInputProps {
   isChecked?: boolean;
   label?: string;
   errorMessage?: string;
@@ -40,7 +38,7 @@ const Checkbox = ({
   label,
   errorMessage,
   onChange,
-}: TextInputProps) => {
+}: CheckboxInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-checkbox-'));
   const [isChecked, setIsChecked] = useState<boolean>(!!defaultIsChecked);
 
