@@ -61,6 +61,7 @@ export interface AvailableTransactionBlock {
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: AvailableTransactionBlock[];
   hiddenTransactionBlockTypes?: string[];
+  hideAddTransactionButton?: boolean;
 }
 
 const TransactionBlockWrapper = styled.div<{ last?: boolean }>`
@@ -254,6 +255,7 @@ const availableTransactionBlocks: AvailableTransactionBlock[] = [
 const TransactionBuilderContextProvider = ({
   defaultTransactionBlocks,
   hiddenTransactionBlockTypes,
+  hideAddTransactionButton,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -502,7 +504,7 @@ const TransactionBuilderContextProvider = ({
                 />
               </TransactionBlockWrapper>
             ))}
-            {!showTransactionBlockSelect && (
+            {!showTransactionBlockSelect && !hideAddTransactionButton && (
               <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
                 <AiOutlinePlusCircle size={24} />
                 <span>Add transaction</span>

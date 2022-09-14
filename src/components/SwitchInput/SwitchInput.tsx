@@ -22,10 +22,9 @@ const SwitchOption = styled.div<{ isActive: boolean; }>`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
   background: ${({ theme }) => theme.color.background.switchInputInactiveTab};
-  padding: 0 13px;
   width: 50%;
   text-align: center;
-  height: 34px;
+  min-height: 34px;
   line-height: 34px;
 
   ${({ isActive }) => !isActive && `
@@ -37,7 +36,6 @@ const SwitchOption = styled.div<{ isActive: boolean; }>`
   `}
 
   ${({ isActive, theme }) => isActive && `
-    padding: 0 23px;
     border-radius: 6px;
     box-shadow: 0.5px 0 2px 0 rgba(107, 107, 107, 0.44);
     color: ${theme.color.text.switchInputActiveTab};

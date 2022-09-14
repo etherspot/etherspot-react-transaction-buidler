@@ -19,6 +19,7 @@ interface EtherspotProps {
   provider: WalletProviderLike;
   chainId?: number;
   themeOverride?: Theme;
+  hideAddTransactionButton?: boolean;
 }
 
 const ComponentWrapper = styled.div`
@@ -52,6 +53,7 @@ const Etherspot = ({
   chainId,
   hiddenTransactionBlockTypes,
   themeOverride,
+  hideAddTransactionButton,
 }: EtherspotProps) => (
   <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
     <EtherspotContextProvider provider={provider} chainId={chainId}>
@@ -66,6 +68,7 @@ const Etherspot = ({
             <TransactionBuilderContextProvider
               defaultTransactionBlocks={defaultTransactionBlocks}
               hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
+              hideAddTransactionButton={hideAddTransactionButton}
             />
           </TransactionsDispatcherContextProvider>
         </TransactionBuilderModalContextProvider>
