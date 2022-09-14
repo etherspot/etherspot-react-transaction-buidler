@@ -31,6 +31,7 @@ const ComponentWrapper = styled.div`
   position: relative;
   min-height: 200px;
   font-family: "PTRootUIWebRegular", sans-serif;
+  box-sizing: content-box;
 
   @media (max-width: 500px) {
     width: calc(100% - 40px);
