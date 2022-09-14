@@ -226,8 +226,9 @@ const NetworkAssetSelectInput = ({
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
+    if (selectedNetwork) setPreselectedNetwork(selectedNetwork);
     setShowSelectModal(!showSelectModal);
-  }, [disabled, showSelectModal]);
+  }, [disabled, showSelectModal, selectedNetwork]);
 
   const updateSelectedNetworkAssets = useCallback(async () => {
     if (!sdk || !preselectedNetwork) return;

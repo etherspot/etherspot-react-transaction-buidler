@@ -35,6 +35,14 @@ const ComponentWrapper = styled.div`
   @media (max-width: 500px) {
     width: calc(100% - 40px);
   }
+
+  img, svg {
+    vertical-align: middle;
+  }
+
+  * {
+    box-sizing: content-box;
+  }
 `;
 
 const Etherspot = ({

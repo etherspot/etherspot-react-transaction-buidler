@@ -210,7 +210,7 @@ const AddTransactionButton = styled(SecondaryButton)`
 
   span {
     position: relative;
-    top: -5px;
+    top: 1px;
     margin-left: 6px;
   }
 
