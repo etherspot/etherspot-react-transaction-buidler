@@ -11,6 +11,7 @@ import {
   EnvNames as EtherspotEnvNames,
   isWalletProvider,
   Sdk as EtherspotSdk,
+  SessionStorage,
   WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
@@ -54,10 +55,12 @@ const EtherspotContextProvider = ({
   children,
   provider: defaultProvider,
   chainId: defaultChainId = 1,
+  etherspotSessionStorage,
 }: {
   children: ReactNode;
   provider: WalletProviderLike;
   chainId?: number;
+  etherspotSessionStorage?: SessionStorage;
 }) => {
   const context = useContext(EtherspotContext);
 
@@ -102,7 +105,7 @@ const EtherspotContextProvider = ({
     const sdkForChain = new EtherspotSdk(provider, {
       networkName,
       env: envName,
-      sessionStorage: sessionStorageInstance,
+      sessionStorage: etherspotSessionStorage ?? sessionStorageInstance,
       omitWalletProviderNetworkCheck: true,
     });
 

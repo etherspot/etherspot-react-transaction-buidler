@@ -1,6 +1,9 @@
 import React from 'react';
 import styled, { ThemeProvider } from 'styled-components';
-import { WalletProviderLike } from 'etherspot';
+import {
+  SessionStorage,
+  WalletProviderLike,
+} from 'etherspot';
 import { merge } from 'lodash';
 
 import {
@@ -20,6 +23,7 @@ interface EtherspotProps {
   chainId?: number;
   themeOverride?: Theme;
   hideAddTransactionButton?: boolean;
+  etherspotSessionStorage?: SessionStorage;
 }
 
 const ComponentWrapper = styled.div`
@@ -54,9 +58,14 @@ const Etherspot = ({
   hiddenTransactionBlockTypes,
   themeOverride,
   hideAddTransactionButton,
+  etherspotSessionStorage,
 }: EtherspotProps) => (
   <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
-    <EtherspotContextProvider provider={provider} chainId={chainId}>
+    <EtherspotContextProvider
+      provider={provider}
+      chainId={chainId}
+      etherspotSessionStorage={etherspotSessionStorage}
+    >
       <style>
         @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
         @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
