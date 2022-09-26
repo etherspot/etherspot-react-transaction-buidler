@@ -6,6 +6,7 @@ import React, {
 } from 'react';
 import styled, { useTheme } from 'styled-components';
 import {
+  AccountTypes,
   BridgingQuote,
 } from 'etherspot';
 import { ethers } from 'ethers';
@@ -24,11 +25,11 @@ import {
 import {
   ErrorMessages,
 } from '../../utils/validation';
-import SwitchInput from '../SwitchInput';
+import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { Chain } from '../../utils/chain';
 import {
-  AssetWithBalance,
+  IAssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
@@ -60,8 +61,9 @@ const AssetBridgeTransactionBlock = ({
   errorMessages?: ErrorMessages;
 }) => {
   const [amount, setAmount] = useState<string>('');
-  const [selectedFromAsset, setSelectedFromAsset] = useState<AssetWithBalance | null>(null);
-  const [selectedToAsset, setSelectedToAsset] = useState<AssetWithBalance | null>(null);
+  const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
+  const [selectedToAsset, setSelectedToAsset] = useState<IAssetWithBalance | null>(null);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<SelectOption | null>(null);
@@ -71,12 +73,7 @@ const AssetBridgeTransactionBlock = ({
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
   const theme: Theme = useTheme();
 
-  const {
-    sdk,
-    providerAddress,
-    accountAddress,
-    totalWorthPerAddress,
-  } = useEtherspot();
+  const { sdk } = useEtherspot();
 
   useEffect(() => {
     if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
@@ -172,11 +169,6 @@ const AssetBridgeTransactionBlock = ({
     [availableQuotes],
   );
 
-  const walletOptions = [
-    { title: `Key based・$${formatAmountDisplay(totalWorthPerAddress[providerAddress as string] ?? 0)}`, value: 1 },
-    { title: `Etherspot・$${formatAmountDisplay(totalWorthPerAddress[accountAddress as string] ?? 0)}`, value: 2 },
-  ];
-
   const remainingSelectedFromAssetBalance = useMemo(() => {
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
 
@@ -189,13 +181,15 @@ const AssetBridgeTransactionBlock = ({
   return (
     <>
       <Title>Asset Bridge</Title>
-      <SwitchInput
+      <AccountSwitchInput
         label="From wallet"
-        option1={walletOptions[0]}
-        option2={walletOptions[1]}
-        selectedOption={walletOptions[1]}
-        onChange={(option) => {
-          if (option.value === 1) alert('Unsupported yet!')
+        selectedAccountType={selectedAccountType}
+        onChange={(accountType) => {
+          if (accountType === AccountTypes.Key) {
+            alert('Not supported yet!');
+            return;
+          }
+          setSelectedAccountType(accountType);
         }}
         errorMessage={errorMessages?.fromWallet}
       />

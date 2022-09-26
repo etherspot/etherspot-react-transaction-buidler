@@ -19,7 +19,7 @@ import {
   supportedChains,
 } from '../../utils/chain';
 import {
-  AssetWithBalance,
+  IAssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
 import { containsText } from '../../utils/validation';
 import { formatAmountDisplay } from '../../utils/common';
@@ -191,9 +191,9 @@ const OptionsScroll = styled.div`
 interface SelectInputProps {
   label?: string;
   errorMessage?: string;
-  selectedAsset?: AssetWithBalance | null;
+  selectedAsset?: IAssetWithBalance | null;
   selectedNetwork?: Chain | null;
-  onAssetSelect?: (asset: AssetWithBalance) => void;
+  onAssetSelect?: (asset: IAssetWithBalance) => void;
   onNetworkSelect?: (chain: Chain) => void;
   disabled?: boolean;
   showPositiveBalanceAssets?: boolean;
@@ -218,7 +218,7 @@ const NetworkAssetSelectInput = ({
   const [showSelectModal, setShowSelectModal] = useState<boolean>(false);
   const [preselectedNetwork, setPreselectedNetwork] = useState<Chain | null>(null);
   const [assetSearchQuery, setAssetSearchQuery] = useState<string>('');
-  const [selectedNetworkAssets, setSelectedNetworkAssets] = useState<AssetWithBalance[]>([]);
+  const [selectedNetworkAssets, setSelectedNetworkAssets] = useState<IAssetWithBalance[]>([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
   const theme: Theme = useTheme();
 

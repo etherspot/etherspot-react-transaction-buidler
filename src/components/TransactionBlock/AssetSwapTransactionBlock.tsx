@@ -6,6 +6,7 @@ import React, {
 } from 'react';
 import styled, { useTheme } from 'styled-components';
 import {
+  AccountTypes,
   ExchangeOffer,
 } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
@@ -23,13 +24,13 @@ import {
   addressesEqual,
   ErrorMessages,
 } from '../../utils/validation';
-import SwitchInput from '../SwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { AssetWithBalance } from '../../providers/EtherspotContextProvider';
+import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { Chain } from '../../utils/chain';
 import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
+import AccountSwitchInput from '../AccountSwitchInput';
 
 export interface SwapAssetTransactionBlockValues {
   chainId?: number;
@@ -61,7 +62,7 @@ const AssetSwapTransactionBlock = ({
   errorMessages?: ErrorMessages;
 }) => {
   const [amount, setAmount] = useState<string>('');
-  const [selectedFromAsset, setSelectedFromAsset] = useState<AssetWithBalance | null>(null);
+  const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedToAsset, setSelectedToAsset] = useState<SelectOption | null>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(null);
@@ -71,9 +72,10 @@ const AssetSwapTransactionBlock = ({
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
   const [showReceiverInput] = useState<boolean>(false);
   const [receiverAddress, setReceiverAddress] = useState<string>('');
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
-  const { sdk, getSupportedAssetsForChainId, accountAddress, providerAddress, totalWorthPerAddress } = useEtherspot();
+  const { sdk, getSupportedAssetsForChainId, accountAddress } = useEtherspot();
   const theme: Theme = useTheme();
 
   useEffect(() => {
@@ -186,11 +188,6 @@ const AssetSwapTransactionBlock = ({
     showReceiverInput,
   ]);
 
-  const walletOptions = [
-    { title: `Key based・$${formatAmountDisplay(totalWorthPerAddress[providerAddress as string] ?? 0)}`, value: 1 },
-    { title: `Etherspot・$${formatAmountDisplay(totalWorthPerAddress[accountAddress as string] ?? 0)}`, value: 2 },
-  ];
-
   const remainingSelectedFromAssetBalance = useMemo(() => {
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
 
@@ -203,13 +200,15 @@ const AssetSwapTransactionBlock = ({
   return (
     <>
       <Title>Swap asset</Title>
-      <SwitchInput
+      <AccountSwitchInput
         label="From wallet"
-        option1={walletOptions[0]}
-        option2={walletOptions[1]}
-        selectedOption={walletOptions[1]}
-        onChange={(option) => {
-          if (option.value === 1) alert('Unsupported yet!')
+        selectedAccountType={selectedAccountType}
+        onChange={(accountType) => {
+          if (accountType === AccountTypes.Key) {
+            alert('Not supported yet!');
+            return;
+          }
+          setSelectedAccountType(accountType);
         }}
         errorMessage={errorMessages?.fromWallet}
       />

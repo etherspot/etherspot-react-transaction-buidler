@@ -1,9 +1,4 @@
 import { uniqueId } from 'lodash';
-import { Asset } from '../providers/EtherspotContextProvider';
-import { SelectOption } from '../components/SelectInput/SelectInput';
-import {
-  Chain,
-} from './chain';
 
 export const formatAssetAmountInput = (
   amount: string,
@@ -71,15 +66,4 @@ export const humanizeHexString = (
 
 export const getTimeBasedUniqueId = (): string => uniqueId(`${+new Date()}-`);
 
-export const mapAssetIntoSelectOption = (asset: Asset): SelectOption => ({
-  title: asset.symbol,
-  value: asset.address,
-  iconUrl: asset.logoURI,
-});
-
-export const mapChainIntoSelectOption = (chain: Chain): SelectOption => ({
-  value: chain.chainId,
-  title: chain.title,
-  iconUrl: chain.title,
-});
 

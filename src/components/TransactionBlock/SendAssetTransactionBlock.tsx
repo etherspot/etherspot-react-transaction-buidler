@@ -20,12 +20,13 @@ import {
   Chain,
   supportedChains,
 } from '../../utils/chain';
-import SwitchInput from '../SwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { AssetWithBalance } from '../../providers/EtherspotContextProvider';
+import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
+import AccountSwitchInput from '../AccountSwitchInput';
+import { AccountTypes } from 'etherspot';
 
 export interface SendAssetTransactionBlockValues {
   fromAddress?: string;
@@ -55,9 +56,10 @@ const SendAssetTransactionBlock = ({
 }) => {
   const [receiverAddress, setReceiverAddress] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
-  const [selectedAsset, setSelectedAsset] = useState<AssetWithBalance | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(null);
   const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(true);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
 
   const theme: Theme = useTheme();
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
@@ -66,7 +68,6 @@ const SendAssetTransactionBlock = ({
     providerAddress,
     accountAddress,
     chainId,
-    totalWorthPerAddress,
   } = useEtherspot();
 
   useEffect(() => {
@@ -113,11 +114,6 @@ const SendAssetTransactionBlock = ({
     providerAddress,
   ]);
 
-  const walletOptions = [
-    { title: `Key based・$${formatAmountDisplay(totalWorthPerAddress[providerAddress as string] ?? 0)}`, value: 1 },
-    { title: `Etherspot・$${formatAmountDisplay(totalWorthPerAddress[accountAddress as string] ?? 0)}`, value: 2 },
-  ];
-
   const hideChainIds = !isFromEtherspotWallet
     ? supportedChains
       .map((supportedChain) => supportedChain.chainId)
@@ -136,20 +132,19 @@ const SendAssetTransactionBlock = ({
   return (
     <>
       <Title>Send asset</Title>
-      <SwitchInput
+      <AccountSwitchInput
         label="From wallet"
-        option1={walletOptions[0]}
-        option2={walletOptions[1]}
-        selectedOption={walletOptions[isFromEtherspotWallet ? 1 : 0]}
-        onChange={(option) => {
-          if (option.value === 1) {
+        selectedAccountType={selectedAccountType}
+        onChange={(accountType) => {
+          if (accountType === AccountTypes.Key) {
             setSelectedNetwork(null);
             setSelectedAsset(null);
           }
-          setIsFromEtherspotWallet(option.value === 2);
+          setIsFromEtherspotWallet(accountType === AccountTypes.Contract);
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
+          setSelectedAccountType(accountType);
         }}
-        errorMessage={errorMessages?.fromAddress}
+        errorMessage={errorMessages?.fromWallet}
       />
       <NetworkAssetSelectInput
         label="From"

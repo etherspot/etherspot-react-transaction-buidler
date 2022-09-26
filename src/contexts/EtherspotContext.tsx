@@ -6,7 +6,7 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 
-import { AssetWithBalance, Asset, TotalWorthPerAddress } from '../providers/EtherspotContextProvider';
+import { IAssetWithBalance, IAsset, ITotalWorthPerAddress } from '../providers/EtherspotContextProvider';
 
 export interface EtherspotContextData {
   data: {
@@ -18,11 +18,11 @@ export interface EtherspotContextData {
     getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
     isConnecting: boolean;
     sdk: EtherspotSdk | null;
-    getSupportedAssetsForChainId: (chainId: number) => Promise<Asset[]>;
-    getAssetsBalancesForChainId: (assets: Asset[], chainId: number, address?: string | null) => Promise<AccountBalance[]>;
-    getSupportedAssetsWithBalancesForChainId: (chainId: number, positiveBalancesOnly?: boolean, address?: string | null) => Promise<AssetWithBalance[]>;
+    getSupportedAssetsForChainId: (chainId: number) => Promise<IAsset[]>;
+    getAssetsBalancesForChainId: (assets: IAsset[], chainId: number, address?: string | null) => Promise<AccountBalance[]>;
+    getSupportedAssetsWithBalancesForChainId: (chainId: number, positiveBalancesOnly?: boolean, address?: string | null) => Promise<IAssetWithBalance[]>;
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
-    totalWorthPerAddress: TotalWorthPerAddress;
+    totalWorthPerAddress: ITotalWorthPerAddress;
   }
 }
 
