@@ -31,9 +31,14 @@ import { Chain } from '../../utils/chain';
 import {
   IAssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
-import { CombinedRoundedImages } from '../Image';
+import {
+  CombinedRoundedImages,
+  RoundedImage,
+} from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
+import Text from '../Text/Text';
+import { bridgeServiceIdToDetails } from '../../utils/bridge';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -51,6 +56,17 @@ const Title = styled.h3`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: "PTRootUIWebBold", sans-serif;
+`;
+
+const OfferDetails = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-family: "PTRootUIWebMedium", sans-serif;
+`;
+
+const OfferDetailsBlock = styled.div`
+  margin-right: 16px;
 `;
 
 const AssetBridgeTransactionBlock = ({
@@ -159,13 +175,14 @@ const AssetBridgeTransactionBlock = ({
   ]);
 
   const availableQuotesOptions = useMemo(
-    () => {
-      return availableQuotes
-        ?.map((availableQuote) => ({
-          title: `${availableQuote.provider.toUpperCase()}`,
-          value: availableQuote.provider,
-        }));
-    },
+    () => availableQuotes?.map((availableQuote) => {
+      const serviceDetails = bridgeServiceIdToDetails[availableQuote.provider];
+      return {
+        title: serviceDetails?.title ?? availableQuote.provider.toUpperCase(),
+        value: availableQuote.provider,
+        iconUrl: serviceDetails?.iconUrl,
+      };
+    }),
     [availableQuotes],
   );
 
@@ -177,6 +194,27 @@ const AssetBridgeTransactionBlock = ({
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
     return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals);
   }, [amount, selectedFromAsset]);
+
+
+  const renderOption = (option: SelectOption) => {
+    const availableQuote = availableQuotes?.find((quote) => quote.provider === option.value);
+    const valueToReceive = availableQuote?.estimate?.toAmount && formatAmountDisplay(ethers.utils.formatUnits(availableQuote.estimate.toAmount, selectedToAsset?.decimals));
+    return (
+      <OfferDetails>
+        <RoundedImage title={option.title} url={option.iconUrl} size={24} />
+        <OfferDetailsBlock>
+          <Text size={12} marginBottom={2} medium block>{option.title}</Text>
+          {!!valueToReceive && <Text size={16} medium>{valueToReceive} {selectedToAsset?.symbol}</Text>}
+        </OfferDetailsBlock>
+        {!!availableQuote?.estimate?.gasCosts?.amountUSD && (
+          <OfferDetailsBlock>
+            <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
+            {!!valueToReceive && <Text size={16} medium>{formatAmountDisplay(availableQuote.estimate.gasCosts.amountUSD, '$')}</Text>}
+          </OfferDetailsBlock>
+        )}
+      </OfferDetails>
+    );
+  };
 
   return (
     <>
@@ -257,9 +295,9 @@ const AssetBridgeTransactionBlock = ({
           errorMessage={errorMessages?.amount}
         />
       )}
-      {!!selectedToAsset && selectedFromAsset && (
+      {!!selectedToAsset && selectedFromAsset && (remainingSelectedFromAssetBalance ?? 0) > 0 && (
         <SelectInput
-          label={`Accepted quote`}
+          label={`Route`}
           options={availableQuotesOptions ?? []}
           isLoading={isLoadingAvailableQuotes}
           selectedOption={selectedQuote}
@@ -267,10 +305,11 @@ const AssetBridgeTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
             setSelectedQuote(option);
           }}
-          placeholder="Select quote"
+          placeholder="Select route"
+          renderOptionListItemContent={renderOption}
+          renderSelectedOptionContent={renderOption}
           errorMessage={errorMessages?.quote}
           disabled={!availableQuotesOptions?.length || isLoadingAvailableQuotes}
-          displayLabelOutside
         />
       )}
     </>

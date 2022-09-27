@@ -27,10 +27,15 @@ import {
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { Chain } from '../../utils/chain';
-import { CombinedRoundedImages } from '../Image';
+import {
+  CombinedRoundedImages,
+  RoundedImage,
+} from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import AccountSwitchInput from '../AccountSwitchInput';
+import { swapServiceIdToDetails } from '../../utils/swap';
+import Text from '../Text/Text';
 
 export interface SwapAssetTransactionBlockValues {
   chainId?: number;
@@ -52,6 +57,13 @@ const Title = styled.h3`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: "PTRootUIWebBold", sans-serif;
+`;
+
+const OfferDetails = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-family: "PTRootUIWebMedium", sans-serif;
 `;
 
 const AssetSwapTransactionBlock = ({
@@ -142,13 +154,14 @@ const AssetSwapTransactionBlock = ({
   );
 
   const availableOffersOptions = useMemo(
-    () => {
-      const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
-      return availableOffers?.map((availableOffer) => ({
-        title: `${availableOffer.provider}: ${formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals))} ${toAsset?.symbol}`,
+    () => availableOffers?.map((availableOffer) => {
+      const serviceDetails = swapServiceIdToDetails[availableOffer.provider];
+      return {
+        title: serviceDetails?.title ?? availableOffer.provider,
         value: availableOffer.provider,
-      }));
-    },
+        iconUrl: serviceDetails?.iconUrl,
+      };
+    }),
     [availableOffers, availableToAssets],
   );
 
@@ -196,6 +209,21 @@ const AssetSwapTransactionBlock = ({
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
     return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals);
   }, [amount, selectedFromAsset]);
+
+  const renderOption = (option: SelectOption) => {
+    const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
+    const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
+    const valueToReceive = availableOffer && formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals));
+    return (
+      <OfferDetails>
+        <RoundedImage title={option.title} url={option.iconUrl} size={24} />
+        <div>
+          <Text size={12} marginBottom={2} medium block>{option.title}</Text>
+          {!!valueToReceive && <Text size={16} medium>{valueToReceive} {toAsset?.symbol}</Text>}
+        </div>
+      </OfferDetails>
+    );
+  };
 
   return (
     <>
@@ -299,9 +327,9 @@ const AssetSwapTransactionBlock = ({
           errorMessage={errorMessages?.receiverAddress}
         />
       )}
-      {!!selectedToAsset && !!selectedFromAsset && !!amount && (
+      {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) > 0 && (
         <SelectInput
-          label={`Accepted offer`}
+          label={`Offer`}
           options={availableOffersOptions ?? []}
           isLoading={isLoadingAvailableOffers}
           disabled={!availableOffersOptions?.length || isLoadingAvailableOffers}
@@ -310,9 +338,10 @@ const AssetSwapTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
             setSelectedOffer(option);
           }}
+          renderOptionListItemContent={renderOption}
+          renderSelectedOptionContent={renderOption}
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
-          displayLabelOutside
         />
       )}
     </>

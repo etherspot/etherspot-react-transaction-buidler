@@ -103,6 +103,33 @@ const SelectedOption = styled.div<{ disabled: boolean }>`
   `}
 `;
 
+const OptionsScroll = styled.div`
+  max-height: 200px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: none;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.color.background.selectInputScrollbar};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarHover};
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarActive};
+  }
+`;
+
 const OptionListItem = styled(SelectedOption)`
   text-align: left;
   margin-bottom: 15px;
@@ -110,10 +137,6 @@ const OptionListItem = styled(SelectedOption)`
 
   &:last-child {
     margin-bottom: 0;
-  }
-
-  &:hover {
-    text-decoration: underline;
   }
 `;
 
@@ -134,6 +157,8 @@ interface SelectInputProps {
   noSearch?: boolean;
   placeholder?: string;
   displayLabelOutside?: boolean
+  renderSelectedOptionContent?: (option: SelectOption) => React.ReactNode;
+  renderOptionListItemContent?: (option: SelectOption) => React.ReactNode;
 }
 
 const SelectInput = ({
@@ -147,6 +172,8 @@ const SelectInput = ({
   noSearch = false,
   placeholder = 'None',
   displayLabelOutside = false,
+  renderOptionListItemContent,
+  renderSelectedOptionContent,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-select-search-input-'));
@@ -190,8 +217,13 @@ const SelectInput = ({
         )}
         {!showSelectModal && (
           <SelectedOption onClick={onSelectClick} disabled={disabled}>
-            {!!selectedOption?.iconUrl && <RoundedImage url={selectedOption.iconUrl} title={selectedOption.title} size={24} />}
-            {selectedOptionTitle}
+            {!!renderSelectedOptionContent && selectedOption && renderSelectedOptionContent(selectedOption)}
+            {(!renderSelectedOptionContent || !selectedOption) && (
+              <>
+                {!!selectedOption?.iconUrl && <RoundedImage url={selectedOption.iconUrl} title={selectedOption.title} size={24} />}
+                {selectedOptionTitle}
+              </>
+            )}
           </SelectedOption>
         )}
         {showSelectModal && (
@@ -203,19 +235,28 @@ const SelectInput = ({
               </SearchInputWrapper>
             )}
             {!filteredSelectOptions?.length && <small>No results.</small>}
-            {filteredSelectOptions.map((option, index) => (
-              <OptionListItem
-                disabled={disabled}
-                key={`${option.value}-${index}`}
-                onClick={() => {
-                  if (onOptionSelect) onOptionSelect(option);
-                  hideSelectModal();
-                }}
-              >
-                {!!option.iconUrl && <RoundedImage url={option.iconUrl} title={option.title} size={24} />}
-                {option.title}
-              </OptionListItem>
-            ))}
+            {!!filteredSelectOptions?.length && (
+              <OptionsScroll>
+                {filteredSelectOptions.map((option, index) => (
+                  <OptionListItem
+                    disabled={disabled}
+                    key={`${option.value}-${index}`}
+                    onClick={() => {
+                      if (onOptionSelect) onOptionSelect(option);
+                      hideSelectModal();
+                    }}
+                  >
+                    {!!renderOptionListItemContent && renderOptionListItemContent(option)}
+                    {!renderOptionListItemContent && (
+                      <>
+                        {!!option.iconUrl && <RoundedImage url={option.iconUrl} title={option.title} size={24} />}
+                        {option.title}
+                      </>
+                    )}
+                  </OptionListItem>
+                ))}
+              </OptionsScroll>
+            )}
           </OptionList>
         )}
         {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}

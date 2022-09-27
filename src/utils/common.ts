@@ -21,13 +21,13 @@ export const formatAssetAmountInput = (
   return `${integer}.${fixedFraction}`;
 };
 
-export const formatAmountDisplay = (amountRaw: string | number): string => {
+export const formatAmountDisplay = (amountRaw: string | number, symbol?: string): string => {
   const amount = typeof amountRaw === 'number' ? `${amountRaw}` : amountRaw;
 
   // check string to avoid underflow
-  if (amount.startsWith('0.01') || amount.startsWith('0.00')) {
+  if ((amount !== '0.01' && amount.startsWith('0.01')) || amount.startsWith('0.00')) {
     const [,fraction] = amount.split('.');
-    let smallAmount = '~0.';
+    let smallAmount = `~${symbol ?? ''}0.`;
 
     [...fraction].every((digitString) => {
       if (digitString === '0') {
@@ -41,7 +41,7 @@ export const formatAmountDisplay = (amountRaw: string | number): string => {
     return smallAmount;
   }
 
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount);
+  return `${symbol ?? ''}${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount)}`;
 };
 
 export const humanizeHexString = (
