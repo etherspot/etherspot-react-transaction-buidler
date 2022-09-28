@@ -6,12 +6,14 @@ import React, {
 } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
+import { AccountTypes } from 'etherspot';
 
 import TextInput from '../TextInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import {
   formatAmountDisplay,
   formatAssetAmountInput,
+  formatMaxAmount,
 } from '../../utils/common';
 import {
   ErrorMessages,
@@ -26,7 +28,6 @@ import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import AccountSwitchInput from '../AccountSwitchInput';
-import { AccountTypes } from 'etherspot';
 
 export interface SendAssetTransactionBlockValues {
   fromAddress?: string;
@@ -71,14 +72,6 @@ const SendAssetTransactionBlock = ({
     accountAddress,
     chainId,
   } = useEtherspot();
-
-  useEffect(() => {
-    setAmount('');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'assetDecimals');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
-  }, [selectedNetwork]);
 
   const onAmountChange = useCallback((newAmount: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
@@ -152,11 +145,13 @@ const SendAssetTransactionBlock = ({
       />
       <NetworkAssetSelectInput
         label="From"
-        onAssetSelect={(asset) => {
+        onAssetSelect={(asset, amountBN) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'assetDecimals');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
           setSelectedAsset(asset);
+          setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
         }}
         onNetworkSelect={(network) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
@@ -179,7 +174,7 @@ const SendAssetTransactionBlock = ({
           onValueChange={onAmountChange}
           value={amount}
           placeholder="0"
-          inputBottomText={selectedAsset?.assetPriceUsd && amount ? `$${+amount * selectedAsset.assetPriceUsd}` : undefined}
+          inputBottomText={selectedAsset?.assetPriceUsd && amount ? `${formatAmountDisplay(+amount * selectedAsset.assetPriceUsd, '$')}` : undefined}
           inputLeftComponent={
             <CombinedRoundedImages
               url={selectedAsset.logoURI}
@@ -192,7 +187,7 @@ const SendAssetTransactionBlock = ({
             <Pill
               label="Remaining"
               value={`${formatAmountDisplay(remainingSelectedAssetBalance ?? 0)} ${selectedAsset.symbol}`}
-              valueColor={(remainingSelectedAssetBalance ?? 0) <= 0 ? theme.color?.text?.errorMessage : undefined}
+              valueColor={(remainingSelectedAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined}
             />
           }
           errorMessage={errorMessages?.amount}

@@ -11,7 +11,10 @@ import {
   sortBy,
   uniqueId,
 } from 'lodash';
-import { ethers } from 'ethers';
+import {
+  BigNumber,
+  ethers,
+} from 'ethers';
 
 import { useEtherspot } from '../../hooks';
 import {
@@ -104,7 +107,7 @@ const LargeOptionList = styled.div`
   border-top: 1px solid #ffeee6;
 `;
 
-const SelectedOption = styled.div<{ disabled: boolean }>`
+const SelectedOption = styled.div<{ disabled?: boolean }>`
   color: ${({ theme }) => theme.color.text.selectInputOption};
   font-size: 16px;
   font-family: "PTRootUIWebMedium", sans-serif;
@@ -112,7 +115,7 @@ const SelectedOption = styled.div<{ disabled: boolean }>`
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
-  
+
   ${({ disabled }) => !disabled && `
     cursor: pointer;
 
@@ -137,10 +140,6 @@ const OptionListItem = styled(SelectedOption)`
   &:last-child {
     margin-bottom: 0;
   }
-
-  &:hover {
-    text-decoration: underline;
-  }
 `;
 
 const LargeOptionListItem = styled(OptionListItem)`
@@ -148,6 +147,51 @@ const LargeOptionListItem = styled(OptionListItem)`
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
+  cursor: inherit;
+  
+  &:hover {
+    opacity: 1;
+  }
+`;
+
+const LargeOptionListItemLeft = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  
+  &:hover {
+    opacity: 0.5;
+  }
+`;
+
+const LargeOptionListItemRight = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+`;
+
+const QuickAmountButton = styled.div<{ primary?: boolean }>`
+  padding: 4px 8px;
+  border-radius: 8px;
+  margin-right: 4px;
+  line-height: 16px;
+  font-size: 12px;
+  font-family: "PTRootUIWebMedium", sans-serif;
+  color: ${({ theme, primary }) => primary ? theme.color.text.listItemQuickButtonPrimary : theme.color.text.listItemQuickButtonSecondary};
+  background-color: ${({ theme, primary }) => primary ? theme.color.background.listItemQuickButtonPrimary : theme.color.background.listItemQuickButtonSecondary};
+  cursor: pointer;
+
+  &:last-child {
+    margin-right: 0;
+  }
+  
+  &:hover {
+    opacity: 0.5;
+  }
 `;
 
 const LargeOptionDetails = styled.div`
@@ -193,7 +237,7 @@ interface SelectInputProps {
   errorMessage?: string;
   selectedAsset?: IAssetWithBalance | null;
   selectedNetwork?: Chain | null;
-  onAssetSelect?: (asset: IAssetWithBalance) => void;
+  onAssetSelect?: (asset: IAssetWithBalance, amountBN?: BigNumber) => void;
   onNetworkSelect?: (chain: Chain) => void;
   disabled?: boolean;
   showPositiveBalanceAssets?: boolean;
@@ -259,6 +303,14 @@ const NetworkAssetSelectInput = ({
     return sortBy(filtered, ['balanceWorthUsd', 'name'], ['desc', 'asc']);
   }, [selectedNetworkAssets, assetSearchQuery, showPositiveBalanceAssets]);
 
+  const onListItemClick = (asset: IAssetWithBalance, amountBN?: BigNumber) => {
+    if (onAssetSelect) onAssetSelect(asset, amountBN);
+    if (onNetworkSelect && preselectedNetwork) onNetworkSelect(preselectedNetwork);
+    setShowSelectModal(false);
+    setPreselectedNetwork(null);
+    setAssetSearchQuery('');
+  }
+
   return (
     <Wrapper disabled={disabled} expanded={showSelectModal}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
@@ -321,28 +373,25 @@ const NetworkAssetSelectInput = ({
               )}
               <OptionsScroll>
                 {filteredSelectedNetworkAssets.map((asset, index) => (
-                  <LargeOptionListItem
-                    disabled={disabled}
-                    key={`${asset.address ?? '0x'}-${index}`}
-                    onClick={() => {
-                      if (onAssetSelect) onAssetSelect(asset);
-                      if (onNetworkSelect) onNetworkSelect(preselectedNetwork);
-                      setShowSelectModal(false);
-                      setPreselectedNetwork(null);
-                      setAssetSearchQuery('');
-                    }}
-                  >
-                    <RoundedImage url={asset.logoURI} title={asset.name} />
-                    <LargeOptionDetails>
-                      <div>
-                        {asset.name}
-                        {asset?.assetPriceUsd && `・$${formatAmountDisplay(asset.assetPriceUsd)}`}
-                      </div>
-                      <LargeOptionDetailsBottom>
-                        {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))} {asset.symbol}
-                        {!asset.balance.isZero() && asset?.balanceWorthUsd && `・$${formatAmountDisplay(asset.balanceWorthUsd)}`}
-                      </LargeOptionDetailsBottom>
-                    </LargeOptionDetails>
+                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`}>
+                    <LargeOptionListItemLeft onClick={() => onListItemClick(asset)}>
+                      <RoundedImage url={asset.logoURI} title={asset.name} />
+                      <LargeOptionDetails>
+                        <div>
+                          {asset.name}
+                          {asset?.assetPriceUsd && `・$${formatAmountDisplay(asset.assetPriceUsd)}`}
+                        </div>
+                        <LargeOptionDetailsBottom>
+                          {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))} {asset.symbol}
+                          {!asset.balance.isZero() && asset?.balanceWorthUsd && `・$${formatAmountDisplay(asset.balanceWorthUsd)}`}
+                        </LargeOptionDetailsBottom>
+                      </LargeOptionDetails>
+                    </LargeOptionListItemLeft>
+                    <LargeOptionListItemRight>
+                      <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(4))}>25%</QuickAmountButton>
+                      <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(2))}>50%</QuickAmountButton>
+                      <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance)} primary>Max</QuickAmountButton>
+                    </LargeOptionListItemRight>
                   </LargeOptionListItem>
                 ))}
               </OptionsScroll>

@@ -20,6 +20,8 @@ export interface Theme {
       closeButton?: string,
       pill?: string,
       roundedImageFallback?: string,
+      listItemQuickButtonSecondary?: string,
+      listItemQuickButtonPrimary?: string,
     },
     text?: {
       main?: string,
@@ -46,6 +48,8 @@ export interface Theme {
       pill?: string,
       pillValue?: string,
       roundedImageFallback?: string,
+      listItemQuickButtonSecondary?: string,
+      listItemQuickButtonPrimary?: string,
     },
   }
 }
@@ -72,6 +76,8 @@ export const defaultTheme: Theme = {
       closeButton: '#0a1427',
       pill: '#fff7f2',
       roundedImageFallback: '#ffe6d9',
+      listItemQuickButtonSecondary: '#443d66',
+      listItemQuickButtonPrimary: '#ff884d',
     },
     text: {
       main: '#fff',
@@ -98,6 +104,8 @@ export const defaultTheme: Theme = {
       pill: '#6e6b6a',
       pillValue: '#191726',
       roundedImageFallback: '#6e6b6a',
+      listItemQuickButtonSecondary: '#fff',
+      listItemQuickButtonPrimary: '#fff',
     },
   }
 };

@@ -21,6 +21,7 @@ import {
 import {
   formatAmountDisplay,
   formatAssetAmountInput,
+  formatMaxAmount,
 } from '../../utils/common';
 import {
   ErrorMessages,
@@ -100,13 +101,6 @@ const AssetBridgeTransactionBlock = ({
       setSelectedToAsset(null);
     }
   }, [selectedFromNetwork, selectedToNetwork]);
-
-  useEffect(() => {
-    setAmount('');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
-  }, [selectedFromNetwork, selectedFromAsset]);
 
   useEffect(() => {
     setSelectedQuote(null);
@@ -239,10 +233,12 @@ const AssetBridgeTransactionBlock = ({
       />
       <NetworkAssetSelectInput
         label="From"
-        onAssetSelect={(asset) => {
+        onAssetSelect={(asset, amountBN) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
           setSelectedFromAsset(asset);
+          setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
         }}
         onNetworkSelect={(network) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
@@ -282,7 +278,7 @@ const AssetBridgeTransactionBlock = ({
           onValueChange={onAmountChange}
           value={amount}
           placeholder="0"
-          inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `$${+amount * selectedFromAsset.assetPriceUsd}` : undefined}
+          inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}` : undefined}
           inputLeftComponent={
             <CombinedRoundedImages
               url={selectedFromAsset.logoURI}
@@ -295,7 +291,7 @@ const AssetBridgeTransactionBlock = ({
             <Pill
               label="Remaining"
               value={`${formatAmountDisplay(remainingSelectedFromAssetBalance ?? 0)} ${selectedFromAsset.symbol}`}
-              valueColor={(remainingSelectedFromAssetBalance ?? 0) <= 0 ? theme.color?.text?.errorMessage : undefined}
+              valueColor={(remainingSelectedFromAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined}
             />
           }
           errorMessage={errorMessages?.amount}
