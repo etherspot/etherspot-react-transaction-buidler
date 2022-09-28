@@ -105,7 +105,7 @@ export const isNativeAssetAddress = (
 
 export const containsText = (text: string | undefined, query: string): boolean => {
   try {
-    return !!text && text.toLowerCase().includes(query);
+    return !!text && text.toLowerCase().includes(query.toLowerCase());
   } catch (e) {
     //
   }
