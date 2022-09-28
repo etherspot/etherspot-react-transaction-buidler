@@ -35,6 +35,8 @@ export interface SendAssetTransactionBlockValues {
   assetAddress?: string;
   assetDecimals?: number;
   assetSymbol?: string;
+  assetIconUrl?: string,
+  assetUsdPrice?: number,
   amount?: string;
   isFromEtherspotWallet?: boolean;
 }
@@ -97,6 +99,8 @@ const SendAssetTransactionBlock = ({
         assetAddress: selectedAsset?.address,
         assetSymbol: selectedAsset?.symbol,
         assetDecimals: selectedAsset?.decimals,
+        assetIconUrl: selectedAsset?.logoURI,
+        assetUsdPrice: selectedAsset?.assetPriceUsd ?? undefined,
         amount,
         receiverAddress,
         isFromEtherspotWallet,
@@ -178,10 +182,10 @@ const SendAssetTransactionBlock = ({
           inputBottomText={selectedAsset?.assetPriceUsd && amount ? `$${+amount * selectedAsset.assetPriceUsd}` : undefined}
           inputLeftComponent={
             <CombinedRoundedImages
-              url1={selectedAsset.logoURI}
-              url2={selectedNetwork.iconUrl}
-              title1={selectedAsset.symbol}
-              title2={selectedNetwork.title}
+              url={selectedAsset.logoURI}
+              smallImageUrl={selectedNetwork.iconUrl}
+              title={selectedAsset.symbol}
+              smallImageTitle={selectedNetwork.title}
             />
           }
           inputTopRightComponent={

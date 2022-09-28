@@ -42,9 +42,12 @@ export interface SwapAssetTransactionBlockValues {
   fromAssetAddress?: string;
   fromAssetDecimals?: number;
   fromAssetSymbol?: string;
+  fromAssetIconUrl?: string;
   toAssetAddress?: string;
   toAssetDecimals?: number
   toAssetSymbol?: string;
+  toAssetIconUrl?: string;
+  toAssetUsdPrice?: number;
   amount?: string;
   receiverAddress?: string;
   isDifferentReceiverAddress?: boolean;
@@ -181,9 +184,11 @@ const AssetSwapTransactionBlock = ({
         fromAssetAddress: selectedFromAsset?.address,
         fromAssetSymbol: selectedFromAsset?.symbol,
         fromAssetDecimals: selectedFromAsset?.decimals,
+        fromAssetIconUrl: selectedFromAsset?.logoURI,
         toAssetAddress: toAsset?.address,
         toAssetSymbol: toAsset?.symbol,
         toAssetDecimals: toAsset?.decimals,
+        toAssetIconUrl: toAsset?.logoURI,
         amount,
         receiverAddress,
         offer,
@@ -288,10 +293,10 @@ const AssetSwapTransactionBlock = ({
               inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `$${+amount * selectedFromAsset.assetPriceUsd}` : undefined}
               inputLeftComponent={
                 <CombinedRoundedImages
-                  url1={selectedFromAsset.logoURI}
-                  url2={selectedNetwork.iconUrl}
-                  title1={selectedFromAsset.symbol}
-                  title2={selectedNetwork.title}
+                  url={selectedFromAsset.logoURI}
+                  smallImageUrl={selectedNetwork.iconUrl}
+                  title={selectedFromAsset.symbol}
+                  smallImageTitle={selectedNetwork.title}
                 />
               }
               inputTopRightComponent={

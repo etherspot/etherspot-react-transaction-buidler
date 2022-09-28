@@ -1,5 +1,7 @@
-import React, { useMemo } from 'react';
-import styled from 'styled-components';
+import React, {
+  useMemo,
+} from 'react';
+import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 
 import {
@@ -14,20 +16,67 @@ import {
 } from '../../utils/common';
 import { DispatchedCrossChainActionTransaction } from '../../providers/TransactionsDispatcherContextProvider';
 import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../../constants/transactionDispatcherConstants';
-import { CopyButton } from '../Button';
-import { nativeAssetPerChainId } from '../../utils/chain';
+import {
+  nativeAssetPerChainId,
+  supportedChains,
+} from '../../utils/chain';
+import Card from '../Card';
+import {
+  CombinedRoundedImages,
+  RoundedImage,
+} from '../Image';
+import { Text } from '../Text';
+import { Theme } from '../../utils/theme';
 
-const TransactionActionsWrapper = styled.div<{ noBottomBorder?: boolean }>`
-  padding-bottom: 15px;
-  margin-bottom: 15px;
-  ${({ noBottomBorder }) => !noBottomBorder && 'border-bottom: 1px solid #000;'}
-  text-align: left;
+const TransactionAction = styled.div`
+  position: relative;
+  margin-bottom: 18px;
+  background: ${({ theme }) => theme.color.background.selectInput};
+  color: ${({ theme }) => theme.color.text.selectInput};
+  border-radius: 8px;
+  padding: 8px 14px 14px;
+  word-break: break-all;
 `;
 
-const TransactionAction = styled.p`
-  margin-bottom: 5px;
+const DoubleTransactionActionsInSingleRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+
+  ${TransactionAction}:first-child {
+    margin-right: 13px;
+    width: calc(50% - 13px);
+  }
+
+  ${TransactionAction}:last-child {
+    width: 50%;
+  }
+`;
+
+const Label = styled.label`
+  display: inline-block;
+  color: ${({ theme }) => theme.color.text.innerLabel};
+  margin-bottom: 14px;
   font-size: 14px;
-  word-break: break-all;
+`;
+
+const ValueWrapper = styled.div<{ marginTop?: number }>`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`};
+`;
+
+const ValueBlock = styled.div`
+  margin-right: 20px;
+`;
+
+const Clickable = styled.span`
+  cursor: pointer; 
+  &:hover {
+    opacity: 0.5;
+  }
 `;
 
 interface TransactionPreviewInterface {
@@ -36,19 +85,20 @@ interface TransactionPreviewInterface {
   transactions?: DispatchedCrossChainActionTransaction[];
   estimation?: CrossChainActionEstimation | null;
   isEstimating?: boolean;
-  noBottomBorder?: boolean;
   chainId: number;
+  title?: string;
 }
 
 const ActionPreview = ({
   data,
   type,
   transactions,
-  noBottomBorder,
   estimation,
   isEstimating,
   chainId,
 }: TransactionPreviewInterface) => {
+  const theme: Theme = useTheme();
+
   const allStatuses: string[] = transactions?.reduce((statuses: string[], transaction) => {
     if (statuses.includes(transaction.status)) return statuses;
     return statuses.concat(transaction.status);
@@ -63,6 +113,15 @@ const ActionPreview = ({
     actionStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
   }
 
+  const onCopy = async (valueToCopy: string) => {
+    try {
+      await navigator.clipboard.writeText(valueToCopy);
+      alert('Copied!');
+    } catch (e) {
+      //
+    }
+  };
+
   const cost = useMemo(() => {
     if (isEstimating) return 'Estimating...';
     if (!estimation || !estimation?.gasCost) return estimation?.errorMessage;
@@ -71,46 +130,82 @@ const ActionPreview = ({
     const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol}`;
     if (!estimation.usdPrice) return gasCostFormatted;
 
-    const gasPriceFormatted = formatAmountDisplay(`${+gasCostNumericString * +estimation.usdPrice}`);
-    return `${gasCostFormatted} (${gasPriceFormatted} USD)`;
+    return formatAmountDisplay(`${+gasCostNumericString * +estimation.usdPrice}`, '$');
   }, [isEstimating, estimation]);
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
     // @ts-ignore
     // TODO: fix type
-    const { fromAsset, toAsset, fromChainId, toChainId } = data;
+    const { fromAsset, toAsset, fromChainId, toChainId, providerName, providerIconUrl } = data;
 
-    const fromChainTitle = CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
-    const toChainTitle = CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
+    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+    const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
+
+    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
 
     const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
-      <TransactionActionsWrapper noBottomBorder={noBottomBorder}>
-        <TransactionAction>
-          To send:
-          &nbsp;<strong>{fromAmount} ${fromAsset.symbol}</strong>
-          &nbsp;on <strong>{fromChainTitle}</strong>
-        </TransactionAction>
-        <TransactionAction>
-          To receive:
-          &nbsp;<strong>{toAmount} ${toAsset.symbol}</strong>
-          &nbsp;on <strong>{toChainTitle}</strong>
-        </TransactionAction>
-        {!!cost && (
+      <Card title="Asset bridge">
+        <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
-            Cost:
-            &nbsp;<strong>{cost}</strong>
+            <Label>You send</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={fromAsset.symbol}
+                url={fromAsset.iconUrl}
+                smallImageTitle={fromChainTitle}
+                smallImageUrl={fromNetwork?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={1} medium block>{fromAmount} {fromAsset.symbol}</Text>
+                <Text size={12}>On {fromChainTitle}</Text>
+              </div>
+            </ValueWrapper>
           </TransactionAction>
-        )}
+          <TransactionAction>
+            <Label>You receive</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={toAsset.symbol}
+                url={toAsset.iconUrl}
+                smallImageTitle={toChainTitle}
+                smallImageUrl={toNetwork?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={3} medium block>{toAmount} {toAsset.symbol}</Text>
+                <Text size={12}>On {toChainTitle}</Text>
+              </div>
+            </ValueWrapper>
+          </TransactionAction>
+        </DoubleTransactionActionsInSingleRow>
+        <TransactionAction>
+          <Label>Route</Label>
+          <ValueWrapper>
+            <RoundedImage title={providerName} url={providerIconUrl} />
+            <ValueBlock>
+              <Text size={12} marginBottom={2} medium block>{providerName}</Text>
+              <Text size={16} medium>{toAmount} {toAsset.symbol} </Text>
+            </ValueBlock>
+            {!!cost && (
+              <ValueBlock>
+                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
+                <Text size={16} medium>{cost}</Text>
+              </ValueBlock>
+            )}
+          </ValueWrapper>
+        </TransactionAction>
         {!!actionStatus && (
           <TransactionAction>
-            Status:
-            &nbsp;<strong>{actionStatus}</strong>
+            <ValueBlock>
+              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Status</Text>
+              <Text size={16} medium>{actionStatus}</Text>
+            </ValueBlock>
           </TransactionAction>
         )}
-      </TransactionActionsWrapper>
+      </Card>
     );
   }
 
@@ -119,90 +214,129 @@ const ActionPreview = ({
     // TODO: fix type
     const { asset, chainId, receiverAddress, fromAddress } = data;
 
-    const chainTitle = CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
+    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
+    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
 
     return (
-      <TransactionActionsWrapper noBottomBorder={noBottomBorder}>
-        <TransactionAction>
-          To send:
-          &nbsp;<strong>{amount} ${asset.symbol}</strong>
-          &nbsp;on <strong>{chainTitle}</strong>
-        </TransactionAction>
-        {!!fromAddress && (
+      <Card title="Send asset">
           <TransactionAction>
-            From address:
-            &nbsp;<strong>{humanizeHexString(fromAddress)}<CopyButton valueToCopy={fromAddress} left={5} top={1} /></strong>
-          </TransactionAction>
-        )}
-        <TransactionAction>
-          Receiver address:
-          &nbsp;<strong>{humanizeHexString(receiverAddress)}<CopyButton valueToCopy={receiverAddress} left={5} top={1} /></strong>
+          <Label>You send</Label>
+          <ValueWrapper>
+            <CombinedRoundedImages
+              title={asset.symbol}
+              url={asset.iconUrl}
+              smallImageTitle={chainTitle}
+              smallImageUrl={network?.iconUrl}
+            />
+            <ValueBlock>
+              <Text size={16} marginBottom={1} medium block>{amount} {asset.symbol}</Text>
+              <Text size={12}>On {chainTitle}</Text>
+            </ValueBlock>
+            <ValueBlock>
+              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
+              <Text size={16} medium>{cost ?? 'N/A'}</Text>
+            </ValueBlock>
+          </ValueWrapper>
         </TransactionAction>
-        {!!cost && (
-          <TransactionAction>
-            Cost:
-            &nbsp;<strong>{cost}</strong>
-          </TransactionAction>
-        )}
+        <TransactionAction>
+          <Text size={16} medium>
+            {!!fromAddress && (
+              <>
+                From
+                &nbsp;
+                <Clickable onClick={() => onCopy(fromAddress)}>{humanizeHexString(fromAddress)}</Clickable>
+                &nbsp;
+              </>
+            )}
+            {fromAddress ? 'to' : 'To'}
+            &nbsp;
+            <Clickable onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</Clickable>
+          </Text>
+        </TransactionAction>
         {!!actionStatus && (
           <TransactionAction>
-            Status:
-            &nbsp;<strong>{actionStatus}</strong>
+            <ValueBlock>
+              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Status</Text>
+              <Text size={16} medium>{actionStatus}</Text>
+            </ValueBlock>
           </TransactionAction>
         )}
-      </TransactionActionsWrapper>
+      </Card>
     );
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
     // @ts-ignore
     // TODO: fix type
-    const { fromAsset, toAsset, chainId, providerName, receiverAddress } = data;
+    const { fromAsset, toAsset, chainId, providerName, providerIconUrl } = data;
 
-    const chainTitle = CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
+    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
+    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
-      <TransactionActionsWrapper noBottomBorder={noBottomBorder}>
-        <TransactionAction>
-          To send:
-          &nbsp;<strong>{fromAmount} ${fromAsset.symbol}</strong>
-        </TransactionAction>
-        <TransactionAction>
-          To receive:
-          &nbsp;<strong>{toAmount} ${toAsset.symbol}</strong>
-        </TransactionAction>
-        {!!receiverAddress && (
+      <Card title="Swap asset">
+        <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
-            Receiver address:
-            &nbsp;<strong>{humanizeHexString(receiverAddress)}<CopyButton valueToCopy={receiverAddress} left={5} top={1} /></strong>
+            <Label>You send</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={fromAsset.symbol}
+                url={fromAsset.iconUrl}
+                smallImageTitle={chainTitle}
+                smallImageUrl={network?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={1} medium block>{fromAmount} {fromAsset.symbol}</Text>
+                <Text size={12}>On {chainTitle}</Text>
+              </div>
+            </ValueWrapper>
           </TransactionAction>
-        )}
-        <TransactionAction>
-          Network:
-          &nbsp;<strong>{chainTitle}</strong>
-        </TransactionAction>
-        <TransactionAction>
-          Provider:
-          &nbsp;<strong>{providerName}</strong>
-        </TransactionAction>
-        {!!cost && (
           <TransactionAction>
-            Cost:
-            &nbsp;<strong>{cost}</strong>
+            <Label>You receive</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={toAsset.symbol}
+                url={toAsset.iconUrl}
+                smallImageTitle={chainTitle}
+                smallImageUrl={network?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={3} medium block>{toAmount} {toAsset.symbol}</Text>
+                <Text size={12}>On {chainTitle}</Text>
+              </div>
+            </ValueWrapper>
           </TransactionAction>
-        )}
+        </DoubleTransactionActionsInSingleRow>
+        <TransactionAction>
+          <Label>Route</Label>
+          <ValueWrapper>
+            <RoundedImage title={providerName} url={providerIconUrl} />
+            <ValueBlock>
+              <Text size={12} marginBottom={2} medium block>{providerName}</Text>
+              <Text size={16} medium>{toAmount} {toAsset.symbol} </Text>
+            </ValueBlock>
+            {!!cost && (
+              <ValueBlock>
+                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
+                <Text size={16} medium>{cost}</Text>
+              </ValueBlock>
+            )}
+          </ValueWrapper>
+        </TransactionAction>
         {!!actionStatus && (
           <TransactionAction>
-            Status:
-            &nbsp;<strong>{actionStatus}</strong>
+            <ValueBlock>
+              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Status</Text>
+              <Text size={16} medium>{actionStatus}</Text>
+            </ValueBlock>
           </TransactionAction>
         )}
-      </TransactionActionsWrapper>
+      </Card>
     );
   }
 

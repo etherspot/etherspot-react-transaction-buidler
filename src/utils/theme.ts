@@ -19,6 +19,7 @@ export interface Theme {
       button?: string,
       closeButton?: string,
       pill?: string,
+      roundedImageFallback?: string,
     },
     text?: {
       main?: string,
@@ -44,6 +45,7 @@ export interface Theme {
       searchInputSecondary?: string,
       pill?: string,
       pillValue?: string,
+      roundedImageFallback?: string,
     },
   }
 }
@@ -69,6 +71,7 @@ export const defaultTheme: Theme = {
       button: '#fff',
       closeButton: '#0a1427',
       pill: '#fff7f2',
+      roundedImageFallback: '#ffe6d9',
     },
     text: {
       main: '#fff',
@@ -94,6 +97,7 @@ export const defaultTheme: Theme = {
       searchInputSecondary: '#ff7733',
       pill: '#6e6b6a',
       pillValue: '#191726',
+      roundedImageFallback: '#6e6b6a',
     },
   }
 };

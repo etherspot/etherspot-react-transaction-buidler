@@ -12,7 +12,6 @@ import { AiOutlinePlusCircle } from 'react-icons/ai';
 import {
   PrimaryButton,
   SecondaryButton,
-  CloseButton,
 } from '../components/Button';
 import {
   useEtherspot,
@@ -41,6 +40,7 @@ import {
 } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
+import Card from '../components/Card';
 
 export type TransactionBlockValues = SendAssetTransactionBlockValues
   & AssetBridgeTransactionBlockValues
@@ -64,31 +64,6 @@ export interface TransactionBuilderContextProps {
   hideAddTransactionButton?: boolean;
 }
 
-const TransactionBlockWrapper = styled.div<{ last?: boolean }>`
-  background: ${({ theme }) => theme.color.background.card};
-  color: ${({ theme }) => theme.color.text.card};
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  position: relative;
-  box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
-  text-align: left;
-  user-select: none;
-
-  ${CloseButton} { display: none; }
-
-  &:hover { ${CloseButton} { display: block; } }
-`;
-
-const TransactionBlockSelectWrapper = styled.div`
-  background: ${({ theme }) => theme.color.background.card};
-  color: ${({ theme }) => theme.color.text.card};
-  border-radius: 15px;
-  padding: 25px;
-  position: relative;
-  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-`;
-
 const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
   ${({ theme, disabled }) => disabled && `color: ${theme.color.text.cardDisabled}`};
   text-align: left;
@@ -104,17 +79,6 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
       text-decoration: underline;
     }
   `}
-`;
-
-const PreviewWrapper = styled.div`
-  background: ${({ theme }) => theme.color.background.card};
-  color: ${({ theme }) => theme.color.text.card};
-  border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 15px;
-  position: relative;
-  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-  text-align: left;
 `;
 
 const TopNavigation = styled.div`
@@ -193,14 +157,6 @@ const MenuItem = styled.div`
   }
 `;
 
-const ProcessingTitle = styled.h3`
-  margin: 0 0 18px;
-  padding: 0;
-  font-size: 16px;
-  color: ${({ theme }) => theme.color.text.cardTitle};
-  font-family: "PTRootUIWebBold", sans-serif;
-`;
-
 const ConnectButton = styled(SecondaryButton)`
   font-size: 14px;
   margin-left: 5px;
@@ -271,7 +227,7 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[] | null>(null);
+  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[] | null>([]);
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
   const theme: Theme = useTheme();
@@ -460,21 +416,13 @@ const TransactionBuilderContextProvider = ({
         {!!processingCrossChainActionId && (
           <>
             {crossChainActionInProcessing && (
-              <PreviewWrapper>
-                <ProcessingTitle>
-                  Action
-                  &nbsp;{dispatchedCrossChainActions?.map((crossChainAction) => crossChainAction.id).indexOf(processingCrossChainActionId) + 1}
-                  &nbsp;of {dispatchedCrossChainActions?.length}
-                </ProcessingTitle>
-                <ActionPreview
-                  key={`preview-${crossChainActionInProcessing.id}`}
-                  data={crossChainActionInProcessing.preview}
-                  type={crossChainActionInProcessing.type}
-                  chainId={crossChainActionInProcessing.chainId}
-                  estimation={crossChainActionInProcessing.estimated}
-                  noBottomBorder
-                />
-              </PreviewWrapper>
+              <ActionPreview
+                key={`preview-${crossChainActionInProcessing.id}`}
+                data={crossChainActionInProcessing.preview}
+                type={crossChainActionInProcessing.type}
+                chainId={crossChainActionInProcessing.chainId}
+                estimation={crossChainActionInProcessing.estimated}
+              />
             )}
             <PrimaryButton disabled marginTop={30} marginBottom={30}>
               Processing...
@@ -483,26 +431,25 @@ const TransactionBuilderContextProvider = ({
         )}
         {!crossChainActions?.length && !processingCrossChainActionId && (
           <>
-            {transactionBlocks.map((transactionBlock, id) => (
-              <TransactionBlockWrapper
+            {transactionBlocks.map((transactionBlock) => (
+              <Card
                 key={`transaction-block-${transactionBlock.id}`}
-                last={transactionBlocks.length === id + 1}
+                marginBottom={20}
+                onCloseButtonClick={() => showConfirmModal(
+                  'Are you sure you want to remove selected transaction?',
+                  () => setTransactionBlocks((
+                    current,
+                  ) => current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)),
+                )}
+                showCloseButton
               >
-                <CloseButton
-                  onClick={() => showConfirmModal(
-                    'Are you sure you want to remove selected transaction?',
-                    () => setTransactionBlocks((
-                      current,
-                    ) => current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)),
-                  )}
-                />
                 <TransactionBlock
                   key={`block-${transactionBlock.id}`}
                   id={transactionBlock.id}
                   type={transactionBlock.type}
                   errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                 />
-              </TransactionBlockWrapper>
+              </Card>
             ))}
             {!showTransactionBlockSelect && !hideAddTransactionButton && (
               <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
@@ -519,8 +466,7 @@ const TransactionBuilderContextProvider = ({
               </>
             )}
             {showTransactionBlockSelect && (
-              <TransactionBlockSelectWrapper>
-                <CloseButton onClick={() => setShowTransactionBlockSelect(false)} />
+              <Card onCloseButtonClick={() => setShowTransactionBlockSelect(false)} showCloseButton>
                 {availableTransactionBlocks
                   .filter((availableTransactionBlock) => !hiddenTransactionBlockTypes?.includes(availableTransactionBlock.type))
                   .map((availableTransactionBlock) => {
@@ -549,28 +495,26 @@ const TransactionBuilderContextProvider = ({
                     )
                   })
                 }
-              </TransactionBlockSelectWrapper>
+              </Card>
             )}
           </>
         )}
         {!!crossChainActions?.length && !processingCrossChainActionId && (
           <>
-            <PreviewWrapper>
-              {crossChainActions.map((crossChainAction) => (
-                <ActionPreview
-                  key={`preview-${crossChainAction.id}`}
-                  data={crossChainAction.preview}
-                  type={crossChainAction.type}
-                  isEstimating={crossChainAction.isEstimating}
-                  estimation={crossChainAction.estimated}
-                  chainId={crossChainAction.chainId}
-                />
-              ))}
-            </PreviewWrapper>
+            {crossChainActions.map((crossChainAction) => (
+              <ActionPreview
+                key={`preview-${crossChainAction.id}`}
+                data={crossChainAction.preview}
+                type={crossChainAction.type}
+                isEstimating={crossChainAction.isEstimating}
+                estimation={crossChainAction.estimated}
+                chainId={crossChainAction.chainId}
+              />
+            ))}
             <PrimaryButton marginTop={30} onClick={onSubmitClick} disabled={isSubmitting || isEstimatingCrossChainActions}>
-              {isSubmitting && !isEstimatingCrossChainActions && 'Submitting...'}
+              {isSubmitting && !isEstimatingCrossChainActions && 'Executing...'}
               {isEstimatingCrossChainActions && !isSubmitting && 'Estimating...'}
-              {!isSubmitting && !isEstimatingCrossChainActions && 'Submit'}
+              {!isSubmitting && !isEstimatingCrossChainActions && 'Execute'}
             </PrimaryButton>
             <br/>
             <SecondaryButton

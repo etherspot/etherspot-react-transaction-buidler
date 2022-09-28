@@ -5,33 +5,42 @@ import RoundedImage from './RoundedImage';
 
 const CombinedImagesWrapper = styled.div<{ size?: number }>`
   position: relative;
-  img:nth-child(2) {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    height: ${({ size }) => size ? size * 0.44 : 14}px;
-    width: ${({ size }) => size ? size * 0.44 : 14}px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-  }
+  height: ${({ size }) => size ?? 32}px;
+  width: ${({ size }) => size ?? 32}px;
+  margin-right: 11px;
+`;
+
+const SmallImageWrapper = styled.div<{ size?: number }>`
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  border: 2px solid #fff;
+  height: ${({ size }) => size ? size * 0.44 : 14}px;
+  width: ${({ size }) => size ? size * 0.44 : 14}px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const CombinedRoundedImages = ({
-  title1,
-  title2,
-  url1,
-  url2,
+  title,
+  smallImageTitle,
+  url,
+  smallImageUrl,
   size,
 }: {
-  title1: string,
-  title2: string,
-  url1: string | undefined,
-  url2: string | undefined,
+  title: string,
+  smallImageTitle: string,
+  url: string | undefined,
+  smallImageUrl: string | undefined,
   size?: number,
 })=> (
   <CombinedImagesWrapper size={size}>
-    <RoundedImage title={title1} url={url1} size={size} />
-    <RoundedImage title={title2} url={url2} />
+    <RoundedImage title={title} url={url} size={size} noMarginRight />
+    <SmallImageWrapper size={size}>
+      <RoundedImage title={smallImageTitle} url={smallImageUrl} size={size ? size * 0.44 : 14} noMarginRight />
+    </SmallImageWrapper>
   </CombinedImagesWrapper>
 );
 

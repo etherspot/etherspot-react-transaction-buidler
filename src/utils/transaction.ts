@@ -23,6 +23,8 @@ import {
 import { nativeAssetPerChainId } from './chain';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getNativeAssetPriceInUsd } from '../services/coingecko';
+import { bridgeServiceIdToDetails } from './bridge';
+import { swapServiceIdToDetails } from './swap';
 
 
 interface AssetTransfer {
@@ -30,6 +32,8 @@ interface AssetTransfer {
   decimals: number;
   symbol: string;
   amount: string;
+  iconUrl?: string;
+  usdPrice?: number;
 }
 
 interface AssetBridgeActionPreview {
@@ -37,6 +41,8 @@ interface AssetBridgeActionPreview {
   toChainId: number;
   fromAsset: AssetTransfer;
   toAsset: AssetTransfer;
+  providerName: string;
+  providerIconUrl: string | undefined;
 }
 
 interface SendAssetActionPreview {
@@ -52,6 +58,7 @@ interface AssetSwapActionPreview {
   fromAsset: AssetTransfer;
   toAsset: AssetTransfer;
   providerName: string;
+  providerIconUrl: string | undefined;
   receiverAddress?: string;
 }
 
@@ -100,8 +107,11 @@ export const buildCrossChainAction = async (
           fromChainId,
           toChainId,
           fromAssetAddress: fromTokenAddress,
-          toAssetAddress: toTokenAddress,
+          fromAssetIconUrl,
           fromAssetDecimals,
+          toAssetAddress: toTokenAddress,
+          toAssetIconUrl,
+          toAssetUsdPrice,
         },
       } = transactionBlock;
 
@@ -121,20 +131,27 @@ export const buildCrossChainAction = async (
         quote = transactionBlock.values.quote;
       }
 
+      const bridgeServiceDetails = bridgeServiceIdToDetails[quote.provider];
+
       const preview = {
         fromChainId,
         toChainId,
+        providerName: bridgeServiceDetails.title ?? 'Unknown provider',
+        providerIconUrl: bridgeServiceDetails?.iconUrl,
         fromAsset: {
           address: quote.estimate.data.fromToken.address,
           decimals: quote.estimate.data.fromToken.decimals,
           symbol: quote.estimate.data.fromToken.symbol,
           amount: quote.estimate.fromAmount,
+          iconUrl: fromAssetIconUrl,
         },
         toAsset: {
           address: quote.estimate.data.toToken.address,
           decimals: quote.estimate.data.toToken.decimals,
           symbol: quote.estimate.data.toToken.symbol,
           amount: quote.estimate.toAmount,
+          iconUrl: toAssetIconUrl,
+          usdPrice: toAssetUsdPrice,
         },
       };
 
@@ -203,6 +220,8 @@ export const buildCrossChainAction = async (
           assetAddress,
           assetDecimals,
           assetSymbol,
+          assetIconUrl,
+          assetUsdPrice,
           receiverAddress,
           amount,
           fromAddress,
@@ -222,6 +241,8 @@ export const buildCrossChainAction = async (
           decimals: assetDecimals,
           symbol: assetSymbol,
           amount: amountBN.toString(),
+          iconUrl: assetIconUrl,
+          usdPrice: assetUsdPrice,
         },
       };
 
@@ -282,15 +303,20 @@ export const buildCrossChainAction = async (
           fromAssetAddress,
           fromAssetDecimals,
           fromAssetSymbol,
+          fromAssetIconUrl,
           toAssetAddress,
           toAssetDecimals,
           toAssetSymbol,
+          toAssetIconUrl,
           offer,
           receiverAddress,
+          toAssetUsdPrice,
         },
       } = transactionBlock;
 
       const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      const swapServiceDetails = swapServiceIdToDetails[offer.provider];
 
       let preview = {
         chainId,
@@ -299,14 +325,18 @@ export const buildCrossChainAction = async (
           decimals: fromAssetDecimals,
           symbol: fromAssetSymbol,
           amount: fromAmountBN.toString(),
+          iconUrl: fromAssetIconUrl,
         },
         toAsset: {
           address: toAssetAddress,
           decimals: toAssetDecimals,
           symbol: toAssetSymbol,
           amount: offer.receiveAmount.toString(),
+          iconUrl: toAssetIconUrl,
+          usdPrice: toAssetUsdPrice,
         },
-        providerName: offer.provider,
+        providerName: swapServiceDetails.title ?? 'Unknown provider',
+        providerIconUrl: swapServiceDetails?.iconUrl,
         receiverAddress,
       };
 

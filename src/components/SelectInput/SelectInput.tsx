@@ -15,7 +15,7 @@ import { RoundedImage } from '../Image';
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
   position: relative;
   margin-bottom: 18px;
-    background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
+  background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;

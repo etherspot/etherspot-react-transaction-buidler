@@ -274,10 +274,10 @@ const NetworkAssetSelectInput = ({
       {!showSelectModal && !!selectedNetwork && !!selectedAsset && (
         <LargeSelectedOption onClick={onSelectClick} disabled={disabled}>
           <CombinedRoundedImages
-            url1={selectedAsset.logoURI}
-            url2={selectedNetwork.iconUrl}
-            title1={selectedAsset.symbol}
-            title2={selectedNetwork.title}
+            url={selectedAsset.logoURI}
+            smallImageUrl={selectedNetwork.iconUrl}
+            title={selectedAsset.symbol}
+            smallImageTitle={selectedNetwork.title}
           />
           <LargeOptionDetails>
             <div>{selectedAsset.symbol}</div>

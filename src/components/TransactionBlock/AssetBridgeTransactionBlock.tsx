@@ -44,8 +44,11 @@ export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
   toChainId?: number;
   fromAssetAddress?: string;
-  toAssetAddress?: string;
+  fromAssetIconUrl?: string;
   fromAssetDecimals?: number;
+  toAssetAddress?: string;
+  toAssetIconUrl?: string;
+  toAssetUsdPrice?: number;
   amount?: string;
   quote?: BridgingQuote;
 }
@@ -159,7 +162,10 @@ const AssetBridgeTransactionBlock = ({
         toChainId: selectedToNetwork?.chainId,
         fromAssetAddress: selectedFromAsset?.address,
         fromAssetDecimals: selectedFromAsset?.decimals,
+        fromAssetIconUrl: selectedFromAsset?.logoURI,
         toAssetAddress: selectedToAsset?.address,
+        toAssetIconUrl: selectedToAsset?.logoURI,
+        toAssetUsdPrice: selectedToAsset?.assetPriceUsd ?? undefined,
         amount,
         quote,
       });
@@ -218,7 +224,7 @@ const AssetBridgeTransactionBlock = ({
 
   return (
     <>
-      <Title>Asset Bridge</Title>
+      <Title>Asset bridge</Title>
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}
@@ -279,10 +285,10 @@ const AssetBridgeTransactionBlock = ({
           inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `$${+amount * selectedFromAsset.assetPriceUsd}` : undefined}
           inputLeftComponent={
             <CombinedRoundedImages
-              url1={selectedFromAsset.logoURI}
-              url2={selectedFromNetwork.iconUrl}
-              title1={selectedFromAsset.symbol}
-              title2={selectedFromNetwork.title}
+              url={selectedFromAsset.logoURI}
+              smallImageUrl={selectedFromNetwork.iconUrl}
+              title={selectedFromAsset.symbol}
+              smallImageTitle={selectedFromNetwork.title}
             />
           }
           inputTopRightComponent={
