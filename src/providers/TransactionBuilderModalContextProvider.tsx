@@ -31,14 +31,14 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
 
   const [confirmModal, setConfirmModal] = useState<string | null>(null);
   const [alertModal, setAlertModal] = useState<ReactNode | null>(null);
+  const [modal, setModal] = useState<ReactNode | null>(null);
+
   const theme: Theme = useTheme();
 
-  const hideAlertModal = () => {
+  const hideModal = () => {
     setAlertModal(null);
-  };
-
-  const hideConfirmModal = () => {
-    setConfirmModal(null)
+    setConfirmModal(null);
+    setModal(null);
     confirmCallback = null;
   };
 
@@ -51,8 +51,10 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
       showAlertModal: (content: ReactNode) => {
         setAlertModal(content);
       },
-      hideConfirmModal,
-      hideAlertModal,
+      showModal: (content: ReactNode) => {
+        setModal(content);
+      },
+      hideModal,
     }),
     [],
   );
@@ -65,14 +67,14 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
           <PrimaryButton
             onClick={() => {
               if (confirmCallback) confirmCallback();
-              hideConfirmModal();
+              hideModal();
             }}
           >
             Confirm
           </PrimaryButton><br/>
           <SecondaryButton
             color={theme.color?.text?.card}
-            onClick={hideConfirmModal}
+            onClick={hideModal}
           >
             Cancel
           </SecondaryButton>
@@ -80,8 +82,14 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
       )}
       {!!alertModal && (
         <Modal>
-          <CloseButton onClick={hideAlertModal} top={12} right={20} />
+          <CloseButton onClick={hideModal} top={12} right={20} />
           <AlertWrapper>{alertModal}</AlertWrapper>
+        </Modal>
+      )}
+      {!!modal && (
+        <Modal noBackground>
+          {modal}
+          <CloseButton onClick={hideModal} top={12} right={20} />
         </Modal>
       )}
     </TransactionBuilderModalContext.Provider>

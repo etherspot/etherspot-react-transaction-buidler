@@ -25,7 +25,7 @@ const History = () => {
     .reverse();
 
   return (
-    <div>
+    <>
       {!storedGroupedCrossChainActionsIds?.length && (
         <p>No history.</p>
       )}
@@ -43,7 +43,7 @@ const History = () => {
             />
           ))
       ))}
-    </div>
+    </>
   )
 };
 

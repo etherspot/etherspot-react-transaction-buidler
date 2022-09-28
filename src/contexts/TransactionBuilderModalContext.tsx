@@ -6,9 +6,9 @@ import React, {
 export interface TransactionBuilderModalContextData {
   data: {
     showConfirmModal: (message: string, callback: () => void) => void;
-    hideConfirmModal: () => void;
     showAlertModal: (content: ReactNode) => void;
-    hideAlertModal: () => void;
+    showModal: (content: ReactNode) => void;
+    hideModal: () => void;
   }
 }
 

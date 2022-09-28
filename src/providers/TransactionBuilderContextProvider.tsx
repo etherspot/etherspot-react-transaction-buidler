@@ -242,7 +242,7 @@ const TransactionBuilderContextProvider = ({
   };
 
   const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId } = useEtherspot();
-  const { showConfirmModal, showAlertModal } = useTransactionBuilderModal();
+  const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
   const { dispatchCrossChainActions, processingCrossChainActionId, dispatchedCrossChainActions } = useTransactionsDispatcher();
 
   const isEstimatingCrossChainActions = useMemo(
@@ -532,7 +532,7 @@ const TransactionBuilderContextProvider = ({
           <MenuItem
             onClick={() => {
               hideMenu();
-              showAlertModal(<History />);
+              showModal(<History />);
             }}
           >
             History

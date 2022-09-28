@@ -148,7 +148,7 @@ const ActionPreview = ({
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
-      <Card title="Asset bridge">
+      <Card title="Asset bridge" marginBottom={20}>
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
             <Label>You send</Label>
@@ -184,7 +184,7 @@ const ActionPreview = ({
         <TransactionAction>
           <Label>Route</Label>
           <ValueWrapper>
-            <RoundedImage title={providerName} url={providerIconUrl} />
+            <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
             <ValueBlock>
               <Text size={12} marginBottom={2} medium block>{providerName}</Text>
               <Text size={16} medium>{toAmount} {toAsset.symbol} </Text>
@@ -220,7 +220,7 @@ const ActionPreview = ({
     const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
 
     return (
-      <Card title="Send asset">
+      <Card title="Send asset"  marginBottom={20}>
           <TransactionAction>
           <Label>You send</Label>
           <ValueWrapper>
@@ -279,7 +279,7 @@ const ActionPreview = ({
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
-      <Card title="Swap asset">
+      <Card title="Swap asset" marginBottom={20}>
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
             <Label>You send</Label>
