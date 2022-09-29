@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -22,7 +23,7 @@ const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
   ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
-const SelectWrapper = styled.div<{ disabled: boolean }>`
+const SelectButtonWrapper = styled.div<{ disabled?: boolean }>`
   position: absolute;
   top: 10px;
   right: 8px;
@@ -85,7 +86,7 @@ const OptionList = styled.div`
   position: relative;
 `;
 
-const SelectedOption = styled.div<{ disabled: boolean }>`
+const SelectedOption = styled.div<{ disabled?: boolean; noHover?: boolean; }>`
   color: ${({ theme }) => theme.color.text.selectInputOption};
   font-size: 16px;
   font-family: "PTRootUIWebMedium", sans-serif;
@@ -99,6 +100,14 @@ const SelectedOption = styled.div<{ disabled: boolean }>`
   
     &:hover {
       opacity: 0.5;
+    }
+  `}
+
+  ${({ noHover }) => noHover && `
+    cursor: inherit;
+  
+    &:hover {
+      opacity: 1;
     }
   `}
 `;
@@ -159,6 +168,8 @@ interface SelectInputProps {
   displayLabelOutside?: boolean
   renderSelectedOptionContent?: (option: SelectOption) => React.ReactNode;
   renderOptionListItemContent?: (option: SelectOption) => React.ReactNode;
+  forceShow?: boolean
+  noOpen?: boolean
 }
 
 const SelectInput = ({
@@ -174,6 +185,8 @@ const SelectInput = ({
   displayLabelOutside = false,
   renderOptionListItemContent,
   renderSelectedOptionContent,
+  forceShow = false,
+  noOpen = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-select-search-input-'));
@@ -182,11 +195,15 @@ const SelectInput = ({
   const theme: Theme = useTheme();
 
   const onSelectClick = useCallback(() => {
-    if (isLoading || disabled) return;
+    if (isLoading || disabled || noOpen) return;
     setShowSelectModal(!showSelectModal);
   }, [isLoading, disabled, showSelectModal]);
 
   const hideSelectModal = () => setShowSelectModal(false);
++
+  useEffect(() => {
+    setShowSelectModal(forceShow);
+  }, [forceShow])
 
   const selectedOptionTitle = useMemo(() => {
     if (isLoading && !selectedOption?.title) return 'Loading options...';
@@ -202,21 +219,21 @@ const SelectInput = ({
   const filteredSelectOptions: SelectOption[] = useMemo(
     () => options.filter((selectOption) => containsText(selectOption?.title, searchQuery) || containsText(selectOption?.value , searchQuery)),
     [options, searchQuery],
-  )
+  );
 
   return (
     <>
       {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
       <Wrapper disabled={disabled} expanded={showSelectModal}>
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
-        {!isLoading && (
-          <SelectWrapper onClick={onSelectClick} disabled={disabled}>
+        {!isLoading && options?.length > 1 && (
+          <SelectButtonWrapper onClick={onSelectClick} disabled={disabled}>
             {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
             {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />}
-          </SelectWrapper>
+          </SelectButtonWrapper>
         )}
         {!showSelectModal && (
-          <SelectedOption onClick={onSelectClick} disabled={disabled}>
+          <SelectedOption onClick={onSelectClick} disabled={disabled} noHover={noOpen}>
             {!!renderSelectedOptionContent && selectedOption && renderSelectedOptionContent(selectedOption)}
             {(!renderSelectedOptionContent || !selectedOption) && (
               <>
@@ -241,6 +258,7 @@ const SelectInput = ({
                   <OptionListItem
                     disabled={disabled}
                     key={`${option.value}-${index}`}
+                    noHover={noOpen}
                     onClick={() => {
                       if (onOptionSelect) onOptionSelect(option);
                       hideSelectModal();

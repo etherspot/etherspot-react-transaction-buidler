@@ -73,6 +73,15 @@ const OfferDetailsBlock = styled.div`
   margin-right: 16px;
 `;
 
+const mapQuoteToOption = (quote: BridgingQuote) => {
+  const serviceDetails = bridgeServiceIdToDetails[quote.provider];
+  return {
+    title: serviceDetails?.title ?? quote.provider.toUpperCase(),
+    value: quote.provider,
+    iconUrl: serviceDetails?.iconUrl,
+  };
+}
+
 const AssetBridgeTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
@@ -126,6 +135,7 @@ const AssetBridgeTransactionBlock = ({
         toTokenAddress: selectedToAsset.address,
       });
       setAvailableQuotes(quotes);
+      if (quotes.length === 1) setSelectedQuote(mapQuoteToOption(quotes[0]));
     } catch (e) {
       //
     }
@@ -175,14 +185,7 @@ const AssetBridgeTransactionBlock = ({
   ]);
 
   const availableQuotesOptions = useMemo(
-    () => availableQuotes?.map((availableQuote) => {
-      const serviceDetails = bridgeServiceIdToDetails[availableQuote.provider];
-      return {
-        title: serviceDetails?.title ?? availableQuote.provider.toUpperCase(),
-        value: availableQuote.provider,
-        iconUrl: serviceDetails?.iconUrl,
-      };
-    }),
+    () => availableQuotes?.map(mapQuoteToOption),
     [availableQuotes],
   );
 
@@ -298,7 +301,7 @@ const AssetBridgeTransactionBlock = ({
           errorMessage={errorMessages?.amount}
         />
       )}
-      {!!selectedToAsset && selectedFromAsset && (remainingSelectedFromAssetBalance ?? 0) > 0 && (
+      {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) > 0 && (
         <SelectInput
           label={`Route`}
           options={availableQuotesOptions ?? []}
@@ -313,6 +316,8 @@ const AssetBridgeTransactionBlock = ({
           renderSelectedOptionContent={renderOption}
           errorMessage={errorMessages?.quote}
           disabled={!availableQuotesOptions?.length || isLoadingAvailableQuotes}
+          noOpen={!!selectedQuote && availableQuotesOptions?.length === 1}
+          forceShow={!!availableQuotesOptions?.length && availableQuotesOptions?.length > 1}
         />
       )}
     </>

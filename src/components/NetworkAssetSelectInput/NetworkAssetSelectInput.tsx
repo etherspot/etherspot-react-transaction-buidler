@@ -8,7 +8,7 @@ import styled, { useTheme } from 'styled-components';
 import { AiOutlineSearch } from 'react-icons/ai';
 import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icons/md';
 import {
-  sortBy,
+  orderBy,
   uniqueId,
 } from 'lodash';
 import {
@@ -302,8 +302,8 @@ const NetworkAssetSelectInput = ({
 
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
-    return sortBy(filtered, ['balanceWorthUsd', 'name'], ['desc', 'asc']);
-  }, [selectedNetworkAssets, assetSearchQuery, showPositiveBalanceAssets]);
+    return orderBy(filtered, [(asset) => asset.balanceWorthUsd ?? 0, 'name'], ['desc', 'asc']);
+  }, [selectedNetworkAssets, assetSearchQuery]);
 
   const onListItemClick = (asset: IAssetWithBalance, amountBN?: BigNumber) => {
     if (onAssetSelect) onAssetSelect(asset, amountBN);
@@ -364,8 +364,8 @@ const NetworkAssetSelectInput = ({
       {showSelectModal && preselectedNetwork && (
         <LargeOptionList>
           {isLoadingAssets && <small>Loading assets...</small>}
-          {!isLoadingAssets && !filteredSelectedNetworkAssets?.length && <small>No assets found.</small>}
-          {!isLoadingAssets && !!filteredSelectedNetworkAssets?.length && (
+          {!isLoadingAssets && !selectedNetworkAssets?.length && <small>No assets found.</small>}
+          {!isLoadingAssets && !!selectedNetworkAssets?.length && (
             <>
               {selectedNetworkAssets?.length > 5 && (
                 <SearchInputWrapper htmlFor={searchInputId}>
@@ -381,11 +381,11 @@ const NetworkAssetSelectInput = ({
                       <LargeOptionDetails>
                         <div>
                           {asset.name}
-                          {asset?.assetPriceUsd && `・$${formatAmountDisplay(asset.assetPriceUsd)}`}
+                          {asset?.assetPriceUsd && `・${formatAmountDisplay(asset.assetPriceUsd, '$')}`}
                         </div>
                         <LargeOptionDetailsBottom>
                           {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))} {asset.symbol}
-                          {!asset.balance.isZero() && asset?.balanceWorthUsd && `・$${formatAmountDisplay(asset.balanceWorthUsd)}`}
+                          {!asset.balance.isZero() && asset?.balanceWorthUsd && `・${formatAmountDisplay(asset.balanceWorthUsd, '$')}`}
                         </LargeOptionDetailsBottom>
                       </LargeOptionDetails>
                     </LargeOptionListItemLeft>

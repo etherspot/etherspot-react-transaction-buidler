@@ -70,6 +70,15 @@ const OfferDetails = styled.div`
   font-family: "PTRootUIWebMedium", sans-serif;
 `;
 
+const mapOfferToOption = (offer: ExchangeOffer) => {
+  const serviceDetails = swapServiceIdToDetails[offer.provider];
+  return {
+    title: serviceDetails?.title ?? offer.provider,
+    value: offer.provider,
+    iconUrl: serviceDetails?.iconUrl,
+  };
+}
+
 const AssetSwapTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
@@ -121,6 +130,7 @@ const AssetSwapTransactionBlock = ({
       });
 
       setAvailableOffers(offers);
+      if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
     } catch (e) {
       //
     }
@@ -156,14 +166,7 @@ const AssetSwapTransactionBlock = ({
   );
 
   const availableOffersOptions = useMemo(
-    () => availableOffers?.map((availableOffer) => {
-      const serviceDetails = swapServiceIdToDetails[availableOffer.provider];
-      return {
-        title: serviceDetails?.title ?? availableOffer.provider,
-        value: availableOffer.provider,
-        iconUrl: serviceDetails?.iconUrl,
-      };
-    }),
+    () => availableOffers?.map(mapOfferToOption),
     [availableOffers, availableToAssets],
   );
 
@@ -349,6 +352,8 @@ const AssetSwapTransactionBlock = ({
           renderSelectedOptionContent={renderOption}
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
+          noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
+          forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1}
         />
       )}
     </>
