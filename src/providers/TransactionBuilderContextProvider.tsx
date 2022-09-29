@@ -307,14 +307,14 @@ const TransactionBuilderContextProvider = ({
 
     unestimatedCrossChainActions.map(async (crossChainAction) => {
       setCrossChainActions((current) => current?.map((currentCrossChainAction) => {
-        if (crossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
+        if (currentCrossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
         return { ...crossChainAction, isEstimating: true };
       }) || null);
 
       const estimated = await estimateCrossChainAction(getSdkForChainId(crossChainAction.chainId), crossChainAction);
 
       setCrossChainActions((current) => current?.map((currentCrossChainAction) => {
-        if (crossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
+        if (currentCrossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
         return { ...crossChainAction, isEstimating: false, estimated };
       }) || null);
     });
