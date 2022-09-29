@@ -301,7 +301,7 @@ const AssetBridgeTransactionBlock = ({
           errorMessage={errorMessages?.amount}
         />
       )}
-      {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) > 0 && (
+      {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
         <SelectInput
           label={`Route`}
           options={availableQuotesOptions ?? []}

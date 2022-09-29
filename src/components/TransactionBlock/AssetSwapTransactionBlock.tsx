@@ -217,6 +217,8 @@ const AssetSwapTransactionBlock = ({
     return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals);
   }, [amount, selectedFromAsset]);
 
+  console.log({ remainingSelectedFromAssetBalance })
+
   const renderOption = (option: SelectOption) => {
     const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
     const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
@@ -337,7 +339,7 @@ const AssetSwapTransactionBlock = ({
           errorMessage={errorMessages?.receiverAddress}
         />
       )}
-      {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) > 0 && (
+      {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
         <SelectInput
           label={`Offer`}
           options={availableOffersOptions ?? []}
