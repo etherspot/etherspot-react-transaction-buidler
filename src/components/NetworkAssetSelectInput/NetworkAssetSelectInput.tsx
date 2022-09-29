@@ -166,12 +166,13 @@ const LargeOptionListItemLeft = styled.div`
   }
 `;
 
-const LargeOptionListItemRight = styled.div`
+const LargeOptionListItemRight = styled.div<{ paddingRight?: boolean; }>`
   flex: 1;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
+  padding-right: 12px;
 `;
 
 const QuickAmountButton = styled.div<{ primary?: boolean }>`
