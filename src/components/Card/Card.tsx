@@ -13,10 +13,6 @@ const Wrapper = styled.div<{ marginBottom?: number }>`
   box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
   text-align: left;
   user-select: none;
-
-  ${CloseButton} { display: none; }
-
-  &:hover { ${CloseButton} { display: block; } }
 `;
 
 const Title = styled.h3`
@@ -43,9 +39,9 @@ const Card = ({
   title,
 }: CardProps) => (
   <Wrapper marginBottom={marginBottom}>
-    {showCloseButton && <CloseButton onClick={onCloseButtonClick} />}
     {!!title && <Title>{title}</Title>}
     {children}
+    {showCloseButton && <CloseButton onClick={onCloseButtonClick} />}
   </Wrapper>
 );
 
