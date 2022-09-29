@@ -167,6 +167,7 @@ const SendAssetTransactionBlock = ({
         hideChainIds={hideChainIds}
         walletAddress={isFromEtherspotWallet ? accountAddress : providerAddress}
         showPositiveBalanceAssets
+        showQuickInputButtons
       />
       {selectedAsset && selectedNetwork && (
         <TextInput

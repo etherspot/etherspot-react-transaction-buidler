@@ -251,6 +251,7 @@ const AssetBridgeTransactionBlock = ({
           || errorMessages?.fromAssetDecimals
         }
         showPositiveBalanceAssets
+        showQuickInputButtons
       />
       <NetworkAssetSelectInput
         label="To"

@@ -266,6 +266,7 @@ const AssetSwapTransactionBlock = ({
           || errorMessages?.fromAssetSymbol
         }
         showPositiveBalanceAssets
+        showQuickInputButtons
       />
       {!!selectedNetwork && (
         <>

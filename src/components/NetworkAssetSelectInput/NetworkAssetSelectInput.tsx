@@ -243,6 +243,7 @@ interface SelectInputProps {
   showPositiveBalanceAssets?: boolean;
   hideChainIds?: number[];
   walletAddress?: string | null;
+  showQuickInputButtons?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -256,6 +257,7 @@ const NetworkAssetSelectInput = ({
   showPositiveBalanceAssets = false,
   hideChainIds,
   walletAddress,
+  showQuickInputButtons,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -387,11 +389,13 @@ const NetworkAssetSelectInput = ({
                         </LargeOptionDetailsBottom>
                       </LargeOptionDetails>
                     </LargeOptionListItemLeft>
-                    <LargeOptionListItemRight>
-                      <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(4))}>25%</QuickAmountButton>
-                      <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(2))}>50%</QuickAmountButton>
-                      <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance)} primary>Max</QuickAmountButton>
-                    </LargeOptionListItemRight>
+                    {showQuickInputButtons && BigNumber.isBigNumber(asset.balance) && !asset.balance.isZero() && (
+                      <LargeOptionListItemRight>
+                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(4))}>25%</QuickAmountButton>
+                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(2))}>50%</QuickAmountButton>
+                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance)} primary>Max</QuickAmountButton>
+                      </LargeOptionListItemRight>
+                    )}
                   </LargeOptionListItem>
                 ))}
               </OptionsScroll>
