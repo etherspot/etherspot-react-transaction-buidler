@@ -8,6 +8,7 @@ import React, {
 import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
+import { Sdk } from 'etherspot';
 
 import {
   PrimaryButton,
@@ -27,6 +28,7 @@ import {
   buildCrossChainAction,
   CrossChainAction,
   estimateCrossChainAction,
+  submitTransactions,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -41,6 +43,7 @@ import {
 import History from '../components/History';
 import { Theme } from '../utils/theme';
 import Card from '../components/Card';
+import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../constants/transactionDispatcherConstants';
 
 export type TransactionBlockValues = SendAssetTransactionBlockValues
   & AssetBridgeTransactionBlockValues
@@ -227,8 +230,9 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[] | null>([]);
+  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[]>([]);
   const [showMenu, setShowMenu] = useState<boolean>(false);
+  const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
 
   const theme: Theme = useTheme();
 
@@ -241,7 +245,7 @@ const TransactionBuilderContextProvider = ({
     }
   };
 
-  const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId } = useEtherspot();
+  const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId, web3Provider } = useEtherspot();
   const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
   const { dispatchCrossChainActions, processingCrossChainActionId, dispatchedCrossChainActions } = useTransactionsDispatcher();
 
@@ -306,17 +310,17 @@ const TransactionBuilderContextProvider = ({
     if (!unestimatedCrossChainActions?.length) return;
 
     unestimatedCrossChainActions.map(async (crossChainAction) => {
-      setCrossChainActions((current) => current?.map((currentCrossChainAction) => {
+      setCrossChainActions((current) => current.map((currentCrossChainAction) => {
         if (currentCrossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
         return { ...crossChainAction, isEstimating: true };
-      }) || null);
+      }));
 
       const estimated = await estimateCrossChainAction(getSdkForChainId(crossChainAction.chainId), crossChainAction);
 
-      setCrossChainActions((current) => current?.map((currentCrossChainAction) => {
+      setCrossChainActions((current) => current.map((currentCrossChainAction) => {
         if (currentCrossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
         return { ...crossChainAction, isEstimating: false, estimated };
-      }) || null);
+      }));
     });
   }, [crossChainActions, setCrossChainActions, getSdkForChainId]);
 
@@ -422,6 +426,7 @@ const TransactionBuilderContextProvider = ({
                 type={crossChainActionInProcessing.type}
                 chainId={crossChainActionInProcessing.chainId}
                 estimation={crossChainActionInProcessing.estimated}
+                onRemove={() => {}}
               />
             )}
             <PrimaryButton disabled marginTop={30} marginBottom={30}>
@@ -509,6 +514,31 @@ const TransactionBuilderContextProvider = ({
                 isEstimating={crossChainAction.isEstimating}
                 estimation={crossChainAction.estimated}
                 chainId={crossChainAction.chainId}
+                onRemove={() => setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id))}
+                signButtonDisabled={crossChainAction.isEstimating || isSigningAction}
+                onSign={async () => {
+                  setIsSigningAction(true);
+                  const result = await submitTransactions(getSdkForChainId(crossChainAction.chainId) as Sdk, web3Provider, crossChainAction.transactions, providerAddress, crossChainAction.useWeb3Provider);
+                  if (result.errorMessage || !(result.transactionHash?.length || result.batchHash?.length)) {
+                    setIsSigningAction(false);
+                    showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+                    return;
+                  }
+
+                  const { transactionHash, batchHash } = result;
+                  const mappedPendingCrossChainAction = {
+                    ...crossChainAction,
+                    transactions: crossChainAction.transactions.map((crossChainActionTransaction) => ({
+                      ...crossChainActionTransaction,
+                      transactionHash,
+                      batchHash,
+                    })),
+                  };
+                  dispatchCrossChainActions([mappedPendingCrossChainAction], DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING);
+                  setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id));
+                  setIsSigningAction(false);
+                  showAlertModal('Transaction sent!');
+                }}
               />
             ))}
             <PrimaryButton marginTop={30} onClick={onSubmitClick} disabled={isSubmitting || isEstimatingCrossChainActions}>

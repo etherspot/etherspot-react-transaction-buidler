@@ -58,6 +58,7 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
     }),
     [],
   );
+
   return (
     <TransactionBuilderModalContext.Provider value={{ data: contextData }}>
       {children}

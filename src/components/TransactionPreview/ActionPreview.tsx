@@ -3,6 +3,7 @@ import React, {
 } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
+import { HiOutlinePencilAlt } from 'react-icons/hi';
 
 import {
   CrossChainActionEstimation,
@@ -65,7 +66,7 @@ const ValueWrapper = styled.div<{ marginTop?: number }>`
   display: flex;
   flex-direction: row;
   align-items: center;
-  ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`};
+  ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`}
 `;
 
 const ValueBlock = styled.div`
@@ -73,10 +74,25 @@ const ValueBlock = styled.div`
 `;
 
 const Clickable = styled.span`
-  cursor: pointer; 
+  cursor: pointer;
+
   &:hover {
     opacity: 0.5;
   }
+`;
+
+const SignButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
+  position: absolute;
+  top: 12px;
+  right: 40px;
+  cursor: pointer;
+  padding: 5px;
+
+  &:hover {
+    opacity: 0.5;
+  }
+
+  ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
 interface TransactionPreviewInterface {
@@ -87,6 +103,9 @@ interface TransactionPreviewInterface {
   isEstimating?: boolean;
   chainId: number;
   title?: string;
+  onRemove?: () => void
+  onSign?: () => void
+  signButtonDisabled?: boolean
 }
 
 const ActionPreview = ({
@@ -96,6 +115,9 @@ const ActionPreview = ({
   estimation,
   isEstimating,
   chainId,
+  onRemove,
+  onSign,
+  signButtonDisabled = false,
 }: TransactionPreviewInterface) => {
   const theme: Theme = useTheme();
 
@@ -121,6 +143,14 @@ const ActionPreview = ({
       //
     }
   };
+
+  const onSignButtonClick = () => {
+    if (signButtonDisabled || !onSign) return;
+    onSign();
+  }
+
+  const showCloseButton = !!onRemove;
+  const showSignButton = !!onSign;
 
   const cost = useMemo(() => {
     if (isEstimating) return 'Estimating...';
@@ -148,7 +178,7 @@ const ActionPreview = ({
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
-      <Card title="Asset bridge" marginBottom={20}>
+      <Card title="Asset bridge" marginBottom={20} onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
             <Label>You send</Label>
@@ -205,6 +235,7 @@ const ActionPreview = ({
             </ValueBlock>
           </TransactionAction>
         )}
+        {showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />}
       </Card>
     );
   }
@@ -220,8 +251,8 @@ const ActionPreview = ({
     const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
 
     return (
-      <Card title="Send asset"  marginBottom={20}>
-          <TransactionAction>
+      <Card title="Send asset" marginBottom={20} onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
+        <TransactionAction>
           <Label>You send</Label>
           <ValueWrapper>
             <CombinedRoundedImages
@@ -263,6 +294,7 @@ const ActionPreview = ({
             </ValueBlock>
           </TransactionAction>
         )}
+        {showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />}
       </Card>
     );
   }
@@ -279,7 +311,7 @@ const ActionPreview = ({
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
-      <Card title="Swap asset" marginBottom={20}>
+      <Card title="Swap asset" marginBottom={20}  onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
             <Label>You send</Label>
@@ -336,6 +368,7 @@ const ActionPreview = ({
             </ValueBlock>
           </TransactionAction>
         )}
+        {showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />}
       </Card>
     );
   }

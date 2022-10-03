@@ -71,5 +71,3 @@ export const humanizeHexString = (
 export const getTimeBasedUniqueId = (): string => uniqueId(`${+new Date()}-`);
 
 export const formatMaxAmount = (maxAmountBN: BigNumber, decimals: number): string => ethers.utils.formatUnits(maxAmountBN, decimals);
-
-

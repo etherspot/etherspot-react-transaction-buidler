@@ -1,6 +1,8 @@
 import {
   AccountTypes,
   Sdk as EtherspotSdk,
+  WalletProviderLike,
+  Web3WalletProvider,
 } from 'etherspot';
 import {
   BigNumber,
@@ -444,4 +446,73 @@ export const estimateCrossChainAction = async (
   }
 
   return { gasCost, errorMessage, usdPrice }
+}
+
+export const submitTransactions = async (
+  sdk: EtherspotSdk,
+  web3Provider: WalletProviderLike | Web3WalletProvider | null,
+  transactions: ExecuteAccountTransactionDto[],
+  providerAddress: string | null,
+  useWeb3Provider: boolean = false,
+): Promise<{
+  transactionHash?: string;
+  batchHash?: string;
+  errorMessage?: string;
+}> => {
+  let errorMessage;
+  let batchHash;
+  let transactionHash;
+
+  if (useWeb3Provider) {
+    if (!web3Provider) {
+      return { errorMessage: 'Unable to find connected Web3 provider!' };
+    }
+
+    try {
+      // sequential
+      for (const transaction of transactions) {
+        const { to, value, data } = transaction;
+        const tx = {
+          from: providerAddress,
+          to,
+          data,
+          value: ethers.BigNumber.isBigNumber(value) ? value.toHexString() : '0x0',
+        };
+        // @ts-ignore
+        transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        errorMessage = e?.message;
+      }
+    }
+
+    return { transactionHash, errorMessage };
+  }
+
+  try {
+    if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
+      await sdk.computeContractAccount({ sync: true });
+    }
+
+    sdk.clearGatewayBatch();
+
+    // sequential
+    for (const transaction of transactions) {
+      const { to, value, data } = transaction;
+      await sdk.batchExecuteAccountTransaction({ to, value, data });
+    }
+
+    await sdk.estimateGatewayBatch();
+
+    const result = await sdk.submitGatewayBatch();
+    ({ hash: batchHash } = result);
+  } catch (e) {
+    errorMessage = parseEtherspotErrorMessageIfAvailable(e);
+    if (!errorMessage && e instanceof Error) {
+      errorMessage = e?.message;
+    }
+  }
+
+  return { batchHash, errorMessage };
 }

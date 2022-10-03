@@ -7,7 +7,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  AccountTypes,
   GatewayTransactionStates,
   NotificationTypes,
   TransactionStatuses,
@@ -20,20 +19,19 @@ import {
   CrossChainAction,
   CrossChainActionTransaction,
   estimateCrossChainAction,
+  submitTransactions,
 } from '../utils/transaction';
 import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import {
   useEtherspot,
   useTransactionBuilderModal,
 } from '../hooks';
-import { parseEtherspotErrorMessageIfAvailable } from '../utils/etherspot';
 import { STORED_GROUPED_CROSS_CHAIN_ACTIONS } from '../constants/storageConstants';
 import {
   getItem,
   setItem,
 } from '../services/storage';
 import { getTimeBasedUniqueId } from '../utils/common';
-import { ethers } from 'ethers';
 
 export interface DispatchedCrossChainActionTransaction extends CrossChainActionTransaction {
   id: string;
@@ -60,7 +58,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   const { getSdkForChainId, web3Provider, providerAddress } = useEtherspot();
   const { showAlertModal } = useTransactionBuilderModal();
 
-  const dispatchCrossChainActions = useCallback((crossChainActionsToDispatch: CrossChainAction[]) => {
+  const dispatchCrossChainActions = useCallback((
+    crossChainActionsToDispatch: CrossChainAction[],
+    status: string = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT,
+  ) => {
     const newDispatchId = getTimeBasedUniqueId();
     setCrossChainActions(crossChainActionsToDispatch.map((crossChainActionToDispatch) => ({
       ...crossChainActionToDispatch,
@@ -68,7 +69,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         return ({
           ...crossChainActionToDispatchTransaction,
           id: getTimeBasedUniqueId(),
-          status: DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT,
+          status,
         })
       }),
     })));
@@ -132,50 +133,14 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     let transactionHash: string = '';
     let errorMessage;
 
-    if (!firstUnsentCrossChainAction.useWeb3Provider) {
-      try {
-        if (!sdkForChain?.state?.account?.type || sdkForChain.state.account.type === AccountTypes.Key) {
-          await sdkForChain.computeContractAccount({ sync: true });
-        }
-
-        sdkForChain.clearGatewayBatch();
-
-        // sequential
-        for (const transactionsToSend of unsentCrossChainActionTransactions) {
-          const { to, value, data } = transactionsToSend;
-          await sdkForChain.batchExecuteAccountTransaction({ to, value, data });
-        }
-
-        await sdkForChain.estimateGatewayBatch();
-
-        const result = await sdkForChain.submitGatewayBatch();
-        ({ hash: batchHash } = result);
-      } catch (e) {
-        errorMessage = parseEtherspotErrorMessageIfAvailable(e);
-        if (!errorMessage && e instanceof Error) {
-          errorMessage = e?.message;
-        }
-      }
-    } else if (web3Provider) {
-      try {
-        // sequential
-        for (const transactionsToSend of unsentCrossChainActionTransactions) {
-          const { to, value, data } = transactionsToSend;
-          const tx = {
-            from: providerAddress,
-            to,
-            data,
-            value: ethers.BigNumber.isBigNumber(value) ? value.toHexString() : '0x0',
-          };
-          // @ts-ignore
-          transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
-        }
-      } catch (e) {
-        if (e instanceof Error) {
-          errorMessage = e?.message;
-        }
-      }
-    }
+    const transactionsToSend = unsentCrossChainActionTransactions.map(({ to, value, data }) => ({ to, value, data }));
+    ({ errorMessage, batchHash = '', transactionHash = '' } = await submitTransactions(
+      sdkForChain,
+      web3Provider,
+      transactionsToSend,
+      providerAddress,
+      firstUnsentCrossChainAction.useWeb3Provider,
+    ));
 
     if (!batchHash?.length && !transactionHash?.length) {
       resetCrossChainActions(errorMessage ?? 'Unable to send transaction!');
@@ -312,48 +277,48 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     let subscription: Subscription;
     try {
       subscription = sdkForChain.notifications$
-      .pipe(rxjsMap(async (notification) => {
-        //   // @ts-ignore
-        //   // TODO: fix type
-        if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
-          const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: pendingCrossChainActionTransaction.batchHash as string });
+        .pipe(rxjsMap(async (notification) => {
+          // @ts-ignore
+          // TODO: fix type
+          if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
+            const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: pendingCrossChainActionTransaction.batchHash as string });
 
-          const failedStates = [
-            GatewayTransactionStates.Canceling,
-            GatewayTransactionStates.Canceled,
-            GatewayTransactionStates.Reverted,
-          ];
+            const failedStates = [
+              GatewayTransactionStates.Canceling,
+              GatewayTransactionStates.Canceled,
+              GatewayTransactionStates.Reverted,
+            ];
 
-          let updatedStatus: string = '';
-          let updatedTransactionHash: string = '';
+            let updatedStatus: string = '';
+            let updatedTransactionHash: string = '';
 
-          if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
-            updatedStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED;
-          } else if (submittedBatch?.transaction?.hash) {
-            updatedStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
-            updatedTransactionHash = submittedBatch.transaction.hash;
-          }
+            if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
+              updatedStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED;
+            } else if (submittedBatch?.transaction?.hash) {
+              updatedStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
+              updatedTransactionHash = submittedBatch.transaction.hash;
+            }
 
-          if (!updatedStatus && !updatedTransactionHash) return;
+            if (!updatedStatus && !updatedTransactionHash) return;
 
-          setCrossChainActions((current) => current.map((crossChainAction) => {
-            const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransaction) => {
-              if (pendingCrossChainActionTransaction.id !== crossChainActionTransaction.id) return crossChainActionTransaction;
+            setCrossChainActions((current) => current.map((crossChainAction) => {
+              const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransaction) => {
+                if (pendingCrossChainActionTransaction.id !== crossChainActionTransaction.id) return crossChainActionTransaction;
+                return {
+                  ...crossChainActionTransaction,
+                  status: updatedStatus,
+                  hash: updatedTransactionHash,
+                };
+              });
+
               return {
-                ...crossChainActionTransaction,
-                status: updatedStatus,
-                hash: updatedTransactionHash,
+                ...crossChainAction,
+                transactions: updatedTransactions
               };
-            });
-
-            return {
-              ...crossChainAction,
-              transactions: updatedTransactions
-            };
-          }));
-        }
-      }))
-      .subscribe();
+            }));
+          }
+        }))
+        .subscribe();
     } catch (e) {
       //
     }

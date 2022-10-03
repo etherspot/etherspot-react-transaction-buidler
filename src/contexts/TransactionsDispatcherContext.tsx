@@ -5,7 +5,7 @@ import { DispatchedCrossChainAction } from '../providers/TransactionsDispatcherC
 export interface TransactionsDispatcherContextData {
   data: {
     dispatchedCrossChainActions: DispatchedCrossChainAction[];
-    dispatchCrossChainActions: (transactions: CrossChainAction[]) => void;
+    dispatchCrossChainActions: (transactions: CrossChainAction[], status?: string) => void;
     processingCrossChainActionId: string | null;
   }
 }

@@ -40,6 +40,7 @@ const History = () => {
               transactions={crossChainAction.transactions}
               type={crossChainAction.type}
               chainId={crossChainAction.chainId}
+              estimation={crossChainAction.estimated}
             />
           ))
       ))}
