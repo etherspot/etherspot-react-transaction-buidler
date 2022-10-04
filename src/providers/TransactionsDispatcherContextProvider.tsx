@@ -110,9 +110,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   const processDispatchedCrossChainActions = useCallback(async () => {
     if (!crossChainActions?.length || !dispatchId) return;
 
-    const hasPending = crossChainActions.some(({ transactions }) => transactions.some(({ status }) => status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING));
-    if (hasPending) return;
-
     const firstUnsentCrossChainAction = crossChainActions.find(({ transactions }) => transactions.some(({ status }) => status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT));
     if (!firstUnsentCrossChainAction) return;
 
