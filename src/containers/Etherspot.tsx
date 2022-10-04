@@ -34,7 +34,7 @@ const ComponentWrapper = styled.div`
   width: 445px;
   text-align: center;
   position: relative;
-  min-height: 200px;
+  min-height: 400px;
   font-family: "PTRootUIWebRegular", sans-serif;
   box-sizing: content-box;
 

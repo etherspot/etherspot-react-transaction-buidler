@@ -485,7 +485,7 @@ const TransactionBuilderContextProvider = ({
                       <TransactionBlockListItemWrapper
                         key={availableTransactionBlock.title}
                         onClick={() => {
-                          if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED) return;
+                          if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled) return;
                           const transactionBlock = {
                             ...availableTransactionBlock,
                             id: getTimeBasedUniqueId(),
