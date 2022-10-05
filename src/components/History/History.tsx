@@ -1,23 +1,38 @@
-import React from 'react';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
 
 import {
   getItem,
 } from '../../services/storage';
 import { STORED_GROUPED_CROSS_CHAIN_ACTIONS } from '../../constants/storageConstants';
 import ActionPreview from '../TransactionPreview/ActionPreview';
-import { DispatchedCrossChainAction } from '../../providers/TransactionsDispatcherContextProvider';
+import { CrossChainAction } from '../../utils/transaction';
 
 const History = () => {
-  let storedGroupedCrossChainActions: { [id: string]: DispatchedCrossChainAction[] } = {};
+  const [storedGroupedCrossChainActions, setStoredGroupedCrossChainActions] = useState<{ [id: string]: CrossChainAction[] }>({})
 
-  try {
-    const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
-    storedGroupedCrossChainActions = storedGroupedCrossChainActionsRaw
-      ? JSON.parse(storedGroupedCrossChainActionsRaw)
-      : {};
-  } catch (e) {
-    //
-  }
+  const getLatest = () => {
+    try {
+      const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
+      const storedGroupedCrossChainActionsUpdated = storedGroupedCrossChainActionsRaw
+        ? JSON.parse(storedGroupedCrossChainActionsRaw)
+        : {};
+      setStoredGroupedCrossChainActions(storedGroupedCrossChainActionsUpdated);
+    } catch (e) {
+      //
+    }
+  };
+
+  useEffect(() => {
+    getLatest();
+    let intervalId = setInterval(getLatest, 3000);
+    return () => {
+      if (!intervalId) return;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   // newest to oldest
   const storedGroupedCrossChainActionsIds = Object.keys(storedGroupedCrossChainActions)
@@ -36,11 +51,7 @@ const History = () => {
           .map((crossChainAction) => (
             <ActionPreview
               key={`action-preview-${id}-${crossChainAction.id}`}
-              data={crossChainAction.preview}
-              transactions={crossChainAction.transactions}
-              type={crossChainAction.type}
-              chainId={crossChainAction.chainId}
-              estimation={crossChainAction.estimated}
+              crossChainAction={crossChainAction}
             />
           ))
       ))}

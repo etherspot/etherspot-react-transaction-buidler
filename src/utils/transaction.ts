@@ -22,7 +22,10 @@ import {
   isValidEthereumAddress,
   isZeroAddress,
 } from './validation';
-import { nativeAssetPerChainId } from './chain';
+import {
+  nativeAssetPerChainId,
+  supportedChains,
+} from './chain';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
@@ -80,12 +83,16 @@ export interface CrossChainAction {
   id: string;
   chainId: number;
   submitTimestamp: number;
+  finishTimestamp?: number;
   type: string;
   preview: CrossChainActionPreview;
   transactions: CrossChainActionTransaction[];
   isEstimating: boolean;
   estimated: CrossChainActionEstimation | null;
   useWeb3Provider?: boolean;
+  status?: string;
+  batchHash?: string;
+  transactionHash?: string;
 }
 
 export const buildCrossChainAction = async (
@@ -515,4 +522,10 @@ export const submitTransactions = async (
   }
 
   return { batchHash, errorMessage };
+}
+
+export const getTransactionExplorerLink = (chainId: number, transactionHash?: string): string | null => {
+  const explorerUrl = supportedChains.find((chain) => chain.chainId === chainId)?.explorerUrl;
+  if (!explorerUrl || !transactionHash) return null;
+  return `${explorerUrl}${transactionHash}`;
 }

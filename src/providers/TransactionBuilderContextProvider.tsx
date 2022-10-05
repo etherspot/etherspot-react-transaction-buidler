@@ -43,7 +43,7 @@ import {
 import History from '../components/History';
 import { Theme } from '../utils/theme';
 import Card from '../components/Card';
-import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../constants/transactionDispatcherConstants';
+import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 
 export type TransactionBlockValues = SendAssetTransactionBlockValues
   & AssetBridgeTransactionBlockValues
@@ -422,11 +422,7 @@ const TransactionBuilderContextProvider = ({
             {crossChainActionInProcessing && (
               <ActionPreview
                 key={`preview-${crossChainActionInProcessing.id}`}
-                data={crossChainActionInProcessing.preview}
-                type={crossChainActionInProcessing.type}
-                chainId={crossChainActionInProcessing.chainId}
-                estimation={crossChainActionInProcessing.estimated}
-                onRemove={() => {}}
+                crossChainAction={crossChainActionInProcessing}
               />
             )}
             <PrimaryButton disabled marginTop={30} marginBottom={30}>
@@ -509,11 +505,7 @@ const TransactionBuilderContextProvider = ({
             {crossChainActions.map((crossChainAction) => (
               <ActionPreview
                 key={`preview-${crossChainAction.id}`}
-                data={crossChainAction.preview}
-                type={crossChainAction.type}
-                isEstimating={crossChainAction.isEstimating}
-                estimation={crossChainAction.estimated}
-                chainId={crossChainAction.chainId}
+                crossChainAction={crossChainAction}
                 onRemove={() => setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id))}
                 signButtonDisabled={crossChainAction.isEstimating || isSigningAction}
                 onSign={async () => {
@@ -528,13 +520,11 @@ const TransactionBuilderContextProvider = ({
                   const { transactionHash, batchHash } = result;
                   const mappedPendingCrossChainAction = {
                     ...crossChainAction,
-                    transactions: crossChainAction.transactions.map((crossChainActionTransaction) => ({
-                      ...crossChainActionTransaction,
-                      transactionHash,
-                      batchHash,
-                    })),
+                    transactionHash,
+                    batchHash,
                   };
-                  dispatchCrossChainActions([mappedPendingCrossChainAction], DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING);
+
+                  dispatchCrossChainActions([mappedPendingCrossChainAction], CROSS_CHAIN_ACTION_STATUS.PENDING);
                   setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id));
                   setIsSigningAction(false);
                   showAlertModal('Transaction sent!');

@@ -17,11 +17,10 @@ import { Subscription } from 'rxjs';
 import { TransactionsDispatcherContext } from '../contexts';
 import {
   CrossChainAction,
-  CrossChainActionTransaction,
   estimateCrossChainAction,
   submitTransactions,
 } from '../utils/transaction';
-import { DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS } from '../constants/transactionDispatcherConstants';
+import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import {
   useEtherspot,
   useTransactionBuilderModal,
@@ -33,17 +32,6 @@ import {
 } from '../services/storage';
 import { getTimeBasedUniqueId } from '../utils/common';
 
-export interface DispatchedCrossChainActionTransaction extends CrossChainActionTransaction {
-  id: string;
-  status: string;
-  batchHash?: string;
-  transactionHash?: string;
-}
-
-export interface DispatchedCrossChainAction extends CrossChainAction {
-  transactions: DispatchedCrossChainActionTransaction[];
-}
-
 const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNode }) => {
   const context = useContext(TransactionsDispatcherContext);
 
@@ -52,7 +40,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }
 
   const [processingCrossChainActionId, setProcessingCrossChainActionId] = useState<string | null>(null);
-  const [crossChainActions, setCrossChainActions] = useState<DispatchedCrossChainAction[]>([]);
+  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[]>([]);
   const [dispatchId, setDispatchId] = useState<string | null>(null);
 
   const { getSdkForChainId, web3Provider, providerAddress } = useEtherspot();
@@ -60,23 +48,17 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
   const dispatchCrossChainActions = useCallback((
     crossChainActionsToDispatch: CrossChainAction[],
-    status: string = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT,
+    status: string = CROSS_CHAIN_ACTION_STATUS.UNSENT,
   ) => {
     const newDispatchId = getTimeBasedUniqueId();
     setCrossChainActions(crossChainActionsToDispatch.map((crossChainActionToDispatch) => ({
       ...crossChainActionToDispatch,
-      transactions: crossChainActionToDispatch.transactions.map((crossChainActionToDispatchTransaction) => {
-        return ({
-          ...crossChainActionToDispatchTransaction,
-          id: getTimeBasedUniqueId(),
-          status,
-        })
-      }),
+      status,
     })));
     setDispatchId(newDispatchId)
   }, [setCrossChainActions]);
 
-  const updatedStoredCrossChainActions = useCallback((dispatchIdToUpdate: string, crossChainActionsToUpdate: DispatchedCrossChainAction[]) => {
+  const updatedStoredCrossChainActions = useCallback((dispatchIdToUpdate: string, crossChainActionsToUpdate: CrossChainAction[]) => {
     try {
       const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
       let storedGroupedCrossChainActions = {};
@@ -89,13 +71,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
   const resetCrossChainActions = useCallback((errorMessage?: string) => {
     if (dispatchId && crossChainActions?.length) {
-      const updatedCrossChainActions = crossChainActions.map((crossChainAction) => {
-        const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransactions) => ({
-          ...crossChainActionTransactions,
-          status: DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED,
-        }))
-        return { ...crossChainAction, transactions: updatedTransactions };
-      });
+      const updatedCrossChainActions = crossChainActions.map((crossChainAction) => ({
+        ...crossChainAction,
+        status: CROSS_CHAIN_ACTION_STATUS.FAILED,
+      }));
       updatedStoredCrossChainActions(dispatchId, updatedCrossChainActions);
     }
 
@@ -110,10 +89,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   const processDispatchedCrossChainActions = useCallback(async () => {
     if (!crossChainActions?.length || !dispatchId) return;
 
-    const firstUnsentCrossChainAction = crossChainActions.find(({ transactions }) => transactions.some(({ status }) => status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT));
+    const firstUnsentCrossChainAction = crossChainActions.find(({ status }) => status === CROSS_CHAIN_ACTION_STATUS.UNSENT);
     if (!firstUnsentCrossChainAction) return;
 
-    const unsentCrossChainActionTransactions = firstUnsentCrossChainAction.transactions.filter(({ status }) => status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT);
+    const unsentCrossChainActionTransactions = firstUnsentCrossChainAction.transactions;
     const targetChainId = firstUnsentCrossChainAction.chainId;
     const sdkForChain = getSdkForChainId(targetChainId);
     if (!sdkForChain) return;
@@ -145,17 +124,13 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     }
 
     const updatedCrossChainActions = crossChainActions.map((crossChainAction) => {
-      const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransaction) => {
-        if (!unsentCrossChainActionTransactions.some((transactionToSend) => transactionToSend.id === crossChainActionTransaction.id)) return crossChainActionTransaction;
-        return {
-          ...crossChainActionTransaction,
-          status: DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING,
-          batchHash,
-          hash: transactionHash,
-        };
-      });
-
-      return { ...crossChainAction, transactions: updatedTransactions };
+      if (crossChainAction.id !== firstUnsentCrossChainAction.id) return crossChainAction;
+      return {
+        ...crossChainAction,
+        status: CROSS_CHAIN_ACTION_STATUS.PENDING,
+        batchHash,
+        hash: transactionHash,
+      };
     });
 
     setCrossChainActions(updatedCrossChainActions);
@@ -180,7 +155,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }, [crossChainActions, dispatchId]);
 
   const restoreProcessing = useCallback(async () => {
-    let storedGroupedCrossChainActions: { [id: string]: DispatchedCrossChainAction[] } = {};
+    let storedGroupedCrossChainActions: { [id: string]: CrossChainAction[] } = {};
 
     try {
       const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
@@ -199,58 +174,56 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     await Promise.all(storedGroupedCrossChainActionsIds.map(async (id) => {
       updatedStoredGroupedCrossChainActions[id] = await Promise.all(storedGroupedCrossChainActions[id].map(async (storedCrossChainAction) => {
         const sdkForChain = getSdkForChainId(storedCrossChainAction.chainId);
-        const updatedTransactions = await Promise.all(storedCrossChainAction.transactions.map(async (storedCrossChainActionTransaction) => {
-          if (!sdkForChain || storedCrossChainActionTransaction.status !== DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING) return storedCrossChainActionTransaction;
+        let { transactionHash, batchHash, status } = storedCrossChainAction;
 
-          let transactionHash = storedCrossChainActionTransaction.transactionHash;
-          let status = storedCrossChainActionTransaction.status;
+        if (!sdkForChain || status !== CROSS_CHAIN_ACTION_STATUS.PENDING) return storedCrossChainAction;
 
-          if (storedCrossChainActionTransaction.status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING) {
-            if (!transactionHash && storedCrossChainActionTransaction.batchHash) {
-              try {
-                const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: storedCrossChainActionTransaction.batchHash });
-                transactionHash = submittedBatch?.transaction?.hash;
-              } catch (e) {
-                //
-              }
-            }
 
-            if (transactionHash) {
-              try {
-                const submittedTransaction = await sdkForChain.getTransaction({ hash: transactionHash });
-                if (submittedTransaction?.status === TransactionStatuses.Completed) {
-                  status = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
-                } else if (submittedTransaction?.status === TransactionStatuses.Reverted) {
-                  status = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED;
-                }
-              } catch (e) {
-                //
-              }
+        if (status === CROSS_CHAIN_ACTION_STATUS.PENDING) {
+          if (!transactionHash && batchHash) {
+            try {
+              const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: batchHash });
+              transactionHash = submittedBatch?.transaction?.hash;
+            } catch (e) {
+              //
             }
           }
 
-          return {
-            ...storedCrossChainActionTransaction,
-            transactionHash,
-            status,
-          };
-        }));
-        return { ...storedCrossChainAction, transactions: updatedTransactions };
+          if (transactionHash) {
+            try {
+              const submittedTransaction = await sdkForChain.getTransaction({ hash: transactionHash });
+              if (submittedTransaction?.status === TransactionStatuses.Completed) {
+                status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+              } else if (submittedTransaction?.status === TransactionStatuses.Reverted) {
+                status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+              }
+            } catch (e) {
+              //
+            }
+          }
+        }
+
+        return {
+          ...storedCrossChainAction,
+          transactionHash,
+          status,
+          finishTimestamp: status ? +new Date() : undefined,
+        };
       }));
     }));
 
     // find the oldest pending group for processing
     const oldestGroupedCrossChainActionsId = storedGroupedCrossChainActionsIds.find((id) =>
-      storedGroupedCrossChainActions[id].some((dispatchedCrossChainAction) => dispatchedCrossChainAction.transactions.some((dispatchedCrossChainActionTransaction) => [
-        DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING,
-        DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.UNSENT,
-      ].includes(dispatchedCrossChainActionTransaction.status))),
+      storedGroupedCrossChainActions[id].some((dispatchedCrossChainAction) => dispatchedCrossChainAction.status && [
+        CROSS_CHAIN_ACTION_STATUS.PENDING,
+        CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      ].includes(dispatchedCrossChainAction.status)),
     );
 
     // set oldest pending
     if (oldestGroupedCrossChainActionsId) {
       setDispatchId(oldestGroupedCrossChainActionsId);
-      const crossChainActionsToRestore: DispatchedCrossChainAction[] = await Promise.all(storedGroupedCrossChainActions[oldestGroupedCrossChainActionsId].map(async (crossChainAction) => {
+      const crossChainActionsToRestore: CrossChainAction[] = await Promise.all(storedGroupedCrossChainActions[oldestGroupedCrossChainActionsId].map(async (crossChainAction) => {
         if (crossChainAction.estimated) return crossChainAction;
         const estimated = await estimateCrossChainAction(getSdkForChainId(crossChainAction.chainId), crossChainAction);
         return { ...crossChainAction, estimated };
@@ -262,71 +235,76 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }, [getSdkForChainId]);
 
   useEffect(() => {
-    const firstPendingCrossChainAction = crossChainActions.find(({ transactions }) => transactions.some(({ status }) => status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING));
-    if (!firstPendingCrossChainAction || !firstPendingCrossChainAction?.chainId) return;
+    const validPendingCrossChainActions = crossChainActions.filter((crossChainAction) => crossChainAction.chainId
+      && crossChainAction.batchHash
+      && crossChainAction.status === CROSS_CHAIN_ACTION_STATUS.PENDING
+    );
 
-    const pendingCrossChainActionTransaction = firstPendingCrossChainAction.transactions.find(({ status }) => status === DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.PENDING);
-    if (!pendingCrossChainActionTransaction?.batchHash) return;
+    let subscriptions: Subscription[] = [];
 
-    const sdkForChain = getSdkForChainId(firstPendingCrossChainAction.chainId);
-    if (!sdkForChain) return;
+    validPendingCrossChainActions.map((crossChainAction) => {
+      const sdkForChain = getSdkForChainId(crossChainAction.chainId);
+      if (!sdkForChain) return;
 
-    let subscription: Subscription;
-    try {
-      subscription = sdkForChain.notifications$
-        .pipe(rxjsMap(async (notification) => {
-          // @ts-ignore
-          // TODO: fix type
-          if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
-            const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: pendingCrossChainActionTransaction.batchHash as string });
+      let subscription: Subscription;
 
-            const failedStates = [
-              GatewayTransactionStates.Canceling,
-              GatewayTransactionStates.Canceled,
-              GatewayTransactionStates.Reverted,
-            ];
+      try {
+        subscription = sdkForChain.notifications$
+          .pipe(rxjsMap(async (notification) => {
+            if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
+              const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: crossChainAction.batchHash as string });
 
-            let updatedStatus: string = '';
-            let updatedTransactionHash: string = '';
+              console.log({ submittedBatch })
 
-            if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
-              updatedStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.FAILED;
-            } else if (submittedBatch?.transaction?.hash) {
-              updatedStatus = DISPATCHED_CROSS_CHAIN_ACTION_TRANSACTION_STATUS.CONFIRMED;
-              updatedTransactionHash = submittedBatch.transaction.hash;
-            }
+              const failedStates = [
+                GatewayTransactionStates.Canceling,
+                GatewayTransactionStates.Canceled,
+                GatewayTransactionStates.Reverted,
+              ];
 
-            if (!updatedStatus && !updatedTransactionHash) return;
+              let updatedStatus: string = '';
+              let updatedTransactionHash: string = '';
 
-            setCrossChainActions((current) => current.map((crossChainAction) => {
-              const updatedTransactions = crossChainAction.transactions.map((crossChainActionTransaction) => {
-                if (pendingCrossChainActionTransaction.id !== crossChainActionTransaction.id) return crossChainActionTransaction;
+              if (submittedBatch?.transaction?.state) {
+                updatedStatus = failedStates.includes(submittedBatch?.transaction?.state)
+                  ? CROSS_CHAIN_ACTION_STATUS.FAILED
+                  : CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+              }
+
+              if (submittedBatch?.transaction?.hash) {
+                updatedTransactionHash = submittedBatch.transaction.hash;
+              }
+
+              if (!updatedStatus && !updatedTransactionHash) return;
+
+              setCrossChainActions((current) => current.map((currentCrossChainAction) => {
+                if (crossChainAction.id !== currentCrossChainAction.id) return crossChainAction;
                 return {
-                  ...crossChainActionTransaction,
+                  ...crossChainAction,
+                  finishTimestamp: updatedStatus ? +new Date() : undefined,
                   status: updatedStatus,
                   hash: updatedTransactionHash,
                 };
-              });
+              }));
+            }
+          }))
+          .subscribe();
 
-              return {
-                ...crossChainAction,
-                transactions: updatedTransactions
-              };
-            }));
-          }
-        }))
-        .subscribe();
-    } catch (e) {
-      //
-    }
-
-    return () => {
-      try {
-        if (subscription?.closed) return;
-        subscription.unsubscribe();
+        subscriptions.push(subscription);
       } catch (e) {
         //
       }
+    });
+
+    return () => {
+      subscriptions.forEach((subscription) => {
+        try {
+          if (subscription?.closed) return;
+          subscription.unsubscribe();
+        } catch (e) {
+          //
+        }
+      });
     };
   }, [crossChainActions, getSdkForChainId]);
 

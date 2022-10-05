@@ -1,6 +1,6 @@
 {
   "name": "@etherspot/react-transaction-buidler",
-  "version": "0.9.12",
+  "version": "0.10.0",
   "description": "Etherspot React component.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -38,6 +38,7 @@
     "ethers": "^5.6.9",
     "etherspot": "^1.35.4",
     "lodash": "^4.17.21",
+    "moment": "^2.29.4",
     "react-icons": "^4.4.0",
     "react-spinners": "^0.13.2",
     "reflect-metadata": "^0.1.13",

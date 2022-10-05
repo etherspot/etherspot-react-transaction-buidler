@@ -22,6 +22,9 @@ export interface Theme {
       roundedImageFallback?: string,
       listItemQuickButtonSecondary?: string,
       listItemQuickButtonPrimary?: string,
+      statusIconSuccess?: string,
+      statusIconFailed?: string,
+      statusIconPending?: string,
     },
     text?: {
       main?: string,
@@ -50,6 +53,7 @@ export interface Theme {
       roundedImageFallback?: string,
       listItemQuickButtonSecondary?: string,
       listItemQuickButtonPrimary?: string,
+      transactionStatusLink?: string,
     },
   }
 }
@@ -78,6 +82,9 @@ export const defaultTheme: Theme = {
       roundedImageFallback: '#ffe6d9',
       listItemQuickButtonSecondary: '#443d66',
       listItemQuickButtonPrimary: '#ff884d',
+      statusIconSuccess: '#1ba23d',
+      statusIconPending: '#ff6b35',
+      statusIconFailed: '#ff0000',
     },
     text: {
       main: '#fff',
@@ -106,6 +113,7 @@ export const defaultTheme: Theme = {
       roundedImageFallback: '#6e6b6a',
       listItemQuickButtonSecondary: '#fff',
       listItemQuickButtonPrimary: '#fff',
+      transactionStatusLink: '#ff7733',
     },
   }
 };

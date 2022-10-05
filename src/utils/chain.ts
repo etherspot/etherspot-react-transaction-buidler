@@ -20,20 +20,76 @@ export interface Chain {
   chainId: number;
   title: string;
   iconUrl: string;
+  explorerUrl: string;
 }
 
 export const supportedChains: Chain[] = [
-  { chainId: CHAIN_ID.ETHEREUM_MAINNET, title: 'Ethereum', iconUrl: 'https://tokens.1inch.exchange/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png' },
-  { chainId: CHAIN_ID.POLYGON, title: 'Polygon', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_polygon.jpg&w=64&q=75' },
-  { chainId: CHAIN_ID.BINANCE, title: 'Binance Smart Chain', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_binance.jpg&w=64&q=75' },
-  { chainId: CHAIN_ID.XDAI, title: 'Gnosis Chain (xDai)', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_xdai.jpg&w=64&q=75' },
-  { chainId: CHAIN_ID.AVALANCHE, title: 'Avalanche', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_avalanche.jpg&w=64&q=75' },
-  { chainId: CHAIN_ID.OPTIMISM, title: 'Optimism', iconUrl: 'https://tokens.1inch.io/0x4200000000000000000000000000000000000042.png' },
-  { chainId: CHAIN_ID.ARBITRUM, title: 'Arbitrum', iconUrl: 'https://app.1inch.io/assets/images/network-logos/arbitrum.svg' },
-  { chainId: CHAIN_ID.AURORA, title: 'Aurora', iconUrl: 'https://app.1inch.io/assets/images/network-logos/aurora.svg' },
-  { chainId: CHAIN_ID.FANTOM, title: 'Fantom', iconUrl: 'https://app.1inch.io/assets/images/network-logos/fantom.svg' },
-  { chainId: CHAIN_ID.MOONBEAM, title: 'Moonbeam', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_moonbeam.jpg&w=64&q=75' },
-  { chainId: CHAIN_ID.CELO, title: 'CELO', iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75' },
+  {
+    chainId: CHAIN_ID.ETHEREUM_MAINNET,
+    title: 'Ethereum',
+    iconUrl: 'https://tokens.1inch.exchange/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png',
+    explorerUrl: 'https://etherscan.io/tx/',
+  },
+  {
+    chainId: CHAIN_ID.POLYGON,
+    title: 'Polygon',
+    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_polygon.jpg&w=64&q=75',
+    explorerUrl: 'https://polygonscan.com/tx/',
+  },
+  {
+    chainId: CHAIN_ID.BINANCE,
+    title: 'Binance Smart Chain',
+    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_binance.jpg&w=64&q=75',
+    explorerUrl: 'https://bscscan.com/tx/',
+  },
+  {
+    chainId: CHAIN_ID.XDAI,
+    title: 'Gnosis Chain (xDai)',
+    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_xdai.jpg&w=64&q=75',
+    explorerUrl: 'https://blockscout.com/xdai/mainnet/tx/',
+  },
+  {
+    chainId: CHAIN_ID.AVALANCHE,
+    title: 'Avalanche',
+    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_avalanche.jpg&w=64&q=75',
+    explorerUrl: 'https://snowtrace.io/tx/',
+  },
+  {
+    chainId: CHAIN_ID.OPTIMISM,
+    title: 'Optimism',
+    iconUrl: 'https://tokens.1inch.io/0x4200000000000000000000000000000000000042.png',
+    explorerUrl: 'https://optimistic.etherscan.io/tx/',
+  },
+  {
+    chainId: CHAIN_ID.ARBITRUM,
+    title: 'Arbitrum',
+    iconUrl: 'https://app.1inch.io/assets/images/network-logos/arbitrum.svg',
+    explorerUrl: 'https://arbiscan.io/tx/',
+  },
+  {
+    chainId: CHAIN_ID.AURORA,
+    title: 'Aurora',
+    iconUrl: 'https://app.1inch.io/assets/images/network-logos/aurora.svg',
+    explorerUrl: 'https://aurorascan.dev/tx/',
+  },
+  {
+    chainId: CHAIN_ID.FANTOM,
+    title: 'Fantom',
+    iconUrl: 'https://app.1inch.io/assets/images/network-logos/fantom.svg',
+    explorerUrl: 'https://ftmscan.com/tx/',
+  },
+  {
+    chainId: CHAIN_ID.MOONBEAM,
+    title: 'Moonbeam',
+    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_moonbeam.jpg&w=64&q=75',
+    explorerUrl: 'https://moonscan.io/tx/',
+  },
+  {
+    chainId: CHAIN_ID.CELO,
+    title: 'CELO',
+    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
+    explorerUrl: 'explorer.celo.org/mainnet/tx/',
+  },
 ];
 
 export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
