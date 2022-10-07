@@ -126,63 +126,66 @@ export const buildCrossChainAction = async (
 
       const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-      let quote;
-      if (!transactionBlock?.values?.quote) {
-        const { items } = await sdk.getCrossChainQuotes({
+      let route;
+      if (!transactionBlock?.values?.route) {
+        const { items } = await sdk.getAdvanceRoutesLiFi({
           fromChainId,
           toChainId,
           fromAmount: amountBN,
           fromTokenAddress,
           toTokenAddress,
         });
-        ([quote] = items);
+        ([route] = items);
       } else {
-        quote = transactionBlock.values.quote;
+        route = transactionBlock.values.route;
       }
 
-      const bridgeServiceDetails = bridgeServiceIdToDetails[quote.provider];
+      const [fistStep] = route.steps;
+      const bridgeServiceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? ''];
 
       const preview = {
         fromChainId,
         toChainId,
-        providerName: bridgeServiceDetails.title ?? 'Unknown provider',
-        providerIconUrl: bridgeServiceDetails?.iconUrl,
+        providerName: fistStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
+        providerIconUrl: fistStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
         fromAsset: {
-          address: quote.estimate.data.fromToken.address,
-          decimals: quote.estimate.data.fromToken.decimals,
-          symbol: quote.estimate.data.fromToken.symbol,
-          amount: quote.estimate.fromAmount,
+          address: route.fromToken.address,
+          decimals: route.fromToken.decimals,
+          symbol: route.fromToken.symbol,
+          amount: route.fromAmount,
           iconUrl: fromAssetIconUrl,
         },
         toAsset: {
-          address: quote.estimate.data.toToken.address,
-          decimals: quote.estimate.data.toToken.decimals,
-          symbol: quote.estimate.data.toToken.symbol,
-          amount: quote.estimate.toAmount,
+          address: route.toToken.address,
+          decimals: route.toToken.decimals,
+          symbol: route.toToken.symbol,
+          amount: route.toAmount,
           iconUrl: toAssetIconUrl,
           usdPrice: toAssetUsdPrice,
         },
       };
 
-      const bridgeTransaction = {
-        to: quote.transaction.to,
-        value: quote.transaction.value,
-        data: quote.transaction.data,
-        chainId: fromChainId
-      };
+      const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });
 
-      let transactions: CrossChainActionTransaction[] = [bridgeTransaction];
+      let transactions: CrossChainActionTransaction[] = advancedRouteSteps.map(({
+        to,
+        value,
+        data,
+        chainId ,
+      }) => ({
+        to: to as string,
+        value,
+        data,
+        chainId: chainId ?? fromChainId,
+      }));
 
-      const approvalAddress = quote?.approvalData?.approvalAddress;
-      const approvalAmount = quote?.approvalData?.amount;
-      const assetContractAddress = quote.estimate.data.fromToken.address;
-      if (approvalAddress
-        && approvalAmount
-        && ethers.utils.isAddress(assetContractAddress)
-        && !isZeroAddress(assetContractAddress)) {
+      if (ethers.utils.isAddress(route.fromToken.address)
+        && !addressesEqual(route.fromToken.address, nativeAssetPerChainId[fromChainId].address)
+        && transactions.length === 1
+        && route.fromAmount) {
         const abi = getContractAbi(ContractNames.ERC20Token);
-        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, assetContractAddress);
-        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(approvalAddress, approvalAmount);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, route.fromToken.address);
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, route.fromAmount);
         if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
           return { errorMessage: 'Failed build bridge approval transaction!' };
         }
@@ -209,7 +212,7 @@ export const buildCrossChainAction = async (
 
       return { crossChainAction };
     } catch (e) {
-      return { errorMessage: 'Failed to get bridge quote!' };
+      return { errorMessage: 'Failed to get bridge route!' };
     }
   }
 
@@ -260,7 +263,7 @@ export const buildCrossChainAction = async (
         value: amountBN,
       };
 
-      if (ethers.utils.isAddress(assetAddress) && !addressesEqual(assetAddress, ethers.constants.AddressZero)) {
+      if (ethers.utils.isAddress(assetAddress) && !isZeroAddress(assetAddress)) {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, assetAddress);
         const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, amountBN);

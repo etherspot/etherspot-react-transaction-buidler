@@ -7,7 +7,6 @@ import React, {
 import styled, { useTheme } from 'styled-components';
 import {
   AccountTypes,
-  BridgingQuote,
 } from 'etherspot';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
@@ -40,6 +39,7 @@ import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import Text from '../Text/Text';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
+import { Route } from '@lifi/sdk';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -51,7 +51,7 @@ export interface AssetBridgeTransactionBlockValues {
   toAssetIconUrl?: string;
   toAssetUsdPrice?: number;
   amount?: string;
-  quote?: BridgingQuote;
+  route?: Route;
 }
 
 const Title = styled.h3`
@@ -73,12 +73,13 @@ const OfferDetailsBlock = styled.div`
   margin-right: 16px;
 `;
 
-const mapQuoteToOption = (quote: BridgingQuote) => {
-  const serviceDetails = bridgeServiceIdToDetails[quote.provider];
+const mapRouteToOption = (route: Route) => {
+  const [fistStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: serviceDetails?.title ?? quote.provider.toUpperCase(),
-    value: quote.provider,
-    iconUrl: serviceDetails?.iconUrl,
+    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    value: route.id,
+    iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
   };
 }
 
@@ -95,9 +96,9 @@ const AssetBridgeTransactionBlock = ({
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(null);
-  const [selectedQuote, setSelectedQuote] = useState<SelectOption | null>(null);
-  const [availableQuotes, setAvailableQuotes] = useState<BridgingQuote[] | null>(null);
-  const [isLoadingAvailableQuotes, setIsLoadingAvailableQuotes] = useState<boolean>(false);
+  const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
+  const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(null);
+  const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
   const theme: Theme = useTheme();
@@ -112,35 +113,35 @@ const AssetBridgeTransactionBlock = ({
   }, [selectedFromNetwork, selectedToNetwork]);
 
   useEffect(() => {
-    setSelectedQuote(null);
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
+    setSelectedRoute(null);
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
   }, [selectedToNetwork, selectedFromNetwork]);
 
-  const updateAvailableQuotes = useCallback(debounce(async () => {
-    setSelectedQuote(null);
-    setAvailableQuotes([]);
+  const updateAvailableRoutes = useCallback(debounce(async () => {
+    setSelectedRoute(null);
+    setAvailableRoutes([]);
 
     if (!sdk || !selectedToAsset || !selectedFromAsset || !amount || !selectedFromNetwork?.chainId || !selectedToNetwork?.chainId) return;
 
-    setIsLoadingAvailableQuotes(true);
+    setIsLoadingAvailableRoutes(true);
 
     try {
-      const { items: quotes } = await sdk.getCrossChainQuotes({
+      const { items: routes } = await sdk.getAdvanceRoutesLiFi({
         fromChainId: selectedFromNetwork.chainId,
         toChainId: selectedToNetwork.chainId,
         fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
         fromTokenAddress: selectedFromAsset.address,
         toTokenAddress: selectedToAsset.address,
       });
-      setAvailableQuotes(quotes);
-      if (quotes.length === 1) setSelectedQuote(mapQuoteToOption(quotes[0]));
+      setAvailableRoutes(routes);
+      if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
     } catch (e) {
       //
     }
 
-    setIsLoadingAvailableQuotes(false);
+    setIsLoadingAvailableRoutes(false);
   }, 200), [
     sdk,
     selectedFromAsset,
@@ -149,7 +150,7 @@ const AssetBridgeTransactionBlock = ({
     selectedToNetwork,
   ]);
 
-  useEffect(() => { updateAvailableQuotes(); }, [updateAvailableQuotes]);
+  useEffect(() => { updateAvailableRoutes(); }, [updateAvailableRoutes]);
 
   const onAmountChange = useCallback((newAmount: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
@@ -160,7 +161,7 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {
     if (setTransactionBlockValues) {
-      const quote = availableQuotes?.find((availableQuote) => availableQuote.provider === selectedQuote?.value);
+      const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
       setTransactionBlockValues(transactionBlockId, {
         fromChainId: selectedFromNetwork?.chainId,
         toChainId: selectedToNetwork?.chainId,
@@ -171,7 +172,7 @@ const AssetBridgeTransactionBlock = ({
         toAssetIconUrl: selectedToAsset?.logoURI,
         toAssetUsdPrice: selectedToAsset?.assetPriceUsd ?? undefined,
         amount,
-        quote,
+        route,
       });
     }
   }, [
@@ -181,12 +182,12 @@ const AssetBridgeTransactionBlock = ({
     selectedFromAsset,
     selectedToAsset,
     amount,
-    selectedQuote,
+    selectedRoute,
   ]);
 
-  const availableQuotesOptions = useMemo(
-    () => availableQuotes?.map(mapQuoteToOption),
-    [availableQuotes],
+  const availableRoutesOptions = useMemo(
+    () => availableRoutes?.map(mapRouteToOption),
+    [availableRoutes],
   );
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -200,8 +201,8 @@ const AssetBridgeTransactionBlock = ({
 
 
   const renderOption = (option: SelectOption) => {
-    const availableQuote = availableQuotes?.find((quote) => quote.provider === option.value);
-    const valueToReceive = availableQuote?.estimate?.toAmount && formatAmountDisplay(ethers.utils.formatUnits(availableQuote.estimate.toAmount, selectedToAsset?.decimals));
+    const availableRoute = availableRoutes?.find((route) => route.id === option.value);
+    const valueToReceive = availableRoute?.toAmountMin && formatAmountDisplay(ethers.utils.formatUnits(availableRoute.toAmountMin, selectedToAsset?.decimals));
     return (
       <OfferDetails>
         <RoundedImage title={option.title} url={option.iconUrl} size={24} />
@@ -209,10 +210,10 @@ const AssetBridgeTransactionBlock = ({
           <Text size={12} marginBottom={2} medium block>{option.title}</Text>
           {!!valueToReceive && <Text size={16} medium>{valueToReceive} {selectedToAsset?.symbol}</Text>}
         </OfferDetailsBlock>
-        {!!availableQuote?.estimate?.gasCosts?.amountUSD && (
+        {!!availableRoute?.gasCostUSD && (
           <OfferDetailsBlock>
             <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
-            {!!valueToReceive && <Text size={16} medium>{formatAmountDisplay(availableQuote.estimate.gasCosts.amountUSD, '$')}</Text>}
+            {!!valueToReceive && <Text size={16} medium>{formatAmountDisplay(availableRoute.gasCostUSD, '$')}</Text>}
           </OfferDetailsBlock>
         )}
       </OfferDetails>
@@ -304,20 +305,20 @@ const AssetBridgeTransactionBlock = ({
       {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
         <SelectInput
           label={`Route`}
-          options={availableQuotesOptions ?? []}
-          isLoading={isLoadingAvailableQuotes}
-          selectedOption={selectedQuote}
+          options={availableRoutesOptions ?? []}
+          isLoading={isLoadingAvailableRoutes}
+          selectedOption={selectedRoute}
           onOptionSelect={(option) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'quote');
-            setSelectedQuote(option);
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
+            setSelectedRoute(option);
           }}
           placeholder="Select route"
           renderOptionListItemContent={renderOption}
           renderSelectedOptionContent={renderOption}
-          errorMessage={errorMessages?.quote}
-          disabled={!availableQuotesOptions?.length || isLoadingAvailableQuotes}
-          noOpen={!!selectedQuote && availableQuotesOptions?.length === 1}
-          forceShow={!!availableQuotesOptions?.length && availableQuotesOptions?.length > 1}
+          errorMessage={errorMessages?.route}
+          disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
+          noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
+          forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1}
         />
       )}
     </>

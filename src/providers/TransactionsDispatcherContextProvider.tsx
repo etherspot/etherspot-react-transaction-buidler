@@ -254,8 +254,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
             if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
               const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: crossChainAction.batchHash as string });
 
-              console.log({ submittedBatch })
-
               const failedStates = [
                 GatewayTransactionStates.Canceling,
                 GatewayTransactionStates.Canceled,
