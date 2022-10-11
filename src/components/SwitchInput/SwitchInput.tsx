@@ -3,8 +3,32 @@ import styled from 'styled-components';
 
 import { SelectOption } from '../SelectInput/SelectInput';
 
-const Wrapper = styled.div`
+const Label = styled.label`
+  display: inline-block;
+  color: ${({ theme }) => theme.color.text.outerLabel};
+  margin-bottom: 11px;
+  font-size: 14px;
+`;
+
+const Wrapper = styled.div<{ inline?: boolean; disabled: boolean; }>`
   margin-bottom: 18px;
+  width: 100%;
+
+  ${({ inline }) => inline && `
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    
+    ${Label} {
+      margin-bottom: 0;
+      margin-right: 8px;
+    }
+  `}
+  
+  ${({ disabled }) => disabled && `
+    opacity: 0.3;
+  `}
 `;
 
 const InputWrapper = styled.div`
@@ -15,9 +39,10 @@ const InputWrapper = styled.div`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  flex: 1;
 `;
 
-const SwitchOption = styled.div<{ isActive: boolean; }>`
+const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; }>`
   font-family: "PTRootUIWebMedium", sans-serif;
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
@@ -27,7 +52,7 @@ const SwitchOption = styled.div<{ isActive: boolean; }>`
   min-height: 34px;
   line-height: 34px;
 
-  ${({ isActive }) => !isActive && `
+  ${({ isActive, disabled }) => !isActive && !disabled && `
     cursor: pointer;
 
     &:hover {
@@ -43,13 +68,6 @@ const SwitchOption = styled.div<{ isActive: boolean; }>`
   `}
 `;
 
-const Label = styled.label`
-  display: inline-block;
-  color: ${({ theme }) => theme.color.text.label};
-  margin-bottom: 11px;
-  font-size: 14px;
-`;
-
 const ErrorMessage = styled.small`
   color: ${({ theme }) => theme.color.text.errorMessage};
   margin-top: 5px;
@@ -63,6 +81,8 @@ interface TextInputProps {
   label?: string;
   errorMessage?: string;
   onChange?: (value: SelectOption) => void;
+  inlineLabel?: boolean;
+  disabled?: boolean;
 }
 
 const SwitchInput = ({
@@ -72,13 +92,15 @@ const SwitchInput = ({
   label,
   errorMessage,
   onChange,
+  inlineLabel = false,
+  disabled = false,
 }: TextInputProps) => {
   return (
-    <Wrapper>
+    <Wrapper inline={inlineLabel} disabled={disabled}>
       {!!label && <Label>{label}</Label>}
       <InputWrapper>
-        <SwitchOption isActive={option1.value === selectedOption.value} onClick={() => onChange && onChange(option1)}>{option1.title}</SwitchOption>
-        <SwitchOption isActive={option2.value === selectedOption.value} onClick={() => onChange && onChange(option2)}>{option2.title}</SwitchOption>
+        <SwitchOption disabled={disabled} isActive={option1.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option1)}>{option1.title}</SwitchOption>
+        <SwitchOption disabled={disabled} isActive={option2.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option2)}>{option2.title}</SwitchOption>
       </InputWrapper>
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
     </Wrapper>

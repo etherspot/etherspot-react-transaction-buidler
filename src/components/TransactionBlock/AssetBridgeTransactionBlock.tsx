@@ -24,6 +24,8 @@ import {
 } from '../../utils/common';
 import {
   ErrorMessages,
+  isValidAmount,
+  isValidEthereumAddress,
 } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
@@ -40,6 +42,7 @@ import { Theme } from '../../utils/theme';
 import Text from '../Text/Text';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { Route } from '@lifi/sdk';
+import Checkbox from '../Checkbox';
 
 export interface AssetBridgeTransactionBlockValues {
   fromChainId?: number;
@@ -52,6 +55,7 @@ export interface AssetBridgeTransactionBlockValues {
   toAssetUsdPrice?: number;
   amount?: string;
   route?: Route;
+  receiverAddress?: string;
 }
 
 const Title = styled.h3`
@@ -71,6 +75,11 @@ const OfferDetails = styled.div`
 
 const OfferDetailsBlock = styled.div`
   margin-right: 16px;
+`;
+
+const WalletReceiveWrapper = styled.div`
+  display: flex;
+  flex-direction: row;
 `;
 
 const mapRouteToOption = (route: Route) => {
@@ -98,12 +107,20 @@ const AssetBridgeTransactionBlock = ({
   const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(null);
+  const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(null);
+  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(AccountTypes.Contract);
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
+  const [useCustomAddress, setUseCustomAddress] = useState<boolean>(false);
 
-  const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
+  const {
+    setTransactionBlockValues,
+    resetTransactionBlockFieldValidationError,
+    setTransactionBlockFieldValidationError,
+  } = useTransactionBuilder();
+
   const theme: Theme = useTheme();
 
-  const { sdk } = useEtherspot();
+  const { sdk, providerAddress } = useEtherspot();
 
   useEffect(() => {
     if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
@@ -119,11 +136,32 @@ const AssetBridgeTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
   }, [selectedToNetwork, selectedFromNetwork]);
 
+  const receiverAddress = useMemo(() => {
+    if (useCustomAddress) return customReceiverAddress;
+    if (selectedReceiveAccountType === AccountTypes.Key) return providerAddress;
+    return null;
+  }, [useCustomAddress, customReceiverAddress, providerAddress, selectedReceiveAccountType]);
+
   const updateAvailableRoutes = useCallback(debounce(async () => {
     setSelectedRoute(null);
     setAvailableRoutes([]);
 
-    if (!sdk || !selectedToAsset || !selectedFromAsset || !amount || !selectedFromNetwork?.chainId || !selectedToNetwork?.chainId) return;
+    if (!sdk
+      || !selectedToAsset
+      || !selectedFromAsset
+      || !amount
+      || !selectedFromNetwork?.chainId
+      || !selectedToNetwork?.chainId
+      || !isValidAmount(amount)) return;
+
+    if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
+      setTransactionBlockFieldValidationError(
+        transactionBlockId,
+        'receiverAddress',
+        'Invalid receiver address',
+      );
+      return;
+    }
 
     setIsLoadingAvailableRoutes(true);
 
@@ -134,6 +172,7 @@ const AssetBridgeTransactionBlock = ({
         fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
         fromTokenAddress: selectedFromAsset.address,
         toTokenAddress: selectedToAsset.address,
+        toAddress: receiverAddress ?? undefined,
       });
       setAvailableRoutes(routes);
       if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
@@ -145,9 +184,11 @@ const AssetBridgeTransactionBlock = ({
   }, 200), [
     sdk,
     selectedFromAsset,
-    selectedToAsset, amount,
+    selectedToAsset,
+    amount,
     selectedFromNetwork,
     selectedToNetwork,
+    receiverAddress,
   ]);
 
   useEffect(() => { updateAvailableRoutes(); }, [updateAvailableRoutes]);
@@ -171,6 +212,7 @@ const AssetBridgeTransactionBlock = ({
         toAssetAddress: selectedToAsset?.address,
         toAssetIconUrl: selectedToAsset?.logoURI,
         toAssetUsdPrice: selectedToAsset?.assetPriceUsd ?? undefined,
+        receiverAddress: receiverAddress ?? undefined,
         amount,
         route,
       });
@@ -183,6 +225,7 @@ const AssetBridgeTransactionBlock = ({
     selectedToAsset,
     amount,
     selectedRoute,
+    receiverAddress,
   ]);
 
   const availableRoutesOptions = useMemo(
@@ -300,6 +343,37 @@ const AssetBridgeTransactionBlock = ({
             />
           }
           errorMessage={errorMessages?.amount}
+        />
+      )}
+      <WalletReceiveWrapper>
+        <AccountSwitchInput
+          label="You will receive on"
+          selectedAccountType={selectedReceiveAccountType}
+          onChange={setSelectedReceiveAccountType}
+          disabled={useCustomAddress}
+          inlineLabel
+        />
+      </WalletReceiveWrapper>
+      <Checkbox
+        label="Use custom address"
+        isChecked={useCustomAddress}
+        onChange={(isChecked) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+          setUseCustomAddress(isChecked);
+          if (!isChecked) setCustomReceiverAddress(null);
+        }}
+        rightAlign
+      />
+      {useCustomAddress && (
+        <TextInput
+          value={customReceiverAddress ?? ''}
+          onValueChange={(value) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+            setCustomReceiverAddress(value);
+          }}
+          errorMessage={errorMessages?.receiverAddress}
+          placeholder="Insert address"
+          noLabel
         />
       )}
       {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (

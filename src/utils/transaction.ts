@@ -48,6 +48,7 @@ interface AssetBridgeActionPreview {
   toAsset: AssetTransfer;
   providerName: string;
   providerIconUrl: string | undefined;
+  receiverAddress?: string;
 }
 
 interface SendAssetActionPreview {
@@ -108,37 +109,19 @@ export const buildCrossChainAction = async (
     && !!transactionBlock?.values?.toAssetAddress
     && !!transactionBlock?.values?.fromAssetAddress
     && !!transactionBlock?.values?.fromAssetDecimals
-    && !!transactionBlock?.values?.amount) {
+    && !!transactionBlock?.values?.amount
+    && !!transactionBlock?.values?.route) {
     try {
       const {
         values: {
-          amount,
           fromChainId,
           toChainId,
-          fromAssetAddress: fromTokenAddress,
           fromAssetIconUrl,
-          fromAssetDecimals,
-          toAssetAddress: toTokenAddress,
           toAssetIconUrl,
           toAssetUsdPrice,
+          route,
         },
       } = transactionBlock;
-
-      const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
-
-      let route;
-      if (!transactionBlock?.values?.route) {
-        const { items } = await sdk.getAdvanceRoutesLiFi({
-          fromChainId,
-          toChainId,
-          fromAmount: amountBN,
-          fromTokenAddress,
-          toTokenAddress,
-        });
-        ([route] = items);
-      } else {
-        route = transactionBlock.values.route;
-      }
 
       const [fistStep] = route.steps;
       const bridgeServiceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? ''];
@@ -163,6 +146,7 @@ export const buildCrossChainAction = async (
           iconUrl: toAssetIconUrl,
           usdPrice: toAssetUsdPrice,
         },
+        receiverAddress: transactionBlock?.values?.receiverAddress,
       };
 
       const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });

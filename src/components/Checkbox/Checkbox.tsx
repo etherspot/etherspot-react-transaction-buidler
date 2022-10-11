@@ -2,23 +2,27 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { uniqueId } from 'lodash';
+import Switch from 'react-ios-switch';
+import { Theme } from '../../utils/theme';
 
 const Wrapper = styled.div`
   margin-bottom: 15px;
 `;
 
-const InputWrapper = styled.div<{ hasSelect?: boolean }>``;
-
-const Label = styled.label`
-  display: inline-block;
-  color: ${({ theme }) => theme.color.text.outerLabel};
-  margin-left: 5px;
-  font-size: 14px;
+const InputWrapper = styled.div<{ rightAlign?: boolean }>`
+  display: flex;
+  flex-direction: ${({ rightAlign }) => rightAlign ? 'row-reverse' : 'row'};
+  align-items: center;
 `;
 
-const StyledCheckbox = styled.input.attrs({ type: 'checkbox' })``;
+const Label = styled.label<{ rightAlign?: boolean }>`
+  display: inline-block;
+  color: ${({ theme }) => theme.color.text.outerLabel};
+  margin-${({ rightAlign }) => rightAlign ? 'right' : 'left'}: 10px;
+  font-size: 16px;
+`;
 
 const ErrorMessage = styled.small`
   color: ${({ theme }) => theme.color.text.errorMessage};
@@ -31,6 +35,7 @@ interface CheckboxInputProps {
   label?: string;
   errorMessage?: string;
   onChange?: (value: boolean) => void;
+  rightAlign?: boolean;
 }
 
 const Checkbox = ({
@@ -38,7 +43,10 @@ const Checkbox = ({
   label,
   errorMessage,
   onChange,
+  rightAlign = false,
 }: CheckboxInputProps) => {
+  const theme: Theme = useTheme();
+
   const [inputId] = useState(uniqueId('etherspot-checkbox-'));
   const [isChecked, setIsChecked] = useState<boolean>(!!defaultIsChecked);
 
@@ -48,9 +56,16 @@ const Checkbox = ({
 
   return (
     <Wrapper>
-      <InputWrapper>
-        <StyledCheckbox id={inputId} checked={isChecked} onChange={() => setIsChecked((current) => !current)} />
-        {!!label && <Label htmlFor={inputId}>{label}</Label>}
+      <InputWrapper rightAlign={rightAlign}>
+        <Switch
+          checked={isChecked}
+          onChange={() => setIsChecked((current) => !current)}
+          offColor={theme?.color?.background?.checkboxInputInactive}
+          pendingOffColor={theme?.color?.background?.checkboxInputInactive}
+          onColor={theme?.color?.background?.checkboxInputActive}
+          pendingOnColor={theme?.color?.background?.checkboxInputActive}
+        />
+        {!!label && <Label htmlFor={inputId} rightAlign={rightAlign}>{label}</Label>}
       </InputWrapper>
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
     </Wrapper>

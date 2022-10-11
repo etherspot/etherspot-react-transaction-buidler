@@ -7,6 +7,7 @@ export interface TransactionBuilderContextData {
     setTransactionBlockValues: (id: string, values: TransactionBlockValues) => void;
     resetTransactionBlockFieldValidationError: (id: string, field: string) => void;
     resetAllTransactionBlockFieldValidationError: (id: string) => void;
+    setTransactionBlockFieldValidationError: (id: string, field: string, errorMessage: string) => void;
   }
 }
 

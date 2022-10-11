@@ -8,6 +8,8 @@ interface AccountSwitchInputProps {
   errorMessage?: string;
   selectedAccountType: string;
   onChange?: (value: string) => void;
+  inlineLabel?: boolean;
+  disabled?: boolean;
 }
 
 const AccountSwitchInput = ({
@@ -15,6 +17,8 @@ const AccountSwitchInput = ({
   errorMessage,
   selectedAccountType,
   onChange,
+  inlineLabel = false,
+  disabled = false,
 }: AccountSwitchInputProps) => {
   const walletOptions = [
     { title: 'Key based', value: AccountTypes.Key },
@@ -34,6 +38,8 @@ const AccountSwitchInput = ({
         if (onChange) onChange(option.value);
       }}
       errorMessage={errorMessage}
+      inlineLabel={inlineLabel}
+      disabled={disabled}
     />
   );
 }

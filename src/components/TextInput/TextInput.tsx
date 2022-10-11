@@ -86,6 +86,7 @@ interface TextInputProps {
   inputTopRightComponent?: ReactNode;
   displayLabelOutside?: boolean
   smallerInput?: boolean
+  noLabel?: boolean
 }
 
 const TextInput = ({
@@ -100,14 +101,15 @@ const TextInput = ({
   inputTopRightComponent,
   displayLabelOutside = false,
   smallerInput = false,
+  noLabel = false,
 }: TextInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-text-input-'));
 
   return (
     <>
-      {displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
+      {!noLabel && displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
       <Wrapper disabled={disabled}>
-        {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
+        {!noLabel && !displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         <InputWrapper>
           {inputLeftComponent}
           <InputWrapperRight>

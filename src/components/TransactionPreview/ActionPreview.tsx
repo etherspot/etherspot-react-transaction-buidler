@@ -255,6 +255,7 @@ const ActionPreview = ({
   onSign,
   signButtonDisabled = false,
 }: TransactionPreviewInterface) => {
+  const { accountAddress } = useEtherspot();
 
   const theme: Theme = useTheme();
 
@@ -296,7 +297,7 @@ const ActionPreview = ({
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
     // @ts-ignore
     // TODO: fix type
-    const { fromAsset, toAsset, fromChainId, toChainId, providerName, providerIconUrl } = preview;
+    const { fromAsset, toAsset, fromChainId, toChainId, providerName, providerIconUrl, receiverAddress } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
     const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
@@ -341,6 +342,21 @@ const ActionPreview = ({
             </ValueWrapper>
           </TransactionAction>
         </DoubleTransactionActionsInSingleRow>
+        {!!accountAddress && !!receiverAddress && (
+          <TransactionAction>
+            <Text size={16} medium>
+              <>
+                From
+                &nbsp;
+                <Clickable onClick={() => onCopy(accountAddress)}>{humanizeHexString(accountAddress)}</Clickable>
+                &nbsp;
+              </>
+              to
+              &nbsp;
+              <Clickable onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</Clickable>
+            </Text>
+          </TransactionAction>
+        )}
         <TransactionAction>
           <Label>Route</Label>
           <ValueWrapper>
@@ -370,7 +386,8 @@ const ActionPreview = ({
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
     // @ts-ignore
     // TODO: fix type
-    const { asset, chainId, receiverAddress, fromAddress } = preview;
+    const { asset, chainId, fromAddress } = preview;
+    const receiverAddress = preview.receiverAddress as string;
 
     const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
     const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();

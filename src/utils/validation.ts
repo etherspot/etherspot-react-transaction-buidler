@@ -43,6 +43,7 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.fromAssetDecimals) errors.fromAssetDecimals = 'Invalid source asset selected!';
     if (!transactionBlockValues?.toAssetAddress) errors.toAssetAddress = 'Invalid destination asset selected!';
     if (!transactionBlockValues?.route) errors.route = 'No route selected!';
+    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
   }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {

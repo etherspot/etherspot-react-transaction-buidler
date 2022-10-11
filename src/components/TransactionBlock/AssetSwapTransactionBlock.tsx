@@ -24,6 +24,7 @@ import {
 import {
   addressesEqual,
   ErrorMessages,
+  isValidAmount,
 } from '../../utils/validation';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -114,7 +115,12 @@ const AssetSwapTransactionBlock = ({
     setSelectedOffer(null);
     setAvailableOffers([]);
 
-    if (!sdk || !selectedToAsset || !selectedFromAsset || !amount || !selectedNetwork?.chainId) return;
+    if (!sdk
+      || !selectedToAsset
+      || !selectedFromAsset
+      || !amount
+      || !selectedNetwork?.chainId
+      || !isValidAmount(amount)) return;
 
     setIsLoadingAvailableOffers(true);
 

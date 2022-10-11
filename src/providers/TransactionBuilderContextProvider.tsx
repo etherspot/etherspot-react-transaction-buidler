@@ -371,16 +371,26 @@ const TransactionBuilderContextProvider = ({
     }));
   }
 
+  const setTransactionBlockFieldValidationError = (
+    transactionBlockId: string,
+    field: string,
+    errorMessage: string,
+  ) => {
+    setTransactionBlockValidationErrors((current) => ({
+      ...current,
+      [transactionBlockId]: { ...current?.[transactionBlockId], [field]: errorMessage },
+    }));
+  }
+
   const contextData = useMemo(
     () => ({
       setTransactionBlockValues,
       resetTransactionBlockFieldValidationError,
       resetAllTransactionBlockFieldValidationError,
+      setTransactionBlockFieldValidationError,
     }),
     [
       setTransactionBlockValues,
-      resetTransactionBlockFieldValidationError,
-      resetAllTransactionBlockFieldValidationError,
     ],
   );
 

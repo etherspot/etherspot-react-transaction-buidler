@@ -25,6 +25,8 @@ export interface Theme {
       statusIconSuccess?: string,
       statusIconFailed?: string,
       statusIconPending?: string,
+      checkboxInputActive?: string,
+      checkboxInputInactive?: string,
     },
     text?: {
       main?: string,
@@ -85,6 +87,8 @@ export const defaultTheme: Theme = {
       statusIconSuccess: '#1ba23d',
       statusIconPending: '#ff6b35',
       statusIconFailed: '#ff0000',
+      checkboxInputActive: '#ff884d',
+      checkboxInputInactive: '#7f7a99',
     },
     text: {
       main: '#fff',
