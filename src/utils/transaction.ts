@@ -6,7 +6,6 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 import {
-  BigNumber,
   BigNumberish,
   ethers,
 } from 'ethers';
@@ -34,84 +33,19 @@ import { getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
 import { TransactionRequest } from 'etherspot/dist/sdk/common';
+import {
+  ICrossChainActionEstimation,
+  ICrossChainActionTransaction,
+  ICrossChainAction,
+} from '../types/crossChainAction';
 
-
-interface AssetTransfer {
-  address: string;
-  decimals: number;
-  symbol: string;
-  amount: string;
-  iconUrl?: string;
-  usdPrice?: number;
-}
-
-interface AssetBridgeActionPreview {
-  fromChainId: number;
-  toChainId: number;
-  fromAsset: AssetTransfer;
-  toAsset: AssetTransfer;
-  providerName: string;
-  providerIconUrl: string | undefined;
-  receiverAddress?: string;
-}
-
-interface SendAssetActionPreview {
-  chainId: number;
-  asset: AssetTransfer;
-  fromAddress: string;
-  receiverAddress: string;
-  isFromEtherspotWallet: boolean;
-}
-
-interface KlimaStakingActionPreview {
-  fromChainId: number;
-  fromAsset: AssetTransfer;
-}
-
-interface AssetSwapActionPreview {
-  chainId: number;
-  fromAsset: AssetTransfer;
-  toAsset: AssetTransfer;
-  providerName: string;
-  providerIconUrl: string | undefined;
-  receiverAddress?: string;
-}
-
-export type CrossChainActionPreview = AssetBridgeActionPreview
-  | SendAssetActionPreview
-  | AssetSwapActionPreview
-  | KlimaStakingActionPreview;
-
-export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {}
-
-export interface CrossChainActionEstimation {
-  gasCost?: BigNumber | null;
-  usdPrice?: number | null;
-  errorMessage?: string;
-}
-
-export interface CrossChainAction {
-  id: string;
-  chainId: number;
-  submitTimestamp: number;
-  finishTimestamp?: number;
-  type: string;
-  preview: CrossChainActionPreview;
-  transactions: CrossChainActionTransaction[];
-  isEstimating: boolean;
-  estimated: CrossChainActionEstimation | null;
-  useWeb3Provider?: boolean;
-  status?: string;
-  batchHash?: string;
-  transactionHash?: string;
-}
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
   transactionBlock: AddedTransactionBlock,
-): Promise<{ errorMessage?: string; crossChainAction?: CrossChainAction; }> => {
-  const submitTimestamp = +new Date();
-  const crossChainActionId = uniqueId(`${submitTimestamp}-`);
+): Promise<{ errorMessage?: string; crossChainAction?: ICrossChainAction; }> => {
+  const createTimestamp = +new Date();
+  const crossChainActionId = uniqueId(`${createTimestamp}-`);
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
     && !!transactionBlock?.values?.fromChainId
@@ -153,7 +87,7 @@ export const buildCrossChainAction = async (
         return { errorMessage: 'Failed build KLIMA swap transaction!' };
       }
 
-      let transactions: CrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
+      let transactions: ICrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
         ...transaction,
         chainId: fromChainId,
       }));
@@ -221,10 +155,10 @@ export const buildCrossChainAction = async (
         },
       };
 
-      const crossChainAction: CrossChainAction = {
+      const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId: fromChainId,
-        submitTimestamp,
+        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
         preview,
         transactions,
@@ -286,7 +220,7 @@ export const buildCrossChainAction = async (
 
       const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });
 
-      let transactions: CrossChainActionTransaction[] = advancedRouteSteps.map(({
+      let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(({
         to,
         value,
         data,
@@ -318,10 +252,10 @@ export const buildCrossChainAction = async (
         transactions = [approvalTransaction, ...transactions];
       }
 
-      const crossChainAction: CrossChainAction = {
+      const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId: fromChainId,
-        submitTimestamp,
+        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
         preview,
         transactions,
@@ -377,7 +311,7 @@ export const buildCrossChainAction = async (
         },
       };
 
-      let transferTransaction: CrossChainActionTransaction = {
+      let transferTransaction: ICrossChainActionTransaction = {
         to: receiverAddress,
         value: amountBN,
       };
@@ -398,10 +332,10 @@ export const buildCrossChainAction = async (
         }
       }
 
-      const crossChainAction: CrossChainAction = {
+      const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId,
-        submitTimestamp,
+        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
         preview,
         transactions: [transferTransaction],
@@ -471,7 +405,7 @@ export const buildCrossChainAction = async (
         receiverAddress,
       };
 
-      let transactions: CrossChainActionTransaction[] = offer.transactions.map((transaction) => ({
+      let transactions: ICrossChainActionTransaction[] = offer.transactions.map((transaction) => ({
         ...transaction,
         chainId,
       }));
@@ -512,10 +446,10 @@ export const buildCrossChainAction = async (
         transactions = [...transactions, transferTransaction];
       }
 
-      const crossChainAction: CrossChainAction = {
+      const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId,
-        submitTimestamp,
+        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
         preview,
         transactions,
@@ -534,8 +468,8 @@ export const buildCrossChainAction = async (
 
 export const estimateCrossChainAction = async (
   sdk: EtherspotSdk | null,
-  crossChainAction: CrossChainAction,
-): Promise<CrossChainActionEstimation> => {
+  crossChainAction: ICrossChainAction,
+): Promise<ICrossChainActionEstimation> => {
   // TODO: add estimations for key based
 
   let gasCost = null;

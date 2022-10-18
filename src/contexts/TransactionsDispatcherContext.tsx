@@ -1,10 +1,10 @@
 import React, { createContext } from 'react';
-import { CrossChainAction } from '../utils/transaction';
+import { ICrossChainAction } from '../types/crossChainAction';
 
 export interface TransactionsDispatcherContextData {
   data: {
-    dispatchedCrossChainActions: CrossChainAction[];
-    dispatchCrossChainActions: (actions: CrossChainAction[], status?: string) => void;
+    dispatchedCrossChainActions: ICrossChainAction[];
+    dispatchCrossChainActions: (actions: ICrossChainAction[], status?: string) => void;
     processingCrossChainActionId: string | null;
   }
 }

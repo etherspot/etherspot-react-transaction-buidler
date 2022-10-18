@@ -13,7 +13,6 @@ import {
 } from 'react-icons/all';
 
 import {
-  CrossChainAction,
   getTransactionExplorerLink,
 } from '../../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
@@ -38,6 +37,7 @@ import {
   useEtherspot,
 } from '../../hooks';
 import moment from 'moment';
+import { ICrossChainAction } from '../../types/crossChainAction';
 
 const TransactionAction = styled.div`
   position: relative;
@@ -144,13 +144,13 @@ const StatusIconWrapper = styled.span<{ color?: string }>`
 `;
 
 interface TransactionPreviewInterface {
-  crossChainAction: CrossChainAction;
+  crossChainAction: ICrossChainAction;
   onRemove?: () => void
   onSign?: () => void
   signButtonDisabled?: boolean
 }
 
-const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainAction }) => {
+const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChainAction }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
@@ -168,6 +168,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
     [CROSS_CHAIN_ACTION_STATUS.UNSENT]: 'Preparing transaction',
     [CROSS_CHAIN_ACTION_STATUS.PENDING]: 'Waiting for transaction',
     [CROSS_CHAIN_ACTION_STATUS.FAILED]: 'Transaction failed',
+    [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: 'Rejected by user',
     [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: 'Transaction approved',
   };
 
@@ -175,6 +176,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
     [CROSS_CHAIN_ACTION_STATUS.UNSENT]: theme?.color?.background?.statusIconPending,
     [CROSS_CHAIN_ACTION_STATUS.PENDING]: theme?.color?.background?.statusIconPending,
     [CROSS_CHAIN_ACTION_STATUS.FAILED]: theme?.color?.background?.statusIconFailed,
+    [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: theme?.color?.background?.statusIconFailed,
     [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: theme?.color?.background?.statusIconSuccess,
   };
 
@@ -184,7 +186,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
   if (!actionStatusTitle) return null;
 
   const onPreviewTransactionClick = async () => {
-    if (isGettingExplorerLink) return;+
+    if (isGettingExplorerLink) return;
 
     setIsGettingExplorerLink(true);
 
@@ -226,10 +228,12 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
 
   return (
     <TransactionStatusAction>
-      <TransactionStatusClock>
-        {!!crossChainAction.finishTimestamp && moment(moment(crossChainAction.finishTimestamp).diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
-        {!crossChainAction.finishTimestamp && moment(moment().diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
-      </TransactionStatusClock>
+      {crossChainAction?.submitTimestamp && (
+        <TransactionStatusClock>
+          {!!crossChainAction.finishTimestamp && moment(moment(crossChainAction.finishTimestamp).diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
+          {!crossChainAction.finishTimestamp && moment(moment().diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
+        </TransactionStatusClock>
+      )}
       <TransactionStatusWrapper>
         <TransactionStatusMessageWrapper>
           {!!actionStatusIconBackgroundColor && (
@@ -238,6 +242,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
               {transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && <BsClockHistory size={14} />}
               {transactionStatus === CROSS_CHAIN_ACTION_STATUS.UNSENT && <BsClockHistory size={14} />}
               {transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED && <IoClose size={15} />}
+              {transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER && <IoClose size={15} />}
             </StatusIconWrapper>
           )}
           <Text size={16} medium>{actionStatusTitle}</Text>
@@ -296,8 +301,6 @@ const ActionPreview = ({
   }, [isEstimating, estimated]);
 
   if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
-    // @ts-ignore
-    // TODO: fix type
     const { fromAsset, fromChainId } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
@@ -348,8 +351,6 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    // @ts-ignore
-    // TODO: fix type
     const { fromAsset, toAsset, fromChainId, toChainId, providerName, providerIconUrl, receiverAddress } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
@@ -437,12 +438,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-    // @ts-ignore
-    // TODO: fix type
     const { asset, chainId, fromAddress } = preview;
-
-    // @ts-ignore
-    // TODO: fix type
     const receiverAddress = preview.receiverAddress as string;
 
     const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
@@ -497,8 +493,6 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-    // @ts-ignore
-    // TODO: fix type
     const { fromAsset, toAsset, chainId, providerName, providerIconUrl } = preview;
 
     const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
