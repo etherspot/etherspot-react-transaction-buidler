@@ -24,6 +24,7 @@ const InputWrapper = styled.div`
 
 const InputWrapperRight = styled.div`
   flex: 1;
+  position: relative;
 `;
 
 const Label = styled.label<{ outside?: boolean }>`
@@ -74,6 +75,15 @@ const InputTopRight = styled.div`
   right: 8px;
 `;
 
+const InputPasteIcon = styled.div`
+  color: ${({ theme }) => theme.color.text.pasteIcon};
+  position: absolute;
+  top: 50%;
+  right: 0%;
+  transform: translateY(-50%);
+  cursor: pointer;
+`;
+
 interface TextInputProps {
   value?: string;
   label?: string;
@@ -104,6 +114,16 @@ const TextInput = ({
   noLabel = false,
 }: TextInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-text-input-'));
+  const handlePaste = () => {
+    navigator.clipboard.readText().then(
+      (cliptext: string) => {
+        if (cliptext.length > 0 && onValueChange) {
+          onValueChange(cliptext);
+        }
+      },
+      (err) => console.log(err)
+    );
+  };
 
   return (
     <>
@@ -121,6 +141,7 @@ const TextInput = ({
               onChange={(event) => onValueChange && onValueChange(event?.target?.value ?? '')}
               smallerInput={smallerInput}
             />
+            <InputPasteIcon onClick={handlePaste}>Paste</InputPasteIcon>
             {!!inputBottomText && <InputBottomText>{inputBottomText}</InputBottomText>}
           </InputWrapperRight>
         </InputWrapper>
