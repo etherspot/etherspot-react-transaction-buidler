@@ -263,10 +263,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
               let updatedStatus: string = '';
               let updatedTransactionHash: string = '';
 
-              if (submittedBatch?.transaction?.state) {
-                updatedStatus = failedStates.includes(submittedBatch?.transaction?.state)
-                  ? CROSS_CHAIN_ACTION_STATUS.FAILED
-                  : CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+              if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
+                updatedStatus = CROSS_CHAIN_ACTION_STATUS.FAILED
+              } else if (submittedBatch?.transaction?.state === GatewayTransactionStates.Sent) {
+                updatedStatus = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
               }
 
               if (submittedBatch?.transaction?.hash) {

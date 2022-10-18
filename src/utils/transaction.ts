@@ -1,11 +1,13 @@
 import {
   AccountTypes,
+  ExchangeOffer,
   Sdk as EtherspotSdk,
   WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
 import {
   BigNumber,
+  BigNumberish,
   ethers,
 } from 'ethers';
 import { uniqueId } from 'lodash';
@@ -23,6 +25,7 @@ import {
   isZeroAddress,
 } from './validation';
 import {
+  CHAIN_ID,
   nativeAssetPerChainId,
   supportedChains,
 } from './chain';
@@ -30,6 +33,7 @@ import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
+import { TransactionRequest } from 'etherspot/dist/sdk/common';
 
 
 interface AssetTransfer {
@@ -59,6 +63,11 @@ interface SendAssetActionPreview {
   isFromEtherspotWallet: boolean;
 }
 
+interface KlimaStakingActionPreview {
+  fromChainId: number;
+  fromAsset: AssetTransfer;
+}
+
 interface AssetSwapActionPreview {
   chainId: number;
   fromAsset: AssetTransfer;
@@ -70,7 +79,8 @@ interface AssetSwapActionPreview {
 
 export type CrossChainActionPreview = AssetBridgeActionPreview
   | SendAssetActionPreview
-  | AssetSwapActionPreview;
+  | AssetSwapActionPreview
+  | KlimaStakingActionPreview;
 
 export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {}
 
@@ -102,6 +112,131 @@ export const buildCrossChainAction = async (
 ): Promise<{ errorMessage?: string; crossChainAction?: CrossChainAction; }> => {
   const submitTimestamp = +new Date();
   const crossChainActionId = uniqueId(`${submitTimestamp}-`);
+
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
+    && !!transactionBlock?.values?.fromChainId
+    && !!transactionBlock?.values?.fromAssetAddress
+    && !!transactionBlock?.values?.fromAssetDecimals
+    && !!transactionBlock?.values?.fromAssetSymbol
+    && !!transactionBlock?.values?.amount) {
+    try {
+      const {
+        values: {
+          fromChainId,
+          fromAssetAddress,
+          fromAssetDecimals,
+          fromAssetSymbol,
+          fromAssetIconUrl,
+          amount,
+        },
+      } = transactionBlock;
+
+      if (fromChainId !== CHAIN_ID.POLYGON) {
+        // TODO: get bridge quote
+      }
+
+      const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      const offers = await sdk.getExchangeOffers({
+        fromChainId,
+        fromAmount: amountBN,
+        fromTokenAddress: fromAssetAddress,
+        toTokenAddress: '0x4e78011ce80ee02d2c3e649fb657e45898257815', // KLIMA on Polygon
+      });
+
+      const bestOffer = offers.reduce((best: ExchangeOffer | null, offer) => {
+        if (!best || best.receiveAmount.lt(offer.receiveAmount)) return offer;
+        return best;
+      }, null);
+
+      if (!bestOffer) {
+        return { errorMessage: 'Failed build KLIMA swap transaction!' };
+      }
+
+      let transactions: CrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
+        ...transaction,
+        chainId: fromChainId,
+      }));
+
+      // not native asset and no erc20 approval transaction included
+      if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address) && transactions.length === 1) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, amountBN);
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build bridge approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          chainId: fromChainId,
+          value: 0,
+        };
+
+        transactions = [approvalTransaction, ...transactions];
+      }
+
+      const abi = getContractAbi(ContractNames.ERC20Token);
+      const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, '0x4e78011ce80ee02d2c3e649fb657e45898257815'); // Klima ojn Polygon
+      const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.('0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227', bestOffer.receiveAmount); // Klima staking
+      if (!klimaApprovalTransactionRequest || !klimaApprovalTransactionRequest.to) {
+        return { errorMessage: 'Failed build bridge approval transaction!' };
+      }
+
+      const klimaApprovalTransaction = {
+        to: klimaApprovalTransactionRequest.to,
+        data: klimaApprovalTransactionRequest.data,
+        chainId: fromChainId,
+        value: 0,
+      };
+
+      const klimaStakingAbi = [
+        "function stake(uint256 value)",
+      ];
+      const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>('klimaStakingContract', klimaStakingAbi, '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'); // Klima ojn Polygon
+      const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestOffer.receiveAmount); // Klima staking
+      console.log({ klimaStakeTransactionRequest })
+      if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
+        return { errorMessage: 'Failed build bridge approval transaction!' };
+      }
+
+      const klimaStakinglTransaction = {
+        to: klimaStakeTransactionRequest.to,
+        data: klimaStakeTransactionRequest.data,
+        chainId: fromChainId,
+        value: 0,
+      };
+
+      transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
+
+      const preview = {
+        fromChainId,
+        fromAsset: {
+          address: fromAssetAddress,
+          decimals: fromAssetDecimals,
+          symbol: fromAssetSymbol,
+          amount: amountBN.toString(),
+          iconUrl: fromAssetIconUrl,
+        },
+      };
+
+      const crossChainAction: CrossChainAction = {
+        id: crossChainActionId,
+        chainId: fromChainId,
+        submitTimestamp,
+        type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
+        preview,
+        transactions,
+        isEstimating: false,
+        estimated: null,
+      };
+
+      return { crossChainAction };
+    } catch (e) {
+      return { errorMessage: 'Failed to get KLIMA staking transaction!' };
+    }
+  }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE
     && !!transactionBlock?.values?.fromChainId
