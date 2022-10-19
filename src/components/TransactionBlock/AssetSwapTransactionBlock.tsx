@@ -341,6 +341,7 @@ const AssetSwapTransactionBlock = ({
             setReceiverAddress(value);
           }}
           errorMessage={errorMessages?.receiverAddress}
+          showPasteButton
         />
       )}
       {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (

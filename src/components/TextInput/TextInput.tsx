@@ -34,7 +34,7 @@ const Label = styled.label<{ outside?: boolean }>`
   font-size: 14px;
 `;
 
-const Input = styled.input<{ smallerInput?: boolean }>`
+const Input = styled.input<{ smallerInput?: boolean, hasPasteIcon?: boolean }>`
   width: 100%;
   font-family: "PTRootUIWebMedium", sans-serif;
   border: none;
@@ -42,6 +42,8 @@ const Input = styled.input<{ smallerInput?: boolean }>`
   color: ${({ theme }) => theme.color.text.textInput};
   font-size: ${({ smallerInput }) => smallerInput ? 14 : 20}px;
   padding: 0;
+  padding-right: ${({ hasPasteIcon }) => hasPasteIcon ? 40 : 0}px;
+  box-sizing: border-box !important;
 
   &::placeholder {
     color: ${({ theme }) => theme.color.text.textInputSecondary};
@@ -97,6 +99,7 @@ interface TextInputProps {
   displayLabelOutside?: boolean
   smallerInput?: boolean
   noLabel?: boolean
+  showPasteButton?: boolean
 }
 
 const TextInput = ({
@@ -112,17 +115,18 @@ const TextInput = ({
   displayLabelOutside = false,
   smallerInput = false,
   noLabel = false,
+  showPasteButton = false,
 }: TextInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-text-input-'));
-  const handlePaste = () => {
-    navigator.clipboard.readText().then(
-      (cliptext: string) => {
-        if (cliptext.length > 0 && onValueChange) {
-          onValueChange(cliptext);
-        }
-      },
-      (err) => console.log(err)
-    );
+  const handlePaste = async () => {
+    try {
+      let res = await navigator.clipboard.readText()
+      if (res.length > 0 && onValueChange) {
+        onValueChange(res);
+      }
+    } catch (error) {
+      console.log(error)
+    }
   };
 
   return (
@@ -140,8 +144,9 @@ const TextInput = ({
               placeholder={placeholder}
               onChange={(event) => onValueChange && onValueChange(event?.target?.value ?? '')}
               smallerInput={smallerInput}
+              hasPasteIcon={showPasteButton}
             />
-            <InputPasteIcon onClick={handlePaste}>Paste</InputPasteIcon>
+            {showPasteButton && <InputPasteIcon onClick={handlePaste}>Paste</InputPasteIcon> }
             {!!inputBottomText && <InputBottomText>{inputBottomText}</InputBottomText>}
           </InputWrapperRight>
         </InputWrapper>
