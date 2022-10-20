@@ -201,6 +201,7 @@ const SendAssetTransactionBlock = ({
         errorMessage={errorMessages?.receiverAddress}
         displayLabelOutside
         smallerInput
+        showPasteButton
       />
     </>
   );

@@ -374,6 +374,7 @@ const AssetBridgeTransactionBlock = ({
           errorMessage={errorMessages?.receiverAddress}
           placeholder="Insert address"
           noLabel
+          showPasteButton
         />
       )}
       {!!selectedToAsset && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
