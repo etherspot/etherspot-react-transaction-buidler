@@ -8,10 +8,10 @@ import {
 } from '../../services/storage';
 import { STORED_GROUPED_CROSS_CHAIN_ACTIONS } from '../../constants/storageConstants';
 import ActionPreview from '../TransactionPreview/ActionPreview';
-import { CrossChainAction } from '../../utils/transaction';
+import { ICrossChainAction } from '../../types/crossChainAction';
 
 const History = () => {
-  const [storedGroupedCrossChainActions, setStoredGroupedCrossChainActions] = useState<{ [id: string]: CrossChainAction[] }>({})
+  const [storedGroupedCrossChainActions, setStoredGroupedCrossChainActions] = useState<{ [id: string]: ICrossChainAction[] }>({})
 
   const getLatest = () => {
     try {

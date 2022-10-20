@@ -13,7 +13,6 @@ import {
 } from 'react-icons/all';
 
 import {
-  CrossChainAction,
   getTransactionExplorerLink,
 } from '../../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
@@ -38,6 +37,7 @@ import {
   useEtherspot,
 } from '../../hooks';
 import moment from 'moment';
+import { ICrossChainAction } from '../../types/crossChainAction';
 
 const TransactionAction = styled.div`
   position: relative;
@@ -144,13 +144,13 @@ const StatusIconWrapper = styled.span<{ color?: string }>`
 `;
 
 interface TransactionPreviewInterface {
-  crossChainAction: CrossChainAction;
+  crossChainAction: ICrossChainAction;
   onRemove?: () => void
   onSign?: () => void
   signButtonDisabled?: boolean
 }
 
-const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainAction }) => {
+const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChainAction }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
@@ -158,15 +158,17 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
 
   const {
     chainId,
-    transactionHash,
+    status: crossChainActionStatus,
     batchHash: transactionsBatchHash,
-    status: transactionStatus,
   } = crossChainAction;
+
+  const transactionStatus = crossChainActionStatus || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
   const actionStatusToTitle: { [transactionStatus: string]: string } = {
     [CROSS_CHAIN_ACTION_STATUS.UNSENT]: 'Preparing transaction',
     [CROSS_CHAIN_ACTION_STATUS.PENDING]: 'Waiting for transaction',
     [CROSS_CHAIN_ACTION_STATUS.FAILED]: 'Transaction failed',
+    [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: 'Rejected by user',
     [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: 'Transaction approved',
   };
 
@@ -174,38 +176,39 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
     [CROSS_CHAIN_ACTION_STATUS.UNSENT]: theme?.color?.background?.statusIconPending,
     [CROSS_CHAIN_ACTION_STATUS.PENDING]: theme?.color?.background?.statusIconPending,
     [CROSS_CHAIN_ACTION_STATUS.FAILED]: theme?.color?.background?.statusIconFailed,
+    [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: theme?.color?.background?.statusIconFailed,
     [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: theme?.color?.background?.statusIconSuccess,
   };
 
-  const actionStatusIconBackgroundColor = transactionStatus && actionStatusToIconBackgroundColor[transactionStatus];
-  const actionStatusTitle = transactionStatus && actionStatusToTitle[transactionStatus];
+  const actionStatusIconBackgroundColor = actionStatusToIconBackgroundColor[transactionStatus];
+  const actionStatusTitle = actionStatusToTitle[transactionStatus];
 
   if (!actionStatusTitle) return null;
 
   const onPreviewTransactionClick = async () => {
     if (isGettingExplorerLink) return;
+
     setIsGettingExplorerLink(true);
 
     const sdk = getSdkForChainId(chainId);
-    if ((!transactionHash && !transactionsBatchHash) || !sdk) {
+    if (!transactionsBatchHash || !sdk) {
       alert('Transaction hash not yet available!');
       setIsGettingExplorerLink(false);
       return;
     }
 
-    let updatedTransactionHash = '';
-    if (!transactionHash && transactionsBatchHash) {
-      try {
-        const { transaction } = await sdk.getGatewaySubmittedBatch({ hash: transactionsBatchHash });
-        updatedTransactionHash = transaction?.hash ?? '';
-      } catch (e) {
-        //
-      }
+    let transactionHash = '';
+    try {
+      const submittedBatch = await sdk.getGatewaySubmittedBatch({ hash: transactionsBatchHash });
+      const { transaction } = submittedBatch;
+      transactionHash = transaction?.hash ?? '';
+    } catch (e) {
+      //
     }
 
     setIsGettingExplorerLink(false);
 
-    const explorerLink = getTransactionExplorerLink(chainId, transactionHash ?? updatedTransactionHash);
+    const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
     if (!explorerLink) {
       alert('Transaction hash not yet available!');
       return;
@@ -225,10 +228,12 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
 
   return (
     <TransactionStatusAction>
-      <TransactionStatusClock>
-        {!!crossChainAction.finishTimestamp && moment(moment(crossChainAction.finishTimestamp).diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
-        {!crossChainAction.finishTimestamp && moment(moment().diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
-      </TransactionStatusClock>
+      {crossChainAction?.submitTimestamp && (
+        <TransactionStatusClock>
+          {!!crossChainAction.finishTimestamp && moment(moment(crossChainAction.finishTimestamp).diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
+          {!crossChainAction.finishTimestamp && moment(moment().diff(moment(crossChainAction.submitTimestamp))).format('mm:ss')}
+        </TransactionStatusClock>
+      )}
       <TransactionStatusWrapper>
         <TransactionStatusMessageWrapper>
           {!!actionStatusIconBackgroundColor && (
@@ -237,6 +242,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: CrossChainA
               {transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && <BsClockHistory size={14} />}
               {transactionStatus === CROSS_CHAIN_ACTION_STATUS.UNSENT && <BsClockHistory size={14} />}
               {transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED && <IoClose size={15} />}
+              {transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER && <IoClose size={15} />}
             </StatusIconWrapper>
           )}
           <Text size={16} medium>{actionStatusTitle}</Text>
@@ -294,9 +300,57 @@ const ActionPreview = ({
     return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
   }, [isEstimating, estimated]);
 
+  if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+    const { fromAsset, fromChainId } = preview;
+
+    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+
+    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+
+    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+
+    return (
+      <Card title="Klima Staking" marginBottom={20} onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
+        <DoubleTransactionActionsInSingleRow>
+          <TransactionAction>
+            <Label>You send</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={fromAsset.symbol}
+                url={fromAsset.iconUrl}
+                smallImageTitle={fromChainTitle}
+                smallImageUrl={fromNetwork?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={1} medium block>{fromAmount} {fromAsset.symbol}</Text>
+                <Text size={12}>On {fromChainTitle}</Text>
+              </div>
+            </ValueWrapper>
+          </TransactionAction>
+        </DoubleTransactionActionsInSingleRow>
+
+        <TransactionAction>
+          <Label>Route</Label>
+          <ValueWrapper>
+            {!!cost && (
+              <ValueBlock>
+                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
+                <Text size={16} medium>{cost}</Text>
+              </ValueBlock>
+            )}
+          </ValueWrapper>
+        </TransactionAction>
+        <TransactionStatus crossChainAction={crossChainAction} />
+        {showSignButton && (
+          <Clickable>
+            <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
+          </Clickable>
+        )}
+      </Card>
+    );
+  }
+
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    // @ts-ignore
-    // TODO: fix type
     const { fromAsset, toAsset, fromChainId, toChainId, providerName, providerIconUrl, receiverAddress } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
@@ -384,8 +438,6 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-    // @ts-ignore
-    // TODO: fix type
     const { asset, chainId, fromAddress } = preview;
     const receiverAddress = preview.receiverAddress as string;
 
@@ -441,8 +493,6 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-    // @ts-ignore
-    // TODO: fix type
     const { fromAsset, toAsset, chainId, providerName, providerIconUrl } = preview;
 
     const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);

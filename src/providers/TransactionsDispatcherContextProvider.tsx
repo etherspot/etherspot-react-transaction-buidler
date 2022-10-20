@@ -16,7 +16,6 @@ import { Subscription } from 'rxjs';
 
 import { TransactionsDispatcherContext } from '../contexts';
 import {
-  CrossChainAction,
   estimateCrossChainAction,
   submitTransactions,
 } from '../utils/transaction';
@@ -31,6 +30,7 @@ import {
   setItem,
 } from '../services/storage';
 import { getTimeBasedUniqueId } from '../utils/common';
+import { ICrossChainAction } from '../types/crossChainAction';
 
 const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNode }) => {
   const context = useContext(TransactionsDispatcherContext);
@@ -40,14 +40,14 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }
 
   const [processingCrossChainActionId, setProcessingCrossChainActionId] = useState<string | null>(null);
-  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[]>([]);
+  const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [dispatchId, setDispatchId] = useState<string | null>(null);
 
   const { getSdkForChainId, web3Provider, providerAddress } = useEtherspot();
   const { showAlertModal } = useTransactionBuilderModal();
 
   const dispatchCrossChainActions = useCallback((
-    crossChainActionsToDispatch: CrossChainAction[],
+    crossChainActionsToDispatch: ICrossChainAction[],
     status: string = CROSS_CHAIN_ACTION_STATUS.UNSENT,
   ) => {
     const newDispatchId = getTimeBasedUniqueId();
@@ -58,7 +58,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     setDispatchId(newDispatchId)
   }, [setCrossChainActions]);
 
-  const updatedStoredCrossChainActions = useCallback((dispatchIdToUpdate: string, crossChainActionsToUpdate: CrossChainAction[]) => {
+  const updatedStoredCrossChainActions = useCallback((dispatchIdToUpdate: string, crossChainActionsToUpdate: ICrossChainAction[]) => {
     try {
       const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
       let storedGroupedCrossChainActions = {};
@@ -73,7 +73,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     if (dispatchId && crossChainActions?.length) {
       const updatedCrossChainActions = crossChainActions.map((crossChainAction) => ({
         ...crossChainAction,
-        status: CROSS_CHAIN_ACTION_STATUS.FAILED,
+        status: CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER,
       }));
       updatedStoredCrossChainActions(dispatchId, updatedCrossChainActions);
     }
@@ -128,8 +128,9 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       return {
         ...crossChainAction,
         status: CROSS_CHAIN_ACTION_STATUS.PENDING,
+        submitTimestamp: +new Date(),
         batchHash,
-        hash: transactionHash,
+        transactionHash,
       };
     });
 
@@ -155,7 +156,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }, [crossChainActions, dispatchId]);
 
   const restoreProcessing = useCallback(async () => {
-    let storedGroupedCrossChainActions: { [id: string]: CrossChainAction[] } = {};
+    let storedGroupedCrossChainActions: { [id: string]: ICrossChainAction[] } = {};
 
     try {
       const storedGroupedCrossChainActionsRaw = getItem(STORED_GROUPED_CROSS_CHAIN_ACTIONS);
@@ -223,7 +224,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     // set oldest pending
     if (oldestGroupedCrossChainActionsId) {
       setDispatchId(oldestGroupedCrossChainActionsId);
-      const crossChainActionsToRestore: CrossChainAction[] = await Promise.all(storedGroupedCrossChainActions[oldestGroupedCrossChainActionsId].map(async (crossChainAction) => {
+      const crossChainActionsToRestore: ICrossChainAction[] = await Promise.all(storedGroupedCrossChainActions[oldestGroupedCrossChainActionsId].map(async (crossChainAction) => {
         if (crossChainAction.estimated) return crossChainAction;
         const estimated = await estimateCrossChainAction(getSdkForChainId(crossChainAction.chainId), crossChainAction);
         return { ...crossChainAction, estimated };
@@ -263,10 +264,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
               let updatedStatus: string = '';
               let updatedTransactionHash: string = '';
 
-              if (submittedBatch?.transaction?.state) {
-                updatedStatus = failedStates.includes(submittedBatch?.transaction?.state)
-                  ? CROSS_CHAIN_ACTION_STATUS.FAILED
-                  : CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+              if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
+                updatedStatus = CROSS_CHAIN_ACTION_STATUS.FAILED
+              } else if (submittedBatch?.transaction?.state === GatewayTransactionStates.Sent) {
+                updatedStatus = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
               }
 
               if (submittedBatch?.transaction?.hash) {
@@ -280,8 +281,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
                 return {
                   ...crossChainAction,
                   finishTimestamp: updatedStatus ? +new Date() : undefined,
-                  status: updatedStatus,
-                  hash: updatedTransactionHash,
+                  status: updatedStatus || crossChainAction.status,
+                  transactionHash: updatedTransactionHash || crossChainAction.transactionHash,
                 };
               }));
             }

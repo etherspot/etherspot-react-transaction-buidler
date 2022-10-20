@@ -26,7 +26,6 @@ import {
 } from '../utils/validation';
 import {
   buildCrossChainAction,
-  CrossChainAction,
   estimateCrossChainAction,
   submitTransactions,
 } from '../utils/transaction';
@@ -44,6 +43,7 @@ import History from '../components/History';
 import { Theme } from '../utils/theme';
 import Card from '../components/Card';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
+import { ICrossChainAction } from '../types/crossChainAction';
 
 export type TransactionBlockValues = SendAssetTransactionBlockValues
   & AssetBridgeTransactionBlockValues
@@ -230,7 +230,7 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [crossChainActions, setCrossChainActions] = useState<CrossChainAction[]>([]);
+  const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
 
@@ -276,7 +276,7 @@ const TransactionBuilderContextProvider = ({
 
     setTransactionBlockValidationErrors(validationErrors);
 
-    let newCrossChainActions: CrossChainAction[] = [];
+    let newCrossChainActions: ICrossChainAction[] = [];
     let errorMessage;
 
     if (Object.keys(validationErrors).length === 0) {

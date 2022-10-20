@@ -1,11 +1,12 @@
 import {
   AccountTypes,
+  ExchangeOffer,
   Sdk as EtherspotSdk,
   WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
 import {
-  BigNumber,
+  BigNumberish,
   ethers,
 } from 'ethers';
 import { uniqueId } from 'lodash';
@@ -23,6 +24,7 @@ import {
   isZeroAddress,
 } from './validation';
 import {
+  CHAIN_ID,
   nativeAssetPerChainId,
   supportedChains,
 } from './chain';
@@ -30,78 +32,145 @@ import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
+import { TransactionRequest } from 'etherspot/dist/sdk/common';
+import {
+  ICrossChainActionEstimation,
+  ICrossChainActionTransaction,
+  ICrossChainAction,
+} from '../types/crossChainAction';
 
-
-interface AssetTransfer {
-  address: string;
-  decimals: number;
-  symbol: string;
-  amount: string;
-  iconUrl?: string;
-  usdPrice?: number;
-}
-
-interface AssetBridgeActionPreview {
-  fromChainId: number;
-  toChainId: number;
-  fromAsset: AssetTransfer;
-  toAsset: AssetTransfer;
-  providerName: string;
-  providerIconUrl: string | undefined;
-  receiverAddress?: string;
-}
-
-interface SendAssetActionPreview {
-  chainId: number;
-  asset: AssetTransfer;
-  fromAddress: string;
-  receiverAddress: string;
-  isFromEtherspotWallet: boolean;
-}
-
-interface AssetSwapActionPreview {
-  chainId: number;
-  fromAsset: AssetTransfer;
-  toAsset: AssetTransfer;
-  providerName: string;
-  providerIconUrl: string | undefined;
-  receiverAddress?: string;
-}
-
-export type CrossChainActionPreview = AssetBridgeActionPreview
-  | SendAssetActionPreview
-  | AssetSwapActionPreview;
-
-export interface CrossChainActionTransaction extends ExecuteAccountTransactionDto {}
-
-export interface CrossChainActionEstimation {
-  gasCost?: BigNumber | null;
-  usdPrice?: number | null;
-  errorMessage?: string;
-}
-
-export interface CrossChainAction {
-  id: string;
-  chainId: number;
-  submitTimestamp: number;
-  finishTimestamp?: number;
-  type: string;
-  preview: CrossChainActionPreview;
-  transactions: CrossChainActionTransaction[];
-  isEstimating: boolean;
-  estimated: CrossChainActionEstimation | null;
-  useWeb3Provider?: boolean;
-  status?: string;
-  batchHash?: string;
-  transactionHash?: string;
-}
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
   transactionBlock: AddedTransactionBlock,
-): Promise<{ errorMessage?: string; crossChainAction?: CrossChainAction; }> => {
-  const submitTimestamp = +new Date();
-  const crossChainActionId = uniqueId(`${submitTimestamp}-`);
+): Promise<{ errorMessage?: string; crossChainAction?: ICrossChainAction; }> => {
+  const createTimestamp = +new Date();
+  const crossChainActionId = uniqueId(`${createTimestamp}-`);
+
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
+    && !!transactionBlock?.values?.fromChainId
+    && !!transactionBlock?.values?.fromAssetAddress
+    && !!transactionBlock?.values?.fromAssetDecimals
+    && !!transactionBlock?.values?.fromAssetSymbol
+    && !!transactionBlock?.values?.amount) {
+    try {
+      const {
+        values: {
+          fromChainId,
+          fromAssetAddress,
+          fromAssetDecimals,
+          fromAssetSymbol,
+          fromAssetIconUrl,
+          amount,
+        },
+      } = transactionBlock;
+
+      if (fromChainId !== CHAIN_ID.POLYGON) {
+        // TODO: get bridge quote
+      }
+
+      const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      const offers = await sdk.getExchangeOffers({
+        fromChainId,
+        fromAmount: amountBN,
+        fromTokenAddress: fromAssetAddress,
+        toTokenAddress: '0x4e78011ce80ee02d2c3e649fb657e45898257815', // KLIMA on Polygon
+      });
+
+      const bestOffer = offers.reduce((best: ExchangeOffer | null, offer) => {
+        if (!best || best.receiveAmount.lt(offer.receiveAmount)) return offer;
+        return best;
+      }, null);
+
+      if (!bestOffer) {
+        return { errorMessage: 'Failed build KLIMA swap transaction!' };
+      }
+
+      let transactions: ICrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
+        ...transaction,
+        chainId: fromChainId,
+      }));
+
+      // not native asset and no erc20 approval transaction included
+      if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address) && transactions.length === 1) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, amountBN);
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build bridge approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          chainId: fromChainId,
+          value: 0,
+        };
+
+        transactions = [approvalTransaction, ...transactions];
+      }
+
+      const abi = getContractAbi(ContractNames.ERC20Token);
+      const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, '0x4e78011ce80ee02d2c3e649fb657e45898257815'); // Klima ojn Polygon
+      const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.('0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227', bestOffer.receiveAmount); // Klima staking
+      if (!klimaApprovalTransactionRequest || !klimaApprovalTransactionRequest.to) {
+        return { errorMessage: 'Failed build bridge approval transaction!' };
+      }
+
+      const klimaApprovalTransaction = {
+        to: klimaApprovalTransactionRequest.to,
+        data: klimaApprovalTransactionRequest.data,
+        chainId: fromChainId,
+        value: 0,
+      };
+
+      const klimaStakingAbi = [
+        "function stake(uint256 value)",
+      ];
+      const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>('klimaStakingContract', klimaStakingAbi, '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'); // Klima ojn Polygon
+      const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestOffer.receiveAmount); // Klima staking
+      console.log({ klimaStakeTransactionRequest })
+      if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
+        return { errorMessage: 'Failed build bridge approval transaction!' };
+      }
+
+      const klimaStakinglTransaction = {
+        to: klimaStakeTransactionRequest.to,
+        data: klimaStakeTransactionRequest.data,
+        chainId: fromChainId,
+        value: 0,
+      };
+
+      transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
+
+      const preview = {
+        fromChainId,
+        fromAsset: {
+          address: fromAssetAddress,
+          decimals: fromAssetDecimals,
+          symbol: fromAssetSymbol,
+          amount: amountBN.toString(),
+          iconUrl: fromAssetIconUrl,
+        },
+      };
+
+      const crossChainAction: ICrossChainAction = {
+        id: crossChainActionId,
+        chainId: fromChainId,
+        createTimestamp,
+        type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
+        preview,
+        transactions,
+        isEstimating: false,
+        estimated: null,
+      };
+
+      return { crossChainAction };
+    } catch (e) {
+      return { errorMessage: 'Failed to get KLIMA staking transaction!' };
+    }
+  }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE
     && !!transactionBlock?.values?.fromChainId
@@ -151,7 +220,7 @@ export const buildCrossChainAction = async (
 
       const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });
 
-      let transactions: CrossChainActionTransaction[] = advancedRouteSteps.map(({
+      let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(({
         to,
         value,
         data,
@@ -183,10 +252,10 @@ export const buildCrossChainAction = async (
         transactions = [approvalTransaction, ...transactions];
       }
 
-      const crossChainAction: CrossChainAction = {
+      const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId: fromChainId,
-        submitTimestamp,
+        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
         preview,
         transactions,
@@ -242,7 +311,7 @@ export const buildCrossChainAction = async (
         },
       };
 
-      let transferTransaction: CrossChainActionTransaction = {
+      let transferTransaction: ICrossChainActionTransaction = {
         to: receiverAddress,
         value: amountBN,
       };
@@ -263,10 +332,10 @@ export const buildCrossChainAction = async (
         }
       }
 
-      const crossChainAction: CrossChainAction = {
+      const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId,
-        submitTimestamp,
+        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
         preview,
         transactions: [transferTransaction],
@@ -336,7 +405,7 @@ export const buildCrossChainAction = async (
         receiverAddress,
       };
 
-      let transactions: CrossChainActionTransaction[] = offer.transactions.map((transaction) => ({
+      let transactions: ICrossChainActionTransaction[] = offer.transactions.map((transaction) => ({
         ...transaction,
         chainId,
       }));
@@ -377,10 +446,10 @@ export const buildCrossChainAction = async (
         transactions = [...transactions, transferTransaction];
       }
 
-      const crossChainAction: CrossChainAction = {
+      const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId,
-        submitTimestamp,
+        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
         preview,
         transactions,
@@ -399,8 +468,8 @@ export const buildCrossChainAction = async (
 
 export const estimateCrossChainAction = async (
   sdk: EtherspotSdk | null,
-  crossChainAction: CrossChainAction,
-): Promise<CrossChainActionEstimation> => {
+  crossChainAction: ICrossChainAction,
+): Promise<ICrossChainActionEstimation> => {
   // TODO: add estimations for key based
 
   let gasCost = null;
