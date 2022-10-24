@@ -63,7 +63,13 @@ interface KlimaStakingAction {
   preview: KlimaStakingActionPreview,
 }
 
-export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {}
+export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {
+  status?: string;
+  transactionHash?: string;
+  createTimestamp: number;
+  submitTimestamp?: number;
+  finishTimestamp?: number;
+}
 
 export interface ICrossChainActionEstimation {
   gasCost?: BigNumber | null;
@@ -74,16 +80,11 @@ export interface ICrossChainActionEstimation {
 export type ICrossChainAction = {
   id: string;
   chainId: number;
-  createTimestamp: number;
-  submitTimestamp?: number;
-  finishTimestamp?: number;
   transactions: ICrossChainActionTransaction[];
   isEstimating: boolean;
   estimated: ICrossChainActionEstimation | null;
   useWeb3Provider?: boolean;
-  status?: string;
   batchHash?: string;
-  transactionHash?: string;
 } & ( AssetBridgeAction
   | SendAssetAction
   | AssetSwapAction

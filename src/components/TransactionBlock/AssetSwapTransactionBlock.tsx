@@ -54,6 +54,7 @@ export interface SwapAssetTransactionBlockValues {
   receiverAddress?: string;
   isDifferentReceiverAddress?: boolean;
   offer?: ExchangeOffer;
+  accountType?: string;
 }
 
 const Title = styled.h3`
@@ -101,8 +102,16 @@ const AssetSwapTransactionBlock = ({
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
-  const { sdk, getSupportedAssetsForChainId, accountAddress } = useEtherspot();
+  const { sdk, getSupportedAssetsForChainId, accountAddress, providerAddress } = useEtherspot();
   const theme: Theme = useTheme();
+
+  useEffect(() => {
+    setSelectedNetwork(null);
+    setSelectedFromAsset(null);
+    setSelectedToAsset(null);
+    setAvailableOffers(null);
+    setSelectedOffer(null);
+  }, [selectedAccountType]);
 
   useEffect(() => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
@@ -201,6 +210,7 @@ const AssetSwapTransactionBlock = ({
         receiverAddress,
         offer,
         isDifferentReceiverAddress: showReceiverInput,
+        accountType: selectedAccountType,
       });
     }
   }, [
@@ -212,6 +222,7 @@ const AssetSwapTransactionBlock = ({
     selectedOffer,
     receiverAddress,
     showReceiverInput,
+    selectedAccountType,
   ]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -244,13 +255,7 @@ const AssetSwapTransactionBlock = ({
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          if (accountType === AccountTypes.Key) {
-            alert('Not supported yet!');
-            return;
-          }
-          setSelectedAccountType(accountType);
-        }}
+        onChange={setSelectedAccountType}
         errorMessage={errorMessages?.fromWallet}
       />
       <NetworkAssetSelectInput
@@ -274,6 +279,7 @@ const AssetSwapTransactionBlock = ({
           || errorMessages?.fromAssetDecimals
           || errorMessages?.fromAssetSymbol
         }
+        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
       />

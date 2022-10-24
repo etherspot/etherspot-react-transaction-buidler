@@ -25,6 +25,7 @@ import {
 } from './validation';
 import {
   CHAIN_ID,
+  changeToChain,
   nativeAssetPerChainId,
   supportedChains,
 } from './chain';
@@ -38,6 +39,7 @@ import {
   ICrossChainActionTransaction,
   ICrossChainAction,
 } from '../types/crossChainAction';
+import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 
 
 export const buildCrossChainAction = async (
@@ -90,6 +92,8 @@ export const buildCrossChainAction = async (
       let transactions: ICrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
         ...transaction,
         chainId: fromChainId,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       }));
 
       // not native asset and no erc20 approval transaction included
@@ -106,6 +110,8 @@ export const buildCrossChainAction = async (
           data: approvalTransactionRequest.data,
           chainId: fromChainId,
           value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
         };
 
         transactions = [approvalTransaction, ...transactions];
@@ -123,6 +129,8 @@ export const buildCrossChainAction = async (
         data: klimaApprovalTransactionRequest.data,
         chainId: fromChainId,
         value: 0,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       };
 
       const klimaStakingAbi = [
@@ -130,7 +138,6 @@ export const buildCrossChainAction = async (
       ];
       const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>('klimaStakingContract', klimaStakingAbi, '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'); // Klima ojn Polygon
       const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestOffer.receiveAmount); // Klima staking
-      console.log({ klimaStakeTransactionRequest })
       if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
         return { errorMessage: 'Failed build bridge approval transaction!' };
       }
@@ -140,6 +147,8 @@ export const buildCrossChainAction = async (
         data: klimaStakeTransactionRequest.data,
         chainId: fromChainId,
         value: 0,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       };
 
       transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
@@ -158,7 +167,6 @@ export const buildCrossChainAction = async (
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId: fromChainId,
-        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
         preview,
         transactions,
@@ -189,6 +197,7 @@ export const buildCrossChainAction = async (
           toAssetIconUrl,
           toAssetUsdPrice,
           route,
+          accountType,
         },
       } = transactionBlock;
 
@@ -230,6 +239,8 @@ export const buildCrossChainAction = async (
         value,
         data,
         chainId: chainId ?? fromChainId,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       }));
 
       if (ethers.utils.isAddress(route.fromToken.address)
@@ -247,6 +258,8 @@ export const buildCrossChainAction = async (
           to: approvalTransactionRequest.to,
           data: approvalTransactionRequest.data,
           value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
         };
 
         transactions = [approvalTransaction, ...transactions];
@@ -255,12 +268,12 @@ export const buildCrossChainAction = async (
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId: fromChainId,
-        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
         preview,
         transactions,
         isEstimating: false,
         estimated: null,
+        useWeb3Provider: accountType === AccountTypes.Key,
       };
 
       return { crossChainAction };
@@ -314,6 +327,8 @@ export const buildCrossChainAction = async (
       let transferTransaction: ICrossChainActionTransaction = {
         to: receiverAddress,
         value: amountBN,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       };
 
       if (ethers.utils.isAddress(assetAddress) && !isZeroAddress(assetAddress)) {
@@ -329,13 +344,14 @@ export const buildCrossChainAction = async (
           to: transferTransactionRequest.to,
           data: transferTransactionRequest.data,
           value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
         }
       }
 
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId,
-        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
         preview,
         transactions: [transferTransaction],
@@ -376,6 +392,7 @@ export const buildCrossChainAction = async (
           offer,
           receiverAddress,
           toAssetUsdPrice,
+          accountType,
         },
       } = transactionBlock;
 
@@ -408,6 +425,8 @@ export const buildCrossChainAction = async (
       let transactions: ICrossChainActionTransaction[] = offer.transactions.map((transaction) => ({
         ...transaction,
         chainId,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       }));
 
       // not native asset and no erc20 approval transaction included
@@ -424,6 +443,8 @@ export const buildCrossChainAction = async (
           data: approvalTransactionRequest.data,
           chainId,
           value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
         };
 
         transactions = [approvalTransaction, ...transactions];
@@ -441,6 +462,8 @@ export const buildCrossChainAction = async (
           to: transferTransactionRequest.to,
           data: transferTransactionRequest.data,
           value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
         }
 
         transactions = [...transactions, transferTransaction];
@@ -449,12 +472,12 @@ export const buildCrossChainAction = async (
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
         chainId,
-        createTimestamp,
         type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
         preview,
         transactions,
         isEstimating: false,
         estimated: null,
+        useWeb3Provider: accountType === AccountTypes.Key,
       };
 
       return { crossChainAction };
@@ -466,92 +489,15 @@ export const buildCrossChainAction = async (
   return { errorMessage: 'Failed to build transaction!' }
 }
 
-export const estimateCrossChainAction = async (
-  sdk: EtherspotSdk | null,
-  crossChainAction: ICrossChainAction,
-): Promise<ICrossChainActionEstimation> => {
-  // TODO: add estimations for key based
-
-  let gasCost = null;
-  let usdPrice = null;
-  let errorMessage;
-
-  if (!sdk) {
-    return { errorMessage: 'Failed to estimate!' };
-  }
-
-  try {
-    if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
-      await sdk.computeContractAccount({ sync: true });
-    }
-
-    sdk.clearGatewayBatch();
-
-    // sequential
-    for (const transactionsToSend of crossChainAction.transactions) {
-      const { to, value, data } = transactionsToSend;
-      await sdk.batchExecuteAccountTransaction({ to, value, data });
-    }
-
-    const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch();
-    gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
-  } catch (e) {
-    errorMessage = parseEtherspotErrorMessageIfAvailable(e);
-    if (!errorMessage && e instanceof Error) {
-      errorMessage = e?.message;
-    }
-  }
-
-  try {
-    usdPrice = await getNativeAssetPriceInUsd(crossChainAction.chainId);
-  } catch (e) {
-    //
-  }
-
-  return { gasCost, errorMessage, usdPrice }
-}
-
-export const submitTransactions = async (
+export const submitEtherspotTransactionsBatch = async (
   sdk: EtherspotSdk,
-  web3Provider: WalletProviderLike | Web3WalletProvider | null,
   transactions: ExecuteAccountTransactionDto[],
-  providerAddress: string | null,
-  useWeb3Provider: boolean = false,
 ): Promise<{
-  transactionHash?: string;
   batchHash?: string;
   errorMessage?: string;
 }> => {
   let errorMessage;
   let batchHash;
-  let transactionHash;
-
-  if (useWeb3Provider) {
-    if (!web3Provider) {
-      return { errorMessage: 'Unable to find connected Web3 provider!' };
-    }
-
-    try {
-      // sequential
-      for (const transaction of transactions) {
-        const { to, value, data } = transaction;
-        const tx = {
-          from: providerAddress,
-          to,
-          data,
-          value: ethers.BigNumber.isBigNumber(value) ? value.toHexString() : '0x0',
-        };
-        // @ts-ignore
-        transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
-      }
-    } catch (e) {
-      if (e instanceof Error) {
-        errorMessage = e?.message;
-      }
-    }
-
-    return { transactionHash, errorMessage };
-  }
 
   try {
     if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
@@ -580,8 +526,185 @@ export const submitTransactions = async (
   return { batchHash, errorMessage };
 }
 
+export const submitWeb3ProviderTransaction = async (
+  web3Provider: WalletProviderLike | Web3WalletProvider | null,
+  transaction: ExecuteAccountTransactionDto,
+  chainId: number,
+  providerAddress: string | null,
+): Promise<{
+  transactionHash?: string;
+  errorMessage?: string;
+}> => {
+  let transactionHash;
+  let errorMessage;
+
+  if (!web3Provider) {
+    return { errorMessage: 'Unable to find connected Web3 provider!' };
+  }
+
+  // TODO: check against current
+  if (chainId !== 1) {
+    const changed = await changeToChain(chainId);
+    if (!changed) return { errorMessage: 'Unable to change to selected network!' };
+  }
+
+  try {
+    const { to, value, data } = transaction;
+    const tx = {
+      from: providerAddress,
+      to,
+      data,
+      value: prepareValueForRpcCall(value),
+    };
+    // @ts-ignore
+    transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+  } catch (e) {
+    if (e instanceof Error) {
+      errorMessage = e?.message;
+    }
+  }
+
+  return { transactionHash, errorMessage };
+}
+
+const prepareValueForRpcCall = (rawValue: any): string | undefined => {
+  let value;
+
+  try {
+    const valueBN = ethers.BigNumber.isBigNumber(rawValue)
+      ? rawValue
+      : ethers.BigNumber.from(rawValue);
+    if (!valueBN.isZero()) value = valueBN.toString();
+  } catch (e) {
+    //
+  }
+
+  return value;
+}
+
+export const estimateCrossChainAction = async (
+  sdk: EtherspotSdk | null,
+  web3Provider: WalletProviderLike | Web3WalletProvider | null,
+  crossChainAction: ICrossChainAction,
+  providerAddress?: string | null,
+): Promise<ICrossChainActionEstimation> => {
+  let gasCost = null;
+  let usdPrice = null;
+  let errorMessage;
+
+  if (!sdk || (crossChainAction.useWeb3Provider && !web3Provider)) {
+    return { errorMessage: 'Failed to estimate!' };
+  }
+
+  if (crossChainAction.useWeb3Provider) {
+    let gasLimit = ethers.BigNumber.from(0);
+
+    try {
+      for (const transactionsToSend of crossChainAction.transactions) {
+        const {
+          to,
+          data,
+          value
+        } = transactionsToSend;
+        // @ts-ignore
+        const estimatedTx = await web3Provider.sendRequest('eth_estimateGas', [{
+          from: providerAddress,
+          to,
+          value: prepareValueForRpcCall(value),
+          data,
+        }]);
+        gasLimit = gasLimit.add(estimatedTx);
+      }
+      if (!gasLimit.isZero()) gasCost = gasLimit;
+    } catch (e) {
+      if (e instanceof Error) {
+        errorMessage = e?.message;
+      }
+    }
+
+    try {
+      usdPrice = await getNativeAssetPriceInUsd(crossChainAction.chainId);
+    } catch (e) {
+      //
+    }
+  } else {
+    try {
+      if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
+        await sdk.computeContractAccount({ sync: true });
+      }
+
+      sdk.clearGatewayBatch();
+
+      // sequential
+      for (const transactionsToSend of crossChainAction.transactions) {
+        const { to, value, data } = transactionsToSend;
+        await sdk.batchExecuteAccountTransaction({ to, value, data });
+      }
+
+      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch();
+      gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
+    } catch (e) {
+      errorMessage = parseEtherspotErrorMessageIfAvailable(e);
+      if (!errorMessage && e instanceof Error) {
+        errorMessage = e?.message;
+      }
+    }
+  }
+
+  try {
+    usdPrice = await getNativeAssetPriceInUsd(crossChainAction.chainId);
+  } catch (e) {
+    //
+  }
+
+  return { gasCost, errorMessage, usdPrice }
+}
+
 export const getTransactionExplorerLink = (chainId: number, transactionHash?: string): string | null => {
   const explorerUrl = supportedChains.find((chain) => chain.chainId === chainId)?.explorerUrl;
   if (!explorerUrl || !transactionHash) return null;
   return `${explorerUrl}${transactionHash}`;
 }
+
+// 0,10 – first 4 bytes
+const ERC20ApprovalMethodId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('approve(address,uint256)')).slice(0, 10);
+
+export const isERC20ApprovalTransactionData = (data: string | undefined): boolean => {
+  if (!data) return false
+  return data.toLowerCase().startsWith(ERC20ApprovalMethodId.toLowerCase());
+}
+
+export const getFirstCrossChainActionByStatus = (
+  crossChainActions: ICrossChainAction[],
+  status: string
+): ICrossChainAction | undefined => crossChainActions.find(({
+  transactions,
+}) => transactions.find((transaction) => transaction.status === status));
+
+export const getCrossChainActionTransactionsByStatus = (
+  crossChainActionTransactions: ICrossChainActionTransaction[],
+  status: string
+): ICrossChainActionTransaction[] => crossChainActionTransactions.filter((
+  transaction,
+) => transaction.status === status);
+
+export const updateCrossChainActionsTransactionsStatus = (
+  crossChainActions: ICrossChainAction[],
+  status: string
+): ICrossChainAction[] => crossChainActions.map((crossChainActionToDispatch) => ({
+  ...crossChainActionToDispatch,
+  transactions: crossChainActionToDispatch.transactions.map((transaction) => ({
+    ...transaction,
+    status,
+  })),
+}));
+export const rejectUnsentCrossChainActionsTransactions = (
+  crossChainActions: ICrossChainAction[],
+): ICrossChainAction[] => crossChainActions.map((crossChainActionToDispatch) => ({
+  ...crossChainActionToDispatch,
+  transactions: crossChainActionToDispatch.transactions.map((transaction) => {
+    if (transaction.status !== CROSS_CHAIN_ACTION_STATUS.UNSENT) return transaction;
+    return { ...transaction, status: CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER };
+  }),
+}));
+
