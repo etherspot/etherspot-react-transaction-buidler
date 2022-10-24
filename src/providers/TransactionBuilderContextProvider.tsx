@@ -27,7 +27,8 @@ import {
 import {
   buildCrossChainAction,
   estimateCrossChainAction,
-  submitTransactions,
+  submitEtherspotTransactionsBatch,
+  submitWeb3ProviderTransaction,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -43,7 +44,10 @@ import History from '../components/History';
 import { Theme } from '../utils/theme';
 import Card from '../components/Card';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import { ICrossChainAction } from '../types/crossChainAction';
+import {
+  ICrossChainAction,
+  ICrossChainActionTransaction,
+} from '../types/crossChainAction';
 
 export type TransactionBlockValues = SendAssetTransactionBlockValues
   & AssetBridgeTransactionBlockValues
@@ -315,14 +319,19 @@ const TransactionBuilderContextProvider = ({
         return { ...crossChainAction, isEstimating: true };
       }));
 
-      const estimated = await estimateCrossChainAction(getSdkForChainId(crossChainAction.chainId), crossChainAction);
+      const estimated = await estimateCrossChainAction(
+        getSdkForChainId(crossChainAction.chainId),
+        web3Provider,
+        crossChainAction,
+        providerAddress,
+      );
 
       setCrossChainActions((current) => current.map((currentCrossChainAction) => {
         if (currentCrossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
         return { ...crossChainAction, isEstimating: false, estimated };
       }));
     });
-  }, [crossChainActions, setCrossChainActions, getSdkForChainId]);
+  }, [crossChainActions, setCrossChainActions, getSdkForChainId, web3Provider, providerAddress]);
 
   useEffect(() => { estimateCrossChainActions(); }, [estimateCrossChainActions]);
 
@@ -520,17 +529,38 @@ const TransactionBuilderContextProvider = ({
                 signButtonDisabled={crossChainAction.isEstimating || isSigningAction}
                 onSign={async () => {
                   setIsSigningAction(true);
-                  const result = await submitTransactions(getSdkForChainId(crossChainAction.chainId) as Sdk, web3Provider, crossChainAction.transactions, providerAddress, crossChainAction.useWeb3Provider);
-                  if (result.errorMessage || !(result.transactionHash?.length || result.batchHash?.length)) {
+
+                  const result: {
+                    transactionHash?: string;
+                    errorMessage?: string;
+                    batchHash?: string;
+                  } = crossChainAction.useWeb3Provider
+                    ? await submitWeb3ProviderTransaction(web3Provider, crossChainAction.transactions[0], crossChainAction.chainId, providerAddress)
+                    : await submitEtherspotTransactionsBatch(getSdkForChainId(crossChainAction.chainId) as Sdk, crossChainAction.transactions);
+
+                  if (result?.errorMessage || (!result?.transactionHash?.length && !result?.batchHash?.length)) {
                     setIsSigningAction(false);
                     showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
                     return;
                   }
 
                   const { transactionHash, batchHash } = result;
+
+                  const updatedTransactions = crossChainAction.transactions.reduce((
+                    updated: ICrossChainActionTransaction[],
+                    transaction,
+                    index,
+                  ) => {
+                    if (!crossChainAction.useWeb3Provider || index === 0) {
+                      return [...updated, { ...transaction, transactionHash }];
+                    }
+
+                    return [...updated, transaction];
+                  }, []);
+
                   const mappedPendingCrossChainAction = {
                     ...crossChainAction,
-                    transactionHash,
+                    transactions: updatedTransactions,
                     batchHash,
                   };
 

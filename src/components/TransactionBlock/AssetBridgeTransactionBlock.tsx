@@ -54,6 +54,7 @@ export interface AssetBridgeTransactionBlockValues {
   toAssetIconUrl?: string;
   toAssetUsdPrice?: number;
   amount?: string;
+  accountType?: string;
   route?: Route;
   receiverAddress?: string;
 }
@@ -120,7 +121,7 @@ const AssetBridgeTransactionBlock = ({
 
   const theme: Theme = useTheme();
 
-  const { sdk, providerAddress } = useEtherspot();
+  const { sdk, providerAddress, accountAddress } = useEtherspot();
 
   useEffect(() => {
     if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
@@ -128,6 +129,15 @@ const AssetBridgeTransactionBlock = ({
       setSelectedToAsset(null);
     }
   }, [selectedFromNetwork, selectedToNetwork]);
+
+  useEffect(() => {
+    setSelectedFromNetwork(null);
+    setSelectedFromAsset(null);
+    setSelectedToNetwork(null);
+    setSelectedToAsset(null);
+    setAvailableRoutes(null);
+    setSelectedRoute(null);
+  }, [selectedAccountType]);
 
   useEffect(() => {
     setSelectedRoute(null);
@@ -138,9 +148,18 @@ const AssetBridgeTransactionBlock = ({
 
   const receiverAddress = useMemo(() => {
     if (useCustomAddress) return customReceiverAddress;
-    if (selectedReceiveAccountType === AccountTypes.Key) return providerAddress;
-    return null;
-  }, [useCustomAddress, customReceiverAddress, providerAddress, selectedReceiveAccountType]);
+    if (selectedReceiveAccountType === selectedAccountType) return null;
+    return selectedReceiveAccountType === AccountTypes.Key
+      ? providerAddress
+      : accountAddress;
+  }, [
+    useCustomAddress,
+    customReceiverAddress,
+    providerAddress,
+    selectedReceiveAccountType,
+    selectedAccountType,
+    accountAddress,
+  ]);
 
   const updateAvailableRoutes = useCallback(debounce(async () => {
     setSelectedRoute(null);
@@ -213,6 +232,7 @@ const AssetBridgeTransactionBlock = ({
         toAssetIconUrl: selectedToAsset?.logoURI,
         toAssetUsdPrice: selectedToAsset?.assetPriceUsd ?? undefined,
         receiverAddress: receiverAddress ?? undefined,
+        accountType: selectedAccountType,
         amount,
         route,
       });
@@ -226,6 +246,7 @@ const AssetBridgeTransactionBlock = ({
     amount,
     selectedRoute,
     receiverAddress,
+    selectedAccountType,
   ]);
 
   const availableRoutesOptions = useMemo(
@@ -269,13 +290,7 @@ const AssetBridgeTransactionBlock = ({
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          if (accountType === AccountTypes.Key) {
-            alert('Not supported yet!');
-            return;
-          }
-          setSelectedAccountType(accountType);
-        }}
+        onChange={setSelectedAccountType}
         errorMessage={errorMessages?.fromWallet}
       />
       <NetworkAssetSelectInput
@@ -297,6 +312,7 @@ const AssetBridgeTransactionBlock = ({
           || errorMessages?.fromAssetAddress
           || errorMessages?.fromAssetDecimals
         }
+        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
       />
@@ -319,6 +335,7 @@ const AssetBridgeTransactionBlock = ({
         }
         disabled={!selectedFromNetwork || !selectedFromAsset}
         hideChainIds={selectedFromNetwork ? [selectedFromNetwork.chainId] : undefined}
+        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
