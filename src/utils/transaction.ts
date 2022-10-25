@@ -16,7 +16,6 @@ import { ExecuteAccountTransactionDto } from 'etherspot/dist/sdk/dto/execute-acc
 
 import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
-import { AddedTransactionBlock } from '../providers/TransactionBuilderContextProvider';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import {
   addressesEqual,
@@ -40,11 +39,12 @@ import {
   ICrossChainAction,
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
+import { ITransactionBlock } from '../types/transactionBlock';
 
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
-  transactionBlock: AddedTransactionBlock,
+  transactionBlock: ITransactionBlock,
 ): Promise<{ errorMessage?: string; crossChainAction?: ICrossChainAction; }> => {
   const createTimestamp = +new Date();
   const crossChainActionId = uniqueId(`${createTimestamp}-`);
@@ -181,21 +181,24 @@ export const buildCrossChainAction = async (
   }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE
-    && !!transactionBlock?.values?.fromChainId
-    && !!transactionBlock?.values?.toChainId
-    && !!transactionBlock?.values?.toAssetAddress
-    && !!transactionBlock?.values?.fromAssetAddress
-    && !!transactionBlock?.values?.fromAssetDecimals
+    && !!transactionBlock?.values?.fromChain
+    && !!transactionBlock?.values?.toChain
+    && !!transactionBlock?.values?.toAsset
+    && !!transactionBlock?.values?.fromAsset
     && !!transactionBlock?.values?.amount
     && !!transactionBlock?.values?.route) {
     try {
       const {
         values: {
-          fromChainId,
-          toChainId,
-          fromAssetIconUrl,
-          toAssetIconUrl,
-          toAssetUsdPrice,
+          fromChain: { chainId: fromChainId },
+          toChain: { chainId: toChainId },
+          fromAsset: {
+            logoURI: fromAssetIconUrl,
+          },
+          toAsset: {
+            logoURI: toAssetIconUrl,
+            assetPriceUsd: toAssetUsdPrice,
+          },
           route,
           accountType,
         },
@@ -222,7 +225,7 @@ export const buildCrossChainAction = async (
           symbol: route.toToken.symbol,
           amount: route.toAmount,
           iconUrl: toAssetIconUrl,
-          usdPrice: toAssetUsdPrice,
+          usdPrice: toAssetUsdPrice ?? undefined,
         },
         receiverAddress: transactionBlock?.values?.receiverAddress,
       };
@@ -283,10 +286,8 @@ export const buildCrossChainAction = async (
   }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
-    && !!transactionBlock?.values?.chainId
-    && !!transactionBlock?.values?.assetAddress
-    && !!transactionBlock?.values?.assetDecimals
-    && !!transactionBlock?.values?.assetSymbol
+    && !!transactionBlock?.values?.chain
+    && !!transactionBlock?.values?.selectedAsset
     && !!transactionBlock?.values?.receiverAddress
     && !!transactionBlock?.values?.fromAddress
     && transactionBlock?.values?.isFromEtherspotWallet !== undefined
@@ -294,12 +295,14 @@ export const buildCrossChainAction = async (
     try {
       const {
         values: {
-          chainId,
-          assetAddress,
-          assetDecimals,
-          assetSymbol,
-          assetIconUrl,
-          assetUsdPrice,
+          chain: { chainId },
+          selectedAsset: {
+            address: assetAddress,
+            decimals: assetDecimals,
+            symbol: assetSymbol,
+            logoURI: assetIconUrl,
+            assetPriceUsd: assetUsdPrice,
+          },
           receiverAddress,
           amount,
           fromAddress,
@@ -320,7 +323,7 @@ export const buildCrossChainAction = async (
           symbol: assetSymbol,
           amount: amountBN.toString(),
           iconUrl: assetIconUrl,
-          usdPrice: assetUsdPrice,
+          usdPrice: assetUsdPrice ?? undefined,
         },
       };
 
@@ -367,31 +370,30 @@ export const buildCrossChainAction = async (
   }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP
-    && !!transactionBlock?.values?.chainId
-    && !!transactionBlock?.values?.fromAssetAddress
-    && !!transactionBlock?.values?.fromAssetDecimals
-    && !!transactionBlock?.values?.fromAssetSymbol
-    && !!transactionBlock?.values?.toAssetAddress
-    && !!transactionBlock?.values?.toAssetDecimals
-    && !!transactionBlock?.values?.toAssetSymbol
+    && !!transactionBlock?.values?.chain
+    && !!transactionBlock?.values?.fromAsset
+    && !!transactionBlock?.values?.toAsset
     && !!transactionBlock?.values?.amount
     && !!transactionBlock?.values?.offer) {
     try {
       const {
         values: {
           amount,
-          chainId,
-          fromAssetAddress,
-          fromAssetDecimals,
-          fromAssetSymbol,
-          fromAssetIconUrl,
-          toAssetAddress,
-          toAssetDecimals,
-          toAssetSymbol,
-          toAssetIconUrl,
+          chain: { chainId },
+          fromAsset: {
+            address: fromAssetAddress,
+            symbol: fromAssetSymbol,
+            decimals: fromAssetDecimals,
+            logoURI: fromAssetIconUrl,
+          },
+          toAsset: {
+            address: toAssetAddress,
+            symbol: toAssetSymbol,
+            decimals: toAssetDecimals,
+            logoURI: toAssetIconUrl,
+          },
           offer,
           receiverAddress,
-          toAssetUsdPrice,
           accountType,
         },
       } = transactionBlock;
@@ -415,7 +417,6 @@ export const buildCrossChainAction = async (
           symbol: toAssetSymbol,
           amount: offer.receiveAmount.toString(),
           iconUrl: toAssetIconUrl,
-          usdPrice: toAssetUsdPrice,
         },
         providerName: swapServiceDetails.title ?? 'Unknown provider',
         providerIconUrl: swapServiceDetails?.iconUrl,

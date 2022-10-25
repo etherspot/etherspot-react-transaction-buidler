@@ -32,9 +32,6 @@ import {
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
-import { AssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
-import { SendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
-import { SwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
 import { ActionPreview } from '../components/TransactionPreview';
 import {
   getTimeBasedUniqueId,
@@ -48,26 +45,16 @@ import {
   ICrossChainAction,
   ICrossChainActionTransaction,
 } from '../types/crossChainAction';
-
-export type TransactionBlockValues = SendAssetTransactionBlockValues
-  & AssetBridgeTransactionBlockValues
-  & SwapAssetTransactionBlockValues;
-
-export interface AddedTransactionBlock {
-  id: string;
-  type: string;
-  values?: TransactionBlockValues;
-  errorMessages?: ErrorMessages;
-}
-
-export interface AvailableTransactionBlock {
-  title?: string;
-  type: string;
-}
+import {
+  IDefaultTransactionBlock,
+  ITransactionBlock,
+  ITransactionBlockType,
+  ITransactionBlockValues,
+} from '../types/transactionBlock';
 
 export interface TransactionBuilderContextProps {
-  defaultTransactionBlocks?: AvailableTransactionBlock[];
-  hiddenTransactionBlockTypes?: string[];
+  defaultTransactionBlocks?: IDefaultTransactionBlock[];
+  hiddenTransactionBlockTypes?: ITransactionBlockType[];
   hideAddTransactionButton?: boolean;
 }
 
@@ -184,36 +171,48 @@ const AddTransactionButton = styled(SecondaryButton)`
   }
 `;
 
-const availableTransactionBlocks: AvailableTransactionBlock[] = [
+const availableTransactionBlocks: ITransactionBlock[] = [
   {
+    id: getTimeBasedUniqueId(),
     title: 'Asset bridge',
     type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
   },
   {
+    id: getTimeBasedUniqueId(),
     title: 'Send asset',
     type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
   },
   {
+    id: getTimeBasedUniqueId(),
     title: 'Swap asset',
     type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
   },
   {
+    id: getTimeBasedUniqueId(),
     title: 'LiFi staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
+    id: getTimeBasedUniqueId(),
     title: 'Uniswap LP (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
+    id: getTimeBasedUniqueId(),
     title: 'Sushiswap LP (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
+    id: getTimeBasedUniqueId(),
     title: 'Quickswap LP (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   }
 ];
+
+const addIdToDefaultTransactionBlock = (transactionBlock: IDefaultTransactionBlock) => ({
+  ...transactionBlock,
+  id: getTimeBasedUniqueId(),
+});
 
 const TransactionBuilderContextProvider = ({
   defaultTransactionBlocks,
@@ -226,9 +225,8 @@ const TransactionBuilderContextProvider = ({
     throw new Error('<EtherspotContextProvider /> has already been declared.')
   }
 
-  const [transactionBlocks, setTransactionBlocks] = useState<AddedTransactionBlock[]>(
-    defaultTransactionBlocks?.map((defaultTransactionBlock) => ({ ...defaultTransactionBlock, id: getTimeBasedUniqueId() })) ?? []
-  );
+  const mappedDefaultTransactionBlocks = defaultTransactionBlocks ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock) : [];
+  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>(mappedDefaultTransactionBlocks);
 
   const [transactionBlockValidationErrors, setTransactionBlockValidationErrors] = useState<{ [id: string]: ErrorMessages }>({});
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
@@ -359,12 +357,14 @@ const TransactionBuilderContextProvider = ({
     setIsSubmitting(false);
   }, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting, isEstimatingCrossChainActions]);
 
-  const setTransactionBlockValues = useCallback((transactionBlockId: string, values: TransactionBlockValues) => {
+  const setTransactionBlockValues = (transactionBlockId: string, values: ITransactionBlockValues) => {
+    // TODO: fix type
+    // @ts-ignore
     setTransactionBlocks((current) => current.map((transactionBlock) => {
       if (transactionBlock.id !== transactionBlockId) return transactionBlock;
       return { ...transactionBlock, values };
     }));
-  }, []);
+  }
 
   const resetTransactionBlockFieldValidationError = (transactionBlockId: string, field: string) => {
     setTransactionBlockValidationErrors((current) => ({
@@ -398,9 +398,7 @@ const TransactionBuilderContextProvider = ({
       resetAllTransactionBlockFieldValidationError,
       setTransactionBlockFieldValidationError,
     }),
-    [
-      setTransactionBlockValues,
-    ],
+    [],
   );
 
   const hideMenu = () => setShowMenu(false);
@@ -465,8 +463,7 @@ const TransactionBuilderContextProvider = ({
               >
                 <TransactionBlock
                   key={`block-${transactionBlock.id}`}
-                  id={transactionBlock.id}
-                  type={transactionBlock.type}
+                  {...transactionBlock}
                   errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                 />
               </Card>
@@ -501,7 +498,7 @@ const TransactionBuilderContextProvider = ({
                         key={availableTransactionBlock.title}
                         onClick={() => {
                           if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled) return;
-                          const transactionBlock = {
+                          const transactionBlock: ITransactionBlock = {
                             ...availableTransactionBlock,
                             id: getTimeBasedUniqueId(),
                           };

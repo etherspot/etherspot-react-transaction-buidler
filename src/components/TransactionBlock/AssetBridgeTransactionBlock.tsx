@@ -23,7 +23,7 @@ import {
   formatMaxAmount,
 } from '../../utils/common';
 import {
-  ErrorMessages,
+  addressesEqual,
   isValidAmount,
   isValidEthereumAddress,
 } from '../../utils/validation';
@@ -43,16 +43,13 @@ import Text from '../Text/Text';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { Route } from '@lifi/sdk';
 import Checkbox from '../Checkbox';
+import { IAssetBridgeTransactionBlock } from '../../types/transactionBlock';
 
-export interface AssetBridgeTransactionBlockValues {
-  fromChainId?: number;
-  toChainId?: number;
-  fromAssetAddress?: string;
-  fromAssetIconUrl?: string;
-  fromAssetDecimals?: number;
-  toAssetAddress?: string;
-  toAssetIconUrl?: string;
-  toAssetUsdPrice?: number;
+export interface IAssetBridgeTransactionBlockValues {
+  fromChain?: Chain;
+  toChain?: Chain;
+  fromAsset?: IAssetWithBalance;
+  toAsset?: IAssetWithBalance;
   amount?: string;
   accountType?: string;
   route?: Route;
@@ -96,22 +93,34 @@ const mapRouteToOption = (route: Route) => {
 const AssetBridgeTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
-}: {
-  id: string;
-  errorMessages?: ErrorMessages;
-}) => {
-  const [amount, setAmount] = useState<string>('');
-  const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedToAsset, setSelectedToAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
-  const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
-  const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(null);
+  values,
+}: IAssetBridgeTransactionBlock) => {
+  const { sdk, providerAddress, accountAddress } = useEtherspot();
+
+  const [amount, setAmount] = useState<string>(values?.amount ?? '');
+  const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
+  const [selectedToAsset, setSelectedToAsset] = useState<IAssetWithBalance | null>(values?.toAsset ?? null);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
+  const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(values?.fromChain ?? null);
+  const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(values?.toChain ?? null);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(null);
-  const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(null);
-  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(AccountTypes.Contract);
+
+  const defaultCustomReceiverAddress = values?.receiverAddress
+    && !addressesEqual(providerAddress, values?.receiverAddress)
+    && !addressesEqual(accountAddress, values?.receiverAddress)
+    ? values.receiverAddress
+    : null;
+  const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
+  const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
+
+  const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
+    || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
+    ? AccountTypes.Key
+    : AccountTypes.Contract;
+  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(defaultSelectedReceiveAccountType);
+
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
-  const [useCustomAddress, setUseCustomAddress] = useState<boolean>(false);
 
   const {
     setTransactionBlockValues,
@@ -119,9 +128,7 @@ const AssetBridgeTransactionBlock = ({
     setTransactionBlockFieldValidationError,
   } = useTransactionBuilder();
 
-  const theme: Theme = useTheme();
-
-  const { sdk, providerAddress, accountAddress } = useEtherspot();
+  const theme: Theme = useTheme()
 
   useEffect(() => {
     if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
@@ -131,19 +138,10 @@ const AssetBridgeTransactionBlock = ({
   }, [selectedFromNetwork, selectedToNetwork]);
 
   useEffect(() => {
-    setSelectedFromNetwork(null);
-    setSelectedFromAsset(null);
-    setSelectedToNetwork(null);
-    setSelectedToAsset(null);
-    setAvailableRoutes(null);
-    setSelectedRoute(null);
-  }, [selectedAccountType]);
-
-  useEffect(() => {
     setSelectedRoute(null);
     resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
   }, [selectedToNetwork, selectedFromNetwork]);
 
   const receiverAddress = useMemo(() => {
@@ -220,25 +218,18 @@ const AssetBridgeTransactionBlock = ({
   }, [selectedFromAsset, selectedToAsset]);
 
   useEffect(() => {
-    if (setTransactionBlockValues) {
-      const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
-      setTransactionBlockValues(transactionBlockId, {
-        fromChainId: selectedFromNetwork?.chainId,
-        toChainId: selectedToNetwork?.chainId,
-        fromAssetAddress: selectedFromAsset?.address,
-        fromAssetDecimals: selectedFromAsset?.decimals,
-        fromAssetIconUrl: selectedFromAsset?.logoURI,
-        toAssetAddress: selectedToAsset?.address,
-        toAssetIconUrl: selectedToAsset?.logoURI,
-        toAssetUsdPrice: selectedToAsset?.assetPriceUsd ?? undefined,
-        receiverAddress: receiverAddress ?? undefined,
-        accountType: selectedAccountType,
-        amount,
-        route,
-      });
-    }
+    const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
+    setTransactionBlockValues(transactionBlockId, {
+      fromChain: selectedFromNetwork ?? undefined,
+      toChain: selectedToNetwork ?? undefined,
+      fromAsset: selectedFromAsset ?? undefined,
+      toAsset: selectedToAsset ?? undefined,
+      receiverAddress: receiverAddress ?? undefined,
+      accountType: selectedAccountType,
+      amount,
+      route,
+    });
   }, [
-    setTransactionBlockValues,
     selectedFromNetwork,
     selectedToNetwork,
     selectedFromAsset,
@@ -290,28 +281,34 @@ const AssetBridgeTransactionBlock = ({
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}
-        onChange={setSelectedAccountType}
-        errorMessage={errorMessages?.fromWallet}
+        onChange={(accountType) => {
+          if (accountType !== selectedAccountType) {
+            setSelectedFromNetwork(null);
+            setSelectedFromAsset(null);
+            setSelectedToNetwork(null);
+            setSelectedToAsset(null);
+            setAvailableRoutes(null);
+            setSelectedRoute(null);
+          }
+          setSelectedAccountType(accountType);
+        }}
+        errorMessage={errorMessages?.accountType}
       />
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAsset');
           setSelectedFromAsset(asset);
           setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
         }}
         onNetworkSelect={(network) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChain');
           setSelectedFromNetwork(network);
         }}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
-        errorMessage={errorMessages?.fromChainId
-          || errorMessages?.fromAssetAddress
-          || errorMessages?.fromAssetDecimals
-        }
+        errorMessage={errorMessages?.fromChain || errorMessages?.fromAsset}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
@@ -319,20 +316,16 @@ const AssetBridgeTransactionBlock = ({
       <NetworkAssetSelectInput
         label="To"
         onAssetSelect={(asset) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetDecimals');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
           setSelectedToAsset(asset);
         }}
         onNetworkSelect={(network) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toChainId');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'toChain');
           setSelectedToNetwork(network);
         }}
         selectedNetwork={selectedToNetwork}
         selectedAsset={selectedToAsset}
-        errorMessage={errorMessages?.toChainId
-          || errorMessages?.toAssetAddress
-          || errorMessages?.toAssetDecimals
-        }
+        errorMessage={errorMessages?.toChain || errorMessages?.toAsset}
         disabled={!selectedFromNetwork || !selectedFromAsset}
         hideChainIds={selectedFromNetwork ? [selectedFromNetwork.chainId] : undefined}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}

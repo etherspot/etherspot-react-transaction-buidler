@@ -28,16 +28,13 @@ import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import AccountSwitchInput from '../AccountSwitchInput';
+import { ISendAssetTransactionBlock } from '../../types/transactionBlock';
 
-export interface SendAssetTransactionBlockValues {
+export interface ISendAssetTransactionBlockValues {
   fromAddress?: string;
   receiverAddress?: string;
-  chainId?: number;
-  assetAddress?: string;
-  assetDecimals?: number;
-  assetSymbol?: string;
-  assetIconUrl?: string,
-  assetUsdPrice?: number,
+  chain?: Chain;
+  selectedAsset?: IAssetWithBalance;
   amount?: string;
   isFromEtherspotWallet?: boolean;
 }
@@ -53,16 +50,14 @@ const Title = styled.h3`
 const SendAssetTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
-}: {
-  id: string;
-  errorMessages?: ErrorMessages;
-}) => {
-  const [receiverAddress, setReceiverAddress] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [selectedAsset, setSelectedAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(null);
-  const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(true);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
+  values,
+}: ISendAssetTransactionBlock) => {
+  const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
+  const [amount, setAmount] = useState<string>(values?.amount ?? '');
+  const [selectedAsset, setSelectedAsset] = useState<IAssetWithBalance | null>(values?.selectedAsset ?? null);
+  const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
+  const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(values?.isFromEtherspotWallet ?? true);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>((values?.isFromEtherspotWallet ?? true) ? AccountTypes.Contract : AccountTypes.Key);
 
   const theme: Theme = useTheme();
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
@@ -86,22 +81,15 @@ const SendAssetTransactionBlock = ({
   }, []);
 
   useEffect(() => {
-    if (setTransactionBlockValues) {
-      setTransactionBlockValues(transactionBlockId, {
-        chainId: isFromEtherspotWallet ? selectedNetwork?.chainId : chainId,
-        assetAddress: selectedAsset?.address,
-        assetSymbol: selectedAsset?.symbol,
-        assetDecimals: selectedAsset?.decimals,
-        assetIconUrl: selectedAsset?.logoURI,
-        assetUsdPrice: selectedAsset?.assetPriceUsd ?? undefined,
-        amount,
-        receiverAddress,
-        isFromEtherspotWallet,
-        fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
-      });
-    }
+    setTransactionBlockValues(transactionBlockId, {
+      chain: selectedNetwork ?? undefined,
+      selectedAsset: selectedAsset ?? undefined,
+      amount,
+      receiverAddress,
+      isFromEtherspotWallet,
+      fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
+    });
   }, [
-    setTransactionBlockValues,
     selectedNetwork,
     selectedAsset,
     receiverAddress,
@@ -133,7 +121,7 @@ const SendAssetTransactionBlock = ({
         label="From wallet"
         selectedAccountType={selectedAccountType}
         onChange={(accountType) => {
-          if (accountType === AccountTypes.Key) {
+          if (accountType !== selectedAccountType) {
             setSelectedNetwork(null);
             setSelectedAsset(null);
           }
@@ -141,29 +129,23 @@ const SendAssetTransactionBlock = ({
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
           setSelectedAccountType(accountType);
         }}
-        errorMessage={errorMessages?.fromWallet}
+        errorMessage={errorMessages?.accountType}
       />
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'assetDecimals');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'assetAddress');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'assetSymbol');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'selectedAsset');
           setSelectedAsset(asset);
           setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
         }}
         onNetworkSelect={(network) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'chain');
           setSelectedNetwork(network);
         }}
         selectedNetwork={selectedNetwork}
         selectedAsset={selectedAsset}
-        errorMessage={errorMessages?.chainId
-          || errorMessages?.assetDecimals
-          || errorMessages?.assetAddress
-          || errorMessages?.assetSymbol
-        }
+        errorMessage={errorMessages?.chain || errorMessages?.selectedAsset}
         hideChainIds={hideChainIds}
         walletAddress={isFromEtherspotWallet ? accountAddress : providerAddress}
         showPositiveBalanceAssets
