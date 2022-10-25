@@ -1,6 +1,17 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Etherspot Transaction Builder Example
+
+### Here we've displayed three different types of transactions:
+#### 1. Swap (Same Chain)
+#### 2. Swap (Cross-Chain)
+#### 3. Send
+
+
+## IMPORTANT 📢 
+You need to create a .env file and add this variable **SKIP_PREFLIGHT_CHECK=true** to run the example app
+
+The implementation of the transactions has been carried out by using the [BUILDer Component](https://www.npmjs.com/package/@etherspot/react-transaction-buidler) 
+
 
 ## Available Scripts
 
