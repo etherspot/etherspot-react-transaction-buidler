@@ -182,3 +182,48 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
   },
 };
+
+export const changeToChain = async (chainId: number): Promise<boolean> => {
+  // @ts-ignore
+  if (!window?.ethereum) {
+    alert('Unsupported browser!');
+    return false;
+  }
+
+  const supportedChain = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
+  if (!supportedChain) {
+    alert('Unsupported chain!');
+    return false;
+  }
+
+  try {
+    // @ts-ignore
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: ethers.utils.hexlify(chainId) }], // chainId must be in hexadecimal numbers
+    });
+    return true;
+  } catch (error) {
+    // @ts-ignore
+    if (error.code === 4902) {
+      try {
+        // @ts-ignore
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              title: supportedChain.title,
+              chainId: ethers.utils.hexlify(chainId),
+            },
+          ],
+        });
+        return true;
+      } catch (e) {
+        //
+      }
+    }
+  }
+
+  alert(`Please manually switch to ${supportedChain.title}.`);
+  return false;
+}
