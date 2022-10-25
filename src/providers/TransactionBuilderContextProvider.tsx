@@ -189,7 +189,7 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
-    title: 'LiFi staking (not yet available)',
+    title: 'LI.FI staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
