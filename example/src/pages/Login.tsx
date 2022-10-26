@@ -29,9 +29,22 @@ const LoginContainer = styled.div`
 `;
 
 const Login = ({ connectWallet, connectedProvider }: LoginProps) => {
+  /**
+   * This is the login page through which you can connect the wallet
+   *
+   * @important  the page will automatically send the logged in user to the home page once you login
+   */
+
   const navigate = useNavigate();
+
+  // The useEffect over here checks if the user is logged in or not through the connectionProvider prop
   useEffect(() => {
     if (connectedProvider) {
+      /**
+       * This is the login page through which you can connect the wallet
+       *
+       * when it encounters the established connection, the @param  {string} navigate function will send direct the user to the home page
+       */
       navigate("/home");
     }
   }, [connectedProvider]);

@@ -23,6 +23,16 @@ const StyledButton = styled.span`
 `;
 
 const Home = ({ connectedProvider }: HomeProps) => {
+  /**
+   * This is the home page
+   *
+   * @important  this page has the list of transactions can be performed with the builder component
+   * On click of every button the user will be directed to the specific routes where they can perform their
+   * required transactions
+   *
+   * An example would be on clicking of the @param {string} navigate function, will move the user to the specific page assuming the
+   */
+
   const navigate = useNavigate();
   useEffect(() => {
     if (!connectedProvider) {

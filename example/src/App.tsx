@@ -7,6 +7,7 @@ import Send from "./pages/Send";
 import SingleSwap from "./pages/SingleSwap";
 import CrossSwap from "./pages/CrossSwap";
 
+// List of wallets
 const wallets = [
   { walletName: "metamask", preferred: true },
   {
@@ -17,6 +18,8 @@ const wallets = [
     },
   },
 ];
+
+// Chain ID
 const chainId = 1;
 
 const WalletService = () =>
@@ -30,6 +33,7 @@ const App = () => {
 
   const walletService = useMemo(() => WalletService(), []);
 
+  // Callback function to connect to an external wallet
   const connectWithExternal = useCallback(async () => {
     await walletService.walletSelect().catch(() => null);
     await walletService.walletCheck().catch(() => null);
