@@ -113,7 +113,7 @@ const EtherspotContextProvider = ({
       networkName,
       env: envName,
       sessionStorage,
-      projectKey: process.env.ETHERSPOT_PROJECT_KEY ?? undefined,
+      projectKey: '__ETHERSPOT_PROJECT_KEY__' || undefined,
       omitWalletProviderNetworkCheck: true,
     });
 
