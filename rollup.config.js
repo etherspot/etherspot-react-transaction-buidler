@@ -42,6 +42,8 @@ export default [
       }),
       injectProcessEnv({
         ETHERSPOT_PROJECT_KEY: process.env.ETHERSPOT_PROJECT_KEY,
+      },{
+        exclude: ['node_modules/**/*'],
       }),
       // terser(),
     ],
