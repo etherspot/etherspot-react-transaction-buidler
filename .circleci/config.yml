@@ -45,6 +45,9 @@ jobs:
           name: Authenticate with registry
           command: echo "//registry.npmjs.org/:_authToken=$ETHERSPOT_NPM_TOKEN" > ~/etherspot-react-transaction-buidler/.npmrc
       - run:
+          name: Set Etherspot project key variable
+          command: echo "ETHERSPOT_PROJECT_KEY=$ETHERSPOT_PROJECT_KEY" > ~/etherspot-react-transaction-buidler/.env
+      - run:
           name: Build Etherpot React Transaction BUIDLer
           command: npm run rollup:build
       - run:
