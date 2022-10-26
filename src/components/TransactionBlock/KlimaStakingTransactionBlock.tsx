@@ -34,8 +34,9 @@ import {
 } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
+import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 
-export interface KlimaStakingTransactionBlockValues {
+export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
   fromAssetAddress?: string;
   fromAssetIconUrl?: string;
@@ -55,10 +56,7 @@ const Title = styled.h3`
 const KlimaStakingTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
-}: {
-  id: string;
-  errorMessages?: ErrorMessages;
-}) => {
+}: IKlimaStakingTransactionBlock) => {
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedToAsset, setSelectedToAsset] = useState<IAssetWithBalance | null>(null);
@@ -96,18 +94,15 @@ const KlimaStakingTransactionBlock = ({
   }, [selectedFromAsset, selectedToAsset]);
 
   useEffect(() => {
-    if (setTransactionBlockValues) {
-      setTransactionBlockValues(transactionBlockId, {
-        fromChainId: selectedFromNetwork?.chainId,
-        fromAssetAddress: selectedFromAsset?.address,
-        fromAssetDecimals: selectedFromAsset?.decimals,
-        fromAssetSymbol: selectedFromAsset?.symbol,
-        fromAssetIconUrl: selectedFromAsset?.logoURI,
-        amount,
-      });
-    }
+    setTransactionBlockValues(transactionBlockId, {
+      fromChainId: selectedFromNetwork?.chainId,
+      fromAssetAddress: selectedFromAsset?.address,
+      fromAssetDecimals: selectedFromAsset?.decimals,
+      fromAssetSymbol: selectedFromAsset?.symbol,
+      fromAssetIconUrl: selectedFromAsset?.logoURI,
+      amount,
+    });
   }, [
-    setTransactionBlockValues,
     selectedFromNetwork,
     selectedToNetwork,
     selectedFromAsset,

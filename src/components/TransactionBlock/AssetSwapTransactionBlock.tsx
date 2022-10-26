@@ -38,18 +38,12 @@ import { Theme } from '../../utils/theme';
 import AccountSwitchInput from '../AccountSwitchInput';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import Text from '../Text/Text';
+import { IAssetSwapTransactionBlock } from '../../types/transactionBlock';
 
-export interface SwapAssetTransactionBlockValues {
-  chainId?: number;
-  fromAssetAddress?: string;
-  fromAssetDecimals?: number;
-  fromAssetSymbol?: string;
-  fromAssetIconUrl?: string;
-  toAssetAddress?: string;
-  toAssetDecimals?: number
-  toAssetSymbol?: string;
-  toAssetIconUrl?: string;
-  toAssetUsdPrice?: number;
+export interface ISwapAssetTransactionBlockValues {
+  chain?: Chain;
+  fromAsset?: IAssetWithBalance;
+  toAsset?: TokenListToken;
   amount?: string;
   receiverAddress?: string;
   isDifferentReceiverAddress?: boolean;
@@ -81,42 +75,36 @@ const mapOfferToOption = (offer: ExchangeOffer) => {
   };
 }
 
+const mapAssetToOption = (asset: TokenListToken) => ({
+  title: asset.symbol,
+  value: asset.address,
+  iconUrl: asset.logoURI,
+})
+
 const AssetSwapTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
-}: {
-  id: string;
-  errorMessages?: ErrorMessages;
-}) => {
-  const [amount, setAmount] = useState<string>('');
-  const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedToAsset, setSelectedToAsset] = useState<SelectOption | null>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(null);
+  values,
+}: IAssetSwapTransactionBlock) => {
+  const [amount, setAmount] = useState<string>(values?.amount ?? '');
+  const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
+  const [selectedToAsset, setSelectedToAsset] = useState<TokenListToken | null>(values?.toAsset ?? null);
+  const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(null);
   const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(null);
   const [isLoadingAvailableToAssets, setIsLoadingAvailableToAssets] = useState<boolean>(false);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
-  const [showReceiverInput] = useState<boolean>(false);
-  const [receiverAddress, setReceiverAddress] = useState<string>('');
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
+  const [showReceiverInput] = useState<boolean>(!!values?.receiverAddress);
+  const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract)
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
   const { sdk, getSupportedAssetsForChainId, accountAddress, providerAddress } = useEtherspot();
   const theme: Theme = useTheme();
 
   useEffect(() => {
-    setSelectedNetwork(null);
-    setSelectedFromAsset(null);
-    setSelectedToAsset(null);
-    setAvailableOffers(null);
-    setSelectedOffer(null);
-  }, [selectedAccountType]);
-
-  useEffect(() => {
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetDecimals');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetSymbol');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
   }, [selectedNetwork]);
 
@@ -141,7 +129,7 @@ const AssetSwapTransactionBlock = ({
         fromChainId: selectedNetwork.chainId,
         fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
         fromTokenAddress: selectedFromAsset.address,
-        toTokenAddress: selectedToAsset.value,
+        toTokenAddress: selectedToAsset.address,
       });
 
       setAvailableOffers(offers);
@@ -172,11 +160,7 @@ const AssetSwapTransactionBlock = ({
   useEffect(() => {  updateAvailableToAssets(); }, [updateAvailableToAssets]);
 
   const availableToAssetsOptions = useMemo(
-    () => availableToAssets?.map((availableAsset) => ({
-      title: availableAsset.symbol,
-      value: availableAsset.address,
-      iconUrl: availableAsset.logoURI,
-    })),
+    () => availableToAssets?.map(mapAssetToOption),
     [availableToAssets],
   );
 
@@ -193,28 +177,18 @@ const AssetSwapTransactionBlock = ({
   }, [selectedFromAsset]);
 
   useEffect(() => {
-    if (setTransactionBlockValues) {
-      const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
-      const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
-      setTransactionBlockValues(transactionBlockId, {
-        chainId: selectedNetwork?.chainId,
-        fromAssetAddress: selectedFromAsset?.address,
-        fromAssetSymbol: selectedFromAsset?.symbol,
-        fromAssetDecimals: selectedFromAsset?.decimals,
-        fromAssetIconUrl: selectedFromAsset?.logoURI,
-        toAssetAddress: toAsset?.address,
-        toAssetSymbol: toAsset?.symbol,
-        toAssetDecimals: toAsset?.decimals,
-        toAssetIconUrl: toAsset?.logoURI,
-        amount,
-        receiverAddress,
-        offer,
-        isDifferentReceiverAddress: showReceiverInput,
-        accountType: selectedAccountType,
-      });
-    }
+    const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
+    setTransactionBlockValues(transactionBlockId, {
+      chain: selectedNetwork ?? undefined,
+      fromAsset: selectedFromAsset ?? undefined,
+      toAsset: selectedToAsset ?? undefined,
+      amount,
+      receiverAddress,
+      offer,
+      isDifferentReceiverAddress: showReceiverInput,
+      accountType: selectedAccountType,
+    });
   }, [
-    setTransactionBlockValues,
     selectedNetwork,
     selectedFromAsset,
     selectedToAsset,
@@ -236,7 +210,7 @@ const AssetSwapTransactionBlock = ({
 
   const renderOption = (option: SelectOption) => {
     const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
-    const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.value));
+    const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, selectedToAsset?.address));
     const valueToReceive = availableOffer && formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals));
     return (
       <OfferDetails>
@@ -255,30 +229,33 @@ const AssetSwapTransactionBlock = ({
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}
-        onChange={setSelectedAccountType}
-        errorMessage={errorMessages?.fromWallet}
+        onChange={(accountType) => {
+          if (accountType !== selectedAccountType) {
+            setSelectedNetwork(null);
+            setSelectedFromAsset(null);
+            setSelectedToAsset(null);
+            setAvailableOffers(null);
+            setSelectedOffer(null);
+          }
+          setSelectedAccountType(accountType);
+        }}
+        errorMessage={errorMessages?.accountType}
       />
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAsset');
           setSelectedFromAsset(asset);
           setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
         }}
         onNetworkSelect={(network) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'chainId');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'chain');
           setSelectedNetwork(network);
         }}
         selectedNetwork={selectedNetwork}
         selectedAsset={selectedFromAsset}
-        errorMessage={errorMessages?.chainId
-          || errorMessages?.fromAssetAddress
-          || errorMessages?.fromAssetDecimals
-          || errorMessages?.fromAssetSymbol
-        }
+        errorMessage={errorMessages?.chain || errorMessages?.fromAsset}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
@@ -289,17 +266,13 @@ const AssetSwapTransactionBlock = ({
             label="To"
             options={availableToAssetsOptions ?? []}
             isLoading={isLoadingAvailableToAssets}
-            selectedOption={selectedToAsset}
-            onOptionSelect={(asset) => {
-              resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
-              resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetDecimals');
-              resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetSymbol');
-              setSelectedToAsset(asset);
+            selectedOption={selectedToAsset ? mapAssetToOption(selectedToAsset) : null}
+            onOptionSelect={(assetOption) => {
+              resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
+              const toAsset = availableToAssets?.find((availableAsset) => addressesEqual(availableAsset.address, assetOption?.value));
+              setSelectedToAsset(toAsset ?? null);
             }}
-            errorMessage={errorMessages?.toAssetAddress
-              || errorMessages?.toAssetDecimals
-              || errorMessages?.toAssetSymbol
-            }
+            errorMessage={errorMessages?.toAsset}
           />
           {!!selectedFromAsset && (
             <TextInput

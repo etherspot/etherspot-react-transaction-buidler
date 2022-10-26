@@ -1,10 +1,9 @@
 import React, { createContext } from 'react';
-
-import { TransactionBlockValues } from '../providers/TransactionBuilderContextProvider';
+import { ITransactionBlockValues } from '../types/transactionBlock';
 
 export interface TransactionBuilderContextData {
   data: {
-    setTransactionBlockValues: (id: string, values: TransactionBlockValues) => void;
+    setTransactionBlockValues: (id: string, values: ITransactionBlockValues) => void;
     resetTransactionBlockFieldValidationError: (id: string, field: string) => void;
     resetAllTransactionBlockFieldValidationError: (id: string) => void;
     setTransactionBlockFieldValidationError: (id: string, field: string, errorMessage: string) => void;

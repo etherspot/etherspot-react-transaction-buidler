@@ -85,7 +85,7 @@ export type ICrossChainAction = {
   estimated: ICrossChainActionEstimation | null;
   useWeb3Provider?: boolean;
   batchHash?: string;
-} & ( AssetBridgeAction
+} & (AssetBridgeAction
   | SendAssetAction
   | AssetSwapAction
   | KlimaStakingAction

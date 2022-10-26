@@ -13,12 +13,15 @@ import {
   TransactionsDispatcherContextProvider,
 } from '../providers';
 
-import { AvailableTransactionBlock } from '../providers/TransactionBuilderContextProvider';
 import { defaultTheme, Theme } from '../utils/theme';
+import {
+  IDefaultTransactionBlock,
+  ITransactionBlockType,
+} from '../types/transactionBlock';
 
 interface EtherspotProps {
-  defaultTransactionBlocks?: AvailableTransactionBlock[];
-  hiddenTransactionBlockTypes?: string[];
+  defaultTransactionBlocks?: IDefaultTransactionBlock[];
+  hiddenTransactionBlockTypes?: ITransactionBlockType[];
   provider: WalletProviderLike;
   chainId?: number;
   themeOverride?: Theme;
