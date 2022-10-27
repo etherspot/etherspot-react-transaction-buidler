@@ -79,6 +79,7 @@ export interface ICrossChainActionEstimation {
 
 export type ICrossChainAction = {
   id: string;
+  relatedTransactionBlockId: string;
   chainId: number;
   transactions: ICrossChainActionTransaction[];
   isEstimating: boolean;

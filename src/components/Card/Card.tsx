@@ -23,12 +23,23 @@ const Title = styled.h3`
   font-family: "PTRootUIWebBold", sans-serif;
 `;
 
+const TopButtonsWrapper = styled.div`
+  position: absolute;
+  top: 5px;
+  right: 12px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+`;
+
 interface CardProps {
   showCloseButton?: boolean;
   marginBottom?: number;
   title?: string;
   onCloseButtonClick?: () => void;
   children: React.ReactNode;
+  additionalTopButtons?: React.ReactNode[];
 }
 
 const Card = ({
@@ -37,11 +48,15 @@ const Card = ({
   onCloseButtonClick,
   marginBottom,
   title,
+  additionalTopButtons,
 }: CardProps) => (
   <Wrapper marginBottom={marginBottom}>
     {!!title && <Title>{title}</Title>}
     {children}
-    {showCloseButton && <CloseButton onClick={onCloseButtonClick} />}
+    <TopButtonsWrapper>
+      {!!additionalTopButtons?.length && additionalTopButtons.map((button) => button)}
+      {showCloseButton && <CloseButton onClick={onCloseButtonClick} top={0} right={0} display="inline-block" />}
+    </TopButtonsWrapper>
   </Wrapper>
 );
 
