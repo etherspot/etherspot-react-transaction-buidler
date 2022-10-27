@@ -28,11 +28,13 @@ const SingleSwap = ({ connectedProvider, chainId }: SingleSwapProps) => {
    * @param {number} chainId - this parameter requires the chain ID
    *
    */
+
   useEffect(() => {
     if (!connectedProvider) {
       window.location.href = "/";
     }
   }, []);
+  
   return (
     <div>
       <Etherspot

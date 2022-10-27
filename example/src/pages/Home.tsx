@@ -34,6 +34,7 @@ const Home = ({ connectedProvider }: HomeProps) => {
    */
 
   const navigate = useNavigate();
+
   useEffect(() => {
     if (!connectedProvider) {
       window.location.href = "/";
@@ -48,6 +49,15 @@ const Home = ({ connectedProvider }: HomeProps) => {
       </StyledButton>
       <StyledButton onClick={() => navigate("/cross-swap")}>
         Cross Chain Swap Screen
+      </StyledButton>
+      <StyledButton onClick={() => navigate("/theme-override")}>
+        Theme Override
+      </StyledButton>
+      <StyledButton onClick={() => navigate("/hidden-add-btn")}>
+        Hidden Add Transaction
+      </StyledButton>
+      <StyledButton onClick={() => navigate("/hidden-transaction-block")}>
+        Hidden Transaction Block
       </StyledButton>
     </div>
   );

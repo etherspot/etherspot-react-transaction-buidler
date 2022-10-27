@@ -6,6 +6,9 @@ import Home from "./pages/Home";
 import Send from "./pages/Send";
 import SingleSwap from "./pages/SingleSwap";
 import CrossSwap from "./pages/CrossSwap";
+import ThemeOverride from "./pages/ThemeOverride";
+import HiddenAddTransaction from "./pages/HiddenAddTransaction";
+import HiddenTransactionBlockTypes from "./pages/HiddenTransactionBlockTypes";
 
 // List of wallets
 const wallets = [
@@ -75,6 +78,33 @@ const App = () => {
           path="/cross-swap"
           element={
             <CrossSwap
+              connectedProvider={connectedProvider}
+              chainId={chainId}
+            />
+          }
+        />
+        <Route
+          path="/theme-override"
+          element={
+            <ThemeOverride
+              connectedProvider={connectedProvider}
+              chainId={chainId}
+            />
+          }
+        />
+        <Route
+          path="/hidden-add-btn"
+          element={
+            <HiddenAddTransaction
+              connectedProvider={connectedProvider}
+              chainId={chainId}
+            />
+          }
+        />
+        <Route
+          path="/hidden-transaction-block"
+          element={
+            <HiddenTransactionBlockTypes
               connectedProvider={connectedProvider}
               chainId={chainId}
             />

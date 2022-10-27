@@ -48,6 +48,7 @@ const Login = ({ connectWallet, connectedProvider }: LoginProps) => {
       navigate("/home");
     }
   }, [connectedProvider]);
+  
   return (
     <LoginContainer>
       <ConnectWalletButton onClick={connectWallet}>
