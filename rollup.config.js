@@ -3,12 +3,12 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import dts from 'rollup-plugin-dts';
+import replace from '@rollup/plugin-replace';
+import { terser } from 'rollup-plugin-terser';
 import dotenv from 'dotenv';
-import injectProcessEnv from 'rollup-plugin-inject-process-env';
 
 dotenv.config();
 
-// import { terser } from 'rollup-plugin-terser';
 
 const packageJson = require('./package.json');
 
@@ -40,10 +40,11 @@ export default [
       typescript({
         tsconfig: './tsconfig.json'
       }),
-      injectProcessEnv({
-        ETHERSPOT_PROJECT_KEY: process.env.ETHERSPOT_PROJECT_KEY,
+      replace({
+        __ETHERSPOT_PROJECT_KEY__: process.env.ETHERSPOT_PROJECT_KEY ?? '',
+        preventAssignment: true,
       }),
-      // terser(),
+      process.env.NODE_ENV === 'production' && terser(),
     ],
     external: ['react', 'react-dom', 'styled-components', 'etherspot'],
     context: 'window'

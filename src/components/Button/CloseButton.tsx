@@ -1,10 +1,11 @@
 import styled from 'styled-components';
 
 const CloseButton = styled.span<{
+  display?: string;
   top?: number;
   right?: number;
 }>`
-  position: absolute;
+  position: ${({ display }) => display ?? 'absolute'};
   top: ${({ top }) => top ?? 5}px;
   right: ${({ right }) => right ?? 12}px;
   transform: rotate(45deg);

@@ -235,6 +235,7 @@ const TransactionBuilderContextProvider = ({
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
+  const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
 
   const theme: Theme = useTheme();
 
@@ -305,6 +306,7 @@ const TransactionBuilderContextProvider = ({
     }
 
     setCrossChainActions(newCrossChainActions);
+    setEditingTransactionBlock(null);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
 
   const estimateCrossChainActions = useCallback(async () => {
@@ -344,7 +346,7 @@ const TransactionBuilderContextProvider = ({
       return;
     }
 
-    const crossChainActionsToDispatch = crossChainActions.filter(({ transactions }) => !!transactions?.length)
+    const crossChainActionsToDispatch = crossChainActions.filter(({ transactions }) => !!transactions?.length);
     if (!crossChainActionsToDispatch?.length) {
       setIsSubmitting(false);
       showAlertModal('Unable to dispatch cross chain actions.');
@@ -447,7 +449,38 @@ const TransactionBuilderContextProvider = ({
             </PrimaryButton>
           </>
         )}
-        {!crossChainActions?.length && !processingCrossChainActionId && (
+        {!!editingTransactionBlock && !processingCrossChainActionId && (
+          <>
+            <Card
+              key={`transaction-block-edit-${editingTransactionBlock.id}`}
+              marginBottom={20}
+              showCloseButton={false}
+            >
+              <TransactionBlock
+                key={`block-edit-${editingTransactionBlock.id}`}
+                {...editingTransactionBlock}
+                errorMessages={transactionBlockValidationErrors[editingTransactionBlock.id]}
+              />
+            </Card>
+            <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
+              {isChecking ? 'Saving...' : 'Save'}
+            </PrimaryButton>
+            <SecondaryButton
+              marginTop={10}
+              onClick={() => {
+                setEditingTransactionBlock(null);
+                // reset value changes, editingTransactionBlock storing initial before edits
+                setTransactionBlocks((current) => current.map((currentTransactionBlock) => {
+                  if (currentTransactionBlock.id !== editingTransactionBlock?.id) return currentTransactionBlock;
+                  return editingTransactionBlock;
+                }));
+              }}
+            >
+              Go back to preview
+            </SecondaryButton>
+          </>
+        )}
+        {!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock && (
           <>
             {transactionBlocks.map((transactionBlock) => (
               <Card
@@ -516,7 +549,7 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {!!crossChainActions?.length && !processingCrossChainActionId && (
+        {!!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock && (
           <>
             {crossChainActions.map((crossChainAction) => (
               <ActionPreview
@@ -524,6 +557,7 @@ const TransactionBuilderContextProvider = ({
                 crossChainAction={crossChainAction}
                 onRemove={() => setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id))}
                 signButtonDisabled={crossChainAction.isEstimating || isSigningAction}
+                showSignButton={!crossChainAction.useWeb3Provider}
                 onSign={async () => {
                   setIsSigningAction(true);
 
@@ -566,6 +600,8 @@ const TransactionBuilderContextProvider = ({
                   setIsSigningAction(false);
                   showAlertModal('Transaction sent!');
                 }}
+                onEdit={() => setEditingTransactionBlock(transactionBlocks.find((transactionBlock) => transactionBlock.id === crossChainAction.relatedTransactionBlockId) ?? null)}
+                showEditButton
               />
             ))}
             <PrimaryButton marginTop={30} onClick={onSubmitClick} disabled={isSubmitting || isEstimatingCrossChainActions}>

@@ -166,6 +166,7 @@ export const buildCrossChainAction = async (
 
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
+        relatedTransactionBlockId: transactionBlock.id,
         chainId: fromChainId,
         type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
         preview,
@@ -270,6 +271,7 @@ export const buildCrossChainAction = async (
 
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
+        relatedTransactionBlockId: transactionBlock.id,
         chainId: fromChainId,
         type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
         preview,
@@ -354,6 +356,7 @@ export const buildCrossChainAction = async (
 
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
+        relatedTransactionBlockId: transactionBlock.id,
         chainId,
         type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
         preview,
@@ -472,6 +475,7 @@ export const buildCrossChainAction = async (
 
       const crossChainAction: ICrossChainAction = {
         id: crossChainActionId,
+        relatedTransactionBlockId: transactionBlock.id,
         chainId,
         type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
         preview,

@@ -10,6 +10,7 @@ import {
   BsClockHistory,
   BiCheck,
   IoClose,
+  FaSignature,
 } from 'react-icons/all';
 
 import {
@@ -32,7 +33,10 @@ import {
   CombinedRoundedImages,
   RoundedImage,
 } from '../Image';
-import { Text } from '../Text';
+import {
+  ClickableText,
+  Text,
+} from '../Text';
 import { Theme } from '../../utils/theme';
 import {
   useEtherspot,
@@ -92,8 +96,9 @@ const ValueBlock = styled.div`
   margin-right: 20px;
 `;
 
-const Clickable = styled.span<{ disabled?: boolean}>`
-  display: inline-block;
+const SignButton = styled(FaSignature)<{ disabled?: boolean }>`
+  margin-right: 10px;
+  padding: 5px;
   cursor: pointer;
 
   &:hover {
@@ -103,11 +108,16 @@ const Clickable = styled.span<{ disabled?: boolean}>`
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
-const SignButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
-  position: absolute;
-  top: 12px;
-  right: 40px;
+const EditButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
+  margin-right: 10px;
   padding: 5px;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.5;
+  }
+  
+  ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
 const TransactionStatusWrapper = styled(TransactionAction)`
@@ -148,7 +158,11 @@ interface TransactionPreviewInterface {
   crossChainAction: ICrossChainAction;
   onRemove?: () => void
   onSign?: () => void
+  onEdit?: () => void
   signButtonDisabled?: boolean
+  editButtonDisabled?: boolean
+  showEditButton?: boolean
+  showSignButton?: boolean
 }
 
 const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChainAction }) => {
@@ -214,7 +228,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
 
   return (
     <>
-      {statusPreviewTransactions.map((transaction) => {
+      {statusPreviewTransactions.map((transaction, index) => {
         const transactionStatus = transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
@@ -241,7 +255,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
         const showAsApproval = crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(transaction.data as string);
 
         return (
-          <TransactionStatusAction>
+          <TransactionStatusAction key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}>
             {transaction?.submitTimestamp && transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
               <TransactionStatusClock>
                 {!!transaction.finishTimestamp && moment(moment(transaction.finishTimestamp).diff(moment(transaction.submitTimestamp))).format('mm:ss')}
@@ -264,7 +278,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
                 </Text>
               </TransactionStatusMessageWrapper>
               {transaction?.submitTimestamp && (
-                <Clickable
+                <ClickableText
                   disabled={isGettingExplorerLink}
                   onClick={() => {
                     if (crossChainAction.useWeb3Provider) return previewTransaction(transaction.transactionHash);
@@ -272,7 +286,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
                   }}
                 >
                   <Text size={16} color={theme?.color?.text?.transactionStatusLink} medium>Tx</Text>
-                </Clickable>
+                </ClickableText>
               )}
             </TransactionStatusWrapper>
           </TransactionStatusAction>
@@ -286,7 +300,11 @@ const ActionPreview = ({
   crossChainAction,
   onRemove,
   onSign,
+  onEdit,
   signButtonDisabled = false,
+  editButtonDisabled = false,
+  showSignButton = false,
+  showEditButton = false,
 }: TransactionPreviewInterface) => {
   const { accountAddress, providerAddress } = useEtherspot();
 
@@ -309,12 +327,17 @@ const ActionPreview = ({
     }
   };
 
+  const onEditButtonClick = () => {
+    if (editButtonDisabled || !onEdit) return;
+    onEdit();
+  };
+
   const onSignButtonClick = () => {
     if (signButtonDisabled || !onSign) return;
     onSign();
   }
+
   const showCloseButton = !!onRemove;
-  const showSignButton = !!onSign;
 
   const cost = useMemo(() => {
     if (isEstimating) return 'Estimating...';
@@ -327,6 +350,11 @@ const ActionPreview = ({
     return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
   }, [isEstimating, estimated]);
 
+  const additionalTopButtons = [
+    showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />,
+    showEditButton && <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />
+  ];
+
   if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
     const { fromAsset, fromChainId } = preview;
 
@@ -337,7 +365,13 @@ const ActionPreview = ({
     const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
 
     return (
-      <Card title="Klima Staking" marginBottom={20} onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
+      <Card
+        title="Klima Staking"
+        marginBottom={20}
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
             <Label>You send</Label>
@@ -368,11 +402,6 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         <TransactionStatus crossChainAction={crossChainAction} />
-        {showSignButton && (
-          <Clickable>
-            <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
-          </Clickable>
-        )}
       </Card>
     );
   }
@@ -394,7 +423,13 @@ const ActionPreview = ({
       : accountAddress;
 
     return (
-      <Card title="Asset bridge" marginBottom={20} onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
+      <Card
+        title="Asset bridge"
+        marginBottom={20}
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
             <Label>You send</Label>
@@ -433,12 +468,12 @@ const ActionPreview = ({
               <>
                 From
                 &nbsp;
-                <Clickable onClick={() => onCopy(senderAddress)}>{humanizeHexString(senderAddress)}</Clickable>
+                <ClickableText onClick={() => onCopy(senderAddress)}>{humanizeHexString(senderAddress)}</ClickableText>
                 &nbsp;
               </>
               to
               &nbsp;
-              <Clickable onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</Clickable>
+              <ClickableText onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</ClickableText>
             </Text>
           </TransactionAction>
         )}
@@ -459,11 +494,6 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         <TransactionStatus crossChainAction={crossChainAction} />
-        {showSignButton && (
-          <Clickable>
-            <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
-          </Clickable>
-        )}
       </Card>
     );
   }
@@ -478,7 +508,13 @@ const ActionPreview = ({
     const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
 
     return (
-      <Card title="Send asset" marginBottom={20} onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
+      <Card
+        title="Send asset"
+        marginBottom={20}
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
         <TransactionAction>
           <Label>You send</Label>
           <ValueWrapper>
@@ -504,21 +540,16 @@ const ActionPreview = ({
               <>
                 From
                 &nbsp;
-                <Clickable onClick={() => onCopy(fromAddress)}>{humanizeHexString(fromAddress)}</Clickable>
+                <ClickableText onClick={() => onCopy(fromAddress)}>{humanizeHexString(fromAddress)}</ClickableText>
                 &nbsp;
               </>
             )}
             {fromAddress ? 'to' : 'To'}
             &nbsp;
-            <Clickable onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</Clickable>
+            <ClickableText onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</ClickableText>
           </Text>
         </TransactionAction>
         <TransactionStatus crossChainAction={crossChainAction} />
-        {showSignButton && (
-          <Clickable>
-            <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
-          </Clickable>
-        )}
       </Card>
     );
   }
@@ -533,7 +564,13 @@ const ActionPreview = ({
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
-      <Card title="Swap asset" marginBottom={20}  onCloseButtonClick={onRemove} showCloseButton={showCloseButton}>
+      <Card
+        title="Swap asset"
+        marginBottom={20}
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
             <Label>You send</Label>
@@ -583,11 +620,6 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         <TransactionStatus crossChainAction={crossChainAction} />
-        {showSignButton && (
-          <Clickable>
-            <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
-          </Clickable>
-        )}
       </Card>
     );
   }
