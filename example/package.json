@@ -2,7 +2,7 @@
   "name": "etherspot-react-transaction-buidler-example",
   "version": "0.1.0",
   "dependencies": {
-    "@etherspot/react-transaction-buidler": "^0.15.0",
+    "@etherspot/react-transaction-buidler": "^0.16.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
