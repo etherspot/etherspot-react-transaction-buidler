@@ -13,6 +13,63 @@ You need to create a .env file and add this variable **SKIP_PREFLIGHT_CHECK=true
 The implementation of the transactions has been carried out by using the [BUILDer Component](https://www.npmjs.com/package/@etherspot/react-transaction-buidler) 
 
 
+## Theme Change
+If you wish to change the theme of your builder application, you can do that by passing the theme props **themeOverride** props to the component.
+an example of the themeOverride prop is given below
+
+```
+let theme = {
+      color: {
+        background: {
+          main: "#221f33",
+          topMenu: "#443d66",
+          topMenuButton: "#ff884d",
+          card: "#2b2640",
+          button: "#ff884d",
+          closeButton: "#ff884d",
+          selectInputToggleButton: "#ff884d",
+          selectInput: "#443d66",
+          selectInputExpanded: "#1a1726",
+          selectInputImagePlaceholder: "#443d66",
+          textInput: "#1a1726",
+          switchInput: "#1a1726",
+          switchInputActiveTab: "#443d66",
+          switchInputInactiveTab: "transparent",
+          pill: "#2b2640",
+          checkboxInputInactive: "#665c99",
+        },
+        text: {
+          selectInput: "#ffeee6",
+          selectInputOption: "#ffeee6",
+          selectInputOptionSecondary: "#ffeee6",
+          searchInput: "#998ae6",
+          searchInputSecondary: "#998ae6",
+          outerLabel: "#998ae6",
+          innerLabel: "#998ae6",
+          topMenu: "#998ae6",
+          main: "#ffeee6",
+          topBar: "#998ae6",
+          buttonSecondary: "#998ae6",
+          card: "#ffeee6",
+          cardTitle: "#ffeee6",
+          button: "#fff",
+          errorMessage: "#ff4d6a",
+          textInput: "#ffeee6",
+          textInputSecondary: "#ffeee6",
+          switchInputActiveTab: "#ffeee6",
+          switchInputInactiveTab: "#bbb8cc",
+          selectInputImagePlaceholder: "#ffeee6",
+          cardDisabled: "#605e5e",
+          pill: "#bbb8cc",
+          pillValue: "#ffeee6",
+        },
+      },
+    }
+```
+You can pass the above ☝️ theme to the **themeOverride** prop to customize the theme and feel free to put your own colors 😁.
+An implementation of the same can be found in the [ThemeOverride](https://github.com/etherspot/etherspot-react-transaction-buidler/blob/master/example/src/pages/ThemeOverride.tsx) page
+
+
 ## Available Scripts
 
 In the project directory, you can run:
