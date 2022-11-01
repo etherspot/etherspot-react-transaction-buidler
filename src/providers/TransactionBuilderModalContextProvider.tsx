@@ -15,6 +15,8 @@ import {
 import { Paragraph } from '../components/Text';
 import { TransactionBuilderModalContext } from '../contexts';
 import { Theme } from '../utils/theme';
+import { confirmAlert } from 'react-confirm-alert'; // Import
+import 'react-confirm-alert/src/react-confirm-alert.css'; // Import css
 
 const AlertWrapper = styled.div`
   margin: 15px 0;
