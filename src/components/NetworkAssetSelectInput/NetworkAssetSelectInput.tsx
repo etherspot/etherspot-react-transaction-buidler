@@ -30,7 +30,7 @@ import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, inverse?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
@@ -315,7 +315,7 @@ const NetworkAssetSelectInput = ({
   }
 
   return (
-    <Wrapper disabled={disabled} expanded={showSelectModal}>
+    <Wrapper inverse={label === "To"} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
         {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
@@ -354,7 +354,10 @@ const NetworkAssetSelectInput = ({
               <OptionListItem
                 disabled={disabled}
                 key={`${supportedChain.chainId}`}
-                onClick={() => setPreselectedNetwork(supportedChain)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreselectedNetwork(supportedChain)
+                }}
               >
                 {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
                 {supportedChain.title}
