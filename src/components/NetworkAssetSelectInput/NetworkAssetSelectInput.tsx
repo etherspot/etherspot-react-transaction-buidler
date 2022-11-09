@@ -282,10 +282,10 @@ const NetworkAssetSelectInput = ({
   }, [disabled, showSelectModal, selectedNetwork]);
 
   const updateSelectedNetworkAssets = useCallback(async () => {
-    if (!sdk || !preselectedNetwork) return;
+    if (!sdk || !preselectedNetwork || preselectedNetwork.chainId === selectedNetwork?.chainId) return;
     setIsLoadingAssets(true);
     setSelectedNetworkAssets([]);
-
+    console.log("psjjsks",preselectedNetwork, selectedNetwork)
     const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
       preselectedNetwork.chainId,
       showPositiveBalanceAssets,
@@ -303,7 +303,9 @@ const NetworkAssetSelectInput = ({
     walletAddress,
   ]);
 
-  useEffect(() => { updateSelectedNetworkAssets(); }, [updateSelectedNetworkAssets]);
+  useEffect(() => { 
+    updateSelectedNetworkAssets(); 
+  }, [updateSelectedNetworkAssets]);
 
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
@@ -345,7 +347,12 @@ const NetworkAssetSelectInput = ({
         </LargeSelectedOption>
       )}
       {showSelectModal && preselectedNetwork && (
-        <SelectedOption onClick={() => setPreselectedNetwork(null)} disabled={disabled}>
+        <SelectedOption onClick={(e) => {
+              e.stopPropagation()
+              setPreselectedNetwork(null)
+            }
+          } 
+          disabled={disabled}>
           {!!preselectedNetwork?.iconUrl && <RoundedImage url={preselectedNetwork?.iconUrl} title={preselectedNetwork.title} size={24} />}
           {preselectedNetwork.title}
         </SelectedOption>
