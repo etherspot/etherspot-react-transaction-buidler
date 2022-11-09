@@ -37,7 +37,9 @@ const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, inverse?: bo
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
+  cursor: pointer;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
+  ${({ theme, inverse }) => inverse && `background-color: ${ theme.color.background.toDropdownColor };`}
 `;
 
 const SelectWrapper = styled.div<{ disabled: boolean }>`
@@ -245,6 +247,7 @@ interface SelectInputProps {
   hideChainIds?: number[];
   walletAddress?: string | null;
   showQuickInputButtons?: boolean;
+  inverse?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -259,6 +262,7 @@ const NetworkAssetSelectInput = ({
   hideChainIds,
   walletAddress,
   showQuickInputButtons,
+  inverse = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -315,7 +319,7 @@ const NetworkAssetSelectInput = ({
   }
 
   return (
-    <Wrapper inverse={label === "To"} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
+    <Wrapper inverse={inverse} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
         {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}

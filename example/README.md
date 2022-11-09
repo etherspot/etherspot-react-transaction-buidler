@@ -37,6 +37,7 @@ let theme = {
           switchInputInactiveTab: "transparent",
           pill: "#2b2640",
           checkboxInputInactive: "#665c99",
+          toDropdownColor: "#443d66",
         },
         text: {
           selectInput: "#ffeee6",
