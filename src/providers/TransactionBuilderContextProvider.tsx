@@ -9,7 +9,6 @@ import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
 import { Sdk } from 'etherspot';
-import { toast } from 'react-toastify';
 
 import {
   PrimaryButton,
@@ -572,8 +571,7 @@ const TransactionBuilderContextProvider = ({
 
                   if (result?.errorMessage || (!result?.transactionHash?.length && !result?.batchHash?.length)) {
                     setIsSigningAction(false);
-                    // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
-                    toast.error("Unable to send transaction!!!", { autoClose: 7000 })
+                    showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
                     return;
                   }
 
@@ -600,11 +598,7 @@ const TransactionBuilderContextProvider = ({
                   dispatchCrossChainActions([mappedPendingCrossChainAction], CROSS_CHAIN_ACTION_STATUS.PENDING);
                   setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id));
                   setIsSigningAction(false);
-                  // showAlertModal('Transaction sent!');
-                  toast.success('Transaction sent!', {
-                    position: toast.POSITION.TOP_CENTER,
-                    autoClose: 7000,
-                  });
+                  showAlertModal('Transaction sent!');
                 }}
                 onEdit={() => setEditingTransactionBlock(transactionBlocks.find((transactionBlock) => transactionBlock.id === crossChainAction.relatedTransactionBlockId) ?? null)}
                 showEditButton

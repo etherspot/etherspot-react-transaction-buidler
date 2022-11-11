@@ -19,8 +19,6 @@ import {
   ITransactionBlockType,
 } from '../types/transactionBlock';
 
-import { ToastContainer, toast } from 'react-toastify';
-
 interface EtherspotProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
   hiddenTransactionBlockTypes?: ITransactionBlockType[];
@@ -66,9 +64,6 @@ const Etherspot = ({
   etherspotSessionStorage,
 }: EtherspotProps) => (
   <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
-    <ToastContainer 
-    position="bottom-center"
-    />
     <EtherspotContextProvider
       provider={provider}
       chainId={chainId}
@@ -78,7 +73,6 @@ const Etherspot = ({
         @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
         @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
         @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
-        @import url('https://cdn.jsdelivr.net/npm/react-toastify@9.0.8/dist/ReactToastify.css')
       </style>
       <ComponentWrapper>
         <TransactionBuilderModalContextProvider>

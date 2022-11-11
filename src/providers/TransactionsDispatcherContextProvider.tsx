@@ -14,7 +14,6 @@ import {
 } from 'etherspot';
 import { map as rxjsMap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
-import { toast } from 'react-toastify';
 
 import { TransactionsDispatcherContext } from '../contexts';
 import {
@@ -140,8 +139,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       : await submitEtherspotTransactionsBatch(getSdkForChainId(firstUnsentCrossChainAction.chainId) as Sdk, transactionsToSend);
 
     if (result?.errorMessage || (!result?.transactionHash?.length && !result?.batchHash?.length)) {
-      // resetCrossChainActions(result.errorMessage ?? 'Unable to send transaction!');
-      toast.error("Unable to send transaction!!!", {autoClose: 7000, position: toast.POSITION.TOP_CENTER})
+      resetCrossChainActions(result.errorMessage ?? 'Unable to send transaction!');
       return;
     }
 
@@ -181,11 +179,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
     setCrossChainActions(updatedCrossChainActions);
 
-    // showAlertModal('Transaction sent!');
-    toast.success('Transaction sent!', {
-      position: toast.POSITION.TOP_CENTER,
-      autoClose: 7000,
-    });
+    showAlertModal('Transaction sent!');
 
     setProcessingCrossChainActionId(null);
   }, [
