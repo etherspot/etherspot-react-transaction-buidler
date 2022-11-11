@@ -46,7 +46,6 @@
     "etherspot": "^1.37.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
-    "react-confirm-alert": "^3.0.6",
     "react-icons": "^4.4.0",
     "react-ios-switch": "^0.1.19",
     "react-spinners": "^0.13.2",
