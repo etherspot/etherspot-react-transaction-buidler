@@ -284,7 +284,11 @@ const TransactionBuilderContextProvider = ({
 					(x) => x?.chainId === action.chainId && x?.type === action.type,
 				);
 
-				if (foundChainIndex > -1 && action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
+				if (
+					foundChainIndex > -1 &&
+					(action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
+						action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
+				) {
 					const chainTx = newCrossChainActions[foundChainIndex];
 					if (chainTx?.batchTransactions?.length)
 						chainTx.batchTransactions = [...chainTx.batchTransactions, action];

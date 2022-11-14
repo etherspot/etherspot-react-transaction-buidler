@@ -525,13 +525,14 @@ const ActionPreview = ({
 	}
 
 	if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-		const { asset, chainId, fromAddress } = preview;
-		const receiverAddress = preview.receiverAddress as string;
+		const previewList = crossChainAction?.batchTransactions?.length
+			? crossChainAction?.batchTransactions.map((action) =>
+					action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET ? action.preview : null,
+			  )
+			: [crossChainAction.preview];
 
 		const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
 		const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
-
-		const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
 
 		return (
 			<Card
@@ -541,49 +542,68 @@ const ActionPreview = ({
 				showCloseButton={showCloseButton}
 				additionalTopButtons={additionalTopButtons}
 			>
-				<TransactionAction>
-					<Label>You send</Label>
-					<ValueWrapper>
-						<CombinedRoundedImages
-							title={asset.symbol}
-							url={asset.iconUrl}
-							smallImageTitle={chainTitle}
-							smallImageUrl={network?.iconUrl}
-						/>
-						<ValueBlock>
-							<Text size={16} marginBottom={1} medium block>
-								{amount} {asset.symbol}
-							</Text>
-							<Text size={12}>On {chainTitle}</Text>
-						</ValueBlock>
-						<ValueBlock>
-							<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
-								Gas price
-							</Text>
-							<Text size={16} medium>
-								{cost ?? 'N/A'}
-							</Text>
-						</ValueBlock>
-					</ValueWrapper>
-				</TransactionAction>
-				<TransactionAction>
-					<Text size={16} medium>
-						{!!fromAddress && (
-							<>
-								From &nbsp;
-								<ClickableText onClick={() => onCopy(fromAddress)}>
-									{humanizeHexString(fromAddress)}
-								</ClickableText>
-								&nbsp;
-							</>
-						)}
-						{fromAddress ? 'to' : 'To'}
-						&nbsp;
-						<ClickableText onClick={() => onCopy(receiverAddress)}>
-							{humanizeHexString(receiverAddress)}
-						</ClickableText>
-					</Text>
-				</TransactionAction>
+				{previewList.map((preview) => {
+					if (!preview) return null;
+
+					const { asset, chainId, fromAddress } = preview;
+					const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
+					const receiverAddress = preview.receiverAddress as string;
+
+					return (
+						<TransactionAction>
+							<Label>You send</Label>
+							<ValueWrapper>
+								<CombinedRoundedImages
+									title={asset.symbol}
+									url={asset.iconUrl}
+									smallImageTitle={chainTitle}
+									smallImageUrl={network?.iconUrl}
+								/>
+								<ValueBlock>
+									<Text size={16} marginBottom={1} medium block>
+										{amount} {asset.symbol}
+									</Text>
+									<Text size={12}>On {chainTitle}</Text>
+								</ValueBlock>
+								<ValueBlock>
+									<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
+										Gas price
+									</Text>
+									<Text size={16} medium>
+										{cost ?? 'N/A'}
+									</Text>
+								</ValueBlock>
+							</ValueWrapper>
+							<ValueWrapper marginTop={8}>
+								<Text size={16} medium>
+									{!!fromAddress && (
+										<>
+											From &nbsp;
+											<ClickableText onClick={() => onCopy(fromAddress)}>
+												{humanizeHexString(fromAddress)}
+											</ClickableText>
+											&nbsp;
+										</>
+									)}
+									{fromAddress ? 'to' : 'To'}
+									&nbsp;
+									<ClickableText onClick={() => onCopy(receiverAddress)}>
+										{humanizeHexString(receiverAddress)}
+									</ClickableText>
+								</Text>
+							</ValueWrapper>
+						</TransactionAction>
+					);
+				})}
+
+				{previewList.length > 1 && (
+					<TransactionAction>
+						<Text size={16} medium>
+							{`${previewList.length} swaps are batched in one transaction`}
+						</Text>
+					</TransactionAction>
+				)}
+
 				<TransactionStatus crossChainAction={crossChainAction} />
 			</Card>
 		);
@@ -609,8 +629,8 @@ const ActionPreview = ({
 			>
 				{previewList.map((preview) => {
 					if (!preview) return null;
-					const { fromAsset, toAsset } = preview;
 
+					const { fromAsset, toAsset } = preview;
 					const fromAmount = formatAmountDisplay(
 						ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals),
 					);
