@@ -142,7 +142,7 @@ const RouteWrapper = styled.div`
 const Row = styled.div.attrs((props: { center: boolean }) => props)`
 	display: flex;
 	flex-direction: row;
-	${({ center }) => center && 'justify-content: center;'};
+	${({ center }) => center && 'align-items: center;'};
 `;
 
 interface TransactionPreviewInterface {
@@ -671,8 +671,8 @@ const ActionPreview = ({
 							<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
 								Gas price
 							</Text>
-							<Text size={14} medium>
-								{` ${cost}`}
+							<Text size={14} marginLeft={4} medium>
+								{cost}
 							</Text>
 						</Row>
 					)}
