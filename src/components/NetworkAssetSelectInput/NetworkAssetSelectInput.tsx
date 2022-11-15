@@ -285,7 +285,6 @@ const NetworkAssetSelectInput = ({
     if (!sdk || !preselectedNetwork || preselectedNetwork.chainId === selectedNetwork?.chainId) return;
     setIsLoadingAssets(true);
     setSelectedNetworkAssets([]);
-    console.log("psjjsks",preselectedNetwork, selectedNetwork)
     const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
       preselectedNetwork.chainId,
       showPositiveBalanceAssets,
