@@ -27,6 +27,7 @@ export interface Theme {
       statusIconPending?: string,
       checkboxInputActive?: string,
       checkboxInputInactive?: string,
+      toDropdownColor?: string,
     },
     text?: {
       main?: string,
@@ -90,6 +91,7 @@ export const defaultTheme: Theme = {
       statusIconFailed: '#ff0000',
       checkboxInputActive: '#ff884d',
       checkboxInputInactive: '#7f7a99',
+      toDropdownColor: "#F8EFEA",
     },
     text: {
       main: '#fff',

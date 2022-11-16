@@ -38,7 +38,7 @@ export const supportedChains: Chain[] = [
   },
   {
     chainId: CHAIN_ID.BINANCE,
-    title: 'Binance Smart Chain',
+    title: 'BNB Chain',
     iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_binance.jpg&w=64&q=75',
     explorerUrl: 'https://bscscan.com/tx/',
   },

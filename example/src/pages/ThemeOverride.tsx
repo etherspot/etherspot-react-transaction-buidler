@@ -72,6 +72,7 @@ const ThemeOverride = ({ connectedProvider, chainId }: ThemeOverrideProps) => {
           switchInputInactiveTab: "transparent",
           pill: "#2b2640",
           checkboxInputInactive: "#665c99",
+          toDropdownColor: "#F8EFEA",
         },
         text: {
           selectInput: "#ffeee6",
