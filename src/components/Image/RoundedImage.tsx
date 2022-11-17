@@ -1,6 +1,4 @@
-import React, {
-  useState,
-} from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 
 const Image = styled.img<{
@@ -35,45 +33,44 @@ const FallbackImage = styled.div<{
 `;
 
 const RoundedImage = ({
-  title,
-  url,
-  size,
-  noMarginRight,
+	title,
+	url,
+	size,
+	noMarginRight,
+	style,
   marginTop,
 }: {
-  title: string,
-  url: string | undefined,
-  size?: number,
-  noMarginRight?: boolean,
+	title: string;
+	url: string | undefined;
+	size?: number;
+	noMarginRight?: boolean;
+	style?: React.CSSProperties;
   marginTop?: number,
 })=> {
   const [useFallback, setUseFallback] = useState(false);
 
-  if (useFallback || !url) {
-    return (
-      <FallbackImage
-        size={size}
-        noMarginRight={noMarginRight}
-        marginTop={marginTop}
-      >
-        {title[0]}
-      </FallbackImage>
-    );
-  }
+	if (useFallback || !url) {
+		return (
+			<FallbackImage size={size} noMarginRight={noMarginRight}>
+				{title[0]}
+			</FallbackImage>
+		);
+	}
 
-  return (
-    <Image
-      size={size}
-      src={url}
-      alt={title}
-      noMarginRight={noMarginRight}
+	return (
+		<Image
+			style={style}
+			size={size}
+			src={url}
+			alt={title}
+			noMarginRight={noMarginRight}
       marginTop={marginTop}
-      onError={({ currentTarget }) => {
-        currentTarget.onerror = null;
-        setUseFallback(true);
-      }}
-    />
-  );
+			onError={({ currentTarget }) => {
+				currentTarget.onerror = null;
+				setUseFallback(true);
+			}}
+		/>
+	);
 };
 
 export default RoundedImage;

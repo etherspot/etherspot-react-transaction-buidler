@@ -13,8 +13,8 @@ const Text = styled.span<{
   block?: boolean;
   inline?: boolean;
 }>`
-  ${({ marginTop }) => !!marginTop && `margin-top: ${marginTop}px;`}
-  ${({ marginBottom }) => !!marginBottom && `margin-bottom: ${marginBottom}px;`}
+	${({ marginTop }) => !!marginTop && `margin-top: ${marginTop}px;`}
+	${({ marginBottom }) => !!marginBottom && `margin-bottom: ${marginBottom}px;`}
   ${({ marginLeft }) => !!marginLeft && `margin-left: ${marginLeft}px;`}
   ${({ marginRight }) => !!marginRight && `margin-right: ${marginRight}px;`}
   ${({ color }) => !!color && `color: ${color};`}

@@ -1,6 +1,6 @@
 {
   "name": "@etherspot/react-transaction-buidler",
-  "version": "0.16.3",
+  "version": "0.17.0",
   "description": "Etherspot React component.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -19,7 +19,11 @@
     "@types/styled-components": "^5.1.25",
     "babel-loader": "^8.2.5",
     "chokidar": "^3.5.3",
+    "cssnano": "^5.1.14",
     "dotenv": "^16.0.3",
+    "postcss-cssnext": "^3.1.1",
+    "postcss-nested": "^6.0.0",
+    "postcss-simple-vars": "^7.0.0",
     "react": "^18.2.0",
     "rollup": "^2.76.0",
     "rollup-plugin-dts": "^4.2.2",
@@ -35,6 +39,7 @@
   "author": "Etherspot",
   "license": "MIT",
   "dependencies": {
+    "autoprefixer": "^10.4.13",
     "axios": "^0.27.2",
     "debounce-promise": "^3.1.2",
     "ethers": "^5.6.9",
@@ -45,6 +50,7 @@
     "react-ios-switch": "^0.1.19",
     "react-spinners": "^0.13.2",
     "reflect-metadata": "^0.1.13",
+    "rollup-plugin-postcss": "^4.0.2",
     "rxjs": "^6.6.7",
     "styled-components": "^5.3.5"
   },

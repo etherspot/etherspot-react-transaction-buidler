@@ -273,6 +273,7 @@ const AssetSwapTransactionBlock = ({
               setSelectedToAsset(toAsset ?? null);
             }}
             errorMessage={errorMessages?.toAsset}
+            inverse={true}
           />
           {!!selectedFromAsset && (
             <TextInput
