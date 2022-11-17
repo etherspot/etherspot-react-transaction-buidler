@@ -31,23 +31,20 @@ import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import {
   Chain,
-  supportedChains,
 } from '../../utils/chain';
 import {
   IAssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
 import {
   CombinedRoundedImages,
-  RoundedImage,
 } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
-import Text from '../Text/Text';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { Route } from '@lifi/sdk';
 import Checkbox from '../Checkbox';
 import { IAssetBridgeTransactionBlock } from '../../types/transactionBlock';
-import { BiCheck } from 'react-icons/all';
+import RouteOption from '../RouteOption';
 
 export interface IAssetBridgeTransactionBlockValues {
   fromChain?: Chain;
@@ -66,50 +63,6 @@ const Title = styled.h3`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: "PTRootUIWebBold", sans-serif;
-`;
-
-const OfferDetails = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  font-family: "PTRootUIWebMedium", sans-serif;
-  width: 100%;
-`;
-
-const OfferDetailsRowsWrapper = styled.div`
-  padding-top: 2px;
-`;
-
-const OfferChecked = styled.div`
-  position: absolute;
-  top: 4px;
-  right: 5px;
-  background: ${({ theme }) => theme.color.background.statusIconSuccess};
-  width: 14px;
-  height: 14px;
-  font-size: 4px;
-  border-radius: 7px;
-  color: #fff;
-`;
-
-const OfferDetailsRow = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 4px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const OfferDetailsActionsWrapper = styled.div`
-  margin-top: 7px;
-`;
-
-const OfferDetailsActionRow = styled(OfferDetailsRow)`
-  align-items: flex-start;
 `;
 
 const WalletReceiveWrapper = styled.div`
@@ -141,7 +94,7 @@ const AssetBridgeTransactionBlock = ({
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(values?.fromChain ?? null);
   const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(values?.toChain ?? null);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
-  const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>([]);
+  const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(null);
 
   const defaultCustomReceiverAddress = values?.receiverAddress
     && !addressesEqual(providerAddress, values?.receiverAddress)
@@ -292,112 +245,12 @@ const AssetBridgeTransactionBlock = ({
   }, [amount, selectedFromAsset]);
 
 
-  const renderOption = (option: SelectOption) => {
-    const availableRoute = availableRoutes?.find((route) => route.id === option.value);
-    const valueToReceive = availableRoute?.toAmountMin && formatAmountDisplay(ethers.utils.formatUnits(availableRoute.toAmountMin, availableRoute?.toToken?.decimals));
-    const [firstStep] = availableRoute?.steps ?? [];
-    {/* Etherspot SDK typing fails */}
-    {/* @ts-ignore */}
-    const [{ toolDetails: firstStepViaService }] = firstStep?.includedSteps ?? [];
-    const twoDetailsRows = !!(availableRoute?.gasCostUSD || firstStep?.estimate?.executionDuration);
-    const isSelectedRouteOption = selectedRoute?.value && selectedRoute?.value === option.value;
-
-    return (
-      <OfferDetails>
-        <CombinedRoundedImages
-          title={option.title}
-          url={option.iconUrl}
-          smallImageTitle={bridgeServiceIdToDetails['lifi'].title}
-          smallImageUrl={bridgeServiceIdToDetails['lifi'].iconUrl}
-          size={24}
-        />
-        <OfferDetailsRowsWrapper>
-          <OfferDetailsRow>
-            {!!valueToReceive && <Text size={14} medium>{valueToReceive} {availableRoute?.toToken?.symbol}</Text>}
-            <Text size={14} marginLeft={6} color={theme?.color?.text?.innerLabel} inline medium>
-              {option.title}
-              {firstStepViaService?.name !== option.title && ` via ${firstStepViaService?.name}`}
-            </Text>
-          </OfferDetailsRow>
-          {twoDetailsRows && (
-            <OfferDetailsRow>
-              {!!availableRoute?.gasCostUSD && (
-                <>
-                  <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>Gas price</Text>
-                  <Text size={14} marginRight={22} medium inline>{formatAmountDisplay(availableRoute.gasCostUSD, '$')}</Text>
-                </>
-              )}
-              {!!firstStep?.estimate?.executionDuration && (
-                <>
-                  <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>Time</Text>
-                  <Text size={14} medium inline>{Math.ceil(+firstStep.estimate.executionDuration / 60)} min</Text>
-                </>
-              )}
-            </OfferDetailsRow>
-          )}
-          {/* Etherspot SDK typing fails */}
-          {/* @ts-ignore */}
-          {isSelectedRouteOption && !!firstStep?.includedSteps?.length && (
-            <OfferDetailsActionsWrapper>
-              {/* Etherspot SDK typing fails */}
-              {/* @ts-ignore */}
-              {firstStep?.includedSteps.map((includedStep) => {
-                const {
-                  action: includedStepAction,
-                  toolDetails: includedToolDetails,
-                } = includedStep;
-
-                const sourceChain = supportedChains.find((supportedChain) => supportedChain.chainId === includedStepAction.fromChainId);
-                const destinationChain = supportedChains.find((supportedChain) => supportedChain.chainId === includedStepAction.toChainId);
-
-                if (!sourceChain || !destinationChain) return null;
-
-                if (includedStep.type === 'swap') {
-                  const fromAssetAmount = ethers.utils.formatUnits(includedStep.estimate.fromAmount, includedStepAction.fromToken.decimals);
-                  const toAssetAmount = ethers.utils.formatUnits(includedStep.estimate.toAmount, includedStepAction.toToken.decimals);
-                  return (
-                    <OfferDetailsActionRow id={includedStep.id}>
-                      <RoundedImage
-                        title={includedToolDetails.title}
-                        url={includedToolDetails.logoURI}
-                        size={10}
-                        marginTop={2}
-                      />
-                      <Text size={12}>
-                        Swap on {sourceChain.title} via {includedToolDetails.name}<br/>
-                        {formatAmountDisplay(fromAssetAmount)} {includedStepAction.fromToken.symbol} → {formatAmountDisplay(toAssetAmount)} {includedStepAction.toToken.symbol}
-                      </Text>
-                    </OfferDetailsActionRow>
-                  )
-                }
-
-                if (includedStep.type === 'cross') {
-                  return (
-                    <OfferDetailsActionRow id={includedStep.id}>
-                      <RoundedImage
-                        title={includedToolDetails.title}
-                        url={includedToolDetails.logoURI}
-                        size={10}
-                        marginTop={2}
-                      />
-                      <Text size={12}>
-                        Bridge from {sourceChain.title} to {destinationChain.title} via {includedToolDetails.name}
-                      </Text>
-                    </OfferDetailsActionRow>
-                  );
-                }
-              })}
-            </OfferDetailsActionsWrapper>
-          )}
-        </OfferDetailsRowsWrapper>
-        {isSelectedRouteOption && (
-          <OfferChecked>
-            <BiCheck size={14} />
-          </OfferChecked>
-        )}
-      </OfferDetails>
-    );
-  };
+  const renderOption = (option: SelectOption) => (
+    <RouteOption
+      route={availableRoutes?.find((route) => route.id === option.value)}
+      isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
+    />
+  );
 
   return (
     <>

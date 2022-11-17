@@ -229,6 +229,7 @@ export const buildCrossChainAction = async (
           usdPrice: toAssetUsdPrice ?? undefined,
         },
         receiverAddress: transactionBlock?.values?.receiverAddress,
+        route,
       };
 
       const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });

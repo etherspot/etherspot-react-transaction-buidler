@@ -1,5 +1,7 @@
 import { ExecuteAccountTransactionDto } from 'etherspot/dist/sdk/dto/execute-account-transaction.dto';
 import { BigNumber } from 'ethers';
+import { Route } from '@lifi/sdk';
+
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 
 interface AssetTransfer {
@@ -19,6 +21,7 @@ interface AssetBridgeActionPreview {
   providerName: string;
   providerIconUrl: string | undefined;
   receiverAddress?: string;
+  route: Route;
 }
 
 interface SendAssetActionPreview {
