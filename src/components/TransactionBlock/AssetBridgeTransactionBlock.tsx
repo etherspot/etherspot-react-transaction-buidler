@@ -1,42 +1,19 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import {
-  AccountTypes,
-} from 'etherspot';
+import { AccountTypes } from 'etherspot';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
-import {
-  useEtherspot,
-  useTransactionBuilder,
-} from '../../hooks';
-import {
-  formatAmountDisplay,
-  formatAssetAmountInput,
-  formatMaxAmount,
-} from '../../utils/common';
-import {
-  addressesEqual,
-  isValidAmount,
-  isValidEthereumAddress,
-} from '../../utils/validation';
+import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
+import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { Chain } from '../../utils/chain';
-import {
-  IAssetWithBalance,
-} from '../../providers/EtherspotContextProvider';
-import {
-  CombinedRoundedImages,
-  RoundedImage,
-} from '../Image';
+import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
+import { CombinedRoundedImages, RoundedImage } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import Text from '../Text/Text';
@@ -46,54 +23,54 @@ import Checkbox from '../Checkbox';
 import { IAssetBridgeTransactionBlock } from '../../types/transactionBlock';
 
 export interface IAssetBridgeTransactionBlockValues {
-  fromChain?: Chain;
-  toChain?: Chain;
-  fromAsset?: IAssetWithBalance;
-  toAsset?: IAssetWithBalance;
-  amount?: string;
-  accountType?: string;
-  route?: Route;
-  receiverAddress?: string;
+	fromChain?: Chain;
+	toChain?: Chain;
+	fromAsset?: IAssetWithBalance;
+	toAsset?: IAssetWithBalance;
+	amount?: string;
+	accountType?: string;
+	route?: Route;
+	receiverAddress?: string;
 }
 
 const Title = styled.h3`
-  margin: 0 0 18px;
-  padding: 0;
-  font-size: 16px;
-  color: ${({ theme }) => theme.color.text.cardTitle};
-  font-family: "PTRootUIWebBold", sans-serif;
+	margin: 0 0 18px;
+	padding: 0;
+	font-size: 16px;
+	color: ${({ theme }) => theme.color.text.cardTitle};
+	font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
 const OfferDetails = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  font-family: "PTRootUIWebMedium", sans-serif;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	font-family: 'PTRootUIWebMedium', sans-serif;
 `;
 
 const OfferDetailsBlock = styled.div`
-  margin-right: 16px;
+	margin-right: 16px;
 `;
 
 const WalletReceiveWrapper = styled.div`
-  display: flex;
-  flex-direction: row;
+	display: flex;
+	flex-direction: row;
 `;
 
 const mapRouteToOption = (route: Route) => {
-  const [fistStep] = route.steps;
-  const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
-  return {
-    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
-    value: route.id,
-    iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
-  };
-}
+	const [fistStep] = route.steps;
+	const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
+	return {
+		title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+		value: route.id,
+		iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+	};
+};
 
 const AssetBridgeTransactionBlock = ({
-  id: transactionBlockId,
-  errorMessages,
-  values,
+	id: transactionBlockId,
+	errorMessages,
+	values,
 }: IAssetBridgeTransactionBlock) => {
   const { sdk, providerAddress, accountAddress } = useEtherspot();
 
