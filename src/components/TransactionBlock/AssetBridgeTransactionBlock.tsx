@@ -339,7 +339,7 @@ const AssetBridgeTransactionBlock = ({
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
           disabled={useCustomAddress}
-          inlineLabel
+          showCustom
         />
       </WalletReceiveWrapper>
       <Checkbox

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 import { SelectOption } from '../SelectInput/SelectInput';
 
-const Label = styled.label`
+const Label = styled.div`
   display: inline-block;
   color: ${({ theme }) => theme.color.text.outerLabel};
   margin-bottom: 11px;
@@ -77,6 +77,7 @@ const ErrorMessage = styled.small`
 interface TextInputProps {
   option1: SelectOption;
   option2: SelectOption;
+  option3?: SelectOption;
   selectedOption: SelectOption;
   label?: string;
   errorMessage?: string;
@@ -88,6 +89,7 @@ interface TextInputProps {
 const SwitchInput = ({
   option1,
   option2,
+  option3,
   selectedOption,
   label,
   errorMessage,
@@ -101,6 +103,9 @@ const SwitchInput = ({
       <InputWrapper>
         <SwitchOption disabled={disabled} isActive={option1.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option1)}>{option1.title}</SwitchOption>
         <SwitchOption disabled={disabled} isActive={option2.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option2)}>{option2.title}</SwitchOption>
+        {
+          option3 && <SwitchOption disabled={disabled} isActive={option3.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option3)}>{option3.title}</SwitchOption>
+        }
       </InputWrapper>
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
     </Wrapper>
