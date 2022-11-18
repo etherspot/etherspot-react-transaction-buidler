@@ -235,6 +235,7 @@ const TransactionBuilderContextProvider = ({
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
+  const [isTransactionOver, setIsTransactionOver] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
 
   const theme: Theme = useTheme();
@@ -295,7 +296,7 @@ const TransactionBuilderContextProvider = ({
     }
 
     setIsChecking(false);
-
+    console.log("ErrorMessage", errorMessage)
     if (!errorMessage && !newCrossChainActions?.length) {
       errorMessage = `Failed to proceed with selected actions!`
     }
@@ -338,7 +339,7 @@ const TransactionBuilderContextProvider = ({
   const onSubmitClick = useCallback(async () => {
     if (isSubmitting || isEstimatingCrossChainActions) return;
     setIsSubmitting(true);
-
+    setIsTransactionOver(false);
 
     if (!crossChainActions) {
       setIsSubmitting(false);
@@ -357,6 +358,7 @@ const TransactionBuilderContextProvider = ({
     setTransactionBlocks([]);
     dispatchCrossChainActions(crossChainActionsToDispatch);
     setIsSubmitting(false);
+    setIsTransactionOver(true);
   }, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting, isEstimatingCrossChainActions]);
 
   const setTransactionBlockValues = (transactionBlockId: string, values: ITransactionBlockValues) => {
@@ -501,7 +503,7 @@ const TransactionBuilderContextProvider = ({
                 />
               </Card>
             ))}
-            {!showTransactionBlockSelect && !hideAddTransactionButton && (
+            {((!showTransactionBlockSelect && !hideAddTransactionButton) || isTransactionOver) && (
               <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
                 <AiOutlinePlusCircle size={24} />
                 <span>Add transaction</span>
@@ -549,7 +551,7 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {!!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock && (
+        {(!!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock) && (
           <>
             {crossChainActions.map((crossChainAction) => (
               <ActionPreview
@@ -560,7 +562,7 @@ const TransactionBuilderContextProvider = ({
                 showSignButton={!crossChainAction.useWeb3Provider}
                 onSign={async () => {
                   setIsSigningAction(true);
-
+                  setIsTransactionOver(false);
                   const result: {
                     transactionHash?: string;
                     errorMessage?: string;
@@ -597,6 +599,7 @@ const TransactionBuilderContextProvider = ({
                   };
 
                   dispatchCrossChainActions([mappedPendingCrossChainAction], CROSS_CHAIN_ACTION_STATUS.PENDING);
+                  setIsTransactionOver(true);
                   setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id));
                   setIsSigningAction(false);
                   // showAlertModal('Transaction sent!');
@@ -619,6 +622,18 @@ const TransactionBuilderContextProvider = ({
             </SecondaryButton>
           </>
         )}
+        {/* {
+          isTransactionOver && <SecondaryButton
+          marginTop={10}
+          onClick={() => {
+            setEditingTransactionBlock(null);
+            setIsTransactionOver(false)
+            setShowTransactionBlockSelect(true)
+          }}
+        >
+          Add Transaction
+        </SecondaryButton>
+        } */}
       </div>
       {showMenu && (
         <MenuWrapper>

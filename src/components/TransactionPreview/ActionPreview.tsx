@@ -170,7 +170,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
   const { getSdkForChainId } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
-
+  const [showSigningDone , setShowSigningDone] = useState<boolean>(false);
   const {
     chainId,
     batchHash: transactionsBatchHash,
@@ -256,8 +256,49 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
 
         const showAsApproval = crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(transaction.data as string);
 
+        const getStatusComponent = useMemo(() => {
+          switch(transactionStatus) {
+            case CROSS_CHAIN_ACTION_STATUS.CONFIRMED:
+              return <BiCheck size={16} />
+            case CROSS_CHAIN_ACTION_STATUS.PENDING:
+              return <BsClockHistory size={14} />
+            case CROSS_CHAIN_ACTION_STATUS.UNSENT:
+              return <BsClockHistory size={14} />
+            case CROSS_CHAIN_ACTION_STATUS.FAILED:
+              return <IoClose size={15} />
+            case CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER:
+              return <IoClose size={15} />
+            default:
+              return <></>
+          }
+        }, [transactionStatus])
+
+        useEffect(() => {
+          let timeout : any
+          if(transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && !showSigningDone) {
+            setShowSigningDone(true)
+            timeout = setTimeout(() => {
+              setShowSigningDone(false)
+            }, 10000)
+
+          }
+          if(timeout){
+            //@ts-ignore
+            return () => clearTimeout(timeout)
+          }
+        }, [transactionStatus])
+
         return (
           <TransactionStatusAction key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}>
+            { showSigningDone 
+            ? (<TransactionStatusWrapper>
+              <TransactionStatusMessageWrapper>
+              <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
+                <BiCheck size={16} />
+              </StatusIconWrapper>
+              </TransactionStatusMessageWrapper>
+            </TransactionStatusWrapper>)
+            :<>
             {transaction?.submitTimestamp && transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
               <TransactionStatusClock>
                 {!!transaction.finishTimestamp && moment(moment(transaction.finishTimestamp).diff(moment(transaction.submitTimestamp))).format('mm:ss')}
@@ -268,15 +309,11 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
               <TransactionStatusMessageWrapper>
                 {!!actionStatusIconBackgroundColor && (
                   <StatusIconWrapper color={actionStatusIconBackgroundColor}>
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED && <BiCheck size={16} />}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && <BsClockHistory size={14} />}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.UNSENT && <BsClockHistory size={14} />}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED && <IoClose size={15} />}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER && <IoClose size={15} />}
+                    {getStatusComponent}
                   </StatusIconWrapper>
                 )}
                 <Text size={16} medium>
-                  {showAsApproval ? `Approve: ${actionStatusTitle.toLowerCase()}` : actionStatusTitle}
+                  {showAsApproval ? `Aprove: ${actionStatusTitle.toLowerCase()}` : actionStatusTitle}
                 </Text>
               </TransactionStatusMessageWrapper>
               {transaction?.submitTimestamp && (
@@ -291,6 +328,8 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
                 </ClickableText>
               )}
             </TransactionStatusWrapper>
+            </>
+            }
           </TransactionStatusAction>
         )
       })}
