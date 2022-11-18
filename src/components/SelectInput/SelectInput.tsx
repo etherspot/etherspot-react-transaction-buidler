@@ -115,7 +115,7 @@ const SelectedOption = styled.div<{ disabled?: boolean; noHover?: boolean; }>`
 `;
 
 const OptionsScroll = styled.div`
-  max-height: 200px;
+  max-height: 210px;
   overflow-x: hidden;
   overflow-y: scroll;
   
