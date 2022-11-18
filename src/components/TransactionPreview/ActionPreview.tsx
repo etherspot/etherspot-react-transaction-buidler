@@ -213,6 +213,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
   }
 
   useEffect(() => {
+    console.log("crossChainAction",crossChainAction)
     if (crossChainAction.transactions.every((transaction) => !!transaction.finishTimestamp)) return;
     let intervalId = setInterval(() => setSecondsAfter((current) => current + 1), 1000);
     return () => {
@@ -225,14 +226,15 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
   const statusPreviewTransactions = crossChainAction.useWeb3Provider
     ? crossChainAction.transactions
     : [crossChainAction.transactions[0]];
+  console.log('Paniiiii',statusPreviewTransactions)
 
   return (
     <>
       {statusPreviewTransactions.map((transaction, index) => {
-        const transactionStatus = transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
+        const transactionStatus = transaction?.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: 'Waiting for submit',
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: 'Sign Message',
           [CROSS_CHAIN_ACTION_STATUS.PENDING]: 'Waiting for transaction',
           [CROSS_CHAIN_ACTION_STATUS.FAILED]: 'Transaction failed',
           [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: 'Rejected by user',

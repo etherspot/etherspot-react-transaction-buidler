@@ -137,7 +137,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     } = firstUnsentCrossChainAction.useWeb3Provider
       ? await submitWeb3ProviderTransaction(web3Provider, transactionsToSend[0], firstUnsentCrossChainAction.chainId, providerAddress)
       : await submitEtherspotTransactionsBatch(getSdkForChainId(firstUnsentCrossChainAction.chainId) as Sdk, transactionsToSend);
-
+    console.log("sjshhs", result);
     if (result?.errorMessage || (!result?.transactionHash?.length && !result?.batchHash?.length)) {
       resetCrossChainActions(result.errorMessage ?? 'Unable to send transaction!');
       return;
@@ -179,9 +179,9 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
     setCrossChainActions(updatedCrossChainActions);
 
-    showAlertModal('Transaction sent!');
+    // showAlertModal('Transaction sent!');
 
-    setProcessingCrossChainActionId(null);
+    // setProcessingCrossChainActionId(null);
   }, [
     crossChainActions,
     getSdkForChainId,
@@ -306,13 +306,13 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       if (!sdkForChain) return;
 
       let subscription: Subscription;
-
+      console.log("subscription11")
       try {
         subscription = sdkForChain.notifications$
           .pipe(rxjsMap(async (notification) => {
             if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
               const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: crossChainAction.batchHash as string });
-
+              console.log("subscription22",submittedBatch)
               const failedStates = [
                 GatewayTransactionStates.Canceling,
                 GatewayTransactionStates.Canceled,
@@ -336,6 +336,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
               setCrossChainActions((current) => current.map((currentCrossChainAction) => {
                 if (crossChainAction.id !== currentCrossChainAction.id) return currentCrossChainAction;
+                console.log("subscription44",currentCrossChainAction)
 
                 const updatedTransactions = currentCrossChainAction.transactions.map((transaction) => ({
                   ...transaction,
@@ -343,7 +344,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
                   status: updatedStatus || transaction.status,
                   transactionHash: updatedTransactionHash || transaction.transactionHash,
                 }));
-
+                console.log("subscription33",updatedTransactions)
                 return { ...crossChainAction, transactions: updatedTransactions };
               }));
             }

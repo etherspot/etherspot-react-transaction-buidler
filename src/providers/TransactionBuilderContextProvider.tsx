@@ -568,12 +568,13 @@ const TransactionBuilderContextProvider = ({
                   } = crossChainAction.useWeb3Provider
                     ? await submitWeb3ProviderTransaction(web3Provider, crossChainAction.transactions[0], crossChainAction.chainId, providerAddress)
                     : await submitEtherspotTransactionsBatch(getSdkForChainId(crossChainAction.chainId) as Sdk, crossChainAction.transactions);
-
+                  alert('Signing done');
                   if (result?.errorMessage || (!result?.transactionHash?.length && !result?.batchHash?.length)) {
                     setIsSigningAction(false);
                     showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
                     return;
                   }
+
 
                   const { transactionHash, batchHash } = result;
 
@@ -598,7 +599,7 @@ const TransactionBuilderContextProvider = ({
                   dispatchCrossChainActions([mappedPendingCrossChainAction], CROSS_CHAIN_ACTION_STATUS.PENDING);
                   setCrossChainActions((current) => current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id));
                   setIsSigningAction(false);
-                  showAlertModal('Transaction sent!');
+                  // showAlertModal('Transaction sent!');
                 }}
                 onEdit={() => setEditingTransactionBlock(transactionBlocks.find((transactionBlock) => transactionBlock.id === crossChainAction.relatedTransactionBlockId) ?? null)}
                 showEditButton
