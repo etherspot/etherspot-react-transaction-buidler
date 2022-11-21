@@ -171,6 +171,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [showSigningDone , setShowSigningDone] = useState<boolean>(false);
+  const [prevStatus, setPrevStatus] = useState<string | null>(null)
   const {
     chainId,
     batchHash: transactionsBatchHash,
@@ -275,11 +276,13 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
 
         useEffect(() => {
           let timeout : any
-          if(transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && !showSigningDone) {
-            setShowSigningDone(true)
+          if(transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT && !prevStatus) {
+            // setShowSigningDone(true)
+            setPrevStatus(transactionStatus)
             timeout = setTimeout(() => {
-              setShowSigningDone(false)
-            }, 10000)
+              // setShowSigningDone(false)
+              setPrevStatus(null)
+            }, 2000)
 
           }
           if(timeout){
@@ -290,7 +293,7 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
 
         return (
           <TransactionStatusAction key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}>
-            { showSigningDone 
+            { prevStatus 
             ? (<TransactionStatusWrapper>
               <TransactionStatusMessageWrapper>
               <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
