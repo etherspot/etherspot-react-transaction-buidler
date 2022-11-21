@@ -3,6 +3,7 @@ import { BigNumber } from 'ethers';
 import { Route } from '@lifi/sdk';
 
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
+import { IMultiCallData } from './transactionBlock';
 
 interface AssetTransfer {
 	address: string;
@@ -21,7 +22,7 @@ interface AssetBridgeActionPreview {
 	providerName: string;
 	providerIconUrl: string | undefined;
 	receiverAddress?: string;
-  route: Route;
+	route: Route;
 }
 
 interface SendAssetActionPreview {
@@ -90,4 +91,5 @@ export type ICrossChainAction = {
 	useWeb3Provider?: boolean;
 	batchTransactions?: ICrossChainAction[];
 	batchHash?: string;
+	multiCallData?: IMultiCallData | null;
 } & (AssetBridgeAction | SendAssetAction | AssetSwapAction | KlimaStakingAction);

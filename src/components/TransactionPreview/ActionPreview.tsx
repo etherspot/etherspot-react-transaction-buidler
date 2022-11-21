@@ -421,8 +421,8 @@ const ActionPreview = ({
 		);
 	}
 
-  if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
+	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
+		const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
 
 		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 		const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
@@ -496,23 +496,24 @@ const ActionPreview = ({
 						</Text>
 					</TransactionAction>
 				)}
-        {!!route && (
-          <TransactionAction>
-            <Label>Route</Label>
-            <RouteOption route={route} showActions />
-          </TransactionAction>
-        )}
+				{!!route && (
+					<TransactionAction>
+						<Label>Route</Label>
+						<RouteOption route={route} showActions />
+					</TransactionAction>
+				)}
 				<TransactionStatus crossChainAction={crossChainAction} />
 			</Card>
 		);
 	}
 
 	if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-		const previewList = crossChainAction?.batchTransactions?.length
-			? crossChainAction?.batchTransactions.map((action) =>
-					action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET ? action.preview : null,
-			  )
-			: [crossChainAction.preview];
+		const previewList =
+			crossChainAction?.batchTransactions?.length && !crossChainAction?.multiCallData
+				? crossChainAction?.batchTransactions.map((action) =>
+						action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET ? action.preview : null,
+				  )
+				: [crossChainAction.preview];
 
 		const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
 		const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
@@ -593,11 +594,12 @@ const ActionPreview = ({
 	}
 
 	if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-		const previewList = crossChainAction?.batchTransactions?.length
-			? crossChainAction?.batchTransactions.map((action) =>
-					action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ? action.preview : null,
-			  )
-			: [crossChainAction.preview];
+		const previewList =
+			crossChainAction?.batchTransactions?.length && !crossChainAction?.multiCallData
+				? crossChainAction?.batchTransactions.map((action) =>
+						action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ? action.preview : null,
+				  )
+				: [crossChainAction.preview];
 
 		const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
 		const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();

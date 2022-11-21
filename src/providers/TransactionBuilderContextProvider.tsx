@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { Sdk } from 'etherspot';
+import { Sdk, TokenListToken } from 'etherspot';
 
 import { PrimaryButton, SecondaryButton } from '../components/Button';
 import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
@@ -25,10 +25,12 @@ import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherCon
 import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
 import {
 	IDefaultTransactionBlock,
+	IMultiCallData,
 	ITransactionBlock,
 	ITransactionBlockType,
 	ITransactionBlockValues,
 } from '../types/transactionBlock';
+import { ethers } from 'ethers';
 
 export interface TransactionBuilderContextProps {
 	defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -154,6 +156,22 @@ const AddTransactionButton = styled(SecondaryButton)`
 	}
 `;
 
+const MultiCallButton = styled(PrimaryButton)`
+	text-align: center;
+	padding: 8px 0;
+	font-size: 16px;
+	border-radius: 6px;
+	background: ${({ theme }) => theme.color.background.secondary};
+	color: #fff;
+`;
+
+const TransactionBlocksWrapper = styled.div.attrs((props: { highlight: boolean }) => props)`
+	${({ theme, highlight }) =>
+		!!highlight &&
+		`margin: -10px; padding: 10px; border-radius: 18px; background-color: ${theme.color.background.secondary};`};
+	margin-bottom: 20px;
+`;
+
 const availableTransactionBlocks: ITransactionBlock[] = [
 	{
 		id: getTimeBasedUniqueId(),
@@ -213,9 +231,10 @@ const TransactionBuilderContextProvider = ({
 		: [];
 	const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>(mappedDefaultTransactionBlocks);
 
-	const [transactionBlockValidationErrors, setTransactionBlockValidationErrors] = useState<{
+	type IValidationErrors = {
 		[id: string]: ErrorMessages;
-	}>({});
+	};
+	const [transactionBlockValidationErrors, setTransactionBlockValidationErrors] = useState<IValidationErrors>({});
 	const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
 	const [isChecking, setIsChecking] = useState<boolean>(false);
 	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -223,6 +242,7 @@ const TransactionBuilderContextProvider = ({
 	const [showMenu, setShowMenu] = useState<boolean>(false);
 	const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
 	const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
+	let multiCallList: string[] = [];
 
 	const theme: Theme = useTheme();
 
@@ -246,6 +266,18 @@ const TransactionBuilderContextProvider = ({
 		[crossChainActions],
 	);
 
+	const onValidate = useCallback(async () => {
+		let validationErrors: IValidationErrors = {};
+		transactionBlocks.forEach((transactionBlock) => {
+			const transactionBlockErrors = validateTransactionBlockValues(transactionBlock);
+			if (!transactionBlockErrors || Object.keys(transactionBlockErrors).length === 0) return;
+			validationErrors = { ...validationErrors, [transactionBlock.id]: transactionBlockErrors };
+		});
+		setTransactionBlockValidationErrors(validationErrors);
+
+		return validationErrors;
+	}, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
+
 	const onContinueClick = useCallback(async () => {
 		if (!sdk) {
 			showAlertModal('Failed to retrieve Etherspot SDK!');
@@ -259,36 +291,54 @@ const TransactionBuilderContextProvider = ({
 			await connect();
 		}
 
-		let validationErrors = {};
-		transactionBlocks.forEach((transactionBlock) => {
-			const transactionBlockErrors = validateTransactionBlockValues(transactionBlock);
-			if (!transactionBlockErrors || Object.keys(transactionBlockErrors).length === 0) return;
-			validationErrors = { ...validationErrors, [transactionBlock.id]: transactionBlockErrors };
-		});
-
-		setTransactionBlockValidationErrors(validationErrors);
+		let validationErrors = await onValidate();
 
 		let newCrossChainActions: ICrossChainAction[] = [];
 		let errorMessage;
 
 		if (Object.keys(validationErrors).length === 0) {
 			// keep blocks in order
+			let multiCallList: string[] = [];
 			for (const transactionBlock of transactionBlocks) {
 				const result = await buildCrossChainAction(sdk, transactionBlock);
 				if (!result?.crossChainAction || result?.errorMessage) {
 					errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
 					break;
 				}
+
 				const action = result.crossChainAction;
 				const foundChainIndex = newCrossChainActions.findIndex(
-					(x) => x?.chainId === action.chainId && x?.type === action.type,
+					(x) => x?.chainId === action.chainId && x?.type === action.type && !x?.multiCallData,
 				);
 
-				if (
+				if (!!transactionBlock.multiCallData && !multiCallList.includes(transactionBlock.multiCallData.id)) {
+					// Batch multiCallData
+					multiCallList.push(transactionBlock.multiCallData.id);
+					let multiCallBlocks = transactionBlocks.filter(
+						(search) => search?.multiCallData?.id === transactionBlock.multiCallData?.id,
+					);
+					let allActionList: ICrossChainAction[] = [];
+					for (const block of multiCallBlocks) {
+						let result = await buildCrossChainAction(sdk, block);
+						if (!!result?.crossChainAction) allActionList.push(result.crossChainAction);
+					}
+					if (foundChainIndex > -1 && !!allActionList.length) {
+						// Append other calls to batch (should not happen)
+						const chainTx = newCrossChainActions[foundChainIndex];
+						chainTx.batchTransactions = [...allActionList];
+						newCrossChainActions[foundChainIndex] = chainTx;
+					} else if (!!allActionList.length) {
+						// Create new CrossChainAction with multicalls batched
+						let chainTx: ICrossChainAction = { ...allActionList[0], batchTransactions: allActionList };
+						newCrossChainActions = [...newCrossChainActions, chainTx];
+						console.log('log', newCrossChainActions);
+					}
+				} else if (
 					foundChainIndex > -1 &&
 					(action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
 						action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
 				) {
+					// Batch .batchTransactions array
 					const chainTx = newCrossChainActions[foundChainIndex];
 					if (chainTx?.batchTransactions?.length)
 						chainTx.batchTransactions = [...chainTx.batchTransactions, action];
@@ -370,13 +420,17 @@ const TransactionBuilderContextProvider = ({
 		setIsSubmitting(false);
 	}, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting, isEstimatingCrossChainActions]);
 
-	const setTransactionBlockValues = (transactionBlockId: string, values: ITransactionBlockValues) => {
+	const setTransactionBlockValues = (
+		transactionBlockId: string,
+		values: ITransactionBlockValues,
+		multiCallData?: IMultiCallData,
+	) => {
 		// TODO: fix type
 		// @ts-ignore
 		setTransactionBlocks((current) =>
 			current.map((transactionBlock) => {
 				if (transactionBlock.id !== transactionBlockId) return transactionBlock;
-				return { ...transactionBlock, values };
+				return { ...transactionBlock, values, multiCallData };
 			}),
 		);
 	};
@@ -509,29 +563,234 @@ const TransactionBuilderContextProvider = ({
 				)}
 				{!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock && (
 					<>
-						{transactionBlocks.map((transactionBlock) => (
-							<Card
-								key={`transaction-block-${transactionBlock.id}`}
-								marginBottom={20}
-								onCloseButtonClick={() =>
-									showConfirmModal('Are you sure you want to remove selected transaction?', () =>
-										setTransactionBlocks((current) =>
-											current.filter(
-												(addedTransactionBlock) =>
-													addedTransactionBlock.id !== transactionBlock.id,
-											),
-										),
-									)
-								}
-								showCloseButton
-							>
-								<TransactionBlock
-									key={`block-${transactionBlock.id}`}
-									{...transactionBlock}
-									errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
-								/>
-							</Card>
-						))}
+						{transactionBlocks.map((transactionBlock, i) => {
+							let disabled = false;
+							let multiCallBlocks: ITransactionBlock[] = [];
+
+							if (!!transactionBlock?.multiCallData) {
+								let multiCallId = transactionBlock?.multiCallData?.id;
+
+								if (!!multiCallId && multiCallList.includes(multiCallId)) return null;
+								else if (!!multiCallId) multiCallList.push(multiCallId);
+
+								multiCallBlocks =
+									transactionBlocks.filter(
+										(item) => item?.multiCallData?.id === transactionBlock?.multiCallData?.id,
+									) || null;
+							}
+
+							return (
+								<TransactionBlocksWrapper highlight={!!multiCallBlocks?.length}>
+									{!!multiCallBlocks?.length ? (
+										multiCallBlocks?.map((multiCallBlock, j) => {
+											return (
+												<Card
+													key={`transaction-block-${multiCallBlock.id}`}
+													marginBottom={j === multiCallBlocks.length - 1 ? 0 : 20}
+													onCloseButtonClick={() =>
+														showConfirmModal(
+															'Are you sure you want to remove selected transaction?',
+															() =>
+																setTransactionBlocks((current) => {
+																	if (j === 0) {
+																		// Remove entire block if there's only one multicall
+																	} else {
+																		// Remove last instance of a multicall block
+																	}
+																	return [...current];
+																}),
+														)
+													}
+													// Should only have the option to delete last multicall, any change mid structure should reset the entire block
+													showCloseButton={j === multiCallBlocks.length - 1}
+												>
+													<TransactionBlock
+														key={`block-${multiCallBlock.id}`}
+														{...multiCallBlock}
+														errorMessages={
+															transactionBlockValidationErrors[transactionBlock.id]
+														}
+													/>
+													{j === multiCallBlocks.length - 1 && (
+														<MultiCallButton
+															disabled={!!disabled}
+															onClick={async () => {
+																// Add new transaction block to the multicall block list
+																let validationErrors = await onValidate();
+
+																if (
+																	!!multiCallBlock.multiCallData &&
+																	!validationErrors[multiCallBlock.id] &&
+																	(multiCallBlock.type ===
+																		TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
+																		multiCallBlock.type ===
+																			TRANSACTION_BLOCK_TYPE.SEND_ASSET ||
+																		multiCallBlock.type ===
+																			TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE)
+																) {
+																	const multiCallData: IMultiCallData = {
+																		...multiCallBlock.multiCallData,
+																		fixed: true,
+																	};
+
+																	const mutatedBlock: ITransactionBlock = {
+																		...multiCallBlock,
+																		multiCallData,
+																	};
+
+																	let chain = multiCallData.chain;
+																	let token: TokenListToken | null = null;
+																	let value = 0;
+
+																	if (
+																		multiCallBlock.type ===
+																		TRANSACTION_BLOCK_TYPE.ASSET_SWAP
+																	) {
+																		if (!!multiCallBlock?.values?.toAsset) {
+																			token = multiCallBlock.values.toAsset;
+																			if (
+																				!!multiCallBlock.values.offer &&
+																				!!token
+																			)
+																				value = +ethers.utils.formatUnits(
+																					multiCallBlock.values.offer
+																						.receiveAmount,
+																					token.decimals,
+																				);
+																		}
+																	}
+
+																	const newMultiCallData: IMultiCallData = {
+																		id: multiCallBlock.multiCallData.id,
+																		chain: multiCallBlock.multiCallData.chain,
+																		lastCallId: transactionBlock.id,
+																		index: multiCallBlocks.length,
+																		token: token,
+																		value: value,
+																	};
+
+																	const newTransactionBlock: ITransactionBlock = {
+																		...availableTransactionBlocks[2],
+																		id: getTimeBasedUniqueId(),
+																		multiCallData: newMultiCallData,
+																	};
+
+																	setTransactionBlocks((current) => {
+																		let block = current.find(
+																			(item) => item.id === multiCallBlock.id,
+																		);
+																		if (!!block) {
+																			let index = current.indexOf(block);
+																			if (index > -1)
+																				current[index] = mutatedBlock;
+																		}
+																		return [...current, newTransactionBlock];
+																	});
+																}
+															}}
+														>
+															Continue Multi-Call
+														</MultiCallButton>
+													)}
+												</Card>
+											);
+										})
+									) : (
+										<Card
+											key={`transaction-block-${transactionBlock.id}`}
+											marginBottom={i === transactionBlocks.length - 1 ? 0 : 20}
+											onCloseButtonClick={() =>
+												showConfirmModal(
+													'Are you sure you want to remove selected transaction?',
+													() =>
+														setTransactionBlocks((current) =>
+															current.filter(
+																(addedTransactionBlock) =>
+																	addedTransactionBlock.id !== transactionBlock.id,
+															),
+														),
+												)
+											}
+											showCloseButton
+										>
+											<TransactionBlock
+												key={`block-${transactionBlock.id}`}
+												{...transactionBlock}
+												errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+											/>
+											{transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
+												<MultiCallButton
+													disabled={!!disabled}
+													onClick={async () => {
+														// Add new transaction block to the multicall block list
+														let validationErrors = await onValidate();
+
+														if (
+															!validationErrors[transactionBlock.id] &&
+															!!transactionBlock?.values?.chain
+														) {
+															const multiCallId = getTimeBasedUniqueId();
+															const multiCallData: IMultiCallData = {
+																id: multiCallId,
+																chain: transactionBlock.values.chain,
+																lastCallId: null,
+																index: 0,
+																fixed: true,
+															};
+															const mutatedBlock: ITransactionBlock = {
+																...transactionBlock,
+																multiCallData: multiCallData,
+															};
+
+															let token: TokenListToken | null = null;
+															let value = 0;
+															if (!!transactionBlock.values.toAsset) {
+																token = transactionBlock.values.toAsset;
+																if (!!transactionBlock.values.offer && !!token)
+																	value = +ethers.utils.formatUnits(
+																		transactionBlock.values.offer.receiveAmount,
+																		token.decimals,
+																	);
+															}
+															const newMultiCallData: IMultiCallData = {
+																id: multiCallId,
+																chain: transactionBlock.values.chain,
+																lastCallId: transactionBlock.id,
+																index: 1,
+																token: token,
+																value: value,
+															};
+
+															const newTransactionBlock: ITransactionBlock = {
+																...availableTransactionBlocks[2],
+																id: getTimeBasedUniqueId(),
+																multiCallData: newMultiCallData,
+															};
+
+															setTransactionBlocks((current) => {
+																let block = current.find(
+																	(item) => item.id === transactionBlock.id,
+																);
+																if (!!block) {
+																	let index = current.indexOf(block);
+																	if (index > -1) current[index] = mutatedBlock;
+																}
+
+																return [...current, newTransactionBlock];
+															});
+														}
+													}}
+												>
+													Continue Multi-Call
+													{!!transactionBlock.values?.toAsset?.symbol &&
+														` with ${transactionBlock.values?.toAsset?.symbol}`}
+												</MultiCallButton>
+											)}
+										</Card>
+									)}
+								</TransactionBlocksWrapper>
+							);
+						})}
 						{!showTransactionBlockSelect && !hideAddTransactionButton && (
 							<AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
 								<AiOutlinePlusCircle size={24} />
