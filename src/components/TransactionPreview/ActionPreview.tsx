@@ -17,6 +17,7 @@ import { Theme } from '../../utils/theme';
 import { useEtherspot } from '../../hooks';
 import moment from 'moment';
 import { ICrossChainAction } from '../../types/crossChainAction';
+import RouteOption from '../RouteOption';
 
 const TransactionAction = styled.div`
 	position: relative;
@@ -420,8 +421,8 @@ const ActionPreview = ({
 		);
 	}
 
-	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-		const { fromAsset, toAsset, fromChainId, toChainId, providerName, providerIconUrl, receiverAddress } = preview;
+  if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
+    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
 
 		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 		const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
@@ -495,30 +496,12 @@ const ActionPreview = ({
 						</Text>
 					</TransactionAction>
 				)}
-				<TransactionAction>
-					<Label>Route</Label>
-					<ValueWrapper>
-						<RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
-						<ValueBlock>
-							<Text size={12} marginBottom={2} medium block>
-								{providerName}
-							</Text>
-							<Text size={16} medium>
-								{toAmount} {toAsset.symbol}{' '}
-							</Text>
-						</ValueBlock>
-						{!!cost && (
-							<ValueBlock>
-								<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
-									Gas price
-								</Text>
-								<Text size={16} medium>
-									{cost}
-								</Text>
-							</ValueBlock>
-						)}
-					</ValueWrapper>
-				</TransactionAction>
+        {!!route && (
+          <TransactionAction>
+            <Label>Route</Label>
+            <RouteOption route={route} showActions />
+          </TransactionAction>
+        )}
 				<TransactionStatus crossChainAction={crossChainAction} />
 			</Card>
 		);

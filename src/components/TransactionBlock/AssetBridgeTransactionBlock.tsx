@@ -12,15 +12,19 @@ import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../uti
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { Chain } from '../../utils/chain';
-import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
+import {
+  IAssetWithBalance,
+} from '../../providers/EtherspotContextProvider';
+import {
+  CombinedRoundedImages,
+} from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
-import Text from '../Text/Text';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { Route } from '@lifi/sdk';
 import Checkbox from '../Checkbox';
 import { IAssetBridgeTransactionBlock } from '../../types/transactionBlock';
+import RouteOption from '../RouteOption';
 
 export interface IAssetBridgeTransactionBlockValues {
 	fromChain?: Chain;
@@ -39,17 +43,6 @@ const Title = styled.h3`
 	font-size: 16px;
 	color: ${({ theme }) => theme.color.text.cardTitle};
 	font-family: 'PTRootUIWebBold', sans-serif;
-`;
-
-const OfferDetails = styled.div`
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	font-family: 'PTRootUIWebMedium', sans-serif;
-`;
-
-const OfferDetailsBlock = styled.div`
-	margin-right: 16px;
 `;
 
 const WalletReceiveWrapper = styled.div`
@@ -242,25 +235,12 @@ const AssetBridgeTransactionBlock = ({
   }, [amount, selectedFromAsset]);
 
 
-  const renderOption = (option: SelectOption) => {
-    const availableRoute = availableRoutes?.find((route) => route.id === option.value);
-    const valueToReceive = availableRoute?.toAmountMin && formatAmountDisplay(ethers.utils.formatUnits(availableRoute.toAmountMin, selectedToAsset?.decimals));
-    return (
-      <OfferDetails>
-        <RoundedImage title={option.title} url={option.iconUrl} size={24} />
-        <OfferDetailsBlock>
-          <Text size={12} marginBottom={2} medium block>{option.title}</Text>
-          {!!valueToReceive && <Text size={16} medium>{valueToReceive} {selectedToAsset?.symbol}</Text>}
-        </OfferDetailsBlock>
-        {!!availableRoute?.gasCostUSD && (
-          <OfferDetailsBlock>
-            <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
-            {!!valueToReceive && <Text size={16} medium>{formatAmountDisplay(availableRoute.gasCostUSD, '$')}</Text>}
-          </OfferDetailsBlock>
-        )}
-      </OfferDetails>
-    );
-  };
+  const renderOption = (option: SelectOption) => (
+    <RouteOption
+      route={availableRoutes?.find((route) => route.id === option.value)}
+      isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
+    />
+  );
 
   return (
     <>

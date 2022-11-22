@@ -209,7 +209,7 @@ const LargeOptionDetailsBottom = styled.div`
 `;
 
 const OptionsScroll = styled.div`
-  max-height: 200px;
+  max-height: 210px;
   overflow-x: hidden;
   overflow-y: scroll;
   
