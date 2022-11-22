@@ -8,6 +8,7 @@ const CombinedImagesWrapper = styled.div<{ size?: number }>`
   height: ${({ size }) => size ?? 32}px;
   width: ${({ size }) => size ?? 32}px;
   margin-right: 11px;
+  margin-top: 2px;
 `;
 
 const SmallImageWrapper = styled.div<{ size?: number }>`

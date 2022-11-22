@@ -6,6 +6,8 @@ import dts from 'rollup-plugin-dts';
 import replace from '@rollup/plugin-replace';
 import { terser } from 'rollup-plugin-terser';
 import dotenv from 'dotenv';
+import autoprefixer from 'autoprefixer';
+import postcss from 'rollup-plugin-postcss';
 
 dotenv.config();
 
@@ -44,6 +46,12 @@ export default [
       replace({
         __ETHERSPOT_PROJECT_KEY__: process.env.ETHERSPOT_PROJECT_KEY ?? '',
         preventAssignment: true,
+      }),
+      postcss({
+        plugins: [autoprefixer()],
+        sourceMap: true,
+        extract: true,
+        minimize: true
       }),
       process.env.NODE_ENV === 'production' && terser(),
     ],

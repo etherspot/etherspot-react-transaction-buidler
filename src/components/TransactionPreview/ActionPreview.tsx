@@ -1,48 +1,26 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import styled, { useTheme } from 'styled-components';
-import { ethers } from 'ethers';
-import { HiOutlinePencilAlt } from 'react-icons/hi';
-import {
-  BsClockHistory,
-  BiCheck,
-  IoClose,
-  FaSignature,
-} from 'react-icons/all';
+import React, { useEffect, useMemo, useState } from "react";
+import styled, { useTheme } from "styled-components";
+import { ethers } from "ethers";
+import { HiOutlinePencilAlt } from "react-icons/hi";
+import { BsClockHistory, BiCheck, IoClose, FaSignature } from "react-icons/all";
 
 import {
   getTransactionExplorerLink,
   isERC20ApprovalTransactionData,
-} from '../../utils/transaction';
-import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
-import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
-import {
-  formatAmountDisplay,
-  humanizeHexString,
-} from '../../utils/common';
-import { CROSS_CHAIN_ACTION_STATUS } from '../../constants/transactionDispatcherConstants';
-import {
-  nativeAssetPerChainId,
-  supportedChains,
-} from '../../utils/chain';
-import Card from '../Card';
-import {
-  CombinedRoundedImages,
-  RoundedImage,
-} from '../Image';
-import {
-  ClickableText,
-  Text,
-} from '../Text';
-import { Theme } from '../../utils/theme';
-import {
-  useEtherspot,
-} from '../../hooks';
-import moment from 'moment';
-import { ICrossChainAction } from '../../types/crossChainAction';
+} from "../../utils/transaction";
+import { TRANSACTION_BLOCK_TYPE } from "../../constants/transactionBuilderConstants";
+import { CHAIN_ID_TO_NETWORK_NAME } from "etherspot/dist/sdk/network/constants";
+import { formatAmountDisplay, humanizeHexString } from "../../utils/common";
+import { CROSS_CHAIN_ACTION_STATUS } from "../../constants/transactionDispatcherConstants";
+import { nativeAssetPerChainId, supportedChains } from "../../utils/chain";
+import Card from "../Card";
+import { CombinedRoundedImages, RoundedImage } from "../Image";
+import { ClickableText, Text } from "../Text";
+import { Theme } from "../../utils/theme";
+import { useEtherspot } from "../../hooks";
+import moment from "moment";
+import { ICrossChainAction } from "../../types/crossChainAction";
+import RouteOption from "../RouteOption";
 
 const TransactionAction = styled.div`
   position: relative;
@@ -104,7 +82,7 @@ const SignButton = styled(FaSignature)<{ disabled?: boolean }>`
   &:hover {
     opacity: 0.5;
   }
-  
+
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
@@ -116,7 +94,7 @@ const EditButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
   &:hover {
     opacity: 0.5;
   }
-  
+
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
@@ -154,39 +132,57 @@ const StatusIconWrapper = styled.span<{ color?: string }>`
   text-align: center;
 `;
 
+const RouteWrapper = styled.div`
+  position: relative;
+  background: ${({ theme }) => theme.color.background.card};
+  color: ${({ theme }) => theme.color.text.selectInput};
+  border-radius: 8px;
+  padding: 8px 14px;
+  word-break: break-all;
+  margin-top: 6px;
+  margin-bottom: 14px;
+`;
+
+const Row = styled.div.attrs((props: { center: boolean }) => props)`
+  display: flex;
+  flex-direction: row;
+  ${({ center }) => center && "align-items: center;"};
+`;
+
 interface TransactionPreviewInterface {
   crossChainAction: ICrossChainAction;
-  onRemove?: () => void
-  onSign?: () => void
-  onEdit?: () => void
-  signButtonDisabled?: boolean
-  editButtonDisabled?: boolean
-  showEditButton?: boolean
-  showSignButton?: boolean
+  onRemove?: () => void;
+  onSign?: () => void;
+  onEdit?: () => void;
+  signButtonDisabled?: boolean;
+  editButtonDisabled?: boolean;
+  showEditButton?: boolean;
+  showSignButton?: boolean;
 }
 
-const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChainAction }) => {
+const TransactionStatus = ({
+  crossChainAction,
+}: {
+  crossChainAction: ICrossChainAction;
+}) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
-  const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
+  const [isGettingExplorerLink, setIsGettingExplorerLink] =
+    useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
-  const [showSigningDone , setShowSigningDone] = useState<boolean>(false);
-  const [prevStatus, setPrevStatus] = useState<string | null>(null)
-  const {
-    chainId,
-    batchHash: transactionsBatchHash,
-  } = crossChainAction;
+  const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
+  const { chainId, batchHash: transactionsBatchHash } = crossChainAction;
 
   const previewTransaction = (transactionHash?: string) => {
     const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
     if (!explorerLink) {
-      alert('Transaction hash not yet available!');
+      alert("Transaction hash not yet available!");
       return;
     }
 
-    window.open(explorerLink, '_blank');
-  }
+    window.open(explorerLink, "_blank");
+  };
 
   const previewBatchTransaction = async () => {
     if (isGettingExplorerLink) return;
@@ -195,28 +191,37 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
 
     const sdk = getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
-      alert('Transaction hash not yet available!');
+      alert("Transaction hash not yet available!");
       setIsGettingExplorerLink(false);
       return;
     }
 
-    let transactionHash = '';
+    let transactionHash = "";
     try {
-      const submittedBatch = await sdk.getGatewaySubmittedBatch({ hash: transactionsBatchHash });
+      const submittedBatch = await sdk.getGatewaySubmittedBatch({
+        hash: transactionsBatchHash,
+      });
       const { transaction } = submittedBatch;
-      transactionHash = transaction?.hash ?? '';
+      transactionHash = transaction?.hash ?? "";
     } catch (e) {
       //
     }
 
     setIsGettingExplorerLink(false);
     previewTransaction(transactionHash);
-  }
+  };
 
   useEffect(() => {
-    console.log("crossChainAction",crossChainAction)
-    if (crossChainAction.transactions.every((transaction) => !!transaction.finishTimestamp)) return;
-    let intervalId = setInterval(() => setSecondsAfter((current) => current + 1), 1000);
+    if (
+      crossChainAction.transactions.every(
+        (transaction) => !!transaction.finishTimestamp
+      )
+    )
+      return;
+    let intervalId = setInterval(
+      () => setSecondsAfter((current) => current + 1),
+      1000
+    );
     return () => {
       if (!intervalId) return;
       clearInterval(intervalId);
@@ -227,118 +232,161 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
   const statusPreviewTransactions = crossChainAction.useWeb3Provider
     ? crossChainAction.transactions
     : [crossChainAction.transactions[0]];
-  console.log('Paniiiii',statusPreviewTransactions)
 
   return (
     <>
       {statusPreviewTransactions.map((transaction, index) => {
-        const transactionStatus = transaction?.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
+        const transactionStatus =
+          transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: 'Sign Message',
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]: 'Waiting for transaction',
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]: 'Transaction failed',
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: 'Rejected by user',
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: 'Transaction approved',
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: "Sign message",
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: "Transaction approved",
         };
 
-        const actionStatusToIconBackgroundColor: { [transactionStatus: string]: string | undefined } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]: theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]: theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: theme?.color?.background?.statusIconSuccess,
+        const actionStatusToIconBackgroundColor: {
+          [transactionStatus: string]: string | undefined;
+        } = {
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]:
+            theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]:
+            theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]:
+            theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]:
+            theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]:
+            theme?.color?.background?.statusIconSuccess,
         };
 
-        const actionStatusIconBackgroundColor = actionStatusToIconBackgroundColor[transactionStatus];
+        const actionStatusIconBackgroundColor =
+          actionStatusToIconBackgroundColor[transactionStatus];
         const actionStatusTitle = actionStatusToTitle[transactionStatus];
 
         if (!actionStatusTitle) return null;
 
-        const showAsApproval = crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(transaction.data as string);
+        const showAsApproval =
+          crossChainAction.useWeb3Provider &&
+          isERC20ApprovalTransactionData(transaction.data as string);
 
         const getStatusComponent = useMemo(() => {
-          switch(transactionStatus) {
+          switch (transactionStatus) {
             case CROSS_CHAIN_ACTION_STATUS.CONFIRMED:
-              return <BiCheck size={16} />
+              return <BiCheck size={16} />;
             case CROSS_CHAIN_ACTION_STATUS.PENDING:
-              return <BsClockHistory size={14} />
+              return <BsClockHistory size={14} />;
             case CROSS_CHAIN_ACTION_STATUS.UNSENT:
-              return <BsClockHistory size={14} />
+              return <BsClockHistory size={14} />;
             case CROSS_CHAIN_ACTION_STATUS.FAILED:
-              return <IoClose size={15} />
+              return <IoClose size={15} />;
             case CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER:
-              return <IoClose size={15} />
+              return <IoClose size={15} />;
             default:
-              return <></>
+              return <></>;
           }
-        }, [transactionStatus])
+        }, [transactionStatus]);
 
         useEffect(() => {
-          let timeout : any
-          if(transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT && !prevStatus) {
+          let timeout: any;
+          if (
+            transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
+            !prevStatus
+          ) {
             // setShowSigningDone(true)
-            setPrevStatus(transactionStatus)
+            setPrevStatus(transactionStatus);
             timeout = setTimeout(() => {
               // setShowSigningDone(false)
-              setPrevStatus(null)
-            }, 2000)
-
+              setPrevStatus(null);
+            }, 2000);
           }
-          if(timeout){
+          if (timeout) {
             //@ts-ignore
-            return () => clearTimeout(timeout)
+            return () => clearTimeout(timeout);
           }
-        }, [transactionStatus])
+        }, [transactionStatus]);
 
         return (
-          <TransactionStatusAction key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}>
-            { prevStatus 
-            ? (<TransactionStatusWrapper>
-              <TransactionStatusMessageWrapper>
-              <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
-                <BiCheck size={16} />
-              </StatusIconWrapper>
-              </TransactionStatusMessageWrapper>
-            </TransactionStatusWrapper>)
-            :<>
-            {transaction?.submitTimestamp && transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
-              <TransactionStatusClock>
-                {!!transaction.finishTimestamp && moment(moment(transaction.finishTimestamp).diff(moment(transaction.submitTimestamp))).format('mm:ss')}
-                {!transaction.finishTimestamp && moment(moment().diff(moment(transaction.submitTimestamp))).format('mm:ss')}
-              </TransactionStatusClock>
-            )}
-            <TransactionStatusWrapper>
-              <TransactionStatusMessageWrapper>
-                {!!actionStatusIconBackgroundColor && (
-                  <StatusIconWrapper color={actionStatusIconBackgroundColor}>
-                    {getStatusComponent}
+          <TransactionStatusAction
+            key={`tx-status-${
+              transaction.transactionHash ||
+              crossChainAction.batchHash ||
+              "no-hash"
+            }-${index}`}
+          >
+            {prevStatus ? (
+              <TransactionStatusWrapper>
+                <TransactionStatusMessageWrapper>
+                  <StatusIconWrapper
+                    color={theme?.color?.background?.statusIconSuccess}
+                  >
+                    <BiCheck size={16} />
                   </StatusIconWrapper>
-                )}
-                <Text size={16} medium>
-                  {showAsApproval ? `Aprove: ${actionStatusTitle.toLowerCase()}` : actionStatusTitle}
-                </Text>
-              </TransactionStatusMessageWrapper>
-              {transaction?.submitTimestamp && (
-                <ClickableText
-                  disabled={isGettingExplorerLink}
-                  onClick={() => {
-                    if (crossChainAction.useWeb3Provider) return previewTransaction(transaction.transactionHash);
-                    previewBatchTransaction();
-                  }}
-                >
-                  <Text size={16} color={theme?.color?.text?.transactionStatusLink} medium>Tx</Text>
-                </ClickableText>
-              )}
-            </TransactionStatusWrapper>
-            </>
-            }
+                </TransactionStatusMessageWrapper>
+              </TransactionStatusWrapper>
+            ) : (
+              <>
+                {transaction?.submitTimestamp &&
+                  transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
+                    <TransactionStatusClock>
+                      {!!transaction.finishTimestamp &&
+                        moment(
+                          moment(transaction.finishTimestamp).diff(
+                            moment(transaction.submitTimestamp)
+                          )
+                        ).format("mm:ss")}
+                      {!transaction.finishTimestamp &&
+                        moment(
+                          moment().diff(moment(transaction.submitTimestamp))
+                        ).format("mm:ss")}
+                    </TransactionStatusClock>
+                  )}
+                <TransactionStatusWrapper>
+                  <TransactionStatusMessageWrapper>
+                    {!!actionStatusIconBackgroundColor && (
+                      <StatusIconWrapper
+                        color={actionStatusIconBackgroundColor}
+                      >
+                        {getStatusComponent}
+                      </StatusIconWrapper>
+                    )}
+                    <Text size={16} medium>
+                      {showAsApproval
+                        ? `Aprove: ${actionStatusTitle.toLowerCase()}`
+                        : actionStatusTitle}
+                    </Text>
+                  </TransactionStatusMessageWrapper>
+                  {transaction?.submitTimestamp && (
+                    <ClickableText
+                      disabled={isGettingExplorerLink}
+                      onClick={() => {
+                        if (crossChainAction.useWeb3Provider)
+                          return previewTransaction(
+                            transaction.transactionHash
+                          );
+                        previewBatchTransaction();
+                      }}
+                    >
+                      <Text
+                        size={16}
+                        color={theme?.color?.text?.transactionStatusLink}
+                        medium
+                      >
+                        Tx
+                      </Text>
+                    </ClickableText>
+                  )}
+                </TransactionStatusWrapper>
+              </>
+            )}
           </TransactionStatusAction>
-        )
+        );
       })}
     </>
-  )
-}
+  );
+};
 
 const ActionPreview = ({
   crossChainAction,
@@ -354,18 +402,12 @@ const ActionPreview = ({
 
   const theme: Theme = useTheme();
 
-  const {
-    preview,
-    chainId,
-    type,
-    estimated,
-    isEstimating,
-  } = crossChainAction;
+  const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
 
   const onCopy = async (valueToCopy: string) => {
     try {
       await navigator.clipboard.writeText(valueToCopy);
-      alert('Copied!');
+      alert("Copied!");
     } catch (e) {
       //
     }
@@ -379,34 +421,51 @@ const ActionPreview = ({
   const onSignButtonClick = () => {
     if (signButtonDisabled || !onSign) return;
     onSign();
-  }
+  };
 
   const showCloseButton = !!onRemove;
 
   const cost = useMemo(() => {
-    if (isEstimating) return 'Estimating...';
+    if (isEstimating) return "Estimating...";
     if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
 
-    const gasCostNumericString = ethers.utils.formatUnits(estimated.gasCost, nativeAssetPerChainId[chainId].decimals);
-    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol}`;
+    const gasCostNumericString = ethers.utils.formatUnits(
+      estimated.gasCost,
+      nativeAssetPerChainId[chainId].decimals
+    );
+    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${
+      nativeAssetPerChainId[chainId].symbol
+    }`;
     if (!estimated.usdPrice) return gasCostFormatted;
 
-    return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
+    return formatAmountDisplay(
+      `${+gasCostNumericString * +estimated.usdPrice}`,
+      "$"
+    );
   }, [isEstimating, estimated]);
 
   const additionalTopButtons = [
-    showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />,
-    showEditButton && <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />
+    showSignButton && (
+      <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
+    ),
+    showEditButton && (
+      <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />
+    ),
   ];
 
   if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
     const { fromAsset, fromChainId } = preview;
 
-    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+    const fromNetwork = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === fromChainId
+    );
 
-    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const fromChainTitle =
+      fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
-    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+    const fromAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+    );
 
     return (
       <Card
@@ -427,7 +486,9 @@ const ActionPreview = ({
                 smallImageUrl={fromNetwork?.iconUrl}
               />
               <div>
-                <Text size={16} marginBottom={1} medium block>{fromAmount} {fromAsset.symbol}</Text>
+                <Text size={16} marginBottom={1} medium block>
+                  {fromAmount} {fromAsset.symbol}
+                </Text>
                 <Text size={12}>On {fromChainTitle}</Text>
               </div>
             </ValueWrapper>
@@ -439,8 +500,18 @@ const ActionPreview = ({
           <ValueWrapper>
             {!!cost && (
               <ValueBlock>
-                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
-                <Text size={16} medium>{cost}</Text>
+                <Text
+                  size={12}
+                  marginBottom={2}
+                  color={theme.color?.text?.innerLabel}
+                  medium
+                  block
+                >
+                  Gas price
+                </Text>
+                <Text size={16} medium>
+                  {cost}
+                </Text>
               </ValueBlock>
             )}
           </ValueWrapper>
@@ -451,16 +522,33 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    const { fromAsset, toAsset, fromChainId, toChainId, providerName, providerIconUrl, receiverAddress } = preview;
+    const {
+      fromAsset,
+      toAsset,
+      fromChainId,
+      toChainId,
+      receiverAddress,
+      route,
+    } = preview;
 
-    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
-    const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
+    const fromNetwork = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === fromChainId
+    );
+    const toNetwork = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === toChainId
+    );
 
-    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
-    const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
+    const fromChainTitle =
+      fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const toChainTitle =
+      toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
 
-    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+    const fromAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+    );
+    const toAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
+    );
 
     const senderAddress = crossChainAction.useWeb3Provider
       ? providerAddress
@@ -485,7 +573,9 @@ const ActionPreview = ({
                 smallImageUrl={fromNetwork?.iconUrl}
               />
               <div>
-                <Text size={16} marginBottom={1} medium block>{fromAmount} {fromAsset.symbol}</Text>
+                <Text size={16} marginBottom={1} medium block>
+                  {fromAmount} {fromAsset.symbol}
+                </Text>
                 <Text size={12}>On {fromChainTitle}</Text>
               </div>
             </ValueWrapper>
@@ -500,7 +590,9 @@ const ActionPreview = ({
                 smallImageUrl={toNetwork?.iconUrl}
               />
               <div>
-                <Text size={16} marginBottom={3} medium block>{toAmount} {toAsset.symbol}</Text>
+                <Text size={16} marginBottom={3} medium block>
+                  {toAmount} {toAsset.symbol}
+                </Text>
                 <Text size={12}>On {toChainTitle}</Text>
               </div>
             </ValueWrapper>
@@ -510,46 +602,44 @@ const ActionPreview = ({
           <TransactionAction>
             <Text size={16} medium>
               <>
-                From
-                &nbsp;
-                <ClickableText onClick={() => onCopy(senderAddress)}>{humanizeHexString(senderAddress)}</ClickableText>
+                From &nbsp;
+                <ClickableText onClick={() => onCopy(senderAddress)}>
+                  {humanizeHexString(senderAddress)}
+                </ClickableText>
                 &nbsp;
               </>
-              to
-              &nbsp;
-              <ClickableText onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</ClickableText>
+              to &nbsp;
+              <ClickableText onClick={() => onCopy(receiverAddress)}>
+                {humanizeHexString(receiverAddress)}
+              </ClickableText>
             </Text>
           </TransactionAction>
         )}
-        <TransactionAction>
-          <Label>Route</Label>
-          <ValueWrapper>
-            <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
-            <ValueBlock>
-              <Text size={12} marginBottom={2} medium block>{providerName}</Text>
-              <Text size={16} medium>{toAmount} {toAsset.symbol} </Text>
-            </ValueBlock>
-            {!!cost && (
-              <ValueBlock>
-                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
-                <Text size={16} medium>{cost}</Text>
-              </ValueBlock>
-            )}
-          </ValueWrapper>
-        </TransactionAction>
+        {!!route && (
+          <TransactionAction>
+            <Label>Route</Label>
+            <RouteOption route={route} showActions />
+          </TransactionAction>
+        )}
         <TransactionStatus crossChainAction={crossChainAction} />
       </Card>
     );
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-    const { asset, chainId, fromAddress } = preview;
-    const receiverAddress = preview.receiverAddress as string;
+    const previewList = crossChainAction?.batchTransactions?.length
+      ? crossChainAction?.batchTransactions.map((action) =>
+          action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
+            ? action.preview
+            : null
+        )
+      : [crossChainAction.preview];
 
-    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
-    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
-
-    const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
+    const network = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === chainId
+    );
+    const chainTitle =
+      network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     return (
       <Card
@@ -559,53 +649,95 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        <TransactionAction>
-          <Label>You send</Label>
-          <ValueWrapper>
-            <CombinedRoundedImages
-              title={asset.symbol}
-              url={asset.iconUrl}
-              smallImageTitle={chainTitle}
-              smallImageUrl={network?.iconUrl}
-            />
-            <ValueBlock>
-              <Text size={16} marginBottom={1} medium block>{amount} {asset.symbol}</Text>
-              <Text size={12}>On {chainTitle}</Text>
-            </ValueBlock>
-            <ValueBlock>
-              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
-              <Text size={16} medium>{cost ?? 'N/A'}</Text>
-            </ValueBlock>
-          </ValueWrapper>
-        </TransactionAction>
-        <TransactionAction>
-          <Text size={16} medium>
-            {!!fromAddress && (
-              <>
-                From
-                &nbsp;
-                <ClickableText onClick={() => onCopy(fromAddress)}>{humanizeHexString(fromAddress)}</ClickableText>
-                &nbsp;
-              </>
-            )}
-            {fromAddress ? 'to' : 'To'}
-            &nbsp;
-            <ClickableText onClick={() => onCopy(receiverAddress)}>{humanizeHexString(receiverAddress)}</ClickableText>
-          </Text>
-        </TransactionAction>
+        {previewList.map((preview) => {
+          if (!preview) return null;
+
+          const { asset, chainId, fromAddress } = preview;
+          const amount = formatAmountDisplay(
+            ethers.utils.formatUnits(asset.amount, asset.decimals)
+          );
+          const receiverAddress = preview.receiverAddress as string;
+
+          return (
+            <TransactionAction>
+              <Label>You send</Label>
+              <ValueWrapper>
+                <CombinedRoundedImages
+                  title={asset.symbol}
+                  url={asset.iconUrl}
+                  smallImageTitle={chainTitle}
+                  smallImageUrl={network?.iconUrl}
+                />
+                <ValueBlock>
+                  <Text size={16} marginBottom={1} medium block>
+                    {amount} {asset.symbol}
+                  </Text>
+                  <Text size={12}>On {chainTitle}</Text>
+                </ValueBlock>
+                <ValueBlock>
+                  <Text
+                    size={12}
+                    marginBottom={2}
+                    color={theme.color?.text?.innerLabel}
+                    medium
+                    block
+                  >
+                    Gas price
+                  </Text>
+                  <Text size={16} medium>
+                    {cost ?? "N/A"}
+                  </Text>
+                </ValueBlock>
+              </ValueWrapper>
+              <ValueWrapper marginTop={8}>
+                <Text size={16} medium>
+                  {!!fromAddress && (
+                    <>
+                      From &nbsp;
+                      <ClickableText onClick={() => onCopy(fromAddress)}>
+                        {humanizeHexString(fromAddress)}
+                      </ClickableText>
+                      &nbsp;
+                    </>
+                  )}
+                  {fromAddress ? "to" : "To"}
+                  &nbsp;
+                  <ClickableText onClick={() => onCopy(receiverAddress)}>
+                    {humanizeHexString(receiverAddress)}
+                  </ClickableText>
+                </Text>
+              </ValueWrapper>
+            </TransactionAction>
+          );
+        })}
+
+        {previewList.length > 1 && (
+          <TransactionAction>
+            <Text size={16} medium>
+              {`${previewList.length} swaps are batched in one transaction`}
+            </Text>
+          </TransactionAction>
+        )}
+
         <TransactionStatus crossChainAction={crossChainAction} />
       </Card>
     );
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-    const { fromAsset, toAsset, chainId, providerName, providerIconUrl } = preview;
+    const previewList = crossChainAction?.batchTransactions?.length
+      ? crossChainAction?.batchTransactions.map((action) =>
+          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP
+            ? action.preview
+            : null
+        )
+      : [crossChainAction.preview];
 
-    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
-    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
-
-    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+    const network = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === chainId
+    );
+    const chainTitle =
+      network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     return (
       <Card
@@ -615,53 +747,116 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        <DoubleTransactionActionsInSingleRow>
+        {previewList.map((preview) => {
+          if (!preview) return null;
+
+          const { fromAsset, toAsset } = preview;
+          const fromAmount = formatAmountDisplay(
+            ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+          );
+          const toAmount = formatAmountDisplay(
+            ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
+          );
+
+          return (
+            <DoubleTransactionActionsInSingleRow>
+              <TransactionAction>
+                <Label>You send</Label>
+                <ValueWrapper>
+                  <CombinedRoundedImages
+                    title={fromAsset.symbol}
+                    url={fromAsset.iconUrl}
+                    smallImageTitle={chainTitle}
+                    smallImageUrl={network?.iconUrl}
+                  />
+                  <div>
+                    <Text size={16} marginBottom={1} medium block>
+                      {fromAmount} {fromAsset.symbol}
+                    </Text>
+                    <Text size={12}>On {chainTitle}</Text>
+                  </div>
+                </ValueWrapper>
+              </TransactionAction>
+              <TransactionAction>
+                <Label>You receive</Label>
+                <ValueWrapper>
+                  <CombinedRoundedImages
+                    title={toAsset.symbol}
+                    url={toAsset.iconUrl}
+                    smallImageTitle={chainTitle}
+                    smallImageUrl={network?.iconUrl}
+                  />
+                  <div>
+                    <Text size={16} marginBottom={3} medium block>
+                      {toAmount} {toAsset.symbol}
+                    </Text>
+                    <Text size={12}>On {chainTitle}</Text>
+                  </div>
+                </ValueWrapper>
+              </TransactionAction>
+            </DoubleTransactionActionsInSingleRow>
+          );
+        })}
+
+        {previewList.length > 1 && (
           <TransactionAction>
-            <Label>You send</Label>
-            <ValueWrapper>
-              <CombinedRoundedImages
-                title={fromAsset.symbol}
-                url={fromAsset.iconUrl}
-                smallImageTitle={chainTitle}
-                smallImageUrl={network?.iconUrl}
-              />
-              <div>
-                <Text size={16} marginBottom={1} medium block>{fromAmount} {fromAsset.symbol}</Text>
-                <Text size={12}>On {chainTitle}</Text>
-              </div>
-            </ValueWrapper>
+            <Text size={16} medium>
+              {`${previewList.length} swaps are batched in one transaction`}
+            </Text>
           </TransactionAction>
-          <TransactionAction>
-            <Label>You receive</Label>
-            <ValueWrapper>
-              <CombinedRoundedImages
-                title={toAsset.symbol}
-                url={toAsset.iconUrl}
-                smallImageTitle={chainTitle}
-                smallImageUrl={network?.iconUrl}
-              />
-              <div>
-                <Text size={16} marginBottom={3} medium block>{toAmount} {toAsset.symbol}</Text>
-                <Text size={12}>On {chainTitle}</Text>
-              </div>
-            </ValueWrapper>
-          </TransactionAction>
-        </DoubleTransactionActionsInSingleRow>
+        )}
+
         <TransactionAction>
           <Label>Route</Label>
-          <ValueWrapper>
-            <RoundedImage title={providerName} url={providerIconUrl} />
-            <ValueBlock>
-              <Text size={12} marginBottom={2} medium block>{providerName}</Text>
-              <Text size={16} medium>{toAmount} {toAsset.symbol} </Text>
-            </ValueBlock>
-            {!!cost && (
-              <ValueBlock>
-                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>Gas price</Text>
-                <Text size={16} medium>{cost}</Text>
-              </ValueBlock>
-            )}
-          </ValueWrapper>
+          {!!cost && (
+            <Row center>
+              <Text
+                size={12}
+                marginBottom={2}
+                color={theme.color?.text?.innerLabel}
+                medium
+                block
+              >
+                Gas price
+              </Text>
+              <Text size={14} marginLeft={4} medium>
+                {cost}
+              </Text>
+            </Row>
+          )}
+
+          <RouteWrapper>
+            {previewList.map((preview) => {
+              if (!preview) return null;
+              const { fromAsset, toAsset, providerName, providerIconUrl } =
+                preview;
+
+              const fromAmount = formatAmountDisplay(
+                ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+              );
+              const toAmount = formatAmountDisplay(
+                ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
+              );
+              return (
+                <Row>
+                  <RoundedImage
+                    style={{ marginTop: 2 }}
+                    title={providerName}
+                    url={providerIconUrl}
+                    size={10}
+                  />
+                  <ValueBlock>
+                    <Text size={12} marginBottom={2} regular block>
+                      {`Swap on ${chainTitle} via ${providerName}`}
+                    </Text>
+                    <Text size={12} regular block>
+                      {`${fromAmount} ${fromAsset.symbol} → ${toAmount} ${toAsset.symbol}`}
+                    </Text>
+                  </ValueBlock>
+                </Row>
+              );
+            })}
+          </RouteWrapper>
         </TransactionAction>
         <TransactionStatus crossChainAction={crossChainAction} />
       </Card>

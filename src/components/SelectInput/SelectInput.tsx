@@ -13,14 +13,16 @@ import { containsText } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, inverse?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
+  cursor: pointer;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
+  ${({ theme, inverse }) => inverse && `background-color: ${ theme.color.background.toDropdownColor };`}
 `;
 
 const SelectButtonWrapper = styled.div<{ disabled?: boolean }>`
@@ -113,7 +115,7 @@ const SelectedOption = styled.div<{ disabled?: boolean; noHover?: boolean; }>`
 `;
 
 const OptionsScroll = styled.div`
-  max-height: 200px;
+  max-height: 210px;
   overflow-x: hidden;
   overflow-y: scroll;
   
@@ -170,6 +172,7 @@ interface SelectInputProps {
   renderOptionListItemContent?: (option: SelectOption) => React.ReactNode;
   forceShow?: boolean
   noOpen?: boolean
+  inverse?: boolean
 }
 
 const SelectInput = ({
@@ -187,6 +190,7 @@ const SelectInput = ({
   renderSelectedOptionContent,
   forceShow = false,
   noOpen = false,
+  inverse = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-select-search-input-'));
@@ -224,7 +228,7 @@ const SelectInput = ({
   return (
     <>
       {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
-      <Wrapper disabled={disabled} expanded={showSelectModal}>
+      <Wrapper disabled={disabled} expanded={showSelectModal} inverse={inverse} onClick={onSelectClick}>
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         {!isLoading && options?.length > 1 && (
           <SelectButtonWrapper onClick={onSelectClick} disabled={disabled}>
@@ -233,7 +237,11 @@ const SelectInput = ({
           </SelectButtonWrapper>
         )}
         {!showSelectModal && (
-          <SelectedOption onClick={onSelectClick} disabled={disabled} noHover={noOpen}>
+          <SelectedOption onClick={(e) => {
+            e.stopPropagation()
+            onSelectClick()
+            }} 
+            disabled={disabled} noHover={noOpen}>
             {!!renderSelectedOptionContent && selectedOption && renderSelectedOptionContent(selectedOption)}
             {(!renderSelectedOptionContent || !selectedOption) && (
               <>

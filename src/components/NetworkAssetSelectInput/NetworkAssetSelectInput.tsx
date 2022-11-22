@@ -30,14 +30,16 @@ import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, inverse?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
+  cursor: pointer;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
+  ${({ theme, inverse }) => inverse && `background-color: ${ theme.color.background.toDropdownColor };`}
 `;
 
 const SelectWrapper = styled.div<{ disabled: boolean }>`
@@ -207,7 +209,7 @@ const LargeOptionDetailsBottom = styled.div`
 `;
 
 const OptionsScroll = styled.div`
-  max-height: 200px;
+  max-height: 210px;
   overflow-x: hidden;
   overflow-y: scroll;
   
@@ -245,6 +247,7 @@ interface SelectInputProps {
   hideChainIds?: number[];
   walletAddress?: string | null;
   showQuickInputButtons?: boolean;
+  inverse?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -259,6 +262,7 @@ const NetworkAssetSelectInput = ({
   hideChainIds,
   walletAddress,
   showQuickInputButtons,
+  inverse = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -278,10 +282,9 @@ const NetworkAssetSelectInput = ({
   }, [disabled, showSelectModal, selectedNetwork]);
 
   const updateSelectedNetworkAssets = useCallback(async () => {
-    if (!sdk || !preselectedNetwork) return;
+    if (!sdk || !preselectedNetwork || preselectedNetwork.chainId === selectedNetwork?.chainId) return;
     setIsLoadingAssets(true);
     setSelectedNetworkAssets([]);
-
     const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
       preselectedNetwork.chainId,
       showPositiveBalanceAssets,
@@ -299,7 +302,9 @@ const NetworkAssetSelectInput = ({
     walletAddress,
   ]);
 
-  useEffect(() => { updateSelectedNetworkAssets(); }, [updateSelectedNetworkAssets]);
+  useEffect(() => { 
+    updateSelectedNetworkAssets(); 
+  }, [updateSelectedNetworkAssets]);
 
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
@@ -315,7 +320,7 @@ const NetworkAssetSelectInput = ({
   }
 
   return (
-    <Wrapper disabled={disabled} expanded={showSelectModal}>
+    <Wrapper inverse={inverse} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
         {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
@@ -341,7 +346,12 @@ const NetworkAssetSelectInput = ({
         </LargeSelectedOption>
       )}
       {showSelectModal && preselectedNetwork && (
-        <SelectedOption onClick={() => setPreselectedNetwork(null)} disabled={disabled}>
+        <SelectedOption onClick={(e) => {
+              e.stopPropagation()
+              setPreselectedNetwork(null)
+            }
+          } 
+          disabled={disabled}>
           {!!preselectedNetwork?.iconUrl && <RoundedImage url={preselectedNetwork?.iconUrl} title={preselectedNetwork.title} size={24} />}
           {preselectedNetwork.title}
         </SelectedOption>
@@ -354,7 +364,10 @@ const NetworkAssetSelectInput = ({
               <OptionListItem
                 disabled={disabled}
                 key={`${supportedChain.chainId}`}
-                onClick={() => setPreselectedNetwork(supportedChain)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreselectedNetwork(supportedChain)
+                }}
               >
                 {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
                 {supportedChain.title}
