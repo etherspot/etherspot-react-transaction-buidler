@@ -121,6 +121,16 @@ const AssetBridgeTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
   }, [selectedToNetwork, selectedFromNetwork]);
 
+  useEffect(() => {
+    if(selectedReceiveAccountType === "Custom"){
+      resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+      setUseCustomAddress(true);
+    }else{
+      setUseCustomAddress(false)
+      setCustomReceiverAddress(null)
+    }
+  }, [selectedReceiveAccountType])
+
   const receiverAddress = useMemo(() => {
     if (useCustomAddress) return customReceiverAddress;
     if (selectedReceiveAccountType === selectedAccountType) return null;
@@ -338,20 +348,10 @@ const AssetBridgeTransactionBlock = ({
           label="You will receive on"
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
-          disabled={useCustomAddress}
+          disabled={false}
           showCustom
         />
       </WalletReceiveWrapper>
-      <Checkbox
-        label="Use custom address"
-        isChecked={useCustomAddress}
-        onChange={(isChecked) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-          setUseCustomAddress(isChecked);
-          if (!isChecked) setCustomReceiverAddress(null);
-        }}
-        rightAlign
-      />
       {useCustomAddress && (
         <TextInput
           value={customReceiverAddress ?? ''}

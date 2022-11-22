@@ -104,7 +104,11 @@ const SwitchInput = ({
         <SwitchOption disabled={disabled} isActive={option1.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option1)}>{option1.title}</SwitchOption>
         <SwitchOption disabled={disabled} isActive={option2.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option2)}>{option2.title}</SwitchOption>
         {
-          option3 && <SwitchOption disabled={disabled} isActive={option3.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option3)}>{option3.title}</SwitchOption>
+          option3 && <SwitchOption disabled={disabled} isActive={option3.value === selectedOption.value} onClick={() => {
+            if(option3 && onChange){
+              onChange(option3)
+            }
+          }}>{option3.title}</SwitchOption>
         }
       </InputWrapper>
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
