@@ -28,6 +28,7 @@ export interface Theme {
       checkboxInputActive?: string,
       checkboxInputInactive?: string,
       toDropdownColor?: string,
+      selectInputExpandedHover?: string,
     },
     text?: {
       main?: string,
@@ -92,6 +93,7 @@ export const defaultTheme: Theme = {
       checkboxInputActive: '#ff884d',
       checkboxInputInactive: '#7f7a99',
       toDropdownColor: "#F8EFEA",
+      selectInputExpandedHover: "#F8EFEA",
     },
     text: {
       main: '#fff',

@@ -286,7 +286,6 @@ const AssetBridgeTransactionBlock = ({
         disabled={!selectedFromNetwork || !selectedFromAsset}
         hideChainIds={selectedFromNetwork ? [selectedFromNetwork.chainId] : undefined}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        inverse={true}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput

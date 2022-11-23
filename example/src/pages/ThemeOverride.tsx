@@ -73,6 +73,7 @@ const ThemeOverride = ({ connectedProvider, chainId }: ThemeOverrideProps) => {
           pill: "#2b2640",
           checkboxInputInactive: "#665c99",
           toDropdownColor: "#F8EFEA",
+          selectInputExpandedHover: "#F8EFEA",
         },
         text: {
           selectInput: "#ffeee6",
