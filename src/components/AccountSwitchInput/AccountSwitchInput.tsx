@@ -22,7 +22,7 @@ const AccountSwitchInput = ({
 }: AccountSwitchInputProps) => {
   const walletOptions = [
     { title: 'Key based', value: AccountTypes.Key },
-    { title: 'Smart wallet', value: AccountTypes.Contract },
+    { title: 'Smart Wallet', value: AccountTypes.Contract },
   ];
 
   const selectedOption = walletOptions.find((option) => option.value === selectedAccountType) as SelectOption;
