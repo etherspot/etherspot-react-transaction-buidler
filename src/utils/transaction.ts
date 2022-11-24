@@ -580,12 +580,14 @@ export const submitWeb3ProviderTransaction = async (
 const prepareValueForRpcCall = (rawValue: any): string | undefined => {
 	let value;
 
-	try {
-		const valueBN = ethers.BigNumber.isBigNumber(rawValue) ? rawValue : ethers.BigNumber.from(rawValue);
-		if (!valueBN.isZero()) value = valueBN.toString();
-	} catch (e) {
-		//
-	}
+  try {
+    const valueBN = ethers.BigNumber.isBigNumber(rawValue)
+      ? rawValue
+      : ethers.BigNumber.from(rawValue);
+    if (!valueBN.isZero()) value = valueBN.toHexString();
+  } catch (e) {
+    //
+  }
 
 	return value;
 };

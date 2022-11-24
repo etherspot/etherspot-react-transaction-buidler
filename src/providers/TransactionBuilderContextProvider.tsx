@@ -44,6 +44,7 @@ export interface TransactionBuilderContextProps {
 	defaultTransactionBlocks?: IDefaultTransactionBlock[];
 	hiddenTransactionBlockTypes?: ITransactionBlockType[];
 	hideAddTransactionButton?: boolean;
+	showMenuLogout?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -268,6 +269,7 @@ const TransactionBuilderContextProvider = ({
 	defaultTransactionBlocks,
 	hiddenTransactionBlockTypes,
 	hideAddTransactionButton,
+	showMenuLogout,
 }: TransactionBuilderContextProps) => {
 	const context = useContext(TransactionBuilderContext);
 
@@ -304,8 +306,17 @@ const TransactionBuilderContextProvider = ({
 		}
 	};
 
-	const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId, web3Provider } =
-		useEtherspot();
+	const {
+		accountAddress,
+		connect,
+		isConnecting,
+		sdk,
+		providerAddress,
+		getSdkForChainId,
+		web3Provider,
+		logout,
+	} = useEtherspot();
+
 	const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
 	const { dispatchCrossChainActions, processingCrossChainActionId, dispatchedCrossChainActions } =
 		useTransactionsDispatcher();
@@ -1115,6 +1126,11 @@ const TransactionBuilderContextProvider = ({
 							About Etherspot
 						</a>
 					</MenuItem>
+					{showMenuLogout && (
+						<MenuItem onClick={logout}>
+							Logout
+						</MenuItem>
+					)}
 				</MenuWrapper>
 			)}
 		</TransactionBuilderContext.Provider>

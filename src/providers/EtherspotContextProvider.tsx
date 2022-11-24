@@ -60,11 +60,13 @@ const EtherspotContextProvider = ({
   provider: defaultProvider,
   chainId: defaultChainId = 1,
   etherspotSessionStorage,
+  onLogout,
 }: {
   children: ReactNode;
   provider: WalletProviderLike;
   chainId?: number;
   etherspotSessionStorage?: SessionStorage;
+  onLogout?: () => void;
 }) => {
   const context = useContext(EtherspotContext);
 
@@ -322,6 +324,10 @@ const EtherspotContextProvider = ({
       : assetsWithBalances;
   }, [getSupportedAssetsForChainId, accountAddress, getAssetsBalancesForChainId]);
 
+  const logout = useCallback(() => {
+    if (onLogout) onLogout();
+  }, []);
+
   const contextData = useMemo(
     () => ({
       connect,
@@ -337,6 +343,7 @@ const EtherspotContextProvider = ({
       providerAddress,
       web3Provider: provider,
       totalWorthPerAddress,
+      logout,
     }),
     [
       connect,
@@ -352,6 +359,7 @@ const EtherspotContextProvider = ({
       providerAddress,
       provider,
       totalWorthPerAddress,
+      logout,
     ],
   );
 
