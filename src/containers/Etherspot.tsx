@@ -27,6 +27,8 @@ interface EtherspotProps {
   themeOverride?: Theme;
   hideAddTransactionButton?: boolean;
   etherspotSessionStorage?: SessionStorage;
+  onLogout?: () => void;
+  showMenuLogout?: boolean;
 }
 
 const ComponentWrapper = styled.div`
@@ -62,12 +64,15 @@ const Etherspot = ({
   themeOverride,
   hideAddTransactionButton,
   etherspotSessionStorage,
+  showMenuLogout,
+  onLogout,
 }: EtherspotProps) => (
   <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
     <EtherspotContextProvider
       provider={provider}
       chainId={chainId}
       etherspotSessionStorage={etherspotSessionStorage}
+      onLogout={onLogout}
     >
       <style>
         @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
@@ -81,6 +86,7 @@ const Etherspot = ({
               defaultTransactionBlocks={defaultTransactionBlocks}
               hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
               hideAddTransactionButton={hideAddTransactionButton}
+              showMenuLogout={showMenuLogout}
             />
           </TransactionsDispatcherContextProvider>
         </TransactionBuilderModalContextProvider>
