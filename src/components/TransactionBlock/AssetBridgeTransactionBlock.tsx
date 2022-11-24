@@ -25,6 +25,7 @@ import { Route } from '@lifi/sdk';
 import Checkbox from '../Checkbox';
 import { IAssetBridgeTransactionBlock } from '../../types/transactionBlock';
 import RouteOption from '../RouteOption';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 export interface IAssetBridgeTransactionBlockValues {
 	fromChain?: Chain;
@@ -115,14 +116,17 @@ const AssetBridgeTransactionBlock = ({
   }, [selectedToNetwork, selectedFromNetwork]);
 
   useEffect(() => {
-    if(selectedReceiveAccountType === "Custom"){
-      resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+    if (selectedReceiveAccountType === DestinationWalletEnum.Custom) {
+      resetTransactionBlockFieldValidationError(
+        transactionBlockId,
+        "receiverAddress"
+      );
       setUseCustomAddress(true);
-    }else{
-      setUseCustomAddress(false)
-      setCustomReceiverAddress(null)
+    } else {
+      setUseCustomAddress(false);
+      setCustomReceiverAddress(null);
     }
-  }, [selectedReceiveAccountType])
+  }, [selectedReceiveAccountType]);
 
   const receiverAddress = useMemo(() => {
     if (useCustomAddress) return customReceiverAddress;
@@ -328,7 +332,6 @@ const AssetBridgeTransactionBlock = ({
           label="You will receive on"
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
-          disabled={false}
           showCustom
         />
       </WalletReceiveWrapper>

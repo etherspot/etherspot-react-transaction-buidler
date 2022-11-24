@@ -2,6 +2,7 @@ import React from 'react';
 import SwitchInput from '../SwitchInput';
 import { AccountTypes } from 'etherspot';
 import { SelectOption } from '../SelectInput/SelectInput';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 interface AccountSwitchInputProps {
   label?: string;
@@ -13,6 +14,8 @@ interface AccountSwitchInputProps {
   showCustom?: boolean;
 }
 
+
+
 const AccountSwitchInput = ({
   label,
   errorMessage,
@@ -23,9 +26,9 @@ const AccountSwitchInput = ({
   showCustom = false,
 }: AccountSwitchInputProps) => {
   const walletOptions = [
-    { title: 'Key based', value: AccountTypes.Key },
-    { title: 'Smart Wallet', value: AccountTypes.Contract },
-    { title: 'Custom', value: "Custom" },
+    { title: 'Key based', value: DestinationWalletEnum.Key },
+    { title: 'Smart Wallet', value: DestinationWalletEnum.Contract},
+    { title: 'Custom', value: DestinationWalletEnum.Custom },
   ];
 
   const selectedOption = walletOptions.find((option) => option.value === selectedAccountType) as SelectOption;
