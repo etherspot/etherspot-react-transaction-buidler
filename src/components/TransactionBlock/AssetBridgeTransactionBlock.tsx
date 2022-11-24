@@ -23,7 +23,7 @@ import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { Route } from '@lifi/sdk';
 import Checkbox from '../Checkbox';
-import { IAssetBridgeTransactionBlock } from '../../types/transactionBlock';
+import { IAssetBridgeTransactionBlock, IMultiCallData } from '../../types/transactionBlock';
 import RouteOption from '../RouteOption';
 
 export interface IAssetBridgeTransactionBlockValues {
@@ -64,8 +64,14 @@ const AssetBridgeTransactionBlock = ({
 	id: transactionBlockId,
 	errorMessages,
 	values,
+  multiCallData
 }: IAssetBridgeTransactionBlock) => {
-  const { sdk, providerAddress, accountAddress } = useEtherspot();
+  const {
+    sdk,
+    providerAddress,
+    accountAddress,
+    getSupportedAssetsWithBalancesForChainId,
+  } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
@@ -83,6 +89,8 @@ const AssetBridgeTransactionBlock = ({
     : null;
   const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
   const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
+  const [multiCall, setMultiCall] = useState<IMultiCallData | null>(multiCallData || null);
+	const fixed = multiCallData?.fixed ?? false;
 
   const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
     || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
@@ -99,6 +107,23 @@ const AssetBridgeTransactionBlock = ({
   } = useTransactionBuilder();
 
   const theme: Theme = useTheme()
+
+  useEffect(() => {
+		const preselectAsset = async (multiCallData: IMultiCallData) => {
+			setSelectedFromNetwork(multiCallData.chain);
+			const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+				multiCallData.chain.chainId,
+				false,
+				selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress,
+			);
+			const asset = supportedAssets.find((search) => search.address === multiCallData.token?.address);
+			setSelectedFromAsset(asset || null);
+		};
+
+		resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
+		resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
+		if (!!multiCallData?.token) preselectAsset(multiCallData);
+	}, [multiCallData]);
 
   useEffect(() => {
     if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
@@ -189,16 +214,20 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {
     const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
-    setTransactionBlockValues(transactionBlockId, {
-      fromChain: selectedFromNetwork ?? undefined,
-      toChain: selectedToNetwork ?? undefined,
-      fromAsset: selectedFromAsset ?? undefined,
-      toAsset: selectedToAsset ?? undefined,
-      receiverAddress: receiverAddress ?? undefined,
-      accountType: selectedAccountType,
-      amount,
-      route,
-    });
+    setTransactionBlockValues(
+      transactionBlockId,
+      {
+        fromChain: selectedFromNetwork ?? undefined,
+        toChain: selectedToNetwork ?? undefined,
+        fromAsset: selectedFromAsset ?? undefined,
+        toAsset: selectedToAsset ?? undefined,
+        receiverAddress: receiverAddress ?? undefined,
+        accountType: selectedAccountType,
+        amount,
+        route,
+      },
+      multiCall || undefined
+    );
   }, [
     selectedFromNetwork,
     selectedToNetwork,
@@ -216,12 +245,13 @@ const AssetBridgeTransactionBlock = ({
   );
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
-    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
+    let multiCallCarryOver = multiCallData?.value || 0;
+    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
 
-    if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals);
+    if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver;
 
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
-    return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals);
+    return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals) + multiCallCarryOver;
   }, [amount, selectedFromAsset]);
 
 
@@ -250,6 +280,7 @@ const AssetBridgeTransactionBlock = ({
           setSelectedAccountType(accountType);
         }}
         errorMessage={errorMessages?.accountType}
+        disabled={!!fixed || !!multiCallData}
       />
       <NetworkAssetSelectInput
         label="From"
@@ -269,6 +300,7 @@ const AssetBridgeTransactionBlock = ({
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
+        disabled={!!fixed || !!multiCallData}
       />
       <NetworkAssetSelectInput
         label="To"

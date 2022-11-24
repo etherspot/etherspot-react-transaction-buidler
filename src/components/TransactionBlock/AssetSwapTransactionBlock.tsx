@@ -72,9 +72,9 @@ const AssetSwapTransactionBlock = ({
 	const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
 	const [selectedToAsset, setSelectedToAsset] = useState<TokenListToken | null>(values?.toAsset ?? null);
 	const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
-	const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(null);
+	const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(values?.offer ? mapOfferToOption(values?.offer) : null);
 	const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
-	const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(null);
+	const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(values?.offer ? [values.offer] : null);
 	const [isLoadingAvailableToAssets, setIsLoadingAvailableToAssets] = useState<boolean>(false);
 	const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
 	const [showReceiverInput] = useState<boolean>(!!values?.receiverAddress);
@@ -114,6 +114,8 @@ const AssetSwapTransactionBlock = ({
 
 	const updateAvailableOffers = useCallback(
 		debounce(async () => {
+			// there is a race condition here
+			if (multiCallData && fixed) { return; }
 			setSelectedOffer(null);
 			setAvailableOffers([]);
 
@@ -182,6 +184,7 @@ const AssetSwapTransactionBlock = ({
 
 	const onAmountChange = useCallback(
 		(newAmount: string) => {
+			if (isNaN(+newAmount)) return;
 			resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
 			const decimals = selectedFromAsset?.decimals ?? 18;
 			const updatedAmount = formatAssetAmountInput(newAmount, decimals);
@@ -212,6 +215,7 @@ const AssetSwapTransactionBlock = ({
 		selectedToAsset,
 		amount,
 		selectedOffer,
+		availableOffers,
 		receiverAddress,
 		showReceiverInput,
 		selectedAccountType,
@@ -219,8 +223,7 @@ const AssetSwapTransactionBlock = ({
 
 	const remainingSelectedFromAssetBalance = useMemo(() => {
 		let multiCallCarryOver = multiCallData?.value || 0;
-		if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
-
+		if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;	
 		if (!amount)
 			return (
 				+ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver

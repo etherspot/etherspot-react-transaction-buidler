@@ -73,3 +73,5 @@ export type ITransactionBlockValues =
 	| ISwapAssetTransactionBlockValues
 	| ISendAssetTransactionBlockValues
 	| IKlimaStakingTransactionBlockValues;
+
+export type IMulticallBlock = { icon: string } & ITransactionBlock;

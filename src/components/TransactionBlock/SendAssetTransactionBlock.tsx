@@ -53,7 +53,7 @@ const SendAssetTransactionBlock = ({
 	const theme: Theme = useTheme();
 	const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-	const { providerAddress, accountAddress, chainId } = useEtherspot();
+	const { providerAddress, accountAddress, chainId, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
 
 	const onAmountChange = useCallback(
 		(newAmount: string) => {
@@ -71,6 +71,23 @@ const SendAssetTransactionBlock = ({
 	}, []);
 
 	useEffect(() => {
+		const preselectAsset = async (multiCallData: IMultiCallData) => {
+			setSelectedNetwork(multiCallData.chain);
+			const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+				multiCallData.chain.chainId,
+				false,
+				selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress,
+			);
+			const asset = supportedAssets.find((search) => search.address === multiCallData.token?.address);
+			setSelectedAsset(asset || null);
+		};
+
+		resetTransactionBlockFieldValidationError(transactionBlockId, 'selectedAsset');
+		resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+		if (!!multiCallData?.token) preselectAsset(multiCallData);
+	}, [selectedNetwork, multiCallData]);
+
+	useEffect(() => {
 		setTransactionBlockValues(
 			transactionBlockId,
 			{
@@ -81,7 +98,7 @@ const SendAssetTransactionBlock = ({
 				isFromEtherspotWallet,
 				fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
 			},
-			multiCallData || undefined,
+			multiCall || undefined,
 		);
 	}, [
 		selectedNetwork,
@@ -100,12 +117,13 @@ const SendAssetTransactionBlock = ({
 		: undefined;
 
 	const remainingSelectedAssetBalance = useMemo(() => {
-		if (!selectedAsset?.balance || selectedAsset.balance.isZero()) return 0;
+		let multiCallCarryOver = multiCallData?.value || 0;
+		if (!selectedAsset?.balance || selectedAsset.balance.isZero()) return 0 + multiCallCarryOver;
 
-		if (!amount) return +ethers.utils.formatUnits(selectedAsset.balance, selectedAsset.decimals);
+		if (!amount) return +ethers.utils.formatUnits(selectedAsset.balance, selectedAsset.decimals) + multiCallCarryOver;
 
 		const assetAmountBN = ethers.utils.parseUnits(amount, selectedAsset.decimals);
-		return +ethers.utils.formatUnits(selectedAsset.balance.sub(assetAmountBN), selectedAsset.decimals);
+		return +ethers.utils.formatUnits(selectedAsset.balance.sub(assetAmountBN), selectedAsset.decimals) + multiCallCarryOver;
 	}, [amount, selectedAsset]);
 
 	return (
@@ -124,7 +142,7 @@ const SendAssetTransactionBlock = ({
 					setSelectedAccountType(accountType);
 				}}
 				errorMessage={errorMessages?.accountType}
-				disabled={!!fixed}
+				disabled={!!fixed || !!multiCallData}
 			/>
 			<NetworkAssetSelectInput
 				label='From'
@@ -145,7 +163,7 @@ const SendAssetTransactionBlock = ({
 				walletAddress={isFromEtherspotWallet ? accountAddress : providerAddress}
 				showPositiveBalanceAssets
 				showQuickInputButtons
-				disabled={!!fixed}
+				disabled={!!fixed || !!multiCallData}
 			/>
 			{selectedAsset && selectedNetwork && (
 				<TextInput

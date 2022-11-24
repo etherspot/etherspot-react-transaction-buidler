@@ -155,6 +155,7 @@ interface TransactionPreviewInterface {
 	editButtonDisabled?: boolean;
 	showEditButton?: boolean;
 	showSignButton?: boolean;
+	showStatus?: boolean;
 }
 
 const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChainAction }) => {
@@ -315,6 +316,7 @@ const ActionPreview = ({
 	editButtonDisabled = false,
 	showSignButton = false,
 	showEditButton = false,
+	showStatus = true,
 }: TransactionPreviewInterface) => {
 	const { accountAddress, providerAddress } = useEtherspot();
 
@@ -416,7 +418,7 @@ const ActionPreview = ({
 						)}
 					</ValueWrapper>
 				</TransactionAction>
-				<TransactionStatus crossChainAction={crossChainAction} />
+				{showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
 			</Card>
 		);
 	}
@@ -502,7 +504,7 @@ const ActionPreview = ({
 						<RouteOption route={route} showActions />
 					</TransactionAction>
 				)}
-				<TransactionStatus crossChainAction={crossChainAction} />
+				{showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
 			</Card>
 		);
 	}
@@ -588,7 +590,7 @@ const ActionPreview = ({
 					</TransactionAction>
 				)}
 
-				<TransactionStatus crossChainAction={crossChainAction} />
+				{showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
 			</Card>
 		);
 	}
@@ -714,7 +716,7 @@ const ActionPreview = ({
 						})}
 					</RouteWrapper>
 				</TransactionAction>
-				<TransactionStatus crossChainAction={crossChainAction} />
+				{showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
 			</Card>
 		);
 	}
