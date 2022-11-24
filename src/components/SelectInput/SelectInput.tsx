@@ -23,7 +23,7 @@ const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean}>`
   cursor: pointer;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
   &:hover {
-    ${({ theme }) => `background-color: ${ theme.color.background.toDropdownColor };`}
+    ${({ theme }) => `background-color: ${ theme.color.background.dropdownHoverColor };`}
   }
 `;
 
