@@ -674,7 +674,7 @@ const TransactionBuilderContextProvider = ({
 												if (!txBlock) return;
 												let multiCallData: IMultiCallData;
 												let newMultiCallData: IMultiCallData | null = null;
-												let multiCallBlock: ITransactionBlock = transactionBlock;
+												let multiCallBlock: ITransactionBlock;
 												let mutatedBlock: ITransactionBlock;
 												if (!!multiCallBlocks?.length) {
 													multiCallBlock = multiCallBlocks[multiCallBlocks.length - 1];
@@ -701,18 +701,9 @@ const TransactionBuilderContextProvider = ({
 															);
 														}
 													}
-													// if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-													// 	const values = multiCallBlock?.values;
-													// 	if (values && values.chain && values.amount) {
-													// 		chain = values.chain;
-													// 		token = values.selectedAsset as TokenListToken;
-													// 		if (value) {
-													// 			value = +ethers.utils.formatUnits(values.amount, token.decimals)
-													// 		}
-													// 	}
-													// }
 
 													if (!token || !value || !chain) {
+														console.log('returneeeed');
 														return;
 													}
 
@@ -726,6 +717,7 @@ const TransactionBuilderContextProvider = ({
 													};
 													setShowMulticallOptions(null);
 												} else {
+													multiCallBlock = transactionBlock;
 													const multiCallId = getTimeBasedUniqueId();
 													let token: TokenListToken | null = null;
 													let value = 0;
@@ -742,18 +734,8 @@ const TransactionBuilderContextProvider = ({
 														}
 													}
 
-													// if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-													// 	const values = transactionBlock?.values;
-													// 	if (values && values.chain && values.amount) {
-													// 		chain = values.chain;
-													// 		token = values.selectedAsset as TokenListToken;
-													// 		if (value) {
-													// 			value = +ethers.utils.formatUnits(values.amount, token.decimals)
-													// 		}
-													// 	}
-													// }
-
 													if (!chain || !token || !value) {
+														console.log('returneeeed');
 														return;
 													}
 													multiCallData = {
@@ -774,7 +756,7 @@ const TransactionBuilderContextProvider = ({
 												}
 
 												mutatedBlock = {
-													...transactionBlock,
+													...multiCallBlock,
 													multiCallData,
 												};
 

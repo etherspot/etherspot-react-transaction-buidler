@@ -195,6 +195,7 @@ const AssetSwapTransactionBlock = ({
 
 	useEffect(() => {
 		const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
+		console.log(transactionBlockId, multiCallData);
 		setTransactionBlockValues(
 			transactionBlockId,
 			{
@@ -207,7 +208,7 @@ const AssetSwapTransactionBlock = ({
 				isDifferentReceiverAddress: showReceiverInput,
 				accountType: selectedAccountType,
 			},
-			multiCall || undefined,
+			multiCallData || undefined,
 		);
 	}, [
 		selectedNetwork,
@@ -219,6 +220,7 @@ const AssetSwapTransactionBlock = ({
 		receiverAddress,
 		showReceiverInput,
 		selectedAccountType,
+		multiCallData,
 	]);
 
 	const remainingSelectedFromAssetBalance = useMemo(() => {
