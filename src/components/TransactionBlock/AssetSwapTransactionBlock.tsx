@@ -82,7 +82,6 @@ const AssetSwapTransactionBlock = ({
 	const [selectedAccountType, setSelectedAccountType] = useState<string>(
 		values?.accountType ?? AccountTypes.Contract,
 	);
-	const [multiCall, setMultiCall] = useState<IMultiCallData | null>(multiCallData || null);
 	const fixed = multiCallData?.fixed ?? false;
 
 	const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
@@ -195,7 +194,6 @@ const AssetSwapTransactionBlock = ({
 
 	useEffect(() => {
 		const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
-		console.log(transactionBlockId, multiCallData);
 		setTransactionBlockValues(
 			transactionBlockId,
 			{

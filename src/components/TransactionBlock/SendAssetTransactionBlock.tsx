@@ -47,7 +47,6 @@ const SendAssetTransactionBlock = ({
 	const [selectedAccountType, setSelectedAccountType] = useState<string>(
 		values?.isFromEtherspotWallet ?? true ? AccountTypes.Contract : AccountTypes.Key,
 	);
-	const [multiCall, setMultiCall] = useState<IMultiCallData | null>(multiCallData || null);
 	const fixed = multiCallData?.fixed ?? false;
 
 	const theme: Theme = useTheme();
@@ -98,7 +97,7 @@ const SendAssetTransactionBlock = ({
 				isFromEtherspotWallet,
 				fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
 			},
-			multiCall || undefined,
+			multiCallData || undefined,
 		);
 	}, [
 		selectedNetwork,

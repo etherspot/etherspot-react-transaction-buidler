@@ -703,7 +703,6 @@ const TransactionBuilderContextProvider = ({
 													}
 
 													if (!token || !value || !chain) {
-														console.log('returneeeed');
 														return;
 													}
 
@@ -735,7 +734,6 @@ const TransactionBuilderContextProvider = ({
 													}
 
 													if (!chain || !token || !value) {
-														console.log('returneeeed');
 														return;
 													}
 													multiCallData = {

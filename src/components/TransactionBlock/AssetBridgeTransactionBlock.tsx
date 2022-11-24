@@ -89,7 +89,6 @@ const AssetBridgeTransactionBlock = ({
     : null;
   const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
   const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
-  const [multiCall, setMultiCall] = useState<IMultiCallData | null>(multiCallData || null);
 	const fixed = multiCallData?.fixed ?? false;
 
   const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
@@ -226,7 +225,7 @@ const AssetBridgeTransactionBlock = ({
         amount,
         route,
       },
-      multiCall || undefined
+      multiCallData || undefined
     );
   }, [
     selectedFromNetwork,
