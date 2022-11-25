@@ -751,7 +751,7 @@ const TransactionBuilderContextProvider = ({
 													newMultiCallData = {
 														id: multiCallBlock.multiCallData.id,
 														chain: chain,
-														lastCallId: transactionBlock.id,
+														lastCallId: multiCallBlock.id,
 														index: multiCallBlocks.length,
 														token: token,
 														value: value,
@@ -858,7 +858,17 @@ const TransactionBuilderContextProvider = ({
 																} else {
 																	// Remove last instance of a multicall block
 																	setTransactionBlocks((current) => {
-																		return current.filter(block => block.id !== multiCallBlock.id)
+																		return current
+																			.filter(block => block.id !== multiCallBlock.id)
+																			.map(block => {
+																				if (block.id !== multiCallBlock.multiCallData?.lastCallId) {
+																					return block;
+																				}
+																				if (block.multiCallData) {
+																					block.multiCallData.fixed = false;
+																				}
+																				return block;
+																			})
 																	});
 																}
 															}
