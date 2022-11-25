@@ -580,7 +580,7 @@ const prepareValueForRpcCall = (rawValue: any): string | undefined => {
     const valueBN = ethers.BigNumber.isBigNumber(rawValue)
       ? rawValue
       : ethers.BigNumber.from(rawValue);
-    if (!valueBN.isZero()) value = valueBN.toString();
+    if (!valueBN.isZero()) value = valueBN.toHexString();
   } catch (e) {
     //
   }
