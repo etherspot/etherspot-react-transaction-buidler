@@ -21,6 +21,15 @@ jobs:
       - run:
           name: Install dependencies
           command: npm install
+      - run: 
+          name: Trigger BUIDLer demo dApp deployment
+          command: |
+            if [ "$CIRCLE_BRANCH" = "develop" ]; then
+              echo "Triggering BUIDLer demo dApp deployment in CF Pages"
+              curl -X POST $BUIDLER_DEMO_DAPP_DEPLOYMENT_HOOK
+            else
+              echo "Skipping... branch is not develop"
+            fi
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
