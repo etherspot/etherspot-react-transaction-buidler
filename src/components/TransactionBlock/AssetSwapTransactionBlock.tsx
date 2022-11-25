@@ -111,7 +111,7 @@ const AssetSwapTransactionBlock = ({
 		if (!!multiCallData?.token) preselectAsset(multiCallData);
 	}, [selectedNetwork, multiCallData]);
 
-	const updateAvailableOffers = useCallback(
+	const updateAvailableOffers = useCallback<() => Promise<ExchangeOffer[] | undefined>>(
 		debounce(async () => {
 			// there is a race condition here
 			if (multiCallData && fixed) { return; }
@@ -140,20 +140,29 @@ const AssetSwapTransactionBlock = ({
 					fromTokenAddress: selectedFromAsset.address,
 					toTokenAddress: selectedToAsset.address,
 				});
-
-				setAvailableOffers(offers);
-				if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
+				
+				return offers;
 			} catch (e) {
 				//
 			}
-
-			setIsLoadingAvailableOffers(false);
 		}, 200),
 		[sdk, selectedFromAsset, selectedToAsset, amount, selectedNetwork, accountAddress],
 	);
 
 	useEffect(() => {
-		updateAvailableOffers();
+		// this will ensure that the old data won't replace the new one
+		let active = true;
+		updateAvailableOffers()
+			.then(offers => {
+				if (active && offers) {
+					setAvailableOffers(offers);
+					if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]))
+					setIsLoadingAvailableOffers(false);
+				}
+			});
+		
+		// hook's clean-up function
+		return () => { active = false };
 	}, [updateAvailableOffers]);
 
 	const updateAvailableToAssets = useCallback(async () => {
