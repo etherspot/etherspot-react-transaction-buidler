@@ -25,8 +25,10 @@ import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherCon
 import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
 import {
 	IAssetBridgeTransactionBlock,
+	IAssetSwapTransactionBlock,
 	IDefaultTransactionBlock,
 	IMultiCallData,
+	ISendAssetTransactionBlock,
 	ITransactionBlock,
 	ITransactionBlockType,
 	ITransactionBlockValues,
@@ -52,6 +54,7 @@ export interface IMulticallBlock {
 	icon: React.ReactNode;
 	title: string | ((arg: string) => string);
 	type: ITransactionBlockType;
+	hideFor?: ITransactionBlockType;
 }
 
 const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
@@ -250,13 +253,15 @@ const availableMulticallBlocks: IMulticallBlock[] = [
 		icon: SwapActionIcon,
 		id: getTimeBasedUniqueId(),
 		title: 'Swap asset',
-		type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP
+		type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
+		hideFor: TRANSACTION_BLOCK_TYPE.SEND_ASSET // hide this option so it cannot be chained with SEND_ASSET
 	},
 	{
 		icon: BridgeActionIcon,
 		id: getTimeBasedUniqueId(),
 		title: 'Bridge asset',
 		type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
+		hideFor: TRANSACTION_BLOCK_TYPE.SEND_ASSET
 	},
 ]
 
@@ -659,12 +664,16 @@ const TransactionBuilderContextProvider = ({
 									) || null;
 							}
 
-							const multicallOptions = (
-								<Card
+							const multicallOptions = (transactions: ITransactionBlock[]) => {
+								const lastTxType = transactions[transactions.length - 1];
+								return (
+									<Card
 									onCloseButtonClick={() => { setShowMulticallOptions(null) }}
 									showCloseButton
 								>
-									{availableMulticallBlocks.map(item => (
+									{availableMulticallBlocks
+										.filter(block => !block.hideFor?.includes(lastTxType.type))
+										.map(item => (
 										<MulticallBlockListItemWrapper
 											key={item.id}
 											onClick={() => {
@@ -702,6 +711,39 @@ const TransactionBuilderContextProvider = ({
 														}
 													}
 
+													if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
+														const values = multiCallBlock.values;
+														if (values && values.chain && values.selectedAsset && values.amount) {
+															chain = values.chain;
+															token = values.selectedAsset;
+															let sumOfSwaps = multiCallBlocks
+																.filter(block => block.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
+																	block.values?.toAsset?.address === token?.address)
+																.reduce((sum: number, block: ITransactionBlock) => {
+																	const values = (block as IAssetSwapTransactionBlock).values;
+																	if (values && values.offer?.receiveAmount) {
+																		const value = +ethers.utils.formatUnits(
+																			values.offer.receiveAmount,
+																			values.toAsset?.decimals
+																		)
+																		return sum + value;
+																	}
+																	return sum;
+																}, 0);
+															let sumOfSends = multiCallBlocks
+																.filter(block => block.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
+																	block.values?.selectedAsset?.address === token?.address)
+																.reduce((sum: number, block: ITransactionBlock) => {
+																	const values = (block as ISendAssetTransactionBlock).values;
+																	if (values && values.amount) {
+																		return sum + +values.amount;
+																	}
+																	return sum;
+																}, 0);
+															value = -sumOfSends + sumOfSwaps;
+														}
+													}
+
 													if (!token || !value || !chain) {
 														return;
 													}
@@ -733,9 +775,19 @@ const TransactionBuilderContextProvider = ({
 														}
 													}
 
+													if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
+														const values = multiCallBlock.values;
+														if (values && values.chain && values.selectedAsset && values.amount) {
+															chain = values.chain;
+															token = values.selectedAsset;
+															value = -values.amount;
+														}
+													}
+
 													if (!chain || !token || !value) {
 														return;
 													}
+
 													multiCallData = {
 														id: multiCallId,
 														chain: chain,
@@ -783,7 +835,8 @@ const TransactionBuilderContextProvider = ({
 										</MulticallBlockListItemWrapper>
 									))}
 								</Card>
-							)
+								)
+							}
 
 							return (
 								<TransactionBlocksWrapper highlight={!!multiCallBlocks?.length}>
@@ -821,7 +874,10 @@ const TransactionBuilderContextProvider = ({
 															transactionBlockValidationErrors[transactionBlock.id]
 														}
 													/>
-													{j === multiCallBlocks.length - 1 && multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
+													{
+														j === multiCallBlocks.length - 1 &&
+														(multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP || multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET)
+														&& (
 														<MultiCallButton
 															disabled={!!disabled}
 															onClick={async () => {
@@ -836,6 +892,8 @@ const TransactionBuilderContextProvider = ({
 															}}
 														>
 															Continue Multi-Call
+															{transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && transactionBlock.values?.toAsset?.symbol && ` with ${transactionBlock.values?.toAsset?.symbol}` }
+															{transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && transactionBlock.values?.selectedAsset && ` with ${transactionBlock.values?.selectedAsset?.symbol}` }
 														</MultiCallButton>
 													)}
 												</Card>
@@ -864,7 +922,10 @@ const TransactionBuilderContextProvider = ({
 												{...transactionBlock}
 												errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
 											/>
-											{transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
+											{(
+												transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
+												transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
+											) && (
 												<MultiCallButton
 													disabled={!!disabled}
 													onClick={async () => {
@@ -875,14 +936,14 @@ const TransactionBuilderContextProvider = ({
 														}
 													}}
 												>
-													Continue Multi-Call
-													{!!transactionBlock.values?.toAsset?.symbol &&
-														` with ${transactionBlock.values?.toAsset?.symbol}`}
+													Start Multi-Call
+													{transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && transactionBlock.values?.toAsset?.symbol && ` with ${transactionBlock.values?.toAsset?.symbol}` }
+													{transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && transactionBlock.values?.selectedAsset && ` with ${transactionBlock.values?.selectedAsset?.symbol}` }
 												</MultiCallButton>
 											)}
 										</Card>
 									)}
-									{showMulticallOptions === transactionBlock.id && multicallOptions}
+									{showMulticallOptions === transactionBlock.id && multicallOptions(!!multiCallBlocks?.length ? multiCallBlocks : [transactionBlock])}
 								</TransactionBlocksWrapper>
 							);
 						})}
