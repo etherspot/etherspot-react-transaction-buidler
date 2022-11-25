@@ -32,6 +32,7 @@
 		"typescript": "^4.7.4"
 	},
 	"scripts": {
+		"prepare": "npm run rollup:build",
 		"rollup:build": "NODE_OPTIONS=--max-old-space-size=8192 rollup -c",
 		"rollup:watch": "rollup -c -w"
 	},
