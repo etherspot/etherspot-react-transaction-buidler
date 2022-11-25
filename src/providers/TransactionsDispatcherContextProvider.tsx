@@ -168,7 +168,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 		const { transactionHash, batchHash } = result;
 
 		const updatedCrossChainActions = crossChainActions.map((crossChainAction) => {
-			if (crossChainAction.id !== firstUnsentCrossChainAction.id) return crossChainAction;
+			if (
+				crossChainAction.id !== firstUnsentCrossChainAction.id &&
+				firstUnsentCrossChainAction.multiCallData?.id !== crossChainAction.multiCallData?.id
+			) return crossChainAction;
 
 			let isUnsentTransactionUpdated = false;
 			const updatedTransactions = crossChainAction.transactions.reduce(

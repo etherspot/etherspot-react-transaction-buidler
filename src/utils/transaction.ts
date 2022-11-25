@@ -522,10 +522,8 @@ export const submitEtherspotTransactionsBatch = async (
 
 		await sdk.estimateGatewayBatch();
 
-		// const result = await sdk.submitGatewayBatch();
-		// ({ hash: batchHash } = result);
-		const result = await sdk.encodeGatewayBatch();
-		console.log('tx', result);
+		const result = await sdk.submitGatewayBatch();
+		({ hash: batchHash } = result);
 	} catch (e) {
 		errorMessage = parseEtherspotErrorMessageIfAvailable(e);
 		if (!errorMessage && e instanceof Error) {
