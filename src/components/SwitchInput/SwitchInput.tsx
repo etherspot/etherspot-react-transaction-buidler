@@ -120,7 +120,7 @@ const SwitchInput = ({
             disabled={disabled}
             isActive={option3.value === selectedOption.value}
             onClick={() => {
-              if (option3 && onChange) {
+              if (option3 && onChange && !disabled) {
                 onChange(option3);
               }
             }}
