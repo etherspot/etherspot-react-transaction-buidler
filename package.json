@@ -32,6 +32,7 @@
 		"typescript": "^4.7.4"
 	},
 	"scripts": {
+		"prepare": "npm run rollup:build",
 		"rollup:build": "NODE_OPTIONS=--max-old-space-size=8192 rollup -c",
 		"rollup:watch": "rollup -c -w"
 	},
@@ -43,7 +44,7 @@
 		"axios": "^0.27.2",
 		"debounce-promise": "^3.1.2",
 		"ethers": "^5.6.9",
-		"etherspot": "^1.37.1",
+		"etherspot": "^1.41.2",
 		"lodash": "^4.17.21",
 		"moment": "^2.29.4",
 		"react-icons": "^4.4.0",
