@@ -325,8 +325,12 @@ const EtherspotContextProvider = ({
   }, [getSupportedAssetsForChainId, accountAddress, getAssetsBalancesForChainId]);
 
   const logout = useCallback(() => {
+    sdkPerChain = {};
+    setProvider(null);
+    setProviderAddress(null);
+    setAccountAddress(null);
     if (onLogout) onLogout();
-  }, []);
+  }, [setProvider, setProviderAddress, setAccountAddress]);
 
   const contextData = useMemo(
     () => ({
