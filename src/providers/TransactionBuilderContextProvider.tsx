@@ -223,6 +223,7 @@ const TransactionBuilderContextProvider = ({
 	const [showMenu, setShowMenu] = useState<boolean>(false);
 	const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
 	const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
+	const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false)
 
 	const theme: Theme = useTheme();
 
@@ -466,6 +467,7 @@ const TransactionBuilderContextProvider = ({
 							<ActionPreview
 								key={`preview-${crossChainActionInProcessing.id}`}
 								crossChainAction={crossChainActionInProcessing}
+								setIsTransactionDone={setIsTransactionDone}
 							/>
 						)}
 						<PrimaryButton disabled marginTop={30} marginBottom={30}>
@@ -676,6 +678,7 @@ const TransactionBuilderContextProvider = ({
 									)
 								}
 								showEditButton
+								setIsTransactionDone={setIsTransactionDone}
 							/>
 						))}
 						<PrimaryButton
@@ -693,6 +696,18 @@ const TransactionBuilderContextProvider = ({
 						</SecondaryButton>
 					</>
 				)}
+				{
+					isTransactionDone ? (
+					<AddTransactionButton onClick={() => {
+						setShowTransactionBlockSelect(true)
+						setIsTransactionDone(false)
+						}}>
+						<AiOutlinePlusCircle size={24} />
+						<span>Add transaction</span>
+					</AddTransactionButton>
+					) : <></>
+				}
+				
 			</div>
 			{showMenu && (
 				<MenuWrapper>

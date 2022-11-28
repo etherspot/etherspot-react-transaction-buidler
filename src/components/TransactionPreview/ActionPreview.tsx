@@ -158,12 +158,15 @@ interface TransactionPreviewInterface {
   editButtonDisabled?: boolean;
   showEditButton?: boolean;
   showSignButton?: boolean;
+  setIsTransactionDone: (value: boolean) => void;
 }
 
 const TransactionStatus = ({
   crossChainAction,
+  setIsTransactionDone
 }: {
   crossChainAction: ICrossChainAction;
+  setIsTransactionDone: (value: boolean) => void;
 }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
@@ -291,6 +294,7 @@ const TransactionStatus = ({
 
         useEffect(() => {
           let timeout: any;
+          console.log(transactionStatus, "transactionStatus")
           if (
             transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
             !prevStatus
@@ -302,10 +306,16 @@ const TransactionStatus = ({
               setPrevStatus(null);
             }, 2000);
           }
-          if (timeout) {
-            //@ts-ignore
-            return () => clearTimeout(timeout);
+          if (
+            transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED ||
+            transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED
+          ){
+            setIsTransactionDone(true)
           }
+            if (timeout) {
+              //@ts-ignore
+              return () => clearTimeout(timeout);
+            }
         }, [transactionStatus]);
 
         return (
@@ -397,6 +407,7 @@ const ActionPreview = ({
   editButtonDisabled = false,
   showSignButton = false,
   showEditButton = false,
+  setIsTransactionDone,
 }: TransactionPreviewInterface) => {
   const { accountAddress, providerAddress } = useEtherspot();
 
@@ -516,7 +527,7 @@ const ActionPreview = ({
             )}
           </ValueWrapper>
         </TransactionAction>
-        <TransactionStatus crossChainAction={crossChainAction} />
+        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
       </Card>
     );
   }
@@ -621,7 +632,7 @@ const ActionPreview = ({
             <RouteOption route={route} showActions />
           </TransactionAction>
         )}
-        <TransactionStatus crossChainAction={crossChainAction} />
+        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
       </Card>
     );
   }
@@ -719,7 +730,7 @@ const ActionPreview = ({
           </TransactionAction>
         )}
 
-        <TransactionStatus crossChainAction={crossChainAction} />
+        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
       </Card>
     );
   }
@@ -858,7 +869,7 @@ const ActionPreview = ({
             })}
           </RouteWrapper>
         </TransactionAction>
-        <TransactionStatus crossChainAction={crossChainAction} />
+        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
       </Card>
     );
   }
