@@ -902,8 +902,8 @@ const TransactionBuilderContextProvider = ({
                               }}
                             >
                               Continue Multi-Call
-                              {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && transactionBlock.values?.toAsset?.symbol && ` with ${transactionBlock.values?.toAsset?.symbol}` }
-                              {transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && transactionBlock.values?.selectedAsset && ` with ${transactionBlock.values?.selectedAsset?.symbol}` }
+                              {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && multiCallBlock.values?.toAsset?.symbol && ` with ${multiCallBlock.values?.toAsset?.symbol}` }
+                              {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && multiCallBlock.values?.selectedAsset && ` with ${multiCallBlock.values?.selectedAsset?.symbol}` }
                             </MultiCallButton>
                           )}
                         </Card>
