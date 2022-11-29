@@ -72,7 +72,7 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
             }}
           >
             Confirm
-          </PrimaryButton><br/>
+          </PrimaryButton><br />
           <SecondaryButton
             color={theme.color?.text?.card}
             onClick={hideModal}

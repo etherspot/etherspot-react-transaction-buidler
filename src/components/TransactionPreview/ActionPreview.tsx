@@ -9,7 +9,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConsta
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { formatAmountDisplay, humanizeHexString } from '../../utils/common';
 import { CROSS_CHAIN_ACTION_STATUS } from '../../constants/transactionDispatcherConstants';
-import { nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
 import Card from '../Card';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import { ClickableText, Text } from '../Text';
@@ -71,10 +71,10 @@ const ValueBlock = styled.div`
   margin-right: 20px;
 `;
 
-const SignButton = styled(FaSignature)<{ disabled?: boolean }>`
-  margin-right: 10px;
-  padding: 5px;
-  cursor: pointer;
+const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
+	margin-right: 10px;
+	padding: 5px;
+	cursor: pointer;
 
   &:hover {
     opacity: 0.5;
@@ -83,10 +83,10 @@ const SignButton = styled(FaSignature)<{ disabled?: boolean }>`
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
-const EditButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
-  margin-right: 10px;
-  padding: 5px;
-  cursor: pointer;
+const EditButton = styled(HiOutlinePencilAlt) <{ disabled?: boolean }>`
+	margin-right: 10px;
+	padding: 5px;
+	cursor: pointer;
 
   &:hover {
     opacity: 0.5;
@@ -318,113 +318,161 @@ const ActionPreview = ({
   showEditButton = false,
   showStatus = true,
 }: TransactionPreviewInterface) => {
-  const { accountAddress, providerAddress } = useEtherspot();
+	const { accountAddress, providerAddress } = useEtherspot();
 
-  const theme: Theme = useTheme();
+	const theme: Theme = useTheme();
 
-  const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
+	const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
 
-  const onCopy = async (valueToCopy: string) => {
-    try {
-      await navigator.clipboard.writeText(valueToCopy);
-      alert('Copied!');
-    } catch (e) {
-      //
-    }
-  };
+	const onCopy = async (valueToCopy: string) => {
+		try {
+			await navigator.clipboard.writeText(valueToCopy);
+			alert('Copied!');
+		} catch (e) {
+			//
+		}
+	};
 
-  const onEditButtonClick = () => {
-    if (editButtonDisabled || !onEdit) return;
-    onEdit();
-  };
+	const onEditButtonClick = () => {
+		if (editButtonDisabled || !onEdit) return;
+		onEdit();
+	};
 
-  const onSignButtonClick = () => {
-    if (signButtonDisabled || !onSign) return;
-    onSign();
-  };
+	const onSignButtonClick = () => {
+		if (signButtonDisabled || !onSign) return;
+		onSign();
+	};
 
-  const showCloseButton = !!onRemove;
+	const showCloseButton = !!onRemove;
 
-  const cost = useMemo(() => {
-    if (isEstimating) return 'Estimating...';
-    if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
+	const cost = useMemo(() => {
+		if (isEstimating) return 'Estimating...';
+		if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
 
-    const gasCostNumericString = ethers.utils.formatUnits(
-      estimated.gasCost,
-      nativeAssetPerChainId[chainId].decimals,
-    );
-    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${
-      nativeAssetPerChainId[chainId].symbol
-    }`;
-    if (!estimated.usdPrice) return gasCostFormatted;
+		const gasCostNumericString = ethers.utils.formatUnits(
+			estimated.gasCost,
+			nativeAssetPerChainId[chainId].decimals,
+		);
+		const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol
+			}`;
+		if (!estimated.usdPrice) return gasCostFormatted;
 
-    return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
-  }, [isEstimating, estimated]);
+		return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
+	}, [isEstimating, estimated]);
 
-  const additionalTopButtons = [
-    showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />,
-    showEditButton && <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />,
-  ];
+	const additionalTopButtons = [
+		showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />,
+		showEditButton && <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />,
+	];
 
-  if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
-    const { fromAsset, fromChainId } = preview;
+	if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+		const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress } = preview;
 
-    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
-    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+		const toNetwork = supportedChains[1];
 
-    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+		const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[CHAIN_ID.POLYGON].toUpperCase();
 
-    return (
-      <Card
-        title='Klima Staking'
-        marginBottom={20}
-        onCloseButtonClick={onRemove}
-        showCloseButton={showCloseButton}
-        additionalTopButtons={additionalTopButtons}
-      >
-        <DoubleTransactionActionsInSingleRow>
-          <TransactionAction>
-            <Label>You send</Label>
-            <ValueWrapper>
-              <CombinedRoundedImages
-                title={fromAsset.symbol}
-                url={fromAsset.iconUrl}
-                smallImageTitle={fromChainTitle}
-                smallImageUrl={fromNetwork?.iconUrl}
-              />
-              <div>
-                <Text size={16} marginBottom={1} medium block>
-                  {fromAmount} {fromAsset.symbol}
-                </Text>
-                <Text size={12}>On {fromChainTitle}</Text>
-              </div>
-            </ValueWrapper>
-          </TransactionAction>
-        </DoubleTransactionActionsInSingleRow>
+		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
-        <TransactionAction>
-          <Label>Route</Label>
-          <ValueWrapper>
-            {!!cost && (
-              <ValueBlock>
-                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
-                  Gas price
-                </Text>
-                <Text size={16} medium>
-                  {cost}
-                </Text>
-              </ValueBlock>
-            )}
-          </ValueWrapper>
-        </TransactionAction>
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
-      </Card>
-    );
-  }
+		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
-  if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
+		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+
+		return (
+			<Card
+				title='Klima Staking'
+				marginBottom={20}
+				onCloseButtonClick={onRemove}
+				showCloseButton={showCloseButton}
+				additionalTopButtons={additionalTopButtons}
+			>
+				<DoubleTransactionActionsInSingleRow>
+					<TransactionAction>
+						<Label>You send</Label>
+						<ValueWrapper>
+							<CombinedRoundedImages
+								title={fromAsset.symbol}
+								url={fromAsset.iconUrl}
+								smallImageTitle={fromChainTitle}
+								smallImageUrl={fromNetwork?.iconUrl}
+							/>
+							<div>
+								<Text size={16} marginBottom={1} medium block>
+									{fromAmount} {fromAsset.symbol}
+								</Text>
+								<Text size={12}>On {fromChainTitle}</Text>
+							</div>
+						</ValueWrapper>
+					</TransactionAction>
+					<TransactionAction>
+						<Label>You receive</Label>
+						<ValueWrapper>
+							<CombinedRoundedImages
+								title={toAsset.symbol}
+								url={toAsset.iconUrl}
+								smallImageTitle={toChainTitle}
+								smallImageUrl={toNetwork?.iconUrl}
+							/>
+							<div>
+								<Text size={16} marginBottom={3} medium block>
+									{toAmount} {toAsset.symbol}
+								</Text>
+								<Text size={12}>On {toChainTitle}</Text>
+							</div>
+						</ValueWrapper>
+					</TransactionAction>
+				</DoubleTransactionActionsInSingleRow>
+				{!!senderAddress && !!receiverAddress && (
+					<TransactionAction>
+						<Text size={16} medium>
+							<>
+								From &nbsp;
+								<ClickableText onClick={() => onCopy(senderAddress)}>
+									{humanizeHexString(senderAddress)}
+								</ClickableText>
+								&nbsp;
+							</>
+							to &nbsp;
+							<ClickableText onClick={() => onCopy(receiverAddress)}>
+								{humanizeHexString(receiverAddress)}
+							</ClickableText>
+						</Text>
+					</TransactionAction>
+				)}
+				<TransactionAction>
+					<Label>Route</Label>
+					<ValueWrapper>
+						<RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
+						<ValueBlock>
+							<Text size={12} marginBottom={2} medium block>
+								{providerName}
+							</Text>
+							<Text size={16} medium>
+								{toAmount} {toAsset.symbol}{' '}
+							</Text>
+						</ValueBlock>
+						{!!cost && (
+							<ValueBlock>
+								<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
+									Gas price
+								</Text>
+								<Text size={16} medium>
+									{cost}
+								</Text>
+							</ValueBlock>
+						)}
+					</ValueWrapper>
+				</TransactionAction>
+				<TransactionStatus crossChainAction={crossChainAction} />
+			</Card>
+		);
+	}
+
+	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
+		const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
     const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);

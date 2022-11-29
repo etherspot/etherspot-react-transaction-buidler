@@ -2,27 +2,10 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { Sdk, TokenListToken } from 'etherspot';
+import { Sdk, sleep, TokenListToken } from 'etherspot';
+import { BigNumber, utils, ethers } from 'ethers';
 
-import { PrimaryButton, SecondaryButton } from '../components/Button';
-import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
-import TransactionBlock from '../components/TransactionBlock';
-import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
-import {
-  buildCrossChainAction,
-  estimateCrossChainAction,
-  submitEtherspotTransactionsBatch,
-  submitWeb3ProviderTransaction,
-} from '../utils/transaction';
-import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { TransactionBuilderContext } from '../contexts';
-import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
-import History from '../components/History';
-import { Theme } from '../utils/theme';
-import Card from '../components/Card';
-import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
+// Types
 import {
   IAssetBridgeTransactionBlock,
   IAssetSwapTransactionBlock,
@@ -33,14 +16,37 @@ import {
   ITransactionBlockType,
   ITransactionBlockValues,
 } from '../types/transactionBlock';
-import { ethers } from 'ethers';
+import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
+
+import { PrimaryButton, SecondaryButton } from '../components/Button';
+import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
+import TransactionBlock from '../components/TransactionBlock';
+import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
+import {
+  buildCrossChainAction,
+  estimateCrossChainAction,
+  getCrossChainStatusByHash,
+  klimaDaoStaking,
+  submitEtherspotTransactionsBatch,
+  submitWeb3ProviderTransaction,
+  submitWeb3ProviderTransactions,
+  submitEtherspotAndWaitForTransactionHash,
+} from '../utils/transaction';
+import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
+import { TransactionBuilderContext } from '../contexts';
+import { ActionPreview } from '../components/TransactionPreview';
+import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
+import History from '../components/History';
+import { Theme } from '../utils/theme';
+import { CHAIN_ID, Chain } from '../utils/chain';
+import Card from '../components/Card';
+import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import {
   SendActionIcon,
   SwapActionIcon,
   BridgeActionIcon,
   ChainIcon,
 } from '../components/TransactionBlock/Icons';
-import { Chain } from '../utils/chain';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -219,6 +225,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
     id: getTimeBasedUniqueId(),
     title: 'Swap asset',
     type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
+  },
+  {
+    id: getTimeBasedUniqueId(),
+    title: 'Klima Staking',
+    type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
   },
   {
     id: getTimeBasedUniqueId(),
@@ -479,10 +490,106 @@ const TransactionBuilderContextProvider = ({
       return;
     }
 
-    setCrossChainActions([]);
-    setTransactionBlocks([]);
-    dispatchCrossChainActions(crossChainActionsToDispatch);
-    setIsSubmitting(false);
+    if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+      const PolygonUSDCAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+      let crossChainAction = crossChainActions[0];
+
+      if (!crossChainAction.receiveAmount) {
+        showAlertModal('Failed to get receiveAmount');
+        setIsSubmitting(false);
+        return;
+      }
+
+      let result: {
+        transactionHash?: string;
+        errorMessage?: string;
+      };
+
+      result = crossChainAction.useWeb3Provider
+        ? await submitWeb3ProviderTransactions(
+          getSdkForChainId(crossChainAction.chainId) as Sdk,
+          web3Provider,
+          crossChainAction.transactions,
+          crossChainAction.chainId,
+          providerAddress,
+        )
+        : await submitEtherspotAndWaitForTransactionHash(
+          getSdkForChainId(crossChainAction.chainId) as Sdk,
+          crossChainAction.transactions,
+        );
+      if (
+        result?.errorMessage ||
+        (!result?.transactionHash?.length)
+      ) {
+        showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        setIsSubmitting(false);
+        return;
+      }
+
+      let flag = 1, errorOnLiFi;
+      while (flag) {
+        try {
+          const status = await getCrossChainStatusByHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.chainId, CHAIN_ID.POLYGON, result.transactionHash, crossChainAction.bridgeUsed)
+          if (status?.status == "DONE" && status.subStatus == "COMPLETED") {
+            flag = 0;
+          } else if (status?.status === "FAILED") {
+            errorOnLiFi = 'Transaction Failed on LiFi'
+            flag = 0
+          }
+          await sleep(30);
+        } catch (err) {
+          errorOnLiFi = 'Transaction Failed on LiFi'
+          flag = 0;
+        }
+      }
+
+      if (errorOnLiFi) {
+        showAlertModal(errorOnLiFi);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const estimateGas = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
+
+      const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
+
+      if (stakingTxns.errorMessage) {
+        showAlertModal(stakingTxns.errorMessage);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const estimated = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
+
+      crossChainAction = {
+        ...crossChainAction,
+        estimated,
+        transactions: stakingTxns.result?.transactions ?? [],
+        chainId: CHAIN_ID.POLYGON,
+      }
+
+      result = await submitEtherspotAndWaitForTransactionHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.transactions, PolygonUSDCAddress);
+
+      if (
+        result?.errorMessage ||
+        (!result?.transactionHash?.length)
+      ) {
+        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        setIsSubmitting(false);
+        return;
+      }
+      setCrossChainActions([]);
+      setTransactionBlocks([]);
+      showAlertModal('Transaction sent');
+      setIsSubmitting(false);
+
+    }
+    else {
+      setCrossChainActions([]);
+      setTransactionBlocks([]);
+      dispatchCrossChainActions(crossChainActionsToDispatch);
+      setIsSubmitting(false);
+    }
   }, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting, isEstimatingCrossChainActions]);
 
   const setTransactionBlockValues = (
@@ -541,6 +648,10 @@ const TransactionBuilderContextProvider = ({
     (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
   );
 
+  const hasKlimaBlockAdded = transactionBlocks.some(
+    (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
+  );
+
   const crossChainActionInProcessing = useMemo(() => {
     if (!processingCrossChainActionId) return;
     return dispatchedCrossChainActions?.find(
@@ -595,17 +706,17 @@ const TransactionBuilderContextProvider = ({
                 {
                   crossChainActionInProcessing?.batchTransactions?.length
                     ? crossChainActionInProcessing.batchTransactions.map((block, i) => <ActionPreview
-                        key={`preview-${block.id}`}
-                        crossChainAction={block}
-                        showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
-                      />)
+                      key={`preview-${block.id}`}
+                      crossChainAction={block}
+                      showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
+                    />)
                     : <ActionPreview
-                        key={`preview-${crossChainActionInProcessing.id}`}
-                        crossChainAction={crossChainActionInProcessing}
-                      />
+                      key={`preview-${crossChainActionInProcessing.id}`}
+                      crossChainAction={crossChainActionInProcessing}
+                    />
                 }
               </TransactionBlocksWrapper>
-              )
+            )
             }
             <PrimaryButton disabled marginTop={30} marginBottom={30}>
               Processing...
@@ -668,173 +779,173 @@ const TransactionBuilderContextProvider = ({
                 const lastTxType = transactions[transactions.length - 1];
                 return (
                   <Card
-                  onCloseButtonClick={() => { setShowMulticallOptions(null) }}
-                  showCloseButton
-                >
-                  {availableMulticallBlocks
-                    .filter(block => !block.hideFor?.includes(lastTxType.type))
-                    .map(item => (
-                    <MulticallBlockListItemWrapper
-                      key={item.id}
-                      onClick={() => {
-                        const txBlock = availableTransactionBlocks.find(block => {
-                          return block.type === item.type
-                        });
-                        if (!txBlock) return;
-                        let multiCallData: IMultiCallData;
-                        let newMultiCallData: IMultiCallData | null = null;
-                        let multiCallBlock: ITransactionBlock;
-                        let mutatedBlock: ITransactionBlock;
-                        if (!!multiCallBlocks?.length) {
-                          multiCallBlock = multiCallBlocks[multiCallBlocks.length - 1];
-                          if (!multiCallBlock.multiCallData) {
-                            return;
-                          }
-                          multiCallData = {
-                            ...multiCallBlock.multiCallData,
-                            fixed: true,
-                          };
+                    onCloseButtonClick={() => { setShowMulticallOptions(null) }}
+                    showCloseButton
+                  >
+                    {availableMulticallBlocks
+                      .filter(block => !block.hideFor?.includes(lastTxType.type))
+                      .map(item => (
+                        <MulticallBlockListItemWrapper
+                          key={item.id}
+                          onClick={() => {
+                            const txBlock = availableTransactionBlocks.find(block => {
+                              return block.type === item.type
+                            });
+                            if (!txBlock) return;
+                            let multiCallData: IMultiCallData;
+                            let newMultiCallData: IMultiCallData | null = null;
+                            let multiCallBlock: ITransactionBlock;
+                            let mutatedBlock: ITransactionBlock;
+                            if (!!multiCallBlocks?.length) {
+                              multiCallBlock = multiCallBlocks[multiCallBlocks.length - 1];
+                              if (!multiCallBlock.multiCallData) {
+                                return;
+                              }
+                              multiCallData = {
+                                ...multiCallBlock.multiCallData,
+                                fixed: true,
+                              };
 
-                          let token: TokenListToken | null = null;
-                          let value = 0;
-                          let chain: Chain | null = null;
+                              let token: TokenListToken | null = null;
+                              let value = 0;
+                              let chain: Chain | null = null;
 
-                          if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-                            const values = multiCallBlock.values;
-                            if (values && values.chain && values.toAsset && values.offer) {
-                              chain = values.chain;
-                              token = values.toAsset;
-                              value = +ethers.utils.formatUnits(
-                                values.offer.receiveAmount,
-                                token.decimals,
+                              if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
+                                const values = multiCallBlock.values;
+                                if (values && values.chain && values.toAsset && values.offer) {
+                                  chain = values.chain;
+                                  token = values.toAsset;
+                                  value = +ethers.utils.formatUnits(
+                                    values.offer.receiveAmount,
+                                    token.decimals,
+                                  );
+                                }
+                              }
+
+                              if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
+                                const values = multiCallBlock.values;
+                                if (values && values.chain && values.selectedAsset && values.amount) {
+                                  chain = values.chain;
+                                  token = values.selectedAsset;
+                                  let sumOfSwaps = multiCallBlocks
+                                    .filter(block => block.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
+                                      block.values?.toAsset?.address === token?.address)
+                                    .reduce((sum: number, block: ITransactionBlock) => {
+                                      const values = (block as IAssetSwapTransactionBlock).values;
+                                      if (values && values.offer?.receiveAmount) {
+                                        const value = +ethers.utils.formatUnits(
+                                          values.offer.receiveAmount,
+                                          values.toAsset?.decimals
+                                        )
+                                        return sum + value;
+                                      }
+                                      return sum;
+                                    }, 0);
+                                  let sumOfSends = multiCallBlocks
+                                    .filter(block => block.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
+                                      block.values?.selectedAsset?.address === token?.address)
+                                    .reduce((sum: number, block: ITransactionBlock) => {
+                                      const values = (block as ISendAssetTransactionBlock).values;
+                                      if (values && values.amount) {
+                                        return sum + +values.amount;
+                                      }
+                                      return sum;
+                                    }, 0);
+                                  value = -sumOfSends + sumOfSwaps;
+                                }
+                              }
+
+                              if (!token || !value || !chain) {
+                                return;
+                              }
+
+                              newMultiCallData = {
+                                id: multiCallBlock.multiCallData.id,
+                                chain: chain,
+                                lastCallId: multiCallBlock.id,
+                                index: multiCallBlocks.length,
+                                token: token,
+                                value: value,
+                              };
+                              setShowMulticallOptions(null);
+                            } else {
+                              multiCallBlock = transactionBlock;
+                              const multiCallId = getTimeBasedUniqueId();
+                              let token: TokenListToken | null = null;
+                              let value = 0;
+                              let chain: Chain | null = null;
+                              if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
+                                const values = transactionBlock?.values;
+                                if (values && values.chain && values.toAsset && values.offer) {
+                                  chain = values.chain;
+                                  token = values.toAsset;
+                                  value = +ethers.utils.formatUnits(
+                                    values.offer.receiveAmount,
+                                    token.decimals,
+                                  );
+                                }
+                              }
+
+                              if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
+                                const values = multiCallBlock.values;
+                                if (values && values.chain && values.selectedAsset && values.amount) {
+                                  chain = values.chain;
+                                  token = values.selectedAsset;
+                                  value = -values.amount;
+                                }
+                              }
+
+                              if (!chain || !token || !value) {
+                                return;
+                              }
+
+                              multiCallData = {
+                                id: multiCallId,
+                                chain: chain,
+                                lastCallId: null,
+                                index: 0,
+                                fixed: true,
+                              };
+                              newMultiCallData = {
+                                id: multiCallId,
+                                chain: chain,
+                                lastCallId: transactionBlock.id,
+                                index: 1,
+                                token: token,
+                                value: value,
+                              };
+                            }
+
+                            mutatedBlock = {
+                              ...multiCallBlock,
+                              multiCallData,
+                            };
+
+                            const newTransactionBlock: ITransactionBlock = {
+                              ...txBlock,
+                              id: getTimeBasedUniqueId(),
+                              multiCallData: newMultiCallData,
+                            };
+
+                            setTransactionBlocks((current) => {
+                              let block = current.find(
+                                (item) => item.id === multiCallBlock.id,
                               );
-                            }
-                          }
-
-                          if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-                            const values = multiCallBlock.values;
-                            if (values && values.chain && values.selectedAsset && values.amount) {
-                              chain = values.chain;
-                              token = values.selectedAsset;
-                              let sumOfSwaps = multiCallBlocks
-                                .filter(block => block.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
-                                  block.values?.toAsset?.address === token?.address)
-                                .reduce((sum: number, block: ITransactionBlock) => {
-                                  const values = (block as IAssetSwapTransactionBlock).values;
-                                  if (values && values.offer?.receiveAmount) {
-                                    const value = +ethers.utils.formatUnits(
-                                      values.offer.receiveAmount,
-                                      values.toAsset?.decimals
-                                    )
-                                    return sum + value;
-                                  }
-                                  return sum;
-                                }, 0);
-                              let sumOfSends = multiCallBlocks
-                                .filter(block => block.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
-                                  block.values?.selectedAsset?.address === token?.address)
-                                .reduce((sum: number, block: ITransactionBlock) => {
-                                  const values = (block as ISendAssetTransactionBlock).values;
-                                  if (values && values.amount) {
-                                    return sum + +values.amount;
-                                  }
-                                  return sum;
-                                }, 0);
-                              value = -sumOfSends + sumOfSwaps;
-                            }
-                          }
-
-                          if (!token || !value || !chain) {
-                            return;
-                          }
-
-                          newMultiCallData = {
-                            id: multiCallBlock.multiCallData.id,
-                            chain: chain,
-                            lastCallId: multiCallBlock.id,
-                            index: multiCallBlocks.length,
-                            token: token,
-                            value: value,
-                          };
-                          setShowMulticallOptions(null);
-                        } else {
-                          multiCallBlock = transactionBlock;
-                          const multiCallId = getTimeBasedUniqueId();
-                          let token: TokenListToken | null = null;
-                          let value = 0;
-                          let chain: Chain | null = null;
-                          if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-                            const values = transactionBlock?.values;
-                            if (values && values.chain && values.toAsset && values.offer) {
-                              chain = values.chain;
-                              token = values.toAsset;
-                              value = +ethers.utils.formatUnits(
-                                values.offer.receiveAmount,
-                                token.decimals,
-                              );
-                            }
-                          }
-
-                          if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-                            const values = multiCallBlock.values;
-                            if (values && values.chain && values.selectedAsset && values.amount) {
-                              chain = values.chain;
-                              token = values.selectedAsset;
-                              value = -values.amount;
-                            }
-                          }
-
-                          if (!chain || !token || !value) {
-                            return;
-                          }
-
-                          multiCallData = {
-                            id: multiCallId,
-                            chain: chain,
-                            lastCallId: null,
-                            index: 0,
-                            fixed: true,
-                          };
-                          newMultiCallData = {
-                            id: multiCallId,
-                            chain: chain,
-                            lastCallId: transactionBlock.id,
-                            index: 1,
-                            token: token,
-                            value: value,
-                          };
-                        }
-
-                        mutatedBlock = {
-                          ...multiCallBlock,
-                          multiCallData,
-                        };
-
-                        const newTransactionBlock: ITransactionBlock = {
-                          ...txBlock,
-                          id: getTimeBasedUniqueId(),
-                          multiCallData: newMultiCallData,
-                        };
-
-                        setTransactionBlocks((current) => {
-                          let block = current.find(
-                            (item) => item.id === multiCallBlock.id,
-                          );
-                          if (!!block) {
-                            let index = current.indexOf(block);
-                            if (index > -1)
-                              current[index] = mutatedBlock;
-                          }
-                          return [...current, newTransactionBlock];
-                        });
-                        setShowMulticallOptions(null);
-                      }}
-                    >
-                      {item.icon}
-                      {item.title as string}
-                    </MulticallBlockListItemWrapper>
-                  ))}
-                </Card>
+                              if (!!block) {
+                                let index = current.indexOf(block);
+                                if (index > -1)
+                                  current[index] = mutatedBlock;
+                              }
+                              return [...current, newTransactionBlock];
+                            });
+                            setShowMulticallOptions(null);
+                          }}
+                        >
+                          {item.icon}
+                          {item.title as string}
+                        </MulticallBlockListItemWrapper>
+                      ))}
+                  </Card>
                 )
               }
 
@@ -888,24 +999,24 @@ const TransactionBuilderContextProvider = ({
                             j === multiCallBlocks.length - 1 &&
                             (multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP || multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET)
                             && (
-                            <MultiCallButton
-                              disabled={!!disabled}
-                              onClick={async () => {
-                                // Add new transaction block to the multicall block list
-                                let validationErrors = await onValidate();
-                                if (
-                                  !!multiCallBlock.multiCallData &&
-                                  !validationErrors[multiCallBlock.id]
-                                ) {
-                                  setShowMulticallOptions(transactionBlock.id);
-                                }
-                              }}
-                            >
-                              Continue Multi-Call
-                              {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && multiCallBlock.values?.toAsset?.symbol && ` with ${multiCallBlock.values?.toAsset?.symbol}` }
-                              {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && multiCallBlock.values?.selectedAsset && ` with ${multiCallBlock.values?.selectedAsset?.symbol}` }
-                            </MultiCallButton>
-                          )}
+                              <MultiCallButton
+                                disabled={!!disabled}
+                                onClick={async () => {
+                                  // Add new transaction block to the multicall block list
+                                  let validationErrors = await onValidate();
+                                  if (
+                                    !!multiCallBlock.multiCallData &&
+                                    !validationErrors[multiCallBlock.id]
+                                  ) {
+                                    setShowMulticallOptions(transactionBlock.id);
+                                  }
+                                }}
+                              >
+                                Continue Multi-Call
+                                {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && multiCallBlock.values?.toAsset?.symbol && ` with ${multiCallBlock.values?.toAsset?.symbol}`}
+                                {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && multiCallBlock.values?.selectedAsset && ` with ${multiCallBlock.values?.selectedAsset?.symbol}`}
+                              </MultiCallButton>
+                            )}
                         </Card>
                       );
                     })
@@ -936,21 +1047,21 @@ const TransactionBuilderContextProvider = ({
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
                       ) && (
-                        <MultiCallButton
-                          disabled={!!disabled}
-                          onClick={async () => {
-                            // Add new transaction block to the multicall block list
-                            let validationErrors = await onValidate();
-                            if (!validationErrors[transactionBlock.id]) {
-                              setShowMulticallOptions(transactionBlock.id);
-                            }
-                          }}
-                        >
-                          Start Multi-Call
-                          {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && transactionBlock.values?.toAsset?.symbol && ` with ${transactionBlock.values?.toAsset?.symbol}` }
-                          {transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && transactionBlock.values?.selectedAsset && ` with ${transactionBlock.values?.selectedAsset?.symbol}` }
-                        </MultiCallButton>
-                      )}
+                          <MultiCallButton
+                            disabled={!!disabled}
+                            onClick={async () => {
+                              // Add new transaction block to the multicall block list
+                              let validationErrors = await onValidate();
+                              if (!validationErrors[transactionBlock.id]) {
+                                setShowMulticallOptions(transactionBlock.id);
+                              }
+                            }}
+                          >
+                            Start Multi-Call
+                            {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP && transactionBlock.values?.toAsset?.symbol && ` with ${transactionBlock.values?.toAsset?.symbol}`}
+                            {transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET && transactionBlock.values?.selectedAsset && ` with ${transactionBlock.values?.selectedAsset?.symbol}`}
+                          </MultiCallButton>
+                        )}
                     </Card>
                   )}
                   {showMulticallOptions === transactionBlock.id && multicallOptions(!!multiCallBlocks?.length ? multiCallBlocks : [transactionBlock])}
@@ -989,13 +1100,22 @@ const TransactionBuilderContextProvider = ({
                     const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
                       ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
                       : availableTransactionBlock.title;
+                    const isKlimaBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
                     return (
                       <TransactionBlockListItemWrapper
                         key={availableTransactionBlock.title}
                         onClick={() => {
+                          if (isKlimaBlockIncluded && transactionBlocks.length > 0) {
+                            showAlertModal('Cannot add klima staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed');
+                            return;
+                          }
+                          if (hasKlimaBlockAdded) {
+                            showAlertModal('Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed');
+                            return;
+                          }
                           if (
                             availableTransactionBlock.type ===
-                              TRANSACTION_BLOCK_TYPE.DISABLED ||
+                            TRANSACTION_BLOCK_TYPE.DISABLED ||
                             isBridgeTransactionBlockAndDisabled
                           )
                             return;
@@ -1006,7 +1126,7 @@ const TransactionBuilderContextProvider = ({
                           setTransactionBlocks((current) => current.concat(transactionBlock));
                           setShowTransactionBlockSelect(false);
                         }}
-                        disabled={isDisabled}
+                        disabled={isDisabled || hasKlimaBlockAdded}
                       >
                         &bull; {availableTransactionBlockTitle}
                       </TransactionBlockListItemWrapper>
@@ -1017,7 +1137,7 @@ const TransactionBuilderContextProvider = ({
           </>
         )}
         {!!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock && (
-          <>				 
+          <>
             {
               crossChainActions.map((crossChainAction) => {
                 let multiCallBlocks: ICrossChainAction[] = [];
@@ -1028,8 +1148,8 @@ const TransactionBuilderContextProvider = ({
                   else if (!!multiCallId) multiCallList.push(multiCallId);
 
                   multiCallBlocks = crossChainActions.filter(
-                      (item) => item?.multiCallData?.id === crossChainAction?.multiCallData?.id,
-                    ) || null;
+                    (item) => item?.multiCallData?.id === crossChainAction?.multiCallData?.id,
+                  ) || null;
                 }
 
                 const actionPreview = (crossChainAction: ICrossChainAction, multiCallBlocks?: ICrossChainAction[], index?: number) => {
@@ -1040,12 +1160,12 @@ const TransactionBuilderContextProvider = ({
                       key={`preview-${crossChainAction.id}`}
                       crossChainAction={crossChainAction}
                       onRemove={!disableEdit ? () => setCrossChainActions((current) =>
-                            current.filter(
-                              (currentCrossChainAction) =>
-                                currentCrossChainAction.id !== crossChainAction.id,
-                            ),
-                          )
-                          : undefined
+                        current.filter(
+                          (currentCrossChainAction) =>
+                            currentCrossChainAction.id !== crossChainAction.id,
+                        ),
+                      )
+                        : undefined
                       }
                       signButtonDisabled={crossChainAction.isEstimating || isSigningAction || disableEdit}
                       showSignButton={!crossChainAction.useWeb3Provider && !disableEdit}
@@ -1057,13 +1177,13 @@ const TransactionBuilderContextProvider = ({
                           errorMessage?: string;
                           batchHash?: string;
                         } = crossChainAction.useWeb3Provider
-                          ? await submitWeb3ProviderTransaction(
+                            ? await submitWeb3ProviderTransaction(
                               web3Provider,
                               crossChainAction.transactions[0],
                               crossChainAction.chainId,
                               providerAddress,
                             )
-                          : await submitEtherspotTransactionsBatch(
+                            : await submitEtherspotTransactionsBatch(
                               getSdkForChainId(crossChainAction.chainId) as Sdk,
                               crossChainAction.transactions,
                             );
@@ -1151,7 +1271,7 @@ const TransactionBuilderContextProvider = ({
               {!isSubmitting && !isEstimatingCrossChainActions && 'Execute'}
             </PrimaryButton>
             <br />
-            <SecondaryButton marginTop={10} onClick={() => setCrossChainActions([])}>
+            <SecondaryButton marginTop={10} onClick={() => setCrossChainActions([])} disabled={isSubmitting}>
               Go back
             </SecondaryButton>
           </>
