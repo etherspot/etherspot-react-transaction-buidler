@@ -124,6 +124,17 @@ const KlimaStakingTransactionBlock = ({
   ]);
 
   useEffect(() => {
+    if (selectedFromAsset?.assetPriceUsd) {
+      if(+amount * selectedFromAsset.assetPriceUsd < 0.4) {
+        setTransactionBlockFieldValidationError(
+          transactionBlockId,
+          'amount',
+          'Minimum amount 0.4 USD',
+        );
+        return;
+      }
+    }
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
       setTransactionBlockFieldValidationError(
         transactionBlockId,
