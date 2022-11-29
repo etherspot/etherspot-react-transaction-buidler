@@ -155,7 +155,7 @@ const RouteWrapper = styled.div`
 const Row = styled.div.attrs((props: { center: boolean }) => props)`
   display: flex;
   flex-direction: row;
-  ${({ center }) => center && "align-items: center;"};
+  ${({ center }) => center && 'align-items: center;'};
 `;
 
 interface TransactionPreviewInterface {
@@ -168,6 +168,7 @@ interface TransactionPreviewInterface {
   showEditButton?: boolean;
   showSignButton?: boolean;
   setIsTransactionDone: (value: boolean) => void;
+  showStatus?: boolean;
 }
 
 const TransactionStatus = ({
@@ -179,8 +180,7 @@ const TransactionStatus = ({
 }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
-  const [isGettingExplorerLink, setIsGettingExplorerLink] =
-    useState<boolean>(false);
+  const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
@@ -416,6 +416,7 @@ const ActionPreview = ({
   showSignButton = false,
   showEditButton = false,
   setIsTransactionDone,
+  showStatus = true,
 }: TransactionPreviewInterface) => {
   const { accountAddress, providerAddress } = useEtherspot();
 
@@ -533,7 +534,7 @@ const ActionPreview = ({
             )}
           </ValueWrapper>
         </TransactionAction>
-        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />}
       </Card>
     );
   }
@@ -638,7 +639,7 @@ const ActionPreview = ({
             <RouteOption route={route} showActions />
           </TransactionAction>
         )}
-        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />}
       </Card>
     );
   }
@@ -736,7 +737,7 @@ const ActionPreview = ({
           </TransactionAction>
         )}
 
-        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />}
       </Card>
     );
   }
@@ -875,7 +876,7 @@ const ActionPreview = ({
             })}
           </RouteWrapper>
         </TransactionAction>
-        <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />}
       </Card>
     );
   }

@@ -330,7 +330,7 @@ const EtherspotContextProvider = ({
     setProviderAddress(null);
     setAccountAddress(null);
     if (onLogout) onLogout();
-  }, [setProvider, setProviderAddress, setAccountAddress]);
+  }, [setProvider, setProviderAddress, setAccountAddress, onLogout]);
 
   const contextData = useMemo(
     () => ({
