@@ -58,111 +58,115 @@ export const klimaDaoStaking = async (
 ): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[], returnAmount: BigNumber, provider?: ExchangeProviders } }> => {
   if (!sdk) return { errorMessage: 'No sdk found' };
 
-  const fromAssetAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
-  const createTimestamp = +new Date();
-  const offers = await sdk.getExchangeOffers({
-    fromChainId: CHAIN_ID.POLYGON,
-    fromAmount: amount,
-    fromTokenAddress: fromAssetAddress, //USDC on Polygon
-    toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815', // KLIMA on Polygon
-  });
+  try {
+    const fromAssetAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+    const createTimestamp = +new Date();
+    const offers = await sdk.getExchangeOffers({
+      fromChainId: CHAIN_ID.POLYGON,
+      fromAmount: amount,
+      fromTokenAddress: fromAssetAddress, //USDC on Polygon
+      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815', // KLIMA on Polygon
+    });
 
-  const bestOffer = offers.reduce((best: ExchangeOffer | null, offer) => {
-    if (!best || best.receiveAmount.lt(offer.receiveAmount)) return offer;
-    return best;
-  }, null);
+    const bestOffer = offers.reduce((best: ExchangeOffer | null, offer) => {
+      if (!best || best.receiveAmount.lt(offer.receiveAmount)) return offer;
+      return best;
+    }, null);
 
-  if (!bestOffer) {
-    return { errorMessage: 'Failed build KLIMA swap transaction!' };
-  }
+    if (!bestOffer) {
+      return { errorMessage: 'Failed build KLIMA swap transaction!' };
+    }
 
-  let transactions: ICrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
-    ...transaction,
-    chainId: CHAIN_ID.POLYGON,
-    createTimestamp,
-    status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-  }));
+    let transactions: ICrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
+      ...transaction,
+      chainId: CHAIN_ID.POLYGON,
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    }));
 
-  // not native asset and no erc20 approval transaction included
-  if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.POLYGON].address) && transactions.length === 1) {
+    // not native asset and no erc20 approval transaction included
+    if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.POLYGON].address) && transactions.length === 1) {
+      const abi = getContractAbi(ContractNames.ERC20Token);
+      const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, amount);
+      if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+        return { errorMessage: 'Failed build bridge approval transaction!' };
+      }
+
+      const approvalTransaction = {
+        to: approvalTransactionRequest.to,
+        data: approvalTransactionRequest.data,
+        chainId: CHAIN_ID.POLYGON,
+        value: 0,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      };
+
+      transactions = [approvalTransaction, ...transactions];
+    }
+
     const abi = getContractAbi(ContractNames.ERC20Token);
-    const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-    const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, amount);
-    if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+    const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, '0x4e78011ce80ee02d2c3e649fb657e45898257815'); // Klima ojn Polygon
+    const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.('0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227', bestOffer.receiveAmount); // Klima staking
+    if (!klimaApprovalTransactionRequest || !klimaApprovalTransactionRequest.to) {
       return { errorMessage: 'Failed build bridge approval transaction!' };
     }
 
-    const approvalTransaction = {
-      to: approvalTransactionRequest.to,
-      data: approvalTransactionRequest.data,
+    const klimaApprovalTransaction = {
+      to: klimaApprovalTransactionRequest.to,
+      data: klimaApprovalTransactionRequest.data,
       chainId: CHAIN_ID.POLYGON,
       value: 0,
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    transactions = [approvalTransaction, ...transactions];
-  }
-
-  const abi = getContractAbi(ContractNames.ERC20Token);
-  const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, '0x4e78011ce80ee02d2c3e649fb657e45898257815'); // Klima ojn Polygon
-  const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.('0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227', bestOffer.receiveAmount); // Klima staking
-  if (!klimaApprovalTransactionRequest || !klimaApprovalTransactionRequest.to) {
-    return { errorMessage: 'Failed build bridge approval transaction!' };
-  }
-
-  const klimaApprovalTransaction = {
-    to: klimaApprovalTransactionRequest.to,
-    data: klimaApprovalTransactionRequest.data,
-    chainId: CHAIN_ID.POLYGON,
-    value: 0,
-    createTimestamp,
-    status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-  };
-
-  const klimaStakingAbi = [
-    "function stake(uint256 value)",
-  ];
-  const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>('klimaStakingContract', klimaStakingAbi, '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'); // Klima ojn Polygon
-  const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestOffer.receiveAmount); // Klima staking
-  if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
-    return { errorMessage: 'Failed build bridge approval transaction!' };
-  }
-
-  const klimaStakinglTransaction = {
-    to: klimaStakeTransactionRequest.to,
-    data: klimaStakeTransactionRequest.data,
-    chainId: CHAIN_ID.POLYGON,
-    value: 0,
-    createTimestamp,
-    status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-  };
-
-  transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
-
-  if (receiverAddress && receiverAddress != sdk.state.accountAddress) {
-    const sKlimaTokenAbi = [
-      "function transfer(address to, uint256 value)",
-    ]
-    const sKlimaContract = sdk.registerContract<{ encodeTransfer(to: string, value: BigNumberish): TransactionRequest }>('erc20Contract', sKlimaTokenAbi, '0xb0C22d8D350C67420f06F48936654f567C73E8C8');
-    const sKlimaSendTransactionRequest = sKlimaContract.encodeTransfer?.(receiverAddress, bestOffer.receiveAmount);
-    if (!sKlimaSendTransactionRequest || !sKlimaSendTransactionRequest.to) {
-      return { errorMessage: 'Failed build sKlima send transaction!' };
+    const klimaStakingAbi = [
+      "function stake(uint256 value)",
+    ];
+    const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>('klimaStakingContract', klimaStakingAbi, '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'); // Klima ojn Polygon
+    const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestOffer.receiveAmount); // Klima staking
+    if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
+      return { errorMessage: 'Failed build bridge approval transaction!' };
     }
 
-    const sKlimaSendTransaction = {
-      to: sKlimaSendTransactionRequest.to,
-      data: sKlimaSendTransactionRequest.data,
+    const klimaStakinglTransaction = {
+      to: klimaStakeTransactionRequest.to,
+      data: klimaStakeTransactionRequest.data,
       chainId: CHAIN_ID.POLYGON,
       value: 0,
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    transactions = [...transactions, sKlimaSendTransaction];
-  }
+    transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
 
-  return { result: { transactions, returnAmount: bestOffer.receiveAmount, provider: bestOffer.provider } };
+    if (receiverAddress && receiverAddress != sdk.state.accountAddress) {
+      const sKlimaTokenAbi = [
+        "function transfer(address to, uint256 value)",
+      ]
+      const sKlimaContract = sdk.registerContract<{ encodeTransfer(to: string, value: BigNumberish): TransactionRequest }>('erc20Contract', sKlimaTokenAbi, '0xb0C22d8D350C67420f06F48936654f567C73E8C8');
+      const sKlimaSendTransactionRequest = sKlimaContract.encodeTransfer?.(receiverAddress, bestOffer.receiveAmount);
+      if (!sKlimaSendTransactionRequest || !sKlimaSendTransactionRequest.to) {
+        return { errorMessage: 'Failed build sKlima send transaction!' };
+      }
+
+      const sKlimaSendTransaction = {
+        to: sKlimaSendTransactionRequest.to,
+        data: sKlimaSendTransactionRequest.data,
+        chainId: CHAIN_ID.POLYGON,
+        value: 0,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      };
+
+      transactions = [...transactions, sKlimaSendTransaction];
+    }
+
+    return { result: { transactions, returnAmount: bestOffer.receiveAmount, provider: bestOffer.provider } };
+  } catch (e) {
+    return { errorMessage: 'Failed to get staking exchange transaction' }
+  }
 
 }
 

@@ -30,7 +30,7 @@ import {
 import AccountSwitchInput from '../AccountSwitchInput';
 import AccountSwitch3Input from '../AccountSwitch3Input';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
+import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
 import {
   IAssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
@@ -88,18 +88,6 @@ const KlimaStakingTransactionBlock = ({
     ? AccountTypes.Key
     : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(defaultSelectedReceiveAccountType);
-
-  const klimaAsset: IAssetWithBalance = {
-    address: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-    chainId: supportedChains[1].chainId,
-    name: 'Klima DAO',
-    symbol: 'sKLIMA',
-    decimals: 9,
-    logoURI: 'https://polygonscan.com/token/images/klimadao_32.png',
-    balance: BigNumber.from(0),
-    assetPriceUsd: null,
-    balanceWorthUsd: null,
-  }
 
   const {
     setTransactionBlockValues,
