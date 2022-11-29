@@ -3,6 +3,16 @@ import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
 import { Sdk, sleep } from 'etherspot';
+import { BigNumber, utils } from 'ethers';
+
+// Types
+import {
+	IDefaultTransactionBlock,
+	ITransactionBlock,
+	ITransactionBlockType,
+	ITransactionBlockValues,
+} from '../types/transactionBlock';
+import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
 
 import { PrimaryButton, SecondaryButton } from '../components/Button';
 import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
@@ -24,17 +34,9 @@ import { ActionPreview } from '../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
+import { CHAIN_ID } from '../utils/chain';
 import Card from '../components/Card';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
-import {
-	IDefaultTransactionBlock,
-	ITransactionBlock,
-	ITransactionBlockType,
-	ITransactionBlockValues,
-} from '../types/transactionBlock';
-import { BigNumber, utils } from 'ethers';
-import { CHAIN_ID } from '../utils/chain';
 
 export interface TransactionBuilderContextProps {
 	defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -386,11 +388,11 @@ const TransactionBuilderContextProvider = ({
 			return;
 		}
 
-		if(crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+		if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
 			const PolygonUSDCAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 			let crossChainAction = crossChainActions[0];
 
-			if(!crossChainAction.receiveAmount) {
+			if (!crossChainAction.receiveAmount) {
 				showAlertModal('Failed to get receiveAmount');
 				setIsSubmitting(false);
 				return;
@@ -403,16 +405,16 @@ const TransactionBuilderContextProvider = ({
 
 			result = crossChainAction.useWeb3Provider
 				? await submitWeb3ProviderTransactions(
-						getSdkForChainId(crossChainAction.chainId) as Sdk,
-						web3Provider,
-						crossChainAction.transactions,
-						crossChainAction.chainId,
-						providerAddress,
-				  )
+					getSdkForChainId(crossChainAction.chainId) as Sdk,
+					web3Provider,
+					crossChainAction.transactions,
+					crossChainAction.chainId,
+					providerAddress,
+				)
 				: await submitEtherspotAndWaitForTransactionHash(
-						getSdkForChainId(crossChainAction.chainId) as Sdk,
-						crossChainAction.transactions,
-				  );
+					getSdkForChainId(crossChainAction.chainId) as Sdk,
+					crossChainAction.transactions,
+				);
 			if (
 				result?.errorMessage ||
 				(!result?.transactionHash?.length)
@@ -428,19 +430,18 @@ const TransactionBuilderContextProvider = ({
 					const status = await getCrossChainStatusByHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.chainId, CHAIN_ID.POLYGON, result.transactionHash, crossChainAction.bridgeUsed)
 					if (status?.status == "DONE" && status.subStatus == "COMPLETED") {
 						flag = 0;
-					} else if(status?.status === "FAILED") {
+					} else if (status?.status === "FAILED") {
 						errorOnLiFi = 'Transaction Failed on LiFi'
 						flag = 0
 					}
 					await sleep(30);
 				} catch (err) {
-					console.log(err);
 					errorOnLiFi = 'Transaction Failed on LiFi'
 					flag = 0;
 				}
 			}
 
-			if(errorOnLiFi) {
+			if (errorOnLiFi) {
 				showAlertModal(errorOnLiFi);
 				setIsSubmitting(false);
 				return;
@@ -448,13 +449,9 @@ const TransactionBuilderContextProvider = ({
 
 			const estimateGas = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
 
-			console.log('temp estimate: ', estimateGas);
-			
-			const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02',6)).sub(estimateGas.feeAmount ?? '0').toString() ,transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
+			const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
 
-			console.log('result on staking: ', stakingTxns);
-			
-			if(stakingTxns.errorMessage) {
+			if (stakingTxns.errorMessage) {
 				showAlertModal(stakingTxns.errorMessage);
 				setIsSubmitting(false);
 				return;
@@ -462,7 +459,6 @@ const TransactionBuilderContextProvider = ({
 
 			const estimated = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
 
-			console.log('real estimation: ', estimated);
 			crossChainAction = {
 				...crossChainAction,
 				estimated,
@@ -472,8 +468,6 @@ const TransactionBuilderContextProvider = ({
 
 			result = await submitEtherspotAndWaitForTransactionHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.transactions, PolygonUSDCAddress);
 
-			console.log('submiited txn hash: ', result);
-			
 			if (
 				result?.errorMessage ||
 				(!result?.transactionHash?.length)
@@ -709,7 +703,7 @@ const TransactionBuilderContextProvider = ({
 													}
 													if (
 														availableTransactionBlock.type ===
-															TRANSACTION_BLOCK_TYPE.DISABLED ||
+														TRANSACTION_BLOCK_TYPE.DISABLED ||
 														isBridgeTransactionBlockAndDisabled
 													)
 														return;
@@ -754,16 +748,16 @@ const TransactionBuilderContextProvider = ({
 										errorMessage?: string;
 										batchHash?: string;
 									} = crossChainAction.useWeb3Provider
-										? await submitWeb3ProviderTransaction(
+											? await submitWeb3ProviderTransaction(
 												web3Provider,
 												crossChainAction.transactions[0],
 												crossChainAction.chainId,
 												providerAddress,
-										  )
-										: await submitEtherspotTransactionsBatch(
+											)
+											: await submitEtherspotTransactionsBatch(
 												getSdkForChainId(crossChainAction.chainId) as Sdk,
 												crossChainAction.transactions,
-										  );
+											);
 
 									if (
 										result?.errorMessage ||

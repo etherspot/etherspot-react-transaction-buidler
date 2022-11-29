@@ -10,6 +10,9 @@ import {
 } from 'etherspot';
 import { BigNumber, ethers } from 'ethers';
 
+// Types
+import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
+
 import TextInput from '../TextInput';
 import { SelectOption } from '../SelectInput/SelectInput';
 import {
@@ -25,6 +28,7 @@ import {
   addressesEqual, isValidEthereumAddress,
 } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
+import AccountSwitch3Input from '../AccountSwitch3Input';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
 import {
@@ -35,8 +39,6 @@ import {
 } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
-import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
-import AccountSwitch3Input from '../AccountSwitch3Input';
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -72,8 +74,6 @@ const KlimaStakingTransactionBlock = ({
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
-  const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(null);
-  const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
 
   const defaultCustomReceiverAddress = values?.receiverAddress
     && !addressesEqual(providerAddress, values?.receiverAddress)
@@ -89,7 +89,7 @@ const KlimaStakingTransactionBlock = ({
     : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(defaultSelectedReceiveAccountType);
 
-  const Klima_Asset: IAssetWithBalance = {
+  const klimaAsset: IAssetWithBalance = {
     address: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
     chainId: supportedChains[1].chainId,
     name: 'Klima DAO',
@@ -157,10 +157,8 @@ const KlimaStakingTransactionBlock = ({
     });
   }, [
     selectedFromNetwork,
-    selectedToNetwork,
     selectedFromAsset,
     amount,
-    selectedRoute,
     selectedAccountType,
     receiverAddress,
   ]);
@@ -211,7 +209,7 @@ const KlimaStakingTransactionBlock = ({
       <NetworkAssetSelectInput
         label="To"
         selectedNetwork={supportedChains[1]}
-        selectedAsset={Klima_Asset}
+        selectedAsset={klimaAsset}
         disabled={true}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
       />

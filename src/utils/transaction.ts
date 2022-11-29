@@ -56,7 +56,8 @@ export const klimaDaoStaking = async (
   receiverAddress?: string,
   sdk?: EtherspotSdk | null,
 ): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[], returnAmount: BigNumber, provider?: ExchangeProviders } }> => {
-  if(!sdk) return { errorMessage: 'No sdk found'};
+  if (!sdk) return { errorMessage: 'No sdk found' };
+
   const fromAssetAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
   const createTimestamp = +new Date();
   const offers = await sdk.getExchangeOffers({
@@ -139,8 +140,7 @@ export const klimaDaoStaking = async (
 
   transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
 
-  if(receiverAddress && receiverAddress != sdk.state.accountAddress)
-  {
+  if (receiverAddress && receiverAddress != sdk.state.accountAddress) {
     const sKlimaTokenAbi = [
       "function transfer(address to, uint256 value)",
     ]
@@ -162,7 +162,7 @@ export const klimaDaoStaking = async (
     transactions = [...transactions, sKlimaSendTransaction];
   }
 
-  return { result : {transactions, returnAmount: bestOffer.receiveAmount, provider: bestOffer.provider } };
+  return { result: { transactions, returnAmount: bestOffer.receiveAmount, provider: bestOffer.provider } };
 
 }
 
@@ -214,8 +214,6 @@ export const buildCrossChainAction = async (
           if (!bestRoute) {
             return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
           }
-
-          console.log('best offer: ', bestRoute);
 
           const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
 
@@ -281,7 +279,7 @@ export const buildCrossChainAction = async (
 
           const result = await klimaDaoStaking(BigNumber.from(bestRoute.toAmount).sub('250000').toString(), sdk.state.walletAddress, sdk);
 
-          if(result.errorMessage) return { errorMessage: result.errorMessage };
+          if (result.errorMessage) return { errorMessage: result.errorMessage };
 
           result.result?.transactions.map((element) => {
             destinationTxns.push(element);
@@ -338,7 +336,6 @@ export const buildCrossChainAction = async (
 
           return { crossChainAction };
         } catch (e) {
-          console.log('caught error: ', e);
           return { errorMessage: 'Failed to get bridge route!' };
         }
 
@@ -407,7 +404,7 @@ export const buildCrossChainAction = async (
         to,
         value,
         data,
-        chainId ,
+        chainId,
       }) => ({
         to: to as string,
         value,
@@ -690,7 +687,7 @@ export const submitEtherspotTransactionsBatch = async (
 
     await sdk.estimateGatewayBatch();
 
-    const estimate = await sdk.estimateGatewayBatch({feeToken});
+    await sdk.estimateGatewayBatch({ feeToken });
     const result = await sdk.submitGatewayBatch();
     ({ hash: batchHash } = result);
   } catch (e) {
@@ -712,7 +709,7 @@ export const submitEtherspotAndWaitForTransactionHash = async (
   errorMessage?: string;
 }> => {
   let transactionHash;
-  let errorMessage; 
+  let errorMessage;
 
   try {
     if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
@@ -724,21 +721,19 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     // sequential
     for (const transaction of transactions) {
       const { to, value, data } = transaction;
-      console.log('transactions to submit: ', transaction);
       await sdk.batchExecuteAccountTransaction({ to, value, data });
     }
 
-    const estimate = await sdk.estimateGatewayBatch({feeToken});
+    await sdk.estimateGatewayBatch({ feeToken });
 
-    console.log('estimated to submit: ', estimate, sdk.state.network);
     const result = await sdk.submitGatewayBatch();
-
-    console.log('result:', result);
 
     // ({ hash: batchHash } = result);
     let temporaryBatchSubscription: Subscription;
-    return new Promise<{transactionHash?: string;
-      errorMessage?: string;}>((resolve, reject) => {
+    return new Promise<{
+      transactionHash?: string;
+      errorMessage?: string;
+    }>((resolve, reject) => {
       temporaryBatchSubscription = sdk.notifications$
         .pipe(
           rxjsMap(async (notification) => {
@@ -753,9 +748,9 @@ export const submitEtherspotAndWaitForTransactionHash = async (
 
               let finishSubscription;
               if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
-                finishSubscription = () => resolve({errorMessage: 'Failed Transaction sent'});
+                finishSubscription = () => resolve({ errorMessage: 'Failed Transaction sent' });
               } else if (submittedBatch?.transaction?.hash) {
-                finishSubscription = () => resolve({transactionHash: submittedBatch.transaction.hash});
+                finishSubscription = () => resolve({ transactionHash: submittedBatch.transaction.hash });
               }
 
               if (finishSubscription) {
@@ -768,12 +763,11 @@ export const submitEtherspotAndWaitForTransactionHash = async (
         .subscribe();
     });
   } catch (e) {
-    console.log('caught error: ', e);
     errorMessage = parseEtherspotErrorMessageIfAvailable(e);
     if (!errorMessage && e instanceof Error) {
       errorMessage = e?.message;
     }
-    return {errorMessage};
+    return { errorMessage };
   }
 }
 
@@ -783,10 +777,10 @@ export const getCrossChainStatusByHash = async (
   toChainId: number,
   hash: string,
   bridge?: string,
-): Promise <LiFiStatus | null> => {
-  if(!sdk) return null;
+): Promise<LiFiStatus | null> => {
+  if (!sdk) return null;
   try {
-    const options = {method: 'GET', headers: {accept: 'application/json'}};
+    const options = { method: 'GET', headers: { accept: 'application/json' } };
 
     const result = await (await fetch(`https://li.quest/v1/status?bridge=${bridge}&fromChain=${fromChainId}&toChain=${toChainId}&txHash=${hash}`, options)).json();
     return {
@@ -797,8 +791,7 @@ export const getCrossChainStatusByHash = async (
       subStatus: result.substatus,
       subStatusMsg: result.substatusMessage,
     }
-  } catch(err) {
-    console.log(err);
+  } catch (err) {
     return null;
   }
 }
@@ -827,7 +820,7 @@ export const submitWeb3ProviderTransactions = async (
   }
 
   try {
-    for (const transaction of transactions){
+    for (const transaction of transactions) {
       const { to, value, data } = transaction;
       const tx = {
         from: providerAddress,
@@ -839,12 +832,12 @@ export const submitWeb3ProviderTransactions = async (
       transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
 
       let status = CROSS_CHAIN_ACTION_STATUS.PENDING;
-      while(status == CROSS_CHAIN_ACTION_STATUS.PENDING) {
+      while (status == CROSS_CHAIN_ACTION_STATUS.PENDING) {
         status = await getTransactionStatus(sdk, transactionHash);
         await sleep(10);
       }
 
-      if(status === CROSS_CHAIN_ACTION_STATUS.FAILED) {
+      if (status === CROSS_CHAIN_ACTION_STATUS.FAILED) {
         errorMessage = 'Transaction Submitted got Failed';
       }
     }
@@ -974,7 +967,7 @@ export const estimateCrossChainAction = async (
         await sdk.batchExecuteAccountTransaction({ to, value, data });
       }
 
-      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({feeToken});
+      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
       gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
       feeAmount = feeToken ? gatewayBatchEstimation.feeAmount : null;
     } catch (e) {
@@ -995,9 +988,9 @@ export const estimateCrossChainAction = async (
 }
 
 export const getTransactionStatus = async (sdk: EtherspotSdk, hash: string): Promise<string> => {
-  if(!sdk) return CROSS_CHAIN_ACTION_STATUS.FAILED;
+  if (!sdk) return CROSS_CHAIN_ACTION_STATUS.FAILED;
 
-  const result = await sdk.getTransaction({hash});
+  const result = await sdk.getTransaction({ hash });
 
   if (result.status === TransactionStatuses.Completed) {
     return CROSS_CHAIN_ACTION_STATUS.CONFIRMED

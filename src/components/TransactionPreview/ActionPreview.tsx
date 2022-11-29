@@ -71,7 +71,7 @@ const ValueBlock = styled.div`
 	margin-right: 20px;
 `;
 
-const SignButton = styled(FaSignature)<{ disabled?: boolean }>`
+const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
 	margin-right: 10px;
 	padding: 5px;
 	cursor: pointer;
@@ -83,7 +83,7 @@ const SignButton = styled(FaSignature)<{ disabled?: boolean }>`
 	${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
-const EditButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
+const EditButton = styled(HiOutlinePencilAlt) <{ disabled?: boolean }>`
 	margin-right: 10px;
 	padding: 5px;
 	cursor: pointer;
@@ -245,9 +245,8 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
 
 				return (
 					<TransactionStatusAction
-						key={`tx-status-${
-							transaction.transactionHash || crossChainAction.batchHash || 'no-hash'
-						}-${index}`}
+						key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'
+							}-${index}`}
 					>
 						{transaction?.submitTimestamp && transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
 							<TransactionStatusClock>
@@ -351,9 +350,8 @@ const ActionPreview = ({
 			estimated.gasCost,
 			nativeAssetPerChainId[chainId].decimals,
 		);
-		const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${
-			nativeAssetPerChainId[chainId].symbol
-		}`;
+		const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol
+			}`;
 		if (!estimated.usdPrice) return gasCostFormatted;
 
 		return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
@@ -470,8 +468,8 @@ const ActionPreview = ({
 		);
 	}
 
-  if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
+	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
+		const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
 
 		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 		const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
@@ -545,12 +543,12 @@ const ActionPreview = ({
 						</Text>
 					</TransactionAction>
 				)}
-        {!!route && (
-          <TransactionAction>
-            <Label>Route</Label>
-            <RouteOption route={route} showActions />
-          </TransactionAction>
-        )}
+				{!!route && (
+					<TransactionAction>
+						<Label>Route</Label>
+						<RouteOption route={route} showActions />
+					</TransactionAction>
+				)}
 				<TransactionStatus crossChainAction={crossChainAction} />
 			</Card>
 		);
@@ -559,8 +557,8 @@ const ActionPreview = ({
 	if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
 		const previewList = crossChainAction?.batchTransactions?.length
 			? crossChainAction?.batchTransactions.map((action) =>
-					action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET ? action.preview : null,
-			  )
+				action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET ? action.preview : null,
+			)
 			: [crossChainAction.preview];
 
 		const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
@@ -644,8 +642,8 @@ const ActionPreview = ({
 	if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
 		const previewList = crossChainAction?.batchTransactions?.length
 			? crossChainAction?.batchTransactions.map((action) =>
-					action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ? action.preview : null,
-			  )
+				action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ? action.preview : null,
+			)
 			: [crossChainAction.preview];
 
 		const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
