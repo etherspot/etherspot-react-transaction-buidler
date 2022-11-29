@@ -120,7 +120,7 @@ const OptionsScroll = styled.div`
   max-height: 210px;
   overflow-x: hidden;
   overflow-y: scroll;
-  
+
   ::-webkit-scrollbar {
     width: 8px;
   }
@@ -258,7 +258,17 @@ const SelectInput = ({
             {!noSearch && options?.length > 5 && (
               <SearchInputWrapper htmlFor={searchInputId}>
                 <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
-                <SearchInput id={searchInputId} onChange={(e: any) => setSearchQuery(e?.target?.value)} placeholder="Search" />
+                <SearchInput 
+                  id={searchInputId} 
+                  onChange={(e: any) => setSearchQuery(e?.target?.value)} 
+                  placeholder="Search"
+                  onClick={(e:any) => {
+                    e.stopPropagation()
+                  }}
+                  onFocus={(e:any) => {
+                    e.stopPropagation()
+                  }}
+                />
               </SearchInputWrapper>
             )}
             {!filteredSelectOptions?.length && <small>No results.</small>}
@@ -269,7 +279,8 @@ const SelectInput = ({
                     disabled={disabled}
                     key={`${option.value}-${index}`}
                     noHover={noOpen}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (onOptionSelect) onOptionSelect(option);
                       hideSelectModal();
                     }}

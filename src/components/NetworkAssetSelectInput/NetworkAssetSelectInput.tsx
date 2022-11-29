@@ -387,6 +387,7 @@ const NetworkAssetSelectInput = ({
                   <SearchInput id={searchInputId} 
                     onChange={(e: any) => setAssetSearchQuery(e?.target?.value)} 
                     placeholder="Search" 
+                    onClick={(e:any) => e.stopPropagation()}
                     onFocus={(e: any) => {
                       e.stopPropagation();
                     }}
@@ -395,7 +396,13 @@ const NetworkAssetSelectInput = ({
               )}
               <OptionsScroll>
                 {filteredSelectedNetworkAssets.map((asset, index) => (
-                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`}>
+                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`} 
+                  onClick={(e:any) => {
+                    e.stopPropagation();
+                    if(!showQuickInputButtons){
+                      onListItemClick(asset)
+                    }
+                  }}>
                     <LargeOptionListItemLeft onClick={() => onListItemClick(asset)}>
                       <RoundedImage url={asset.logoURI} title={asset.name} />
                       <LargeOptionDetails>
