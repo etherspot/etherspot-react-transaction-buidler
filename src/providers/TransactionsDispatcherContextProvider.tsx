@@ -201,9 +201,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
 		setCrossChainActions(updatedCrossChainActions);
 
-		// showAlertModal('Transaction sent!');
-
-		// setProcessingCrossChainActionId(null);
 	}, [
 		crossChainActions,
 		getSdkForChainId,

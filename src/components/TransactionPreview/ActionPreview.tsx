@@ -3,24 +3,33 @@ import styled, { useTheme } from "styled-components";
 import { ethers } from "ethers";
 import { HiOutlinePencilAlt } from "react-icons/hi";
 import { BsClockHistory, BiCheck, IoClose, FaSignature } from "react-icons/all";
+import { CHAIN_ID_TO_NETWORK_NAME } from "etherspot/dist/sdk/network/constants";
 
+// Components
+import Card from "../Card";
+import { ClickableText, Text } from "../Text";
+import RouteOption from "../RouteOption";
+import { CombinedRoundedImages, RoundedImage } from "../Image";
+
+// Utils
 import {
   getTransactionExplorerLink,
   isERC20ApprovalTransactionData,
 } from "../../utils/transaction";
-import { TRANSACTION_BLOCK_TYPE } from "../../constants/transactionBuilderConstants";
-import { CHAIN_ID_TO_NETWORK_NAME } from "etherspot/dist/sdk/network/constants";
 import { formatAmountDisplay, humanizeHexString } from "../../utils/common";
-import { CROSS_CHAIN_ACTION_STATUS } from "../../constants/transactionDispatcherConstants";
 import { nativeAssetPerChainId, supportedChains } from "../../utils/chain";
-import Card from "../Card";
-import { CombinedRoundedImages, RoundedImage } from "../Image";
-import { ClickableText, Text } from "../Text";
 import { Theme } from "../../utils/theme";
-import { useEtherspot } from "../../hooks";
+
+// Constants
+import { TRANSACTION_BLOCK_TYPE } from "../../constants/transactionBuilderConstants";
+import { CROSS_CHAIN_ACTION_STATUS } from "../../constants/transactionDispatcherConstants";
 import moment from "moment";
+
+// Hooks
+import { useEtherspot } from "../../hooks";
+
+// Types
 import { ICrossChainAction } from "../../types/crossChainAction";
-import RouteOption from "../RouteOption";
 
 const TransactionAction = styled.div`
   position: relative;
@@ -180,7 +189,7 @@ const TransactionStatus = ({
   const previewTransaction = (transactionHash?: string) => {
     const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
     if (!explorerLink) {
-      alert("Transaction hash not yet available!");
+      alert("The transaction hash is not yet available. Please try again later.");
       return;
     }
 
@@ -194,7 +203,7 @@ const TransactionStatus = ({
 
     const sdk = getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
-      alert("Transaction hash not yet available!");
+      alert("The transaction hash is not yet available. Please try again later.");
       setIsGettingExplorerLink(false);
       return;
     }
@@ -294,7 +303,6 @@ const TransactionStatus = ({
 
         useEffect(() => {
           let timeout: any;
-          console.log(transactionStatus, "transactionStatus")
           if (
             transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
             !prevStatus
@@ -416,12 +424,10 @@ const ActionPreview = ({
   const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
 
   const onCopy = async (valueToCopy: string) => {
-    try {
-      await navigator.clipboard.writeText(valueToCopy);
+      await navigator.clipboard.writeText(valueToCopy).catch((err) => {
+        //
+      });
       alert("Copied!");
-    } catch (e) {
-      //
-    }
   };
 
   const onEditButtonClick = () => {

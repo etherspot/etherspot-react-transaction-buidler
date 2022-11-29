@@ -678,7 +678,6 @@ const TransactionBuilderContextProvider = ({
 										),
 									);
 									setIsSigningAction(false);
-									// showAlertModal('Transaction sent!');
 								}}
 								onEdit={() =>
 									setEditingTransactionBlock(
