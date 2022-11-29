@@ -9,7 +9,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConsta
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { formatAmountDisplay, humanizeHexString } from '../../utils/common';
 import { CROSS_CHAIN_ACTION_STATUS } from '../../constants/transactionDispatcherConstants';
-import { nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
 import Card from '../Card';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import { ClickableText, Text } from '../Text';
@@ -365,13 +365,20 @@ const ActionPreview = ({
 	];
 
 	if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
-		const { fromAsset, fromChainId } = preview;
+		const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress } = preview;
 
 		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+
+		const toNetwork = supportedChains[1];
+
+		const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[CHAIN_ID.POLYGON].toUpperCase();
 
 		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
 		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+
+		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
 		return (
 			<Card
@@ -399,11 +406,53 @@ const ActionPreview = ({
 							</div>
 						</ValueWrapper>
 					</TransactionAction>
+					<TransactionAction>
+						<Label>You receive</Label>
+						<ValueWrapper>
+							<CombinedRoundedImages
+								title={toAsset.symbol}
+								url={toAsset.iconUrl}
+								smallImageTitle={toChainTitle}
+								smallImageUrl={toNetwork?.iconUrl}
+							/>
+							<div>
+								<Text size={16} marginBottom={3} medium block>
+									{toAmount} {toAsset.symbol}
+								</Text>
+								<Text size={12}>On {toChainTitle}</Text>
+							</div>
+						</ValueWrapper>
+					</TransactionAction>
 				</DoubleTransactionActionsInSingleRow>
-
+				{!!senderAddress && !!receiverAddress && (
+					<TransactionAction>
+						<Text size={16} medium>
+							<>
+								From &nbsp;
+								<ClickableText onClick={() => onCopy(senderAddress)}>
+									{humanizeHexString(senderAddress)}
+								</ClickableText>
+								&nbsp;
+							</>
+							to &nbsp;
+							<ClickableText onClick={() => onCopy(receiverAddress)}>
+								{humanizeHexString(receiverAddress)}
+							</ClickableText>
+						</Text>
+					</TransactionAction>
+				)}
 				<TransactionAction>
 					<Label>Route</Label>
 					<ValueWrapper>
+						<RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
+						<ValueBlock>
+							<Text size={12} marginBottom={2} medium block>
+								{providerName}
+							</Text>
+							<Text size={16} medium>
+								{toAmount} {toAsset.symbol}{' '}
+							</Text>
+						</ValueBlock>
 						{!!cost && (
 							<ValueBlock>
 								<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>

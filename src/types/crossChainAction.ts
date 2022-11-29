@@ -35,6 +35,10 @@ interface SendAssetActionPreview {
 interface KlimaStakingActionPreview {
 	fromChainId: number;
 	fromAsset: AssetTransfer;
+	toAsset: AssetTransfer;
+	providerName: string;
+	providerIconUrl: string | undefined;
+	receiverAddress?: string;
 }
 
 interface AssetSwapActionPreview {
@@ -64,6 +68,10 @@ interface AssetSwapAction {
 interface KlimaStakingAction {
 	type: typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
 	preview: KlimaStakingActionPreview;
+	destinationCrossChainAction: ICrossChainAction[];
+	containsSwitchChain?: boolean;
+	receiveAmount?: string;
+	bridgeUsed?: string;
 }
 
 export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {
@@ -78,6 +86,7 @@ export interface ICrossChainActionEstimation {
 	gasCost?: BigNumber | null;
 	usdPrice?: number | null;
 	errorMessage?: string;
+	feeAmount?: BigNumber | null;
 }
 
 export type ICrossChainAction = {

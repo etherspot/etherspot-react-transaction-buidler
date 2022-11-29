@@ -6,6 +6,7 @@ import { ISendAssetTransactionBlockValues } from '../components/TransactionBlock
 import { ISwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
 import { nativeAssetPerChainId } from './chain';
 import { ITransactionBlock } from '../types/transactionBlock';
+import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {
   if (!address) return false;
@@ -33,6 +34,17 @@ export const validateTransactionBlockValues = (
   transactionBlock: ITransactionBlock,
 ): ErrorMessages => {
   const errors: ErrorMessages = {};
+
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+    const transactionBlockValues: IKlimaStakingTransactionBlockValues | undefined = transactionBlock.values;
+    if (!transactionBlockValues?.fromChainId) errors.fromChainId = 'No source chain selected!';
+    if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
+    if (!transactionBlockValues?.fromAssetAddress) errors.fromAssetAddress = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.fromAssetSymbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.fromAssetDecimals) errors.fromAssetDecimals = 'Invalid source asset selected!';
+    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
+    if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
+  }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
     const transactionBlockValues: IAssetBridgeTransactionBlockValues | undefined = transactionBlock.values;

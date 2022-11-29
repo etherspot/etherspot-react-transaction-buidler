@@ -8,11 +8,12 @@ import styled, { useTheme } from 'styled-components';
 import {
   AccountTypes,
 } from 'etherspot';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 
 import TextInput from '../TextInput';
 import { SelectOption } from '../SelectInput/SelectInput';
 import {
+  useEtherspot,
   useTransactionBuilder,
 } from '../../hooks';
 import {
@@ -21,11 +22,11 @@ import {
   formatMaxAmount,
 } from '../../utils/common';
 import {
-  ErrorMessages,
+  addressesEqual, isValidEthereumAddress,
 } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { Chain } from '../../utils/chain';
+import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
 import {
   IAssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
@@ -35,6 +36,7 @@ import {
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
+import AccountSwitch3Input from '../AccountSwitch3Input';
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -43,6 +45,8 @@ export interface IKlimaStakingTransactionBlockValues {
   fromAssetDecimals?: number;
   fromAssetSymbol?: string;
   amount?: string;
+  accountType: AccountTypes;
+  receiverAddress?: string;
 }
 
 const Title = styled.h3`
@@ -53,62 +57,112 @@ const Title = styled.h3`
   font-family: "PTRootUIWebBold", sans-serif;
 `;
 
+const WalletReceiveWrapper = styled.div`
+	display: flex;
+	flex-direction: row;
+`;
+
 const KlimaStakingTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
+  values,
 }: IKlimaStakingTransactionBlock) => {
+  const { sdk, providerAddress, accountAddress } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedToAsset, setSelectedToAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
 
+  const defaultCustomReceiverAddress = values?.receiverAddress
+    && !addressesEqual(providerAddress, values?.receiverAddress)
+    && !addressesEqual(accountAddress, values?.receiverAddress)
+    ? values.receiverAddress
+    : null;
+  const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
+  const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
+
+  const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
+    || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
+    ? AccountTypes.Key
+    : AccountTypes.Contract;
+  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(defaultSelectedReceiveAccountType);
+
+  const Klima_Asset: IAssetWithBalance = {
+    address: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
+    chainId: supportedChains[1].chainId,
+    name: 'Klima DAO',
+    symbol: 'sKLIMA',
+    decimals: 9,
+    logoURI: 'https://polygonscan.com/token/images/klimadao_32.png',
+    balance: BigNumber.from(0),
+    assetPriceUsd: null,
+    balanceWorthUsd: null,
+  }
+
   const {
     setTransactionBlockValues,
     resetTransactionBlockFieldValidationError,
+    setTransactionBlockFieldValidationError,
   } = useTransactionBuilder();
 
   const theme: Theme = useTheme();
 
   useEffect(() => {
-    if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
-      setSelectedToNetwork(null);
-      setSelectedToAsset(null);
-    }
-  }, [selectedFromNetwork, selectedToNetwork]);
-
-  useEffect(() => {
-    setSelectedRoute(null);
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
-  }, [selectedToNetwork, selectedFromNetwork]);
+  }, [selectedFromNetwork]);
 
   const onAmountChange = useCallback((newAmount: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    const decimals = selectedToAsset?.decimals ?? 18;
+    const decimals = selectedFromAsset?.decimals ?? 18;
     const updatedAmount = formatAssetAmountInput(newAmount, decimals);
     setAmount(updatedAmount)
-  }, [selectedFromAsset, selectedToAsset]);
+  }, [selectedFromAsset]);
+
+  const receiverAddress = useMemo(() => {
+    if (useCustomAddress) return customReceiverAddress;
+    return selectedReceiveAccountType === AccountTypes.Key
+      ? providerAddress
+      : accountAddress;
+  }, [
+    useCustomAddress,
+    customReceiverAddress,
+    providerAddress,
+    selectedReceiveAccountType,
+    selectedAccountType,
+    accountAddress,
+  ]);
 
   useEffect(() => {
+    if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
+      setTransactionBlockFieldValidationError(
+        transactionBlockId,
+        'receiverAddress',
+        'Invalid receiver address',
+      );
+      return;
+    }
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
     setTransactionBlockValues(transactionBlockId, {
-      fromChainId: selectedFromNetwork?.chainId,
-      fromAssetAddress: selectedFromAsset?.address,
-      fromAssetDecimals: selectedFromAsset?.decimals,
-      fromAssetSymbol: selectedFromAsset?.symbol,
+      fromChainId: selectedFromNetwork?.chainId ?? undefined,
+      fromAssetAddress: selectedFromAsset?.address ?? undefined,
+      fromAssetDecimals: selectedFromAsset?.decimals ?? undefined,
+      fromAssetSymbol: selectedFromAsset?.symbol ?? undefined,
       fromAssetIconUrl: selectedFromAsset?.logoURI,
       amount,
+      accountType: selectedAccountType,
+      receiverAddress: receiverAddress ?? undefined,
     });
   }, [
     selectedFromNetwork,
     selectedToNetwork,
     selectedFromAsset,
-    selectedToAsset,
     amount,
     selectedRoute,
+    selectedAccountType,
+    receiverAddress,
   ]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -128,19 +182,16 @@ const KlimaStakingTransactionBlock = ({
         label="From wallet"
         selectedAccountType={selectedAccountType}
         onChange={(accountType) => {
-          if (accountType === AccountTypes.Key) {
-            alert('Not supported yet!');
-            return;
-          }
           setSelectedAccountType(accountType);
         }}
-        errorMessage={errorMessages?.fromWallet}
+        errorMessage={errorMessages?.accountType}
       />
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
           setSelectedFromAsset(asset);
           setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
@@ -149,14 +200,20 @@ const KlimaStakingTransactionBlock = ({
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
           setSelectedFromNetwork(network);
         }}
+        hideChainIds={[CHAIN_ID.POLYGON]}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
-        errorMessage={errorMessages?.fromChainId
-          || errorMessages?.fromAssetAddress
-          || errorMessages?.fromAssetDecimals
-        }
+        errorMessage={errorMessages?.fromChainId || errorMessages?.fromAssetSymbol || errorMessages?.fromAssetAddress || errorMessages?.fromAssetDecimals}
+        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
+      />
+      <NetworkAssetSelectInput
+        label="To"
+        selectedNetwork={supportedChains[1]}
+        selectedAsset={Klima_Asset}
+        disabled={true}
+        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
@@ -181,6 +238,35 @@ const KlimaStakingTransactionBlock = ({
             />
           }
           errorMessage={errorMessages?.amount}
+        />
+      )}
+      <WalletReceiveWrapper>
+        <AccountSwitch3Input
+          label="You will receive on"
+          selectedAccountType={selectedReceiveAccountType}
+          onChange={(value) => {
+            setSelectedReceiveAccountType(value);
+            if (value == 'Custom') {
+              setUseCustomAddress(true);
+              return;
+            }
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+            setUseCustomAddress(false);
+            setCustomReceiverAddress(null);
+          }}
+        />
+      </WalletReceiveWrapper>
+      {useCustomAddress && (
+        <TextInput
+          value={customReceiverAddress ?? ''}
+          onValueChange={(value) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+            setCustomReceiverAddress(value);
+          }}
+          errorMessage={errorMessages?.receiverAddress}
+          placeholder="Insert address"
+          noLabel
+          showPasteButton
         />
       )}
     </>

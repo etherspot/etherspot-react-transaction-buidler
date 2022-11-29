@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { Sdk } from 'etherspot';
+import { Sdk, sleep } from 'etherspot';
 
 import { PrimaryButton, SecondaryButton } from '../components/Button';
 import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
@@ -11,8 +11,12 @@ import { ErrorMessages, validateTransactionBlockValues } from '../utils/validati
 import {
 	buildCrossChainAction,
 	estimateCrossChainAction,
+	getCrossChainStatusByHash,
+	klimaDaoStaking,
 	submitEtherspotTransactionsBatch,
 	submitWeb3ProviderTransaction,
+	submitWeb3ProviderTransactions,
+	submitEtherspotAndWaitForTransactionHash,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -29,6 +33,8 @@ import {
 	ITransactionBlockType,
 	ITransactionBlockValues,
 } from '../types/transactionBlock';
+import { BigNumber, utils } from 'ethers';
+import { CHAIN_ID } from '../utils/chain';
 
 export interface TransactionBuilderContextProps {
 	defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -170,6 +176,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
 		id: getTimeBasedUniqueId(),
 		title: 'Swap asset',
 		type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
+	},
+	{
+		id: getTimeBasedUniqueId(),
+		title: 'Klima Staking',
+		type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
 	},
 	{
 		id: getTimeBasedUniqueId(),
@@ -375,10 +386,114 @@ const TransactionBuilderContextProvider = ({
 			return;
 		}
 
-		setCrossChainActions([]);
-		setTransactionBlocks([]);
-		dispatchCrossChainActions(crossChainActionsToDispatch);
-		setIsSubmitting(false);
+		if(crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+			const PolygonUSDCAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+			let crossChainAction = crossChainActions[0];
+
+			if(!crossChainAction.receiveAmount) {
+				showAlertModal('Failed to get receiveAmount');
+				setIsSubmitting(false);
+				return;
+			}
+
+			let result: {
+				transactionHash?: string;
+				errorMessage?: string;
+			};
+
+			result = crossChainAction.useWeb3Provider
+				? await submitWeb3ProviderTransactions(
+						getSdkForChainId(crossChainAction.chainId) as Sdk,
+						web3Provider,
+						crossChainAction.transactions,
+						crossChainAction.chainId,
+						providerAddress,
+				  )
+				: await submitEtherspotAndWaitForTransactionHash(
+						getSdkForChainId(crossChainAction.chainId) as Sdk,
+						crossChainAction.transactions,
+				  );
+			if (
+				result?.errorMessage ||
+				(!result?.transactionHash?.length)
+			) {
+				showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+				setIsSubmitting(false);
+				return;
+			}
+
+			let flag = 1, errorOnLiFi;
+			while (flag) {
+				try {
+					const status = await getCrossChainStatusByHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.chainId, CHAIN_ID.POLYGON, result.transactionHash, crossChainAction.bridgeUsed)
+					if (status?.status == "DONE" && status.subStatus == "COMPLETED") {
+						flag = 0;
+					} else if(status?.status === "FAILED") {
+						errorOnLiFi = 'Transaction Failed on LiFi'
+						flag = 0
+					}
+					await sleep(30);
+				} catch (err) {
+					console.log(err);
+					errorOnLiFi = 'Transaction Failed on LiFi'
+					flag = 0;
+				}
+			}
+
+			if(errorOnLiFi) {
+				showAlertModal(errorOnLiFi);
+				setIsSubmitting(false);
+				return;
+			}
+
+			const estimateGas = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
+
+			console.log('temp estimate: ', estimateGas);
+			
+			const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02',6)).sub(estimateGas.feeAmount ?? '0').toString() ,transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
+
+			console.log('result on staking: ', stakingTxns);
+			
+			if(stakingTxns.errorMessage) {
+				showAlertModal(stakingTxns.errorMessage);
+				setIsSubmitting(false);
+				return;
+			}
+
+			const estimated = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
+
+			console.log('real estimation: ', estimated);
+			crossChainAction = {
+				...crossChainAction,
+				estimated,
+				transactions: stakingTxns.result?.transactions ?? [],
+				chainId: CHAIN_ID.POLYGON,
+			}
+
+			result = await submitEtherspotAndWaitForTransactionHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.transactions, PolygonUSDCAddress);
+
+			console.log('submiited txn hash: ', result);
+			
+			if (
+				result?.errorMessage ||
+				(!result?.transactionHash?.length)
+			) {
+				showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+				setIsSubmitting(false);
+				return;
+			}
+			setCrossChainActions([]);
+			setTransactionBlocks([]);
+			showAlertModal('Transaction sent');
+			setIsSubmitting(false);
+
+		}
+		else {
+			setCrossChainActions([]);
+			setTransactionBlocks([]);
+			dispatchCrossChainActions(crossChainActionsToDispatch);
+			setIsSubmitting(false);
+		}
 	}, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting, isEstimatingCrossChainActions]);
 
 	const setTransactionBlockValues = (transactionBlockId: string, values: ITransactionBlockValues) => {
@@ -431,6 +546,10 @@ const TransactionBuilderContextProvider = ({
 
 	const hasTransactionBlockAdded = transactionBlocks.some(
 		(transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
+	);
+
+	const hasKlimaBlockAdded = transactionBlocks.some(
+		(transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
 	);
 
 	const crossChainActionInProcessing = useMemo(() => {
@@ -575,10 +694,19 @@ const TransactionBuilderContextProvider = ({
 										const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
 											? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
 											: availableTransactionBlock.title;
+										const isKlimaBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
 										return (
 											<TransactionBlockListItemWrapper
 												key={availableTransactionBlock.title}
 												onClick={() => {
+													if (isKlimaBlockIncluded && transactionBlocks.length > 0) {
+														showAlertModal('Cannot add klima staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed');
+														return;
+													}
+													if (hasKlimaBlockAdded) {
+														showAlertModal('Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed');
+														return;
+													}
 													if (
 														availableTransactionBlock.type ===
 															TRANSACTION_BLOCK_TYPE.DISABLED ||
@@ -592,7 +720,7 @@ const TransactionBuilderContextProvider = ({
 													setTransactionBlocks((current) => current.concat(transactionBlock));
 													setShowTransactionBlockSelect(false);
 												}}
-												disabled={isDisabled}
+												disabled={isDisabled || hasKlimaBlockAdded}
 											>
 												&bull; {availableTransactionBlockTitle}
 											</TransactionBlockListItemWrapper>
@@ -699,7 +827,7 @@ const TransactionBuilderContextProvider = ({
 							{!isSubmitting && !isEstimatingCrossChainActions && 'Execute'}
 						</PrimaryButton>
 						<br />
-						<SecondaryButton marginTop={10} onClick={() => setCrossChainActions([])}>
+						<SecondaryButton marginTop={10} onClick={() => setCrossChainActions([])} disabled={isSubmitting}>
 							Go back
 						</SecondaryButton>
 					</>
