@@ -706,18 +706,19 @@ const TransactionBuilderContextProvider = ({
 						</SecondaryButton>
 					</>
 				)}
-				{
-					isTransactionDone ? (
-					<AddTransactionButton onClick={() => {
-						setShowTransactionBlockSelect(true)
-						setIsTransactionDone(false)
-						}}>
-						<AiOutlinePlusCircle size={24} />
-						<span>Add transaction</span>
-					</AddTransactionButton>
-					) : <></>
-				}
-				
+        {isTransactionDone ? (
+          <AddTransactionButton
+            onClick={() => {
+              setShowTransactionBlockSelect(true);
+              setIsTransactionDone(false);
+            }}
+          >
+            <AiOutlinePlusCircle size={24} />
+            <span>Add transaction</span>
+          </AddTransactionButton>
+        ) : (
+          <></>
+        )}
 			</div>
 			{showMenu && (
 				<MenuWrapper>
