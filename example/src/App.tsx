@@ -9,6 +9,7 @@ import CrossSwap from "./pages/CrossSwap";
 import ThemeOverride from "./pages/ThemeOverride";
 import HiddenAddTransaction from "./pages/HiddenAddTransaction";
 import HiddenTransactionBlockTypes from "./pages/HiddenTransactionBlockTypes";
+import KlimaStake from "./pages/Kilma_stake";
 
 // List of wallets
 const wallets = [
@@ -105,6 +106,15 @@ const App = () => {
           path="/hidden-transaction-block"
           element={
             <HiddenTransactionBlockTypes
+              connectedProvider={connectedProvider}
+              chainId={chainId}
+            />
+          }
+        />
+        <Route
+          path="/klima-stake"
+          element={
+            <KlimaStake
               connectedProvider={connectedProvider}
               chainId={chainId}
             />
