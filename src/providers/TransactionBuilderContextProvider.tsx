@@ -1,34 +1,34 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import styled, { useTheme } from 'styled-components';
-import { HiOutlineDotsHorizontal } from 'react-icons/hi';
-import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { Sdk } from 'etherspot';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import styled, { useTheme } from "styled-components";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
+import { AiOutlinePlusCircle } from "react-icons/ai";
+import { Sdk } from "etherspot";
 
-import { PrimaryButton, SecondaryButton } from '../components/Button';
-import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
-import TransactionBlock from '../components/TransactionBlock';
-import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
+import { PrimaryButton, SecondaryButton } from "../components/Button";
+import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from "../hooks";
+import TransactionBlock from "../components/TransactionBlock";
+import { ErrorMessages, validateTransactionBlockValues } from "../utils/validation";
 import {
 	buildCrossChainAction,
 	estimateCrossChainAction,
 	submitEtherspotTransactionsBatch,
 	submitWeb3ProviderTransaction,
-} from '../utils/transaction';
-import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { TransactionBuilderContext } from '../contexts';
-import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
-import History from '../components/History';
-import { Theme } from '../utils/theme';
-import Card from '../components/Card';
-import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
+} from "../utils/transaction";
+import { TRANSACTION_BLOCK_TYPE } from "../constants/transactionBuilderConstants";
+import { TransactionBuilderContext } from "../contexts";
+import { ActionPreview } from "../components/TransactionPreview";
+import { getTimeBasedUniqueId, humanizeHexString } from "../utils/common";
+import History from "../components/History";
+import { Theme } from "../utils/theme";
+import Card from "../components/Card";
+import { CROSS_CHAIN_ACTION_STATUS } from "../constants/transactionDispatcherConstants";
+import { ICrossChainAction, ICrossChainActionTransaction } from "../types/crossChainAction";
 import {
 	IDefaultTransactionBlock,
 	ITransactionBlock,
 	ITransactionBlockType,
 	ITransactionBlockValues,
-} from '../types/transactionBlock';
+} from "../types/transactionBlock";
 
 export interface TransactionBuilderContextProps {
 	defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -158,37 +158,37 @@ const AddTransactionButton = styled(SecondaryButton)`
 const availableTransactionBlocks: ITransactionBlock[] = [
 	{
 		id: getTimeBasedUniqueId(),
-		title: 'Asset bridge',
+		title: "Asset bridge",
 		type: TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE,
 	},
 	{
 		id: getTimeBasedUniqueId(),
-		title: 'Send asset',
+		title: "Send asset",
 		type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
 	},
 	{
 		id: getTimeBasedUniqueId(),
-		title: 'Swap asset',
+		title: "Swap asset",
 		type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP,
 	},
 	{
 		id: getTimeBasedUniqueId(),
-		title: 'LI.FI staking (not yet available)',
+		title: "LI.FI staking (not yet available)",
 		type: TRANSACTION_BLOCK_TYPE.DISABLED,
 	},
 	{
 		id: getTimeBasedUniqueId(),
-		title: 'Uniswap LP (not yet available)',
+		title: "Uniswap LP (not yet available)",
 		type: TRANSACTION_BLOCK_TYPE.DISABLED,
 	},
 	{
 		id: getTimeBasedUniqueId(),
-		title: 'Sushiswap LP (not yet available)',
+		title: "Sushiswap LP (not yet available)",
 		type: TRANSACTION_BLOCK_TYPE.DISABLED,
 	},
 	{
 		id: getTimeBasedUniqueId(),
-		title: 'Quickswap LP (not yet available)',
+		title: "Quickswap LP (not yet available)",
 		type: TRANSACTION_BLOCK_TYPE.DISABLED,
 	},
 ];
@@ -207,7 +207,7 @@ const TransactionBuilderContextProvider = ({
 	const context = useContext(TransactionBuilderContext);
 
 	if (context !== null) {
-		throw new Error('<EtherspotContextProvider /> has already been declared.');
+		throw new Error("<EtherspotContextProvider /> has already been declared.");
 	}
 
 	const mappedDefaultTransactionBlocks = defaultTransactionBlocks
@@ -231,22 +231,14 @@ const TransactionBuilderContextProvider = ({
 	const onCopy = async (valueToCopy: string) => {
 		try {
 			await navigator.clipboard.writeText(valueToCopy);
-			alert('Copied!');
+			alert("Copied!");
 		} catch (e) {
 			//
 		}
 	};
 
-	const {
-		accountAddress,
-		connect,
-		isConnecting,
-		sdk,
-		providerAddress,
-		getSdkForChainId,
-		web3Provider,
-		logout,
-	} = useEtherspot();
+	const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId, web3Provider, logout } =
+		useEtherspot();
 
 	const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
 	const { dispatchCrossChainActions, processingCrossChainActionId, dispatchedCrossChainActions } =
@@ -259,7 +251,7 @@ const TransactionBuilderContextProvider = ({
 
 	const onContinueClick = useCallback(async () => {
 		if (!sdk) {
-			showAlertModal('Failed to retrieve Etherspot SDK!');
+			showAlertModal("Failed to retrieve Etherspot SDK!");
 			return;
 		}
 
@@ -364,14 +356,14 @@ const TransactionBuilderContextProvider = ({
 
 		if (!crossChainActions) {
 			setIsSubmitting(false);
-			showAlertModal('Unable to dispatch cross chain actions.');
+			showAlertModal("Unable to dispatch cross chain actions.");
 			return;
 		}
 
 		const crossChainActionsToDispatch = crossChainActions.filter(({ transactions }) => !!transactions?.length);
 		if (!crossChainActionsToDispatch?.length) {
 			setIsSubmitting(false);
-			showAlertModal('Unable to dispatch cross chain actions.');
+			showAlertModal("Unable to dispatch cross chain actions.");
 			return;
 		}
 
@@ -395,7 +387,7 @@ const TransactionBuilderContextProvider = ({
 	const resetTransactionBlockFieldValidationError = (transactionBlockId: string, field: string) => {
 		setTransactionBlockValidationErrors((current) => ({
 			...current,
-			[transactionBlockId]: { ...current?.[transactionBlockId], [field]: '' },
+			[transactionBlockId]: { ...current?.[transactionBlockId], [field]: "" },
 		}));
 	};
 
@@ -440,6 +432,52 @@ const TransactionBuilderContextProvider = ({
 		);
 	}, [processingCrossChainActionId, dispatchedCrossChainActions]);
 
+	interface IObject {
+		[key: string]: string;
+	}
+
+	const formUrlOptions = (options: { [key: string]: string }): string => {
+		let optionStr = "";
+		Object.keys(options).map((key: string) => {
+			let value = options[key];
+			optionStr += `${!optionStr ? "?" : "&"}${key}=${encodeURIComponent(value)}`;
+		});
+		return optionStr;
+	};
+
+	const onRampClick = () => {
+		let onRampOptions = {
+			lang: "fr",
+			tab: "buy",
+			tabs: "buy",
+			net: "mainnet",
+			nets: "arbitrum_mainnet,avalanche_mainnet,bsc_mainnet,fantom_mainnet,mainnet,optimism_mainnet,xdai_mainnet",
+			crys: "AVAX,BNB,BTCB,BUSD,DAI,ETH,FRAX,LUSD,MAI,MATIC,RBTC,RDOC,RIF,USDC,USDT,WBTC,WETH,XCHF,XDAI,XTZ",
+			rfr: "etherspot",
+			bsc: "GBP",
+			hash: "",
+			addr: "",
+		};
+		const code = "1234";
+		const message = "MtPelerin-" + code;
+
+		if (!accountAddress) return;
+		sdk?.signMessage({ message })
+			.then((hash) => {
+				// hash should be 0xcab5cd25298c738c2f572284ccde1c1262d3bc46ab89d8ea4d42d901f33060030ce4f801cf87c2a0858d2ebe4dc0a87139888fa48daf84c94a0a285669d530e71b
+				const base64Hash = Buffer.from(hash.replace("0x", ""), "hex").toString("base64");
+				// base64Hash should be yrXNJSmMc4wvVyKEzN4cEmLTvEaridjqTULZAfMwYAMM5PgBz4fCoIWNLr5NwKhxOYiPpI2vhMlKCihWadUw5xs=
+				console.log("signedHash", base64Hash);
+				onRampOptions.hash = base64Hash;
+				console.log("options", options);
+				return base64Hash;
+			})
+			.catch(console.log);
+		onRampOptions.addr = accountAddress || "";
+		const options = formUrlOptions(onRampOptions);
+		window.open(`https://buy.mtpelerin.com/${options}`, "_blank", "noopener,noreferrer");
+	};
+
 	return (
 		<TransactionBuilderContext.Provider value={{ data: contextData }}>
 			<TopNavigation>
@@ -455,9 +493,10 @@ const TransactionBuilderContextProvider = ({
 							Account: {humanizeHexString(accountAddress)}
 						</WalletAddress>
 					)}
+					{accountAddress && <WalletAddress onClick={onRampClick}>Buy</WalletAddress>}
 					{!accountAddress && (
 						<WalletAddress disabled>
-							Account:{' '}
+							Account:{" "}
 							<ConnectButton onClick={connect} disabled={isConnecting}>
 								Connect
 							</ConnectButton>
@@ -498,7 +537,7 @@ const TransactionBuilderContextProvider = ({
 							/>
 						</Card>
 						<PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-							{isChecking ? 'Saving...' : 'Save'}
+							{isChecking ? "Saving..." : "Save"}
 						</PrimaryButton>
 						<SecondaryButton
 							marginTop={10}
@@ -525,7 +564,7 @@ const TransactionBuilderContextProvider = ({
 								key={`transaction-block-${transactionBlock.id}`}
 								marginBottom={20}
 								onCloseButtonClick={() =>
-									showConfirmModal('Are you sure you want to remove selected transaction?', () =>
+									showConfirmModal("Are you sure you want to remove selected transaction?", () =>
 										setTransactionBlocks((current) =>
 											current.filter(
 												(addedTransactionBlock) =>
@@ -553,7 +592,7 @@ const TransactionBuilderContextProvider = ({
 							<>
 								<br />
 								<PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-									{isChecking ? 'Checking...' : 'Review'}
+									{isChecking ? "Checking..." : "Review"}
 								</PrimaryButton>
 							</>
 						)}
@@ -642,7 +681,7 @@ const TransactionBuilderContextProvider = ({
 										(!result?.transactionHash?.length && !result?.batchHash?.length)
 									) {
 										setIsSigningAction(false);
-										showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+										showAlertModal(result.errorMessage ?? "Unable to send transaction!");
 										return;
 									}
 
@@ -676,7 +715,7 @@ const TransactionBuilderContextProvider = ({
 										),
 									);
 									setIsSigningAction(false);
-									showAlertModal('Transaction sent!');
+									showAlertModal("Transaction sent!");
 								}}
 								onEdit={() =>
 									setEditingTransactionBlock(
@@ -694,9 +733,9 @@ const TransactionBuilderContextProvider = ({
 							onClick={onSubmitClick}
 							disabled={isSubmitting || isEstimatingCrossChainActions}
 						>
-							{isSubmitting && !isEstimatingCrossChainActions && 'Executing...'}
-							{isEstimatingCrossChainActions && !isSubmitting && 'Estimating...'}
-							{!isSubmitting && !isEstimatingCrossChainActions && 'Execute'}
+							{isSubmitting && !isEstimatingCrossChainActions && "Executing..."}
+							{isEstimatingCrossChainActions && !isSubmitting && "Estimating..."}
+							{!isSubmitting && !isEstimatingCrossChainActions && "Execute"}
 						</PrimaryButton>
 						<br />
 						<SecondaryButton marginTop={10} onClick={() => setCrossChainActions([])}>
@@ -708,7 +747,7 @@ const TransactionBuilderContextProvider = ({
 			{showMenu && (
 				<MenuWrapper>
 					<MenuItem>
-						<a href='https://dashboard.etherspot.io' title='Dashboard' target='_blank'>
+						<a href="https://dashboard.etherspot.io" title="Dashboard" target="_blank">
 							Dashboard
 						</a>
 					</MenuItem>
@@ -721,15 +760,11 @@ const TransactionBuilderContextProvider = ({
 						History
 					</MenuItem>
 					<MenuItem>
-						<a href='https://etherspot.io/' title='About Etherspot' target='_blank'>
+						<a href="https://etherspot.io/" title="About Etherspot" target="_blank">
 							About Etherspot
 						</a>
 					</MenuItem>
-					{showMenuLogout && (
-						<MenuItem onClick={logout}>
-							Logout
-						</MenuItem>
-					)}
+					{showMenuLogout && <MenuItem onClick={logout}>Logout</MenuItem>}
 				</MenuWrapper>
 			)}
 		</TransactionBuilderContext.Provider>
