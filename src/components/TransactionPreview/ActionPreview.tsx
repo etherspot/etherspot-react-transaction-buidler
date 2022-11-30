@@ -307,10 +307,8 @@ const TransactionStatus = ({
             transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
             !prevStatus
           ) {
-            // setShowSigningDone(true)
             setPrevStatus(transactionStatus);
             timeout = setTimeout(() => {
-              // setShowSigningDone(false)
               setPrevStatus(null);
             }, 2000);
           }
@@ -425,11 +423,12 @@ const ActionPreview = ({
 
 	const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
 
-  const onCopy = async (valueToCopy: string) => {
-      await navigator.clipboard.writeText(valueToCopy).catch((err) => {
+  const onCopy = (valueToCopy: string) => {
+      navigator.clipboard.writeText(valueToCopy).then((res) => {
+        alert("Copied!");
+      }).catch((err) => {
         //
       });
-      alert("Copied!");
   };
 
 	const onEditButtonClick = () => {
