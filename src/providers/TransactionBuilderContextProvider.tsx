@@ -319,7 +319,7 @@ const TransactionBuilderContextProvider = ({
       await navigator.clipboard.writeText(valueToCopy);
       alert('Copied!');
     } catch (e) {
-      //
+	  alert('Unable to copy!');
     }
   };
 
