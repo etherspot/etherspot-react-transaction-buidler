@@ -193,7 +193,7 @@ const TransactionStatus = ({
       return;
     }
 
-    window.open(explorerLink, "_blank");
+    window.open(explorerLink, '_blank');
   };
 
   const previewBatchTransaction = async () => {
@@ -297,7 +297,7 @@ const TransactionStatus = ({
             case CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER:
               return <IoClose size={15} />;
             default:
-              return <></>;
+              return null;
           }
         }, [transactionStatus]);
 
