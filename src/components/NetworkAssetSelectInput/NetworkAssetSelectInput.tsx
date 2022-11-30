@@ -53,10 +53,6 @@ const SelectWrapper = styled.div<{ disabled: boolean }>`
   
   ${({ disabled }) => !disabled && `
     cursor: pointer;
-
-    &:hover {
-      opacity: 0.5;
-    }
   `}
 `;
 
@@ -122,10 +118,6 @@ const SelectedOption = styled.div<{ disabled?: boolean }>`
 
   ${({ disabled }) => !disabled && `
     cursor: pointer;
-
-    &:hover {
-      opacity: 0.5;
-    }
   `}
 `;
 
@@ -164,10 +156,7 @@ const LargeOptionListItemLeft = styled.div`
   align-items: center;
   justify-content: flex-start;
   cursor: pointer;
-  
-  &:hover {
-    opacity: 0.5;
-  }
+
 `;
 
 const LargeOptionListItemRight = styled.div<{ paddingRight?: boolean; }>`

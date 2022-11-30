@@ -309,6 +309,7 @@ const TransactionBuilderContextProvider = ({
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
+  const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false)
   let multiCallList: string[] = [];
 
   const theme: Theme = useTheme();
@@ -318,7 +319,7 @@ const TransactionBuilderContextProvider = ({
       await navigator.clipboard.writeText(valueToCopy);
       alert('Copied!');
     } catch (e) {
-      //
+	  alert('Unable to copy!');
     }
   };
 
@@ -706,14 +707,16 @@ const TransactionBuilderContextProvider = ({
                 {
                   crossChainActionInProcessing?.batchTransactions?.length
                     ? crossChainActionInProcessing.batchTransactions.map((block, i) => <ActionPreview
-                      key={`preview-${block.id}`}
-                      crossChainAction={block}
-                      showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
-                    />)
+                        key={`preview-${block.id}`}
+                        crossChainAction={block}
+                        showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
+                        setIsTransactionDone={setIsTransactionDone}
+                      />)
                     : <ActionPreview
-                      key={`preview-${crossChainActionInProcessing.id}`}
-                      crossChainAction={crossChainActionInProcessing}
-                    />
+                        key={`preview-${crossChainActionInProcessing.id}`}
+                        crossChainAction={crossChainActionInProcessing}
+                        setIsTransactionDone={setIsTransactionDone}
+                      />
                 }
               </TransactionBlocksWrapper>
             )
@@ -1239,6 +1242,7 @@ const TransactionBuilderContextProvider = ({
                       }
                       showEditButton={!disableEdit}
                       showStatus={!disableEdit}
+                      setIsTransactionDone={setIsTransactionDone}
                     />
                   )
                 }
@@ -1275,6 +1279,17 @@ const TransactionBuilderContextProvider = ({
               Go back
             </SecondaryButton>
           </>
+        )}
+        {isTransactionDone && (
+          <AddTransactionButton
+            onClick={() => {
+              setShowTransactionBlockSelect(true);
+              setIsTransactionDone(false);
+            }}
+          >
+            <AiOutlinePlusCircle size={24} />
+            <span>Add transaction</span>
+          </AddTransactionButton>
         )}
       </div>
       {showMenu && (

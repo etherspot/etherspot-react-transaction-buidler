@@ -1,23 +1,35 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import styled, { useTheme } from 'styled-components';
-import { ethers } from 'ethers';
-import { HiOutlinePencilAlt } from 'react-icons/hi';
-import { BsClockHistory, BiCheck, IoClose, FaSignature } from 'react-icons/all';
+import React, { useEffect, useMemo, useState } from "react";
+import styled, { useTheme } from "styled-components";
+import { ethers } from "ethers";
+import { HiOutlinePencilAlt } from "react-icons/hi";
+import { BsClockHistory, BiCheck, IoClose, FaSignature } from "react-icons/all";
+import { CHAIN_ID_TO_NETWORK_NAME } from "etherspot/dist/sdk/network/constants";
 
-import { getTransactionExplorerLink, isERC20ApprovalTransactionData } from '../../utils/transaction';
-import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
-import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
-import { formatAmountDisplay, humanizeHexString } from '../../utils/common';
-import { CROSS_CHAIN_ACTION_STATUS } from '../../constants/transactionDispatcherConstants';
-import { CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
-import Card from '../Card';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
-import { ClickableText, Text } from '../Text';
-import { Theme } from '../../utils/theme';
-import { useEtherspot } from '../../hooks';
-import moment from 'moment';
-import { ICrossChainAction } from '../../types/crossChainAction';
-import RouteOption from '../RouteOption';
+// Components
+import Card from "../Card";
+import { ClickableText, Text } from "../Text";
+import RouteOption from "../RouteOption";
+import { CombinedRoundedImages, RoundedImage } from "../Image";
+
+// Utils
+import {
+  getTransactionExplorerLink,
+  isERC20ApprovalTransactionData,
+} from "../../utils/transaction";
+import { formatAmountDisplay, humanizeHexString } from "../../utils/common";
+import { CHAIN_ID, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
+import { Theme } from "../../utils/theme";
+
+// Constants
+import { TRANSACTION_BLOCK_TYPE } from "../../constants/transactionBuilderConstants";
+import { CROSS_CHAIN_ACTION_STATUS } from "../../constants/transactionDispatcherConstants";
+import moment from "moment";
+
+// Hooks
+import { useEtherspot } from "../../hooks";
+
+// Types
+import { ICrossChainAction } from "../../types/crossChainAction";
 
 const TransactionAction = styled.div`
   position: relative;
@@ -155,21 +167,29 @@ interface TransactionPreviewInterface {
   editButtonDisabled?: boolean;
   showEditButton?: boolean;
   showSignButton?: boolean;
+  setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
 }
 
-const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChainAction }) => {
+const TransactionStatus = ({
+  crossChainAction,
+  setIsTransactionDone
+}: {
+  crossChainAction: ICrossChainAction;
+  setIsTransactionDone: (value: boolean) => void;
+}) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
+  const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
   const { chainId, batchHash: transactionsBatchHash } = crossChainAction;
 
   const previewTransaction = (transactionHash?: string) => {
     const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
     if (!explorerLink) {
-      alert('Transaction hash not yet available!');
+      alert("The transaction hash is not yet available. Please try again later.");
       return;
     }
 
@@ -183,16 +203,18 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
 
     const sdk = getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
-      alert('Transaction hash not yet available!');
+      alert("The transaction hash is not yet available. Please try again later.");
       setIsGettingExplorerLink(false);
       return;
     }
 
-    let transactionHash = '';
+    let transactionHash = "";
     try {
-      const submittedBatch = await sdk.getGatewaySubmittedBatch({ hash: transactionsBatchHash });
+      const submittedBatch = await sdk.getGatewaySubmittedBatch({
+        hash: transactionsBatchHash,
+      });
       const { transaction } = submittedBatch;
-      transactionHash = transaction?.hash ?? '';
+      transactionHash = transaction?.hash ?? "";
     } catch (e) {
       //
     }
@@ -202,8 +224,16 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
   };
 
   useEffect(() => {
-    if (crossChainAction.transactions.every((transaction) => !!transaction.finishTimestamp)) return;
-    let intervalId = setInterval(() => setSecondsAfter((current) => current + 1), 1000);
+    if (
+      crossChainAction.transactions.every(
+        (transaction) => !!transaction.finishTimestamp
+      )
+    )
+      return;
+    let intervalId = setInterval(
+      () => setSecondsAfter((current) => current + 1),
+      1000
+    );
     return () => {
       if (!intervalId) return;
       clearInterval(intervalId);
@@ -218,88 +248,156 @@ const TransactionStatus = ({ crossChainAction }: { crossChainAction: ICrossChain
   return (
     <>
       {statusPreviewTransactions.map((transaction, index) => {
-        const transactionStatus = transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
+        const transactionStatus =
+          transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: 'Waiting for submit',
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]: 'Waiting for transaction',
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]: 'Transaction failed',
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: 'Rejected by user',
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: 'Transaction approved',
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: "Sign message",
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: "Transaction approved",
         };
 
-        const actionStatusToIconBackgroundColor: { [transactionStatus: string]: string | undefined } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]: theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]: theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: theme?.color?.background?.statusIconSuccess,
+        const actionStatusToIconBackgroundColor: {
+          [transactionStatus: string]: string | undefined;
+        } = {
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]:
+            theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]:
+            theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]:
+            theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]:
+            theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]:
+            theme?.color?.background?.statusIconSuccess,
         };
 
-        const actionStatusIconBackgroundColor = actionStatusToIconBackgroundColor[transactionStatus];
+        const actionStatusIconBackgroundColor =
+          actionStatusToIconBackgroundColor[transactionStatus];
         const actionStatusTitle = actionStatusToTitle[transactionStatus];
 
         if (!actionStatusTitle) return null;
 
         const showAsApproval =
-          crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(transaction.data as string);
+          crossChainAction.useWeb3Provider &&
+          isERC20ApprovalTransactionData(transaction.data as string);
+
+        const getStatusComponent = useMemo(() => {
+          switch (transactionStatus) {
+            case CROSS_CHAIN_ACTION_STATUS.CONFIRMED:
+              return <BiCheck size={16} />;
+            case CROSS_CHAIN_ACTION_STATUS.PENDING:
+              return <BsClockHistory size={14} />;
+            case CROSS_CHAIN_ACTION_STATUS.UNSENT:
+              return <BsClockHistory size={14} />;
+            case CROSS_CHAIN_ACTION_STATUS.FAILED:
+              return <IoClose size={15} />;
+            case CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER:
+              return <IoClose size={15} />;
+            default:
+              return null;
+          }
+        }, [transactionStatus]);
+
+        useEffect(() => {
+          let timeout: any;
+          if (
+            transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
+            !prevStatus
+          ) {
+            setPrevStatus(transactionStatus);
+            timeout = setTimeout(() => {
+              setPrevStatus(null);
+            }, 2000);
+          }
+          if (
+            (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED ||
+            transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED) &&
+            setIsTransactionDone
+          ){
+            setIsTransactionDone(true)
+          }
+            if (timeout) {
+              //@ts-ignore
+              return () => clearTimeout(timeout);
+            }
+        }, [transactionStatus]);
 
         return (
           <TransactionStatusAction
             key={`tx-status-${
-              transaction.transactionHash || crossChainAction.batchHash || 'no-hash'
+              transaction.transactionHash ||
+              crossChainAction.batchHash ||
+              "no-hash"
             }-${index}`}
           >
-            {transaction?.submitTimestamp && transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
-              <TransactionStatusClock>
-                {!!transaction.finishTimestamp &&
-                  moment(
-                    moment(transaction.finishTimestamp).diff(moment(transaction.submitTimestamp)),
-                  ).format('mm:ss')}
-                {!transaction.finishTimestamp &&
-                  moment(moment().diff(moment(transaction.submitTimestamp))).format('mm:ss')}
-              </TransactionStatusClock>
-            )}
-            <TransactionStatusWrapper>
-              <TransactionStatusMessageWrapper>
-                {!!actionStatusIconBackgroundColor && (
-                  <StatusIconWrapper color={actionStatusIconBackgroundColor}>
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED && (
-                      <BiCheck size={16} />
-                    )}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
-                      <BsClockHistory size={14} />
-                    )}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.UNSENT && (
-                      <BsClockHistory size={14} />
-                    )}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED && (
-                      <IoClose size={15} />
-                    )}
-                    {transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER && (
-                      <IoClose size={15} />
-                    )}
+            {prevStatus ? (
+              <TransactionStatusWrapper>
+                <TransactionStatusMessageWrapper>
+                  <StatusIconWrapper
+                    color={theme?.color?.background?.statusIconSuccess}
+                  >
+                    <BiCheck size={16} />
                   </StatusIconWrapper>
-                )}
-                <Text size={16} medium>
-                  {showAsApproval ? `Approve: ${actionStatusTitle.toLowerCase()}` : actionStatusTitle}
-                </Text>
-              </TransactionStatusMessageWrapper>
-              {transaction?.submitTimestamp && (
-                <ClickableText
-                  disabled={isGettingExplorerLink}
-                  onClick={() => {
-                    if (crossChainAction.useWeb3Provider)
-                      return previewTransaction(transaction.transactionHash);
-                    previewBatchTransaction();
-                  }}
-                >
-                  <Text size={16} color={theme?.color?.text?.transactionStatusLink} medium>
-                    Tx
-                  </Text>
-                </ClickableText>
-              )}
-            </TransactionStatusWrapper>
+                </TransactionStatusMessageWrapper>
+              </TransactionStatusWrapper>
+            ) : (
+              <>
+                {transaction?.submitTimestamp &&
+                  transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
+                    <TransactionStatusClock>
+                      {!!transaction.finishTimestamp &&
+                        moment(
+                          moment(transaction.finishTimestamp).diff(
+                            moment(transaction.submitTimestamp)
+                          )
+                        ).format("mm:ss")}
+                      {!transaction.finishTimestamp &&
+                        moment(
+                          moment().diff(moment(transaction.submitTimestamp))
+                        ).format("mm:ss")}
+                    </TransactionStatusClock>
+                  )}
+                <TransactionStatusWrapper>
+                  <TransactionStatusMessageWrapper>
+                    {!!actionStatusIconBackgroundColor && (
+                      <StatusIconWrapper
+                        color={actionStatusIconBackgroundColor}
+                      >
+                        {getStatusComponent}
+                      </StatusIconWrapper>
+                    )}
+                    <Text size={16} medium>
+                      {showAsApproval
+                        ? `Aprove: ${actionStatusTitle.toLowerCase()}`
+                        : actionStatusTitle}
+                    </Text>
+                  </TransactionStatusMessageWrapper>
+                  {transaction?.submitTimestamp && (
+                    <ClickableText
+                      disabled={isGettingExplorerLink}
+                      onClick={() => {
+                        if (crossChainAction.useWeb3Provider)
+                          return previewTransaction(
+                            transaction.transactionHash
+                          );
+                        previewBatchTransaction();
+                      }}
+                    >
+                      <Text
+                        size={16}
+                        color={theme?.color?.text?.transactionStatusLink}
+                        medium
+                      >
+                        Tx
+                      </Text>
+                    </ClickableText>
+                  )}
+                </TransactionStatusWrapper>
+              </>
+            )}
           </TransactionStatusAction>
         );
       })}
@@ -316,6 +414,7 @@ const ActionPreview = ({
   editButtonDisabled = false,
   showSignButton = false,
   showEditButton = false,
+  setIsTransactionDone,
   showStatus = true,
 }: TransactionPreviewInterface) => {
 	const { accountAddress, providerAddress } = useEtherspot();
@@ -324,14 +423,13 @@ const ActionPreview = ({
 
 	const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
 
-	const onCopy = async (valueToCopy: string) => {
-		try {
-			await navigator.clipboard.writeText(valueToCopy);
-			alert('Copied!');
-		} catch (e) {
-			//
-		}
-	};
+  const onCopy = (valueToCopy: string) => {
+      navigator.clipboard.writeText(valueToCopy).then((res) => {
+        alert("Copied!");
+      }).catch((err) => {
+        //
+      });
+  };
 
 	const onEditButtonClick = () => {
 		if (editButtonDisabled || !onEdit) return;
@@ -345,25 +443,33 @@ const ActionPreview = ({
 
 	const showCloseButton = !!onRemove;
 
-	const cost = useMemo(() => {
-		if (isEstimating) return 'Estimating...';
-		if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
+  const cost = useMemo(() => {
+    if (isEstimating) return "Estimating...";
+    if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
 
-		const gasCostNumericString = ethers.utils.formatUnits(
-			estimated.gasCost,
-			nativeAssetPerChainId[chainId].decimals,
-		);
-		const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol
-			}`;
-		if (!estimated.usdPrice) return gasCostFormatted;
+    const gasCostNumericString = ethers.utils.formatUnits(
+      estimated.gasCost,
+      nativeAssetPerChainId[chainId].decimals
+    );
+    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${
+      nativeAssetPerChainId[chainId].symbol
+    }`;
+    if (!estimated.usdPrice) return gasCostFormatted;
 
-		return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
-	}, [isEstimating, estimated]);
+    return formatAmountDisplay(
+      `${+gasCostNumericString * +estimated.usdPrice}`,
+      "$"
+    );
+  }, [isEstimating, estimated]);
 
-	const additionalTopButtons = [
-		showSignButton && <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />,
-		showEditButton && <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />,
-	];
+  const additionalTopButtons = [
+    showSignButton && (
+      <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
+    ),
+    showEditButton && (
+      <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />
+    ),
+  ];
 
 	if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
 		const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress } = preview;
@@ -466,7 +572,7 @@ const ActionPreview = ({
 						)}
 					</ValueWrapper>
 				</TransactionAction>
-				<TransactionStatus crossChainAction={crossChainAction} />
+				<TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />
 			</Card>
 		);
 	}
@@ -474,20 +580,32 @@ const ActionPreview = ({
 	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
 		const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
 
-    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
-    const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
+    const fromNetwork = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === fromChainId
+    );
+    const toNetwork = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === toChainId
+    );
 
-    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
-    const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
+    const fromChainTitle =
+      fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const toChainTitle =
+      toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
 
-    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+    const fromAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+    );
+    const toAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
+    );
 
-    const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    const senderAddress = crossChainAction.useWeb3Provider
+      ? providerAddress
+      : accountAddress;
 
     return (
       <Card
-        title='Asset bridge'
+        title="Asset bridge"
         marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
@@ -552,25 +670,29 @@ const ActionPreview = ({
             <RouteOption route={route} showActions />
           </TransactionAction>
         )}
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-    const previewList =
-      crossChainAction?.batchTransactions?.length && !crossChainAction?.multiCallData
-        ? crossChainAction?.batchTransactions.map((action) =>
-            action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET ? action.preview : null,
-          )
-        : [crossChainAction.preview];
+    const previewList = crossChainAction?.batchTransactions?.length
+      ? crossChainAction?.batchTransactions.map((action) =>
+          action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
+            ? action.preview
+            : null
+        )
+      : [crossChainAction.preview];
 
-    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
-    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
+    const network = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === chainId
+    );
+    const chainTitle =
+      network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     return (
       <Card
-        title='Send asset'
+        title="Send asset"
         marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
@@ -580,7 +702,9 @@ const ActionPreview = ({
           if (!preview) return null;
 
           const { asset, chainId, fromAddress } = preview;
-          const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
+          const amount = formatAmountDisplay(
+            ethers.utils.formatUnits(asset.amount, asset.decimals)
+          );
           const receiverAddress = preview.receiverAddress as string;
 
           return (
@@ -600,11 +724,17 @@ const ActionPreview = ({
                   <Text size={12}>On {chainTitle}</Text>
                 </ValueBlock>
                 <ValueBlock>
-                  <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
+                  <Text
+                    size={12}
+                    marginBottom={2}
+                    color={theme.color?.text?.innerLabel}
+                    medium
+                    block
+                  >
                     Gas price
                   </Text>
                   <Text size={16} medium>
-                    {cost ?? 'N/A'}
+                    {cost ?? "N/A"}
                   </Text>
                 </ValueBlock>
               </ValueWrapper>
@@ -619,7 +749,7 @@ const ActionPreview = ({
                       &nbsp;
                     </>
                   )}
-                  {fromAddress ? 'to' : 'To'}
+                  {fromAddress ? "to" : "To"}
                   &nbsp;
                   <ClickableText onClick={() => onCopy(receiverAddress)}>
                     {humanizeHexString(receiverAddress)}
@@ -638,25 +768,29 @@ const ActionPreview = ({
           </TransactionAction>
         )}
 
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-    const previewList =
-      crossChainAction?.batchTransactions?.length && !crossChainAction?.multiCallData
-        ? crossChainAction?.batchTransactions.map((action) =>
-            action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ? action.preview : null,
-          )
-        : [crossChainAction.preview];
+    const previewList = crossChainAction?.batchTransactions?.length
+      ? crossChainAction?.batchTransactions.map((action) =>
+          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP
+            ? action.preview
+            : null
+        )
+      : [crossChainAction.preview];
 
-    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
-    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
+    const network = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === chainId
+    );
+    const chainTitle =
+      network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     return (
       <Card
-        title='Swap asset'
+        title="Swap asset"
         marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
@@ -667,9 +801,11 @@ const ActionPreview = ({
 
           const { fromAsset, toAsset } = preview;
           const fromAmount = formatAmountDisplay(
-            ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals),
+            ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
           );
-          const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+          const toAmount = formatAmountDisplay(
+            ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
+          );
 
           return (
             <DoubleTransactionActionsInSingleRow>
@@ -723,7 +859,13 @@ const ActionPreview = ({
           <Label>Route</Label>
           {!!cost && (
             <Row center>
-              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
+              <Text
+                size={12}
+                marginBottom={2}
+                color={theme.color?.text?.innerLabel}
+                medium
+                block
+              >
                 Gas price
               </Text>
               <Text size={14} marginLeft={4} medium>
@@ -735,13 +877,14 @@ const ActionPreview = ({
           <RouteWrapper>
             {previewList.map((preview) => {
               if (!preview) return null;
-              const { fromAsset, toAsset, providerName, providerIconUrl } = preview;
+              const { fromAsset, toAsset, providerName, providerIconUrl } =
+                preview;
 
               const fromAmount = formatAmountDisplay(
-                ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals),
+                ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
               );
               const toAmount = formatAmountDisplay(
-                ethers.utils.formatUnits(toAsset.amount, toAsset.decimals),
+                ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
               );
               return (
                 <Row>
@@ -764,7 +907,7 @@ const ActionPreview = ({
             })}
           </RouteWrapper>
         </TransactionAction>
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
   }
