@@ -709,19 +709,11 @@ const TransactionBuilderContextProvider = ({
                   )
                 }
                 {
-                  crossChainActionInProcessing?.batchTransactions?.length &&
-                  !!crossChainActionInProcessing.multiCallData
-                    ? crossChainActionInProcessing.batchTransactions.map((block, i) => <ActionPreview
-                        key={`preview-${block.id}`}
-                        crossChainAction={block}
-                        showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
-                        setIsTransactionDone={setIsTransactionDone}
-                      />)
-                    : <ActionPreview
-                        key={`preview-${crossChainActionInProcessing.id}`}
-                        crossChainAction={crossChainActionInProcessing}
-                        setIsTransactionDone={setIsTransactionDone}
-                      />
+                  <ActionPreview
+                    key={`preview-${crossChainActionInProcessing.id}`}
+                    crossChainAction={crossChainActionInProcessing}
+                    setIsTransactionDone={setIsTransactionDone}
+                  />
                 }
               </TransactionBlocksWrapper>
             )
@@ -1162,7 +1154,7 @@ const TransactionBuilderContextProvider = ({
 
                 const actionPreview = (crossChainAction: ICrossChainAction, multiCallBlocks?: ICrossChainAction[], index?: number) => {
                   const multiCall = !!(multiCallBlocks && index !== undefined && multiCallBlocks.length > 1);
-                  const disableEdit = !!(multiCall && multiCallBlocks.length - 1 > index);
+                  const disableEdit = multiCall;
                   return (
                     <ActionPreview
                       key={`preview-${crossChainAction.id}`}
@@ -1262,9 +1254,7 @@ const TransactionBuilderContextProvider = ({
                       )
                     }
                     {
-                      multiCallBlocks.length > 0
-                        ? multiCallBlocks.map((block, i) => actionPreview(block, multiCallBlocks, i))
-                        : actionPreview(crossChainAction)
+                      actionPreview(crossChainAction)
                     }
                   </TransactionBlocksWrapper>
                 );

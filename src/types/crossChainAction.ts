@@ -25,7 +25,7 @@ interface AssetBridgeActionPreview {
   route: Route;
 }
 
-interface SendAssetActionPreview {
+export interface SendAssetActionPreview {
   chainId: number;
   asset: AssetTransfer;
   fromAddress: string;
@@ -42,7 +42,7 @@ interface KlimaStakingActionPreview {
 	receiverAddress?: string;
 }
 
-interface AssetSwapActionPreview {
+export interface AssetSwapActionPreview {
   chainId: number;
   fromAsset: AssetTransfer;
   toAsset: AssetTransfer;
