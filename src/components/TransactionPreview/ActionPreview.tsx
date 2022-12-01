@@ -169,14 +169,17 @@ interface TransactionPreviewInterface {
   showSignButton?: boolean;
   setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
+  hasSignedIn?: boolean;
 }
 
 const TransactionStatus = ({
   crossChainAction,
-  setIsTransactionDone
+  setIsTransactionDone,
+  hasSignedIn,
 }: {
   crossChainAction: ICrossChainAction;
   setIsTransactionDone: (value: boolean) => void;
+  hasSignedIn?: boolean;
 }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
@@ -303,7 +306,6 @@ const TransactionStatus = ({
 
         useEffect(() => {
           let timeout: any;
-          console.log("transactionStatus", transactionStatus)
           if (
             transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
             transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING &&
@@ -335,7 +337,7 @@ const TransactionStatus = ({
             key={`tx-status-${
               transaction.transactionHash ||
               crossChainAction.batchHash ||
-              "no-hash"
+              'no-hash'
             }-${index}`}
           >
             {prevStatus ? (
@@ -347,7 +349,7 @@ const TransactionStatus = ({
                     <BiCheck size={16} />
                   </StatusIconWrapper>
                   <Text size={16} medium>
-                    {"Sign message"}
+                    {'Sign message'}
                   </Text>
                 </TransactionStatusMessageWrapper>
               </TransactionStatusWrapper>
@@ -361,49 +363,51 @@ const TransactionStatus = ({
                           moment(transaction.finishTimestamp).diff(
                             moment(transaction.submitTimestamp)
                           )
-                        ).format("mm:ss")}
+                        ).format('mm:ss')}
                       {!transaction.finishTimestamp &&
                         moment(
                           moment().diff(moment(transaction.submitTimestamp))
-                        ).format("mm:ss")}
+                        ).format('mm:ss')}
                     </TransactionStatusClock>
                   )}
-                <TransactionStatusWrapper>
-                  <TransactionStatusMessageWrapper>
-                    {!!actionStatusIconBackgroundColor && (
-                      <StatusIconWrapper
-                        color={actionStatusIconBackgroundColor}
-                      >
-                        {getStatusComponent}
-                      </StatusIconWrapper>
-                    )}
-                    <Text size={16} medium>
-                      {showAsApproval
-                        ? `Aprove: ${actionStatusTitle.toLowerCase()}`
-                        : actionStatusTitle}
-                    </Text>
-                  </TransactionStatusMessageWrapper>
-                  {transaction?.submitTimestamp && (
-                    <ClickableText
-                      disabled={isGettingExplorerLink}
-                      onClick={() => {
-                        if (crossChainAction.useWeb3Provider)
-                          return previewTransaction(
-                            transaction.transactionHash
-                          );
-                        previewBatchTransaction();
-                      }}
-                    >
-                      <Text
-                        size={16}
-                        color={theme?.color?.text?.transactionStatusLink}
-                        medium
-                      >
-                        Tx
+                {hasSignedIn && (
+                  <TransactionStatusWrapper>
+                    <TransactionStatusMessageWrapper>
+                      {!!actionStatusIconBackgroundColor && (
+                        <StatusIconWrapper
+                          color={actionStatusIconBackgroundColor}
+                        >
+                          {getStatusComponent}
+                        </StatusIconWrapper>
+                      )}
+                      <Text size={16} medium>
+                        {showAsApproval
+                          ? `Aprove: ${actionStatusTitle.toLowerCase()}`
+                          : actionStatusTitle}
                       </Text>
-                    </ClickableText>
-                  )}
-                </TransactionStatusWrapper>
+                    </TransactionStatusMessageWrapper>
+                    {transaction?.submitTimestamp && (
+                      <ClickableText
+                        disabled={isGettingExplorerLink}
+                        onClick={() => {
+                          if (crossChainAction.useWeb3Provider)
+                            return previewTransaction(
+                              transaction.transactionHash
+                            );
+                          previewBatchTransaction();
+                        }}
+                      >
+                        <Text
+                          size={16}
+                          color={theme?.color?.text?.transactionStatusLink}
+                          medium
+                        >
+                          Tx
+                        </Text>
+                      </ClickableText>
+                    )}
+                  </TransactionStatusWrapper>
+                )}
               </>
             )}
           </TransactionStatusAction>
@@ -424,9 +428,9 @@ const ActionPreview = ({
   showEditButton = false,
   setIsTransactionDone,
   showStatus = true,
+  hasSignedIn = false,
 }: TransactionPreviewInterface) => {
 	const { accountAddress, providerAddress } = useEtherspot();
-
 	const theme: Theme = useTheme();
 
 	const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
@@ -580,7 +584,11 @@ const ActionPreview = ({
 						)}
 					</ValueWrapper>
 				</TransactionAction>
-				<TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />
+				<TransactionStatus 
+          crossChainAction={crossChainAction} 
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} 
+          hasSignedIn={hasSignedIn}
+          />
 			</Card>
 		);
 	}
@@ -678,7 +686,7 @@ const ActionPreview = ({
             <RouteOption route={route} showActions />
           </TransactionAction>
         )}
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}  hasSignedIn={hasSignedIn} />}
       </Card>
     );
   }
@@ -776,7 +784,7 @@ const ActionPreview = ({
           </TransactionAction>
         )}
 
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} hasSignedIn={hasSignedIn}/>}
       </Card>
     );
   }
@@ -915,7 +923,7 @@ const ActionPreview = ({
             })}
           </RouteWrapper>
         </TransactionAction>
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} hasSignedIn={hasSignedIn}/>}
       </Card>
     );
   }

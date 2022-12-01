@@ -662,6 +662,7 @@ const TransactionBuilderContextProvider = ({
 
   const [showMulticallOptions, setShowMulticallOptions] = useState<string | null>(null);
 
+
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
@@ -711,11 +712,13 @@ const TransactionBuilderContextProvider = ({
                         crossChainAction={block}
                         showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
                         setIsTransactionDone={setIsTransactionDone}
+                        hasSignedIn={processingCrossChainActionId ? true : false}
                       />)
                     : <ActionPreview
                         key={`preview-${crossChainActionInProcessing.id}`}
                         crossChainAction={crossChainActionInProcessing}
                         setIsTransactionDone={setIsTransactionDone}
+                        hasSignedIn={processingCrossChainActionId ? true : false}
                       />
                 }
               </TransactionBlocksWrapper>
@@ -1243,6 +1246,7 @@ const TransactionBuilderContextProvider = ({
                       showEditButton={!disableEdit}
                       showStatus={!disableEdit}
                       setIsTransactionDone={setIsTransactionDone}
+                      hasSignedIn={processingCrossChainActionId ? true : false}
                     />
                   )
                 }
