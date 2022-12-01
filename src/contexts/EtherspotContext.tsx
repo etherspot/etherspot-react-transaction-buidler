@@ -24,6 +24,7 @@ export interface EtherspotContextData {
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
     totalWorthPerAddress: ITotalWorthPerAddress;
     logout: () => void;
+    smartWalletOnly: boolean;
   }
 }
 

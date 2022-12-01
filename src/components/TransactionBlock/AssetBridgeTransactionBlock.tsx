@@ -22,7 +22,6 @@ import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { Route } from '@lifi/sdk';
-import Checkbox from '../Checkbox';
 import { IAssetBridgeTransactionBlock, IMultiCallData } from '../../types/transactionBlock';
 import RouteOption from '../RouteOption';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
@@ -72,6 +71,7 @@ const AssetBridgeTransactionBlock = ({
     providerAddress,
     accountAddress,
     getSupportedAssetsWithBalancesForChainId,
+    smartWalletOnly,
   } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
@@ -293,6 +293,7 @@ const AssetBridgeTransactionBlock = ({
           setSelectedAccountType(accountType);
         }}
         errorMessage={errorMessages?.accountType}
+        hideKeyBased={smartWalletOnly}
         disabled={!!fixed || !!multiCallData}
       />
       <NetworkAssetSelectInput
@@ -362,6 +363,7 @@ const AssetBridgeTransactionBlock = ({
           label="You will receive on"
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
+          hideKeyBased={smartWalletOnly}
           showCustom
         />
       </WalletReceiveWrapper>

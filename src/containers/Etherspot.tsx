@@ -29,6 +29,7 @@ interface EtherspotProps {
   etherspotSessionStorage?: SessionStorage;
   onLogout?: () => void;
   showMenuLogout?: boolean;
+  smartWalletOnly?: boolean;
 }
 
 const ComponentWrapper = styled.div`
@@ -65,6 +66,7 @@ const Etherspot = ({
   hideAddTransactionButton,
   etherspotSessionStorage,
   showMenuLogout,
+  smartWalletOnly,
   onLogout,
 }: EtherspotProps) => (
   <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
@@ -73,6 +75,7 @@ const Etherspot = ({
       chainId={chainId}
       etherspotSessionStorage={etherspotSessionStorage}
       onLogout={onLogout}
+      smartWalletOnly={smartWalletOnly}
     >
       <style>
         @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');

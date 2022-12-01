@@ -7,7 +7,6 @@ import { BigNumber, utils, ethers } from 'ethers';
 
 // Types
 import {
-  IAssetBridgeTransactionBlock,
   IAssetSwapTransactionBlock,
   IDefaultTransactionBlock,
   IMultiCallData,
@@ -332,6 +331,7 @@ const TransactionBuilderContextProvider = ({
     getSdkForChainId,
     web3Provider,
     logout,
+    smartWalletOnly,
   } = useEtherspot();
 
   const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
@@ -666,12 +666,12 @@ const TransactionBuilderContextProvider = ({
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
         <WalletAddressesWrapper onClick={hideMenu}>
-          {providerAddress && (
+          {providerAddress && !smartWalletOnly && (
             <WalletAddress onClick={() => onCopy(providerAddress)}>
               Wallet: {humanizeHexString(providerAddress)}
             </WalletAddress>
           )}
-          {!providerAddress && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
+          {!providerAddress && !smartWalletOnly && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
           {accountAddress && (
             <WalletAddress onClick={() => onCopy(accountAddress)}>
               Account: {humanizeHexString(accountAddress)}
