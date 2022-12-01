@@ -61,12 +61,14 @@ const EtherspotContextProvider = ({
   chainId: defaultChainId = 1,
   etherspotSessionStorage,
   onLogout,
+  smartWalletOnly = false,
 }: {
   children: ReactNode;
   provider: WalletProviderLike;
   chainId?: number;
   etherspotSessionStorage?: SessionStorage;
   onLogout?: () => void;
+  smartWalletOnly?: boolean;
 }) => {
   const context = useContext(EtherspotContext);
 
@@ -348,6 +350,7 @@ const EtherspotContextProvider = ({
       web3Provider: provider,
       totalWorthPerAddress,
       logout,
+      smartWalletOnly,
     }),
     [
       connect,
@@ -364,6 +367,7 @@ const EtherspotContextProvider = ({
       provider,
       totalWorthPerAddress,
       logout,
+      smartWalletOnly,
     ],
   );
 

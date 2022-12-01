@@ -9,7 +9,7 @@ import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { addressesEqual, ErrorMessages, isValidAmount } from '../../utils/validation';
+import { addressesEqual, isValidAmount } from '../../utils/validation';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { Chain } from '../../utils/chain';
@@ -91,6 +91,7 @@ const AssetSwapTransactionBlock = ({
     getSupportedAssetsWithBalancesForChainId,
     accountAddress,
     providerAddress,
+    smartWalletOnly,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -140,7 +141,7 @@ const AssetSwapTransactionBlock = ({
           fromTokenAddress: selectedFromAsset.address,
           toTokenAddress: selectedToAsset.address,
         });
-        
+
         return offers;
       } catch (e) {
         //
@@ -160,7 +161,7 @@ const AssetSwapTransactionBlock = ({
           setIsLoadingAvailableOffers(false);
         }
       });
-    
+
     // hook's clean-up function
     return () => { active = false };
   }, [updateAvailableOffers]);
@@ -232,7 +233,7 @@ const AssetSwapTransactionBlock = ({
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
     const multiCallCarryOver = multiCallData?.value || 0;
-    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;	
+    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
     if (!amount)
       return (
         +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver
@@ -286,6 +287,7 @@ const AssetSwapTransactionBlock = ({
             }
             setSelectedAccountType(accountType);
           }}
+          hideKeyBased={smartWalletOnly}
           errorMessage={errorMessages?.accountType}
           disabled={!!fixed || !!multiCallData}
         />

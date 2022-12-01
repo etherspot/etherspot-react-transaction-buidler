@@ -6,7 +6,6 @@ import { AccountTypes } from 'etherspot';
 import TextInput from '../TextInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { ErrorMessages } from '../../utils/validation';
 import { Chain, supportedChains } from '../../utils/chain';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -52,7 +51,13 @@ const SendAssetTransactionBlock = ({
   const theme: Theme = useTheme();
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { providerAddress, accountAddress, chainId, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
+  const {
+    providerAddress,
+    accountAddress,
+    chainId,
+    getSupportedAssetsWithBalancesForChainId,
+    smartWalletOnly,
+  } = useEtherspot();
 
   const onAmountChange = useCallback(
     (newAmount: string) => {
@@ -140,6 +145,7 @@ const SendAssetTransactionBlock = ({
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
           setSelectedAccountType(accountType);
         }}
+        hideKeyBased={smartWalletOnly}
         errorMessage={errorMessages?.accountType}
         disabled={!!fixed || !!multiCallData}
       />

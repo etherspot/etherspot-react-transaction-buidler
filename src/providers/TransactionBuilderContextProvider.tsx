@@ -7,7 +7,6 @@ import { BigNumber, utils, ethers } from 'ethers';
 
 // Types
 import {
-  IAssetBridgeTransactionBlock,
   IAssetSwapTransactionBlock,
   IDefaultTransactionBlock,
   IMultiCallData,
@@ -332,6 +331,7 @@ const TransactionBuilderContextProvider = ({
     getSdkForChainId,
     web3Provider,
     logout,
+    smartWalletOnly,
   } = useEtherspot();
 
   const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
@@ -666,12 +666,12 @@ const TransactionBuilderContextProvider = ({
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
         <WalletAddressesWrapper onClick={hideMenu}>
-          {providerAddress && (
+          {providerAddress && !smartWalletOnly && (
             <WalletAddress onClick={() => onCopy(providerAddress)}>
               Wallet: {humanizeHexString(providerAddress)}
             </WalletAddress>
           )}
-          {!providerAddress && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
+          {!providerAddress && !smartWalletOnly && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
           {accountAddress && (
             <WalletAddress onClick={() => onCopy(accountAddress)}>
               Account: {humanizeHexString(accountAddress)}
@@ -696,9 +696,13 @@ const TransactionBuilderContextProvider = ({
         {!!processingCrossChainActionId && (
           <>
             {crossChainActionInProcessing && (
-              <TransactionBlocksWrapper highlight={!!crossChainActionInProcessing?.batchTransactions?.length}>
+              <TransactionBlocksWrapper highlight={
+                !!crossChainActionInProcessing?.batchTransactions?.length &&
+                !!crossChainActionInProcessing.multiCallData
+              }>
                 {
-                  !!crossChainActionInProcessing?.batchTransactions?.length && (
+                  !!crossChainActionInProcessing?.batchTransactions?.length &&
+                  !!crossChainActionInProcessing.multiCallData && (
                     <TransactionBlocksWrapperIcon>
                       {ChainIcon}
                     </TransactionBlocksWrapperIcon>
@@ -1171,7 +1175,7 @@ const TransactionBuilderContextProvider = ({
 
                 const actionPreview = (crossChainAction: ICrossChainAction, multiCallBlocks?: ICrossChainAction[], index?: number) => {
                   const multiCall = !!(multiCallBlocks && index !== undefined && multiCallBlocks.length > 1);
-                  const disableEdit = !!(multiCall && multiCallBlocks.length - 1 > index);
+                  const disableEdit = multiCall;
                   return (
                     <ActionPreview
                       key={`preview-${crossChainAction.id}`}
@@ -1272,9 +1276,7 @@ const TransactionBuilderContextProvider = ({
                       )
                     }
                     {
-                      multiCallBlocks.length > 0
-                        ? multiCallBlocks.map((block, i) => actionPreview(block, multiCallBlocks, i))
-                        : actionPreview(crossChainAction)
+                      actionPreview(crossChainAction)
                     }
                   </TransactionBlocksWrapper>
                 );
