@@ -724,9 +724,13 @@ const TransactionBuilderContextProvider = ({
               </TransactionBlocksWrapper>
             )
             }
-            <PrimaryButton disabled marginTop={30} marginBottom={30}>
-              Processing...
-            </PrimaryButton>
+            {
+              !isTransactionDone && (
+                <PrimaryButton disabled marginTop={30} marginBottom={30}>
+                  Processing...
+                </PrimaryButton>
+              )
+            }
           </>
         )}
         {!!editingTransactionBlock && !processingCrossChainActionId && (
