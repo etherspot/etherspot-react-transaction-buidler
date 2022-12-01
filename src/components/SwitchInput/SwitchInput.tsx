@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 import { SelectOption } from '../SelectInput/SelectInput';
 
-const Label = styled.label`
+const Label = styled.div`
   display: inline-block;
   color: ${({ theme }) => theme.color.text.outerLabel};
   margin-bottom: 11px;
@@ -42,12 +42,12 @@ const InputWrapper = styled.div`
   flex: 1;
 `;
 
-const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; }>`
+const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percentageWidth: number }>`
   font-family: "PTRootUIWebMedium", sans-serif;
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
   background: ${({ theme }) => theme.color.background.switchInputInactiveTab};
-  width: 50%;
+  width: ${({ percentageWidth }) => percentageWidth}%;
   text-align: center;
   min-height: 34px;
   line-height: 34px;
@@ -75,8 +75,7 @@ const ErrorMessage = styled.small`
 `;
 
 interface TextInputProps {
-  option1: SelectOption;
-  option2: SelectOption;
+  options: SelectOption[];
   selectedOption: SelectOption;
   label?: string;
   errorMessage?: string;
@@ -86,8 +85,7 @@ interface TextInputProps {
 }
 
 const SwitchInput = ({
-  option1,
-  option2,
+  options,
   selectedOption,
   label,
   errorMessage,
@@ -99,8 +97,16 @@ const SwitchInput = ({
     <Wrapper inline={inlineLabel} disabled={disabled}>
       {!!label && <Label>{label}</Label>}
       <InputWrapper>
-        <SwitchOption disabled={disabled} isActive={option1.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option1)}>{option1.title}</SwitchOption>
-        <SwitchOption disabled={disabled} isActive={option2.value === selectedOption.value} onClick={() => !disabled && onChange && onChange(option2)}>{option2.title}</SwitchOption>
+        {options.map((option) => (
+          <SwitchOption
+            disabled={disabled}
+            isActive={option.value === selectedOption.value}
+            onClick={() => !disabled && onChange && onChange(option)}
+            percentageWidth={100 / options.length}
+          >
+            {option.title}
+          </SwitchOption>
+        ))}
       </InputWrapper>
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
     </Wrapper>

@@ -1,7 +1,7 @@
 import React from 'react';
 import SwitchInput from '../SwitchInput';
-import { AccountTypes } from 'etherspot';
 import { SelectOption } from '../SelectInput/SelectInput';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 interface AccountSwitchInputProps {
   label?: string;
@@ -10,6 +10,8 @@ interface AccountSwitchInputProps {
   onChange?: (value: string) => void;
   inlineLabel?: boolean;
   disabled?: boolean;
+  showCustom?: boolean;
+  hideKeyBased?: boolean;
 }
 
 const AccountSwitchInput = ({
@@ -19,22 +21,29 @@ const AccountSwitchInput = ({
   onChange,
   inlineLabel = false,
   disabled = false,
+  showCustom = false,
+  hideKeyBased = false,
 }: AccountSwitchInputProps) => {
-  const walletOptions = [
-    { title: 'Key based', value: AccountTypes.Key },
-    { title: 'Smart wallet', value: AccountTypes.Contract },
+  let walletOptions = [
+    { title: 'Smart Wallet', value: DestinationWalletEnum.Contract},
   ];
+
+  if (!hideKeyBased) {
+    walletOptions = [{ title: 'Key based', value: DestinationWalletEnum.Key }, ...walletOptions];
+  }
+
+  if (showCustom) {
+    walletOptions = [...walletOptions, { title: 'Custom', value: DestinationWalletEnum.Custom }];
+  }
 
   const selectedOption = walletOptions.find((option) => option.value === selectedAccountType) as SelectOption;
 
   return (
     <SwitchInput
       label={label ?? 'Account'}
-      option1={walletOptions[0]}
-      option2={walletOptions[1]}
+      options={walletOptions}
       selectedOption={selectedOption}
       onChange={(option) => {
-        if (option.value === 1) alert('Unsupported yet!');
         if (onChange) onChange(option.value);
       }}
       errorMessage={errorMessage}

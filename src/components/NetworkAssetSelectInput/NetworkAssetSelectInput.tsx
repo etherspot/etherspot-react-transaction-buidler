@@ -30,7 +30,7 @@ import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, inverse?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
@@ -39,7 +39,9 @@ const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, inverse?: bo
   padding: 8px 14px 14px;
   cursor: pointer;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
-  ${({ theme, inverse }) => inverse && `background-color: ${ theme.color.background.toDropdownColor };`}
+  &:hover {
+    ${({ theme, hover }) => hover && `background-color: ${ theme.color.background.dropdownHoverColor };`}
+  }
 `;
 
 const SelectWrapper = styled.div<{ disabled: boolean }>`
@@ -51,10 +53,6 @@ const SelectWrapper = styled.div<{ disabled: boolean }>`
   
   ${({ disabled }) => !disabled && `
     cursor: pointer;
-
-    &:hover {
-      opacity: 0.5;
-    }
   `}
 `;
 
@@ -120,10 +118,6 @@ const SelectedOption = styled.div<{ disabled?: boolean }>`
 
   ${({ disabled }) => !disabled && `
     cursor: pointer;
-
-    &:hover {
-      opacity: 0.5;
-    }
   `}
 `;
 
@@ -136,11 +130,11 @@ const LargeSelectedOption = styled(SelectedOption)`
 
 const OptionListItem = styled(SelectedOption)`
   text-align: left;
-  margin-bottom: 15px;
   cursor: pointer;
-
-  &:last-child {
-    margin-bottom: 0;
+  padding: 7.5px 3px;
+  border-radius: 10px;
+  &:hover {
+    ${({ theme }) => `background-color: ${ theme.color.background.selectInputExpandedHover };`}
   }
 `;
 
@@ -162,10 +156,7 @@ const LargeOptionListItemLeft = styled.div`
   align-items: center;
   justify-content: flex-start;
   cursor: pointer;
-  
-  &:hover {
-    opacity: 0.5;
-  }
+
 `;
 
 const LargeOptionListItemRight = styled.div<{ paddingRight?: boolean; }>`
@@ -247,7 +238,6 @@ interface SelectInputProps {
   hideChainIds?: number[];
   walletAddress?: string | null;
   showQuickInputButtons?: boolean;
-  inverse?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -262,7 +252,6 @@ const NetworkAssetSelectInput = ({
   hideChainIds,
   walletAddress,
   showQuickInputButtons,
-  inverse = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -320,7 +309,7 @@ const NetworkAssetSelectInput = ({
   }
 
   return (
-    <Wrapper inverse={inverse} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
+    <Wrapper hover={!showSelectModal} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
         {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
@@ -384,12 +373,25 @@ const NetworkAssetSelectInput = ({
               {selectedNetworkAssets?.length > 5 && (
                 <SearchInputWrapper htmlFor={searchInputId}>
                   <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
-                  <SearchInput id={searchInputId} onChange={(e: any) => setAssetSearchQuery(e?.target?.value)} placeholder="Search" />
+                  <SearchInput id={searchInputId} 
+                    onChange={(e: any) => setAssetSearchQuery(e?.target?.value)} 
+                    placeholder="Search" 
+                    onClick={(e:any) => e.stopPropagation()}
+                    onFocus={(e: any) => {
+                      e.stopPropagation();
+                    }}
+                  />
                 </SearchInputWrapper>
               )}
               <OptionsScroll>
                 {filteredSelectedNetworkAssets.map((asset, index) => (
-                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`}>
+                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`} 
+                  onClick={(e:any) => {
+                    e.stopPropagation();
+                    if(!showQuickInputButtons){
+                      onListItemClick(asset)
+                    }
+                  }}>
                     <LargeOptionListItemLeft onClick={() => onListItemClick(asset)}>
                       <RoundedImage url={asset.logoURI} title={asset.name} />
                       <LargeOptionDetails>

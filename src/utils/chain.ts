@@ -1,5 +1,6 @@
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
+import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 
 // Based on: https://chainid.network/
 export const CHAIN_ID = {
@@ -88,7 +89,7 @@ export const supportedChains: Chain[] = [
     chainId: CHAIN_ID.CELO,
     title: 'CELO',
     iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
-    explorerUrl: 'explorer.celo.org/mainnet/tx/',
+    explorerUrl: 'https://explorer.celo.org/mainnet/tx/',
   },
 ];
 
@@ -182,6 +183,18 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
   },
 };
+
+export const klimaAsset: IAssetWithBalance = {
+  address: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
+  chainId: CHAIN_ID.POLYGON,
+  name: 'Klima DAO',
+  symbol: 'sKLIMA',
+  decimals: 9,
+  logoURI: 'https://polygonscan.com/token/images/klimadao_32.png',
+  balance: BigNumber.from(0),
+  assetPriceUsd: null,
+  balanceWorthUsd: null,
+}
 
 export const changeToChain = async (chainId: number): Promise<boolean> => {
   // @ts-ignore

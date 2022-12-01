@@ -27,7 +27,10 @@ export interface Theme {
       statusIconPending?: string,
       checkboxInputActive?: string,
       checkboxInputInactive?: string,
+      dropdownHoverColor?: string,
+      selectInputExpandedHover?: string,
       toDropdownColor?: string,
+      secondary?: string,
     },
     text?: {
       main?: string,
@@ -91,7 +94,10 @@ export const defaultTheme: Theme = {
       statusIconFailed: '#ff0000',
       checkboxInputActive: '#ff884d',
       checkboxInputInactive: '#7f7a99',
-      toDropdownColor: "#F8EFEA",
+      dropdownHoverColor: "#F8EFEA",
+      selectInputExpandedHover: "#F8EFEA",
+      toDropdownColor: '#F8EFEA',
+      secondary: '#9889e4',
     },
     text: {
       main: '#fff',

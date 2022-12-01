@@ -22,50 +22,57 @@ import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { Route } from '@lifi/sdk';
-import Checkbox from '../Checkbox';
-import { IAssetBridgeTransactionBlock } from '../../types/transactionBlock';
+import { IAssetBridgeTransactionBlock, IMultiCallData } from '../../types/transactionBlock';
 import RouteOption from '../RouteOption';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 export interface IAssetBridgeTransactionBlockValues {
-	fromChain?: Chain;
-	toChain?: Chain;
-	fromAsset?: IAssetWithBalance;
-	toAsset?: IAssetWithBalance;
-	amount?: string;
-	accountType?: string;
-	route?: Route;
-	receiverAddress?: string;
+  fromChain?: Chain;
+  toChain?: Chain;
+  fromAsset?: IAssetWithBalance;
+  toAsset?: IAssetWithBalance;
+  amount?: string;
+  accountType?: string;
+  route?: Route;
+  receiverAddress?: string;
 }
 
 const Title = styled.h3`
-	margin: 0 0 18px;
-	padding: 0;
-	font-size: 16px;
-	color: ${({ theme }) => theme.color.text.cardTitle};
-	font-family: 'PTRootUIWebBold', sans-serif;
+  margin: 0 0 18px;
+  padding: 0;
+  font-size: 16px;
+  color: ${({ theme }) => theme.color.text.cardTitle};
+  font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
 const WalletReceiveWrapper = styled.div`
-	display: flex;
-	flex-direction: row;
+  display: flex;
+  flex-direction: row;
 `;
 
 const mapRouteToOption = (route: Route) => {
-	const [fistStep] = route.steps;
-	const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
-	return {
-		title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
-		value: route.id,
-		iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
-	};
+  const [fistStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
+  return {
+    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    value: route.id,
+    iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+  };
 };
 
 const AssetBridgeTransactionBlock = ({
-	id: transactionBlockId,
-	errorMessages,
-	values,
+  id: transactionBlockId,
+  errorMessages,
+  values,
+  multiCallData
 }: IAssetBridgeTransactionBlock) => {
-  const { sdk, providerAddress, accountAddress } = useEtherspot();
+  const {
+    sdk,
+    providerAddress,
+    accountAddress,
+    getSupportedAssetsWithBalancesForChainId,
+    smartWalletOnly,
+  } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
@@ -83,6 +90,7 @@ const AssetBridgeTransactionBlock = ({
     : null;
   const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
   const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
+  const fixed = multiCallData?.fixed ?? false;
 
   const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
     || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
@@ -101,6 +109,23 @@ const AssetBridgeTransactionBlock = ({
   const theme: Theme = useTheme()
 
   useEffect(() => {
+    const preselectAsset = async (multiCallData: IMultiCallData) => {
+      setSelectedFromNetwork(multiCallData.chain);
+      const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+        multiCallData.chain.chainId,
+        false,
+        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress,
+      );
+      const asset = supportedAssets.find((search) => search.address === multiCallData.token?.address);
+      setSelectedFromAsset(asset || null);
+    };
+
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
+    if (!!multiCallData?.token) preselectAsset(multiCallData);
+  }, [multiCallData]);
+
+  useEffect(() => {
     if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId) {
       setSelectedToNetwork(null);
       setSelectedToAsset(null);
@@ -113,6 +138,19 @@ const AssetBridgeTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
   }, [selectedToNetwork, selectedFromNetwork]);
+
+  useEffect(() => {
+    if (selectedReceiveAccountType === DestinationWalletEnum.Custom) {
+      resetTransactionBlockFieldValidationError(
+        transactionBlockId,
+        "receiverAddress"
+      );
+      setUseCustomAddress(true);
+    } else {
+      setUseCustomAddress(false);
+      setCustomReceiverAddress(null);
+    }
+  }, [selectedReceiveAccountType]);
 
   const receiverAddress = useMemo(() => {
     if (useCustomAddress) return customReceiverAddress;
@@ -189,16 +227,20 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {
     const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
-    setTransactionBlockValues(transactionBlockId, {
-      fromChain: selectedFromNetwork ?? undefined,
-      toChain: selectedToNetwork ?? undefined,
-      fromAsset: selectedFromAsset ?? undefined,
-      toAsset: selectedToAsset ?? undefined,
-      receiverAddress: receiverAddress ?? undefined,
-      accountType: selectedAccountType,
-      amount,
-      route,
-    });
+    setTransactionBlockValues(
+      transactionBlockId,
+      {
+        fromChain: selectedFromNetwork ?? undefined,
+        toChain: selectedToNetwork ?? undefined,
+        fromAsset: selectedFromAsset ?? undefined,
+        toAsset: selectedToAsset ?? undefined,
+        receiverAddress: receiverAddress ?? undefined,
+        accountType: selectedAccountType,
+        amount,
+        route,
+      },
+      multiCallData || undefined
+    );
   }, [
     selectedFromNetwork,
     selectedToNetwork,
@@ -216,12 +258,13 @@ const AssetBridgeTransactionBlock = ({
   );
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
-    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
+    const multiCallCarryOver = multiCallData?.value || 0;
+    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
 
-    if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals);
+    if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver;
 
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
-    return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals);
+    return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals) + multiCallCarryOver;
   }, [amount, selectedFromAsset]);
 
 
@@ -250,6 +293,8 @@ const AssetBridgeTransactionBlock = ({
           setSelectedAccountType(accountType);
         }}
         errorMessage={errorMessages?.accountType}
+        hideKeyBased={smartWalletOnly}
+        disabled={!!fixed || !!multiCallData}
       />
       <NetworkAssetSelectInput
         label="From"
@@ -269,6 +314,7 @@ const AssetBridgeTransactionBlock = ({
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
+        disabled={!!fixed || !!multiCallData}
       />
       <NetworkAssetSelectInput
         label="To"
@@ -286,7 +332,6 @@ const AssetBridgeTransactionBlock = ({
         disabled={!selectedFromNetwork || !selectedFromAsset}
         hideChainIds={selectedFromNetwork ? [selectedFromNetwork.chainId] : undefined}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        inverse={true}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
@@ -318,20 +363,10 @@ const AssetBridgeTransactionBlock = ({
           label="You will receive on"
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
-          disabled={useCustomAddress}
-          inlineLabel
+          hideKeyBased={smartWalletOnly}
+          showCustom
         />
       </WalletReceiveWrapper>
-      <Checkbox
-        label="Use custom address"
-        isChecked={useCustomAddress}
-        onChange={(isChecked) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-          setUseCustomAddress(isChecked);
-          if (!isChecked) setCustomReceiverAddress(null);
-        }}
-        rightAlign
-      />
       {useCustomAddress && (
         <TextInput
           value={customReceiverAddress ?? ''}

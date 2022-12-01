@@ -1,34 +1,19 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 import { AccountTypes } from 'etherspot';
 
 import TextInput from '../TextInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import {
-  formatAmountDisplay,
-  formatAssetAmountInput,
-  formatMaxAmount,
-} from '../../utils/common';
-import {
-  ErrorMessages,
-} from '../../utils/validation';
-import {
-  Chain,
-  supportedChains,
-} from '../../utils/chain';
+import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
+import { Chain, supportedChains } from '../../utils/chain';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import AccountSwitchInput from '../AccountSwitchInput';
-import { ISendAssetTransactionBlock } from '../../types/transactionBlock';
+import { IMultiCallData, ISendAssetTransactionBlock } from '../../types/transactionBlock';
 
 export interface ISendAssetTransactionBlockValues {
   fromAddress?: string;
@@ -44,20 +29,24 @@ const Title = styled.h3`
   padding: 0;
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
-  font-family: "PTRootUIWebBold", sans-serif;
+  font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
 const SendAssetTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
   values,
+  multiCallData,
 }: ISendAssetTransactionBlock) => {
   const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedAsset, setSelectedAsset] = useState<IAssetWithBalance | null>(values?.selectedAsset ?? null);
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
   const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(values?.isFromEtherspotWallet ?? true);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>((values?.isFromEtherspotWallet ?? true) ? AccountTypes.Contract : AccountTypes.Key);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(
+    values?.isFromEtherspotWallet ?? true ? AccountTypes.Contract : AccountTypes.Key,
+  );
+  const fixed = multiCallData?.fixed ?? false;
 
   const theme: Theme = useTheme();
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
@@ -66,29 +55,55 @@ const SendAssetTransactionBlock = ({
     providerAddress,
     accountAddress,
     chainId,
+    getSupportedAssetsWithBalancesForChainId,
+    smartWalletOnly,
   } = useEtherspot();
 
-  const onAmountChange = useCallback((newAmount: string) => {
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    const decimals = selectedAsset?.decimals ?? 18;
-    const updatedAmount = formatAssetAmountInput(newAmount, decimals);
-    setAmount(updatedAmount)
-  }, [selectedAsset]);
+  const onAmountChange = useCallback(
+    (newAmount: string) => {
+      resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+      const decimals = selectedAsset?.decimals ?? 18;
+      const updatedAmount = formatAssetAmountInput(newAmount, decimals);
+      setAmount(updatedAmount);
+    },
+    [selectedAsset],
+  );
 
   const onReceiverAddressChange = useCallback((newReceiverAddress: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-    setReceiverAddress(newReceiverAddress)
+    setReceiverAddress(newReceiverAddress);
   }, []);
 
   useEffect(() => {
-    setTransactionBlockValues(transactionBlockId, {
-      chain: selectedNetwork ?? undefined,
-      selectedAsset: selectedAsset ?? undefined,
-      amount,
-      receiverAddress,
-      isFromEtherspotWallet,
-      fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
-    });
+    const preselectAsset = async (multiCallData: IMultiCallData) => {
+      setSelectedNetwork(multiCallData.chain);
+      const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+        multiCallData.chain.chainId,
+        false,
+        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress,
+      );
+      const asset = supportedAssets.find((search) => search.address === multiCallData.token?.address);
+      setSelectedAsset(asset || null);
+    };
+
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'selectedAsset');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+    if (!!multiCallData?.token) preselectAsset(multiCallData);
+  }, [selectedNetwork, multiCallData]);
+
+  useEffect(() => {
+    setTransactionBlockValues(
+      transactionBlockId,
+      {
+        chain: selectedNetwork ?? undefined,
+        selectedAsset: selectedAsset ?? undefined,
+        amount,
+        receiverAddress,
+        isFromEtherspotWallet,
+        fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
+      },
+      multiCallData || undefined,
+    );
   }, [
     selectedNetwork,
     selectedAsset,
@@ -101,24 +116,25 @@ const SendAssetTransactionBlock = ({
 
   const hideChainIds = !isFromEtherspotWallet
     ? supportedChains
-      .map((supportedChain) => supportedChain.chainId)
-      .filter((supportedChainId) => supportedChainId !== chainId)
+        .map((supportedChain) => supportedChain.chainId)
+        .filter((supportedChainId) => supportedChainId !== chainId)
     : undefined;
 
   const remainingSelectedAssetBalance = useMemo(() => {
-    if (!selectedAsset?.balance || selectedAsset.balance.isZero()) return 0;
+    const multiCallCarryOver = multiCallData?.value || 0;
+    if (!selectedAsset?.balance || selectedAsset.balance.isZero()) return 0 + multiCallCarryOver;
 
-    if (!amount) return +ethers.utils.formatUnits(selectedAsset.balance, selectedAsset.decimals);
+    if (!amount) return +ethers.utils.formatUnits(selectedAsset.balance, selectedAsset.decimals) + multiCallCarryOver;
 
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedAsset.decimals);
-    return +ethers.utils.formatUnits(selectedAsset.balance.sub(assetAmountBN), selectedAsset.decimals);
+    return +ethers.utils.formatUnits(selectedAsset.balance.sub(assetAmountBN), selectedAsset.decimals) + multiCallCarryOver;
   }, [amount, selectedAsset]);
 
   return (
     <>
       <Title>Send asset</Title>
       <AccountSwitchInput
-        label="From wallet"
+        label='From wallet'
         selectedAccountType={selectedAccountType}
         onChange={(accountType) => {
           if (accountType !== selectedAccountType) {
@@ -129,10 +145,12 @@ const SendAssetTransactionBlock = ({
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
           setSelectedAccountType(accountType);
         }}
+        hideKeyBased={smartWalletOnly}
         errorMessage={errorMessages?.accountType}
+        disabled={!!fixed || !!multiCallData}
       />
       <NetworkAssetSelectInput
-        label="From"
+        label='From'
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'selectedAsset');
@@ -150,14 +168,19 @@ const SendAssetTransactionBlock = ({
         walletAddress={isFromEtherspotWallet ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
+        disabled={!!fixed || !!multiCallData}
       />
       {selectedAsset && selectedNetwork && (
         <TextInput
-          label="You send"
+          label='You send'
           onValueChange={onAmountChange}
           value={amount}
-          placeholder="0"
-          inputBottomText={selectedAsset?.assetPriceUsd && amount ? `${formatAmountDisplay(+amount * selectedAsset.assetPriceUsd, '$')}` : undefined}
+          placeholder='0'
+          inputBottomText={
+            selectedAsset?.assetPriceUsd && amount
+              ? `${formatAmountDisplay(+amount * selectedAsset.assetPriceUsd, '$')}`
+              : undefined
+          }
           inputLeftComponent={
             <CombinedRoundedImages
               url={selectedAsset.logoURI}
@@ -168,12 +191,15 @@ const SendAssetTransactionBlock = ({
           }
           inputTopRightComponent={
             <Pill
-              label="Remaining"
+              label='Remaining'
               value={`${formatAmountDisplay(remainingSelectedAssetBalance ?? 0)} ${selectedAsset.symbol}`}
-              valueColor={(remainingSelectedAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined}
+              valueColor={
+                (remainingSelectedAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined
+              }
             />
           }
           errorMessage={errorMessages?.amount}
+          disabled={!!fixed}
         />
       )}
       <TextInput
@@ -184,6 +210,7 @@ const SendAssetTransactionBlock = ({
         displayLabelOutside
         smallerInput
         showPasteButton
+        disabled={!!fixed}
       />
     </>
   );

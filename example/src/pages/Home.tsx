@@ -59,6 +59,9 @@ const Home = ({ connectedProvider }: HomeProps) => {
       <StyledButton onClick={() => navigate("/hidden-transaction-block")}>
         Hidden Transaction Block
       </StyledButton>
+      <StyledButton onClick={() => navigate("/klima-stake")}>
+        Klima stake
+      </StyledButton>
     </div>
   );
 };
