@@ -187,6 +187,15 @@ const TransactionStatus = ({
   const { chainId, batchHash: transactionsBatchHash } = crossChainAction;
 
   const previewTransaction = (transactionHash?: string) => {
+    // show cross chain tx explorer link if bridge action
+    if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
+      const explorerLink = crossChainAction?.preview?.route?.steps?.[0]?.tool === 'connext'
+        ? 'https://connextscan.io/tx'
+        : 'https://socketscan.io/tx';
+      window.open(`${explorerLink}/${transactionHash}`, '_blank');
+      return;
+    }
+
     const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
     if (!explorerLink) {
       alert("The transaction hash is not yet available. Please try again later.");
@@ -379,10 +388,9 @@ const TransactionStatus = ({
                     <ClickableText
                       disabled={isGettingExplorerLink}
                       onClick={() => {
-                        if (crossChainAction.useWeb3Provider)
-                          return previewTransaction(
-                            transaction.transactionHash
-                          );
+                        if (crossChainAction.useWeb3Provider) {
+                          return previewTransaction(transaction.transactionHash);
+                        }
                         previewBatchTransaction();
                       }}
                     >

@@ -89,7 +89,7 @@ export const supportedChains: Chain[] = [
     chainId: CHAIN_ID.CELO,
     title: 'CELO',
     iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
-    explorerUrl: 'explorer.celo.org/mainnet/tx/',
+    explorerUrl: 'https://explorer.celo.org/mainnet/tx/',
   },
 ];
 
