@@ -522,7 +522,7 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
         return;
       }
@@ -575,7 +575,7 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        // showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         setIsSubmitting(false);
         return;
       }
@@ -1196,7 +1196,7 @@ const TransactionBuilderContextProvider = ({
                           (!result?.transactionHash?.length && !result?.batchHash?.length)
                         ) {
                           setIsSigningAction(false);
-                          showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+                          // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
                           return;
                         }
 

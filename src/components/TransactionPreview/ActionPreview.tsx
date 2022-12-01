@@ -250,13 +250,17 @@ const TransactionStatus = ({
       {statusPreviewTransactions.map((transaction, index) => {
         const transactionStatus =
           transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
+        
+        const showAsApproval =
+        crossChainAction.useWeb3Provider &&
+          isERC20ApprovalTransactionData(transaction.data as string);
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
           [CROSS_CHAIN_ACTION_STATUS.UNSENT]: "Sign message",
           [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
           [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
           [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: "Transaction approved",
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: showAsApproval ? "Transaction approved" : "Transaction completed",
         };
 
         const actionStatusToIconBackgroundColor: {
@@ -280,10 +284,6 @@ const TransactionStatus = ({
 
         if (!actionStatusTitle) return null;
 
-        const showAsApproval =
-          crossChainAction.useWeb3Provider &&
-          isERC20ApprovalTransactionData(transaction.data as string);
-
         const getStatusComponent = useMemo(() => {
           switch (transactionStatus) {
             case CROSS_CHAIN_ACTION_STATUS.CONFIRMED:
@@ -303,18 +303,23 @@ const TransactionStatus = ({
 
         useEffect(() => {
           let timeout: any;
+          console.log("transactionStatus", transactionStatus)
           if (
             transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
+            transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING &&
             !prevStatus
           ) {
             setPrevStatus(transactionStatus);
             timeout = setTimeout(() => {
               setPrevStatus(null);
             }, 2000);
+          }else{
+            setPrevStatus(null);
           }
           if (
             (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED ||
-            transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED) &&
+            transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED ||
+            transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER) &&
             setIsTransactionDone
           ){
             setIsTransactionDone(true)
@@ -341,6 +346,9 @@ const TransactionStatus = ({
                   >
                     <BiCheck size={16} />
                   </StatusIconWrapper>
+                  <Text size={16} medium>
+                    {"Sign message"}
+                  </Text>
                 </TransactionStatusMessageWrapper>
               </TransactionStatusWrapper>
             ) : (
