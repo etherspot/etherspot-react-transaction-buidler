@@ -522,7 +522,7 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
         return;
       }
@@ -575,7 +575,7 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        // showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         setIsSubmitting(false);
         return;
       }
@@ -709,18 +709,39 @@ const TransactionBuilderContextProvider = ({
                   )
                 }
                 {
-                  <ActionPreview
-                    key={`preview-${crossChainActionInProcessing.id}`}
-                    crossChainAction={crossChainActionInProcessing}
-                    setIsTransactionDone={setIsTransactionDone}
-                  />
+                  crossChainActionInProcessing?.batchTransactions?.length
+                    ? crossChainActionInProcessing.batchTransactions.map((block, i) => <ActionPreview
+                        key={`preview-${block.id}`}
+                        crossChainAction={block}
+                        showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
+                        setIsTransactionDone={setIsTransactionDone}
+                        hasSignedIn={processingCrossChainActionId ? true : false}
+                        onRemove={(isTransactionDone) ? () => setCrossChainActions([]
+                        )
+                          : undefined
+                        }
+                      />)
+                    : <ActionPreview
+                        key={`preview-${crossChainActionInProcessing.id}`}
+                        crossChainAction={crossChainActionInProcessing}
+                        setIsTransactionDone={setIsTransactionDone}
+                        hasSignedIn={processingCrossChainActionId ? true : false}
+                        onRemove={(isTransactionDone) ? () => setCrossChainActions([]
+                        )
+                          : undefined
+                        }
+                      />
                 }
               </TransactionBlocksWrapper>
             )
             }
-            <PrimaryButton disabled marginTop={30} marginBottom={30}>
-              Processing...
-            </PrimaryButton>
+            {
+              !isTransactionDone && (
+                <PrimaryButton disabled marginTop={30} marginBottom={30}>
+                  Processing...
+                </PrimaryButton>
+              )
+            }
           </>
         )}
         {!!editingTransactionBlock && !processingCrossChainActionId && (
@@ -1159,7 +1180,7 @@ const TransactionBuilderContextProvider = ({
                     <ActionPreview
                       key={`preview-${crossChainAction.id}`}
                       crossChainAction={crossChainAction}
-                      onRemove={!disableEdit ? () => setCrossChainActions((current) =>
+                      onRemove={(!disableEdit || isTransactionDone) ? () => setCrossChainActions((current) =>
                         current.filter(
                           (currentCrossChainAction) =>
                             currentCrossChainAction.id !== crossChainAction.id,
@@ -1193,7 +1214,7 @@ const TransactionBuilderContextProvider = ({
                           (!result?.transactionHash?.length && !result?.batchHash?.length)
                         ) {
                           setIsSigningAction(false);
-                          showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+                          // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
                           return;
                         }
 
@@ -1240,6 +1261,7 @@ const TransactionBuilderContextProvider = ({
                       showEditButton={!disableEdit}
                       showStatus={!disableEdit}
                       setIsTransactionDone={setIsTransactionDone}
+                      hasSignedIn={processingCrossChainActionId ? true : false}
                     />
                   )
                 }

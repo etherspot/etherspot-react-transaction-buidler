@@ -161,7 +161,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         );
 
     if (result?.errorMessage || (!result?.transactionHash?.length && !result?.batchHash?.length)) {
-      resetCrossChainActions(result.errorMessage ?? 'Unable to send transaction!');
+      resetCrossChainActions();
       return;
     }
 
