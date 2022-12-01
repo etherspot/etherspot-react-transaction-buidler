@@ -781,6 +781,11 @@ const ActionPreview = ({
             : null
         )
       : [crossChainAction.preview];
+    const multicallCount = crossChainAction.batchTransactions?.length
+      ? crossChainAction.batchTransactions.reduce((acc, curr) => {
+        return acc + Number(!!curr.multiCallData)
+      }, 0)
+      : 0;
 
     const network = supportedChains.find(
       (supportedChain) => supportedChain.chainId === chainId
@@ -847,10 +852,10 @@ const ActionPreview = ({
           );
         })}
 
-        {previewList.length > 1 && (
+        {previewList.length - multicallCount > 1 && (
           <TransactionAction>
             <Text size={16} medium>
-              {`${previewList.length} swaps are batched in one transaction`}
+              {`${previewList.length - multicallCount} swaps are batched in one transaction`}
             </Text>
           </TransactionAction>
         )}

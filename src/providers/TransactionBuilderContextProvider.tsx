@@ -696,16 +696,21 @@ const TransactionBuilderContextProvider = ({
         {!!processingCrossChainActionId && (
           <>
             {crossChainActionInProcessing && (
-              <TransactionBlocksWrapper highlight={!!crossChainActionInProcessing?.batchTransactions?.length}>
+              <TransactionBlocksWrapper highlight={
+                !!crossChainActionInProcessing?.batchTransactions?.length &&
+                !!crossChainActionInProcessing.multiCallData
+              }>
                 {
-                  !!crossChainActionInProcessing?.batchTransactions?.length && (
+                  !!crossChainActionInProcessing?.batchTransactions?.length &&
+                  !!crossChainActionInProcessing.multiCallData && (
                     <TransactionBlocksWrapperIcon>
                       {ChainIcon}
                     </TransactionBlocksWrapperIcon>
                   )
                 }
                 {
-                  crossChainActionInProcessing?.batchTransactions?.length
+                  crossChainActionInProcessing?.batchTransactions?.length &&
+                  !!crossChainActionInProcessing.multiCallData
                     ? crossChainActionInProcessing.batchTransactions.map((block, i) => <ActionPreview
                         key={`preview-${block.id}`}
                         crossChainAction={block}
