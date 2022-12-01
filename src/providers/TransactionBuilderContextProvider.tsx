@@ -524,10 +524,6 @@ const TransactionBuilderContextProvider = ({
     );
   }, [processingCrossChainActionId, dispatchedCrossChainActions]);
 
-  interface IObject {
-    [key: string]: string;
-  }
-
   const formUrlOptions = (options: { [key: string]: string }): string => {
     let optionStr = '';
     Object.keys(options).map((key: string) => {
@@ -554,27 +550,20 @@ const TransactionBuilderContextProvider = ({
       addr: '',
     };
     const code = Math.floor(Math.random() * 8999) + 1000;
+    // const code = '1234';
     const message = 'MtPelerin-' + code;
 
     if (!accountAddress) return;
     sdk
       ?.signMessage({ message })
       .then((hash) => {
-        // hash should be 0xcab5cd25298c738c2f572284ccde1c1262d3bc46ab89d8ea4d42d901f33060030ce4f801cf87c2a0858d2ebe4dc0a87139888fa48daf84c94a0a285669d530e71b
-        console.log('message', message);
-        console.log('hash', hash);
         const base64Hash = Buffer.from(hash.replace('0x', ''), 'hex').toString(
           'base64'
         );
-        // base64Hash should be yrXNJSmMc4wvVyKEzN4cEmLTvEaridjqTULZAfMwYAMM5PgBz4fCoIWNLr5NwKhxOYiPpI2vhMlKCihWadUw5xs=
         onRampOptions.hash = base64Hash;
-        onRampOptions.code = code;
-        onRampOptions.addr = accountAddress || '';
-        // onRampOptions.hash =
-        //   'yrXNJSmMc4wvVyKEzN4cEmLTvEaridjqTULZAfMwYAMM5PgBz4fCoIWNLr5NwKhxOYiPpI2vhMlKCihWadUw5xs=';
-        // onRampOptions.addr = '0xEa22e16EA50A43092853329F3cEEa0825Cb9B03e';
+        onRampOptions.code = code.toString();
+        onRampOptions.addr = providerAddress || '';
         const options = formUrlOptions(onRampOptions);
-        console.log('url', `https://buy.mtpelerin.com/${options}#`);
         window.open(
           `https://buy.mtpelerin.com/${options}`,
           '_blank',
