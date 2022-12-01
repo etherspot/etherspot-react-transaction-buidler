@@ -709,25 +709,11 @@ const TransactionBuilderContextProvider = ({
                   )
                 }
                 {
-                  // crossChainActionInProcessing?.batchTransactions?.length &&
-                  // !!crossChainActionInProcessing.multiCallData
-                  //   ? crossChainActionInProcessing.batchTransactions.map((block, i, blocks) => {
-                  //     if (i > 0 && blocks[i].type === block.type) {
-                  //       return null;
-                  //     }
-                  //     return <ActionPreview
-                  //       key={`preview-${block.id}`}
-                  //       crossChainAction={block}
-                  //       showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
-                  //       setIsTransactionDone={setIsTransactionDone}
-                  //     />
-                  //   }).filter(a => a)
-                  //   : 
-                    <ActionPreview
-                        key={`preview-${crossChainActionInProcessing.id}`}
-                        crossChainAction={crossChainActionInProcessing}
-                        setIsTransactionDone={setIsTransactionDone}
-                      />
+                  <ActionPreview
+                    key={`preview-${crossChainActionInProcessing.id}`}
+                    crossChainAction={crossChainActionInProcessing}
+                    setIsTransactionDone={setIsTransactionDone}
+                  />
                 }
               </TransactionBlocksWrapper>
             )
@@ -1268,15 +1254,7 @@ const TransactionBuilderContextProvider = ({
                       )
                     }
                     {
-                      // multiCallBlocks.length > 0
-                      //   ? multiCallBlocks.map((block, i, blocks) => {
-                      //     if (i > 0 && blocks[i - 1].type === block.type) {
-                      //       return null;
-                      //     }
-                      //     return actionPreview(block, multiCallBlocks, i);
-                      //   }).filter(a => a)
-                      //   : 
-                        actionPreview(crossChainAction)
+                      actionPreview(crossChainAction)
                     }
                   </TransactionBlocksWrapper>
                 );
