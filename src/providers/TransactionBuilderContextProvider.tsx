@@ -379,6 +379,7 @@ const TransactionBuilderContextProvider = ({
       for (const transactionBlock of transactionBlocks) {
         const result = await buildCrossChainAction(sdk, transactionBlock);
         if (!result?.crossChainAction || result?.errorMessage) {
+          console.log('382 ERROR HAPPENED HERE', result);
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
         }
@@ -522,6 +523,7 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
+        console.log('586 ERROR HAPPENED HERE', result);
         showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
         return;
@@ -545,6 +547,7 @@ const TransactionBuilderContextProvider = ({
       }
 
       if (errorOnLiFi) {
+        console.log('550 ERROR HAPPENED HERE', result);
         showAlertModal(errorOnLiFi);
         setIsSubmitting(false);
         return;
@@ -555,6 +558,7 @@ const TransactionBuilderContextProvider = ({
       const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
 
       if (stakingTxns.errorMessage) {
+        console.log('561 ERROR HAPPENED HERE', result);
         showAlertModal(stakingTxns.errorMessage);
         setIsSubmitting(false);
         return;
@@ -575,6 +579,7 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
+        console.log('581 ERROR HAPPENED HERE', result);
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         setIsSubmitting(false);
         return;
@@ -709,20 +714,21 @@ const TransactionBuilderContextProvider = ({
                   )
                 }
                 {
-                  crossChainActionInProcessing?.batchTransactions?.length &&
-                  !!crossChainActionInProcessing.multiCallData
-                    ? crossChainActionInProcessing.batchTransactions.map((block, i, blocks) => {
-                      if (i > 0 && blocks[i].type === block.type) {
-                        return null;
-                      }
-                      return <ActionPreview
-                        key={`preview-${block.id}`}
-                        crossChainAction={block}
-                        showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
-                        setIsTransactionDone={setIsTransactionDone}
-                      />
-                    }).filter(a => a)
-                    : <ActionPreview
+                  // crossChainActionInProcessing?.batchTransactions?.length &&
+                  // !!crossChainActionInProcessing.multiCallData
+                  //   ? crossChainActionInProcessing.batchTransactions.map((block, i, blocks) => {
+                  //     if (i > 0 && blocks[i].type === block.type) {
+                  //       return null;
+                  //     }
+                  //     return <ActionPreview
+                  //       key={`preview-${block.id}`}
+                  //       crossChainAction={block}
+                  //       showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
+                  //       setIsTransactionDone={setIsTransactionDone}
+                  //     />
+                  //   }).filter(a => a)
+                  //   : 
+                    <ActionPreview
                         key={`preview-${crossChainActionInProcessing.id}`}
                         crossChainAction={crossChainActionInProcessing}
                         setIsTransactionDone={setIsTransactionDone}
@@ -1167,7 +1173,7 @@ const TransactionBuilderContextProvider = ({
 
                 const actionPreview = (crossChainAction: ICrossChainAction, multiCallBlocks?: ICrossChainAction[], index?: number) => {
                   const multiCall = !!(multiCallBlocks && index !== undefined && multiCallBlocks.length > 1);
-                  const disableEdit = !!(multiCall && multiCallBlocks.length - 1 > index);
+                  const disableEdit = multiCall;
                   return (
                     <ActionPreview
                       key={`preview-${crossChainAction.id}`}
@@ -1267,14 +1273,15 @@ const TransactionBuilderContextProvider = ({
                       )
                     }
                     {
-                      multiCallBlocks.length > 0
-                        ? multiCallBlocks.map((block, i, blocks) => {
-                          if (i > 0 && blocks[i - 1].type === block.type) {
-                            return null;
-                          }
-                          return actionPreview(block, multiCallBlocks, i);
-                        }).filter(a => a)
-                        : actionPreview(crossChainAction)
+                      // multiCallBlocks.length > 0
+                      //   ? multiCallBlocks.map((block, i, blocks) => {
+                      //     if (i > 0 && blocks[i - 1].type === block.type) {
+                      //       return null;
+                      //     }
+                      //     return actionPreview(block, multiCallBlocks, i);
+                      //   }).filter(a => a)
+                      //   : 
+                        actionPreview(crossChainAction)
                     }
                   </TransactionBlocksWrapper>
                 );

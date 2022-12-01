@@ -17,7 +17,7 @@ import {
   isERC20ApprovalTransactionData,
 } from "../../utils/transaction";
 import { formatAmountDisplay, humanizeHexString } from "../../utils/common";
-import { CHAIN_ID, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
+import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
 import { Theme } from "../../utils/theme";
 
 // Constants
@@ -29,7 +29,7 @@ import moment from "moment";
 import { useEtherspot } from "../../hooks";
 
 // Types
-import { ICrossChainAction } from "../../types/crossChainAction";
+import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from "../../types/crossChainAction";
 
 const TransactionAction = styled.div`
   position: relative;
@@ -675,6 +675,119 @@ const ActionPreview = ({
     );
   }
 
+  const previewSend = (preview: SendAssetActionPreview | null, network: Chain | undefined, chainTitle: string) => {
+    if (!preview) return null;
+
+    const { asset, chainId, fromAddress } = preview;
+    const amount = formatAmountDisplay(
+      ethers.utils.formatUnits(asset.amount, asset.decimals)
+    );
+    const receiverAddress = preview.receiverAddress as string;
+
+    return (
+      <TransactionAction>
+        <Label>You send</Label>
+        <ValueWrapper>
+          <CombinedRoundedImages
+            title={asset.symbol}
+            url={asset.iconUrl}
+            smallImageTitle={chainTitle}
+            smallImageUrl={network?.iconUrl}
+          />
+          <ValueBlock>
+            <Text size={16} marginBottom={1} medium block>
+              {amount} {asset.symbol}
+            </Text>
+            <Text size={12}>On {chainTitle}</Text>
+          </ValueBlock>
+          <ValueBlock>
+            <Text
+              size={12}
+              marginBottom={2}
+              color={theme.color?.text?.innerLabel}
+              medium
+              block
+            >
+              Gas price
+            </Text>
+            <Text size={16} medium>
+              {cost ?? "N/A"}
+            </Text>
+          </ValueBlock>
+        </ValueWrapper>
+        <ValueWrapper marginTop={8}>
+          <Text size={16} medium>
+            {!!fromAddress && (
+              <>
+                From &nbsp;
+                <ClickableText onClick={() => onCopy(fromAddress)}>
+                  {humanizeHexString(fromAddress)}
+                </ClickableText>
+                &nbsp;
+              </>
+            )}
+            {fromAddress ? "to" : "To"}
+            &nbsp;
+            <ClickableText onClick={() => onCopy(receiverAddress)}>
+              {humanizeHexString(receiverAddress)}
+            </ClickableText>
+          </Text>
+        </ValueWrapper>
+      </TransactionAction>
+    );
+  }
+
+  const previewSwap = (preview: AssetSwapActionPreview | null, network: Chain | undefined, chainTitle: string) => {
+    if (!preview) return null;
+
+    const { fromAsset, toAsset } = preview;
+    const fromAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+    );
+    const toAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
+    );
+
+    return (
+      <DoubleTransactionActionsInSingleRow>
+        <TransactionAction>
+          <Label>You send</Label>
+          <ValueWrapper>
+            <CombinedRoundedImages
+              title={fromAsset.symbol}
+              url={fromAsset.iconUrl}
+              smallImageTitle={chainTitle}
+              smallImageUrl={network?.iconUrl}
+            />
+            <div>
+              <Text size={16} marginBottom={1} medium block>
+                {fromAmount} {fromAsset.symbol}
+              </Text>
+              <Text size={12}>On {chainTitle}</Text>
+            </div>
+          </ValueWrapper>
+        </TransactionAction>
+        <TransactionAction>
+          <Label>You receive</Label>
+          <ValueWrapper>
+            <CombinedRoundedImages
+              title={toAsset.symbol}
+              url={toAsset.iconUrl}
+              smallImageTitle={chainTitle}
+              smallImageUrl={network?.iconUrl}
+            />
+            <div>
+              <Text size={16} marginBottom={3} medium block>
+                {toAmount} {toAsset.symbol}
+              </Text>
+              <Text size={12}>On {chainTitle}</Text>
+            </div>
+          </ValueWrapper>
+        </TransactionAction>
+      </DoubleTransactionActionsInSingleRow>
+    );
+  }
+
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
@@ -698,72 +811,12 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {previewList.map((preview) => {
-          if (!preview) return null;
-
-          const { asset, chainId, fromAddress } = preview;
-          const amount = formatAmountDisplay(
-            ethers.utils.formatUnits(asset.amount, asset.decimals)
-          );
-          const receiverAddress = preview.receiverAddress as string;
-
-          return (
-            <TransactionAction>
-              <Label>You send</Label>
-              <ValueWrapper>
-                <CombinedRoundedImages
-                  title={asset.symbol}
-                  url={asset.iconUrl}
-                  smallImageTitle={chainTitle}
-                  smallImageUrl={network?.iconUrl}
-                />
-                <ValueBlock>
-                  <Text size={16} marginBottom={1} medium block>
-                    {amount} {asset.symbol}
-                  </Text>
-                  <Text size={12}>On {chainTitle}</Text>
-                </ValueBlock>
-                <ValueBlock>
-                  <Text
-                    size={12}
-                    marginBottom={2}
-                    color={theme.color?.text?.innerLabel}
-                    medium
-                    block
-                  >
-                    Gas price
-                  </Text>
-                  <Text size={16} medium>
-                    {cost ?? "N/A"}
-                  </Text>
-                </ValueBlock>
-              </ValueWrapper>
-              <ValueWrapper marginTop={8}>
-                <Text size={16} medium>
-                  {!!fromAddress && (
-                    <>
-                      From &nbsp;
-                      <ClickableText onClick={() => onCopy(fromAddress)}>
-                        {humanizeHexString(fromAddress)}
-                      </ClickableText>
-                      &nbsp;
-                    </>
-                  )}
-                  {fromAddress ? "to" : "To"}
-                  &nbsp;
-                  <ClickableText onClick={() => onCopy(receiverAddress)}>
-                    {humanizeHexString(receiverAddress)}
-                  </ClickableText>
-                </Text>
-              </ValueWrapper>
-            </TransactionAction>
-          );
-        })}
+        {previewList.map(preview => previewSend(preview, network, chainTitle))}
 
         {previewList.length > 1 && (
           <TransactionAction>
             <Text size={16} medium>
-              {`${previewList.length} sends are batched in one transaction`}
+              {`${previewList.length} calls are batched in one transaction`}
             </Text>
           </TransactionAction>
         )}
@@ -776,7 +829,7 @@ const ActionPreview = ({
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
-          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP
+          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP || (!!action.multiCallData && action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
             ? action.preview
             : null
         )
@@ -796,61 +849,20 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {previewList.map((preview) => {
+        {previewList.map(preview => {
           if (!preview) return null;
-
-          const { fromAsset, toAsset } = preview;
-          const fromAmount = formatAmountDisplay(
-            ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
-          );
-          const toAmount = formatAmountDisplay(
-            ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
-          );
-
-          return (
-            <DoubleTransactionActionsInSingleRow>
-              <TransactionAction>
-                <Label>You send</Label>
-                <ValueWrapper>
-                  <CombinedRoundedImages
-                    title={fromAsset.symbol}
-                    url={fromAsset.iconUrl}
-                    smallImageTitle={chainTitle}
-                    smallImageUrl={network?.iconUrl}
-                  />
-                  <div>
-                    <Text size={16} marginBottom={1} medium block>
-                      {fromAmount} {fromAsset.symbol}
-                    </Text>
-                    <Text size={12}>On {chainTitle}</Text>
-                  </div>
-                </ValueWrapper>
-              </TransactionAction>
-              <TransactionAction>
-                <Label>You receive</Label>
-                <ValueWrapper>
-                  <CombinedRoundedImages
-                    title={toAsset.symbol}
-                    url={toAsset.iconUrl}
-                    smallImageTitle={chainTitle}
-                    smallImageUrl={network?.iconUrl}
-                  />
-                  <div>
-                    <Text size={16} marginBottom={3} medium block>
-                      {toAmount} {toAsset.symbol}
-                    </Text>
-                    <Text size={12}>On {chainTitle}</Text>
-                  </div>
-                </ValueWrapper>
-              </TransactionAction>
-            </DoubleTransactionActionsInSingleRow>
-          );
+          if ('toAsset' in preview) {
+            return previewSwap(preview as AssetSwapActionPreview, network, chainTitle);
+          }
+          if ('asset' in preview) {
+            return previewSend(preview as SendAssetActionPreview, network, chainTitle);
+          }
         })}
 
         {previewList.length > 1 && (
           <TransactionAction>
             <Text size={16} medium>
-              {`${previewList.length} swaps are batched in one transaction`}
+              {`${previewList.length} calls are batched in one transaction`}
             </Text>
           </TransactionAction>
         )}
@@ -877,6 +889,7 @@ const ActionPreview = ({
           <RouteWrapper>
             {previewList.map((preview) => {
               if (!preview) return null;
+              if (!('toAsset' in preview)) return null;
               const { fromAsset, toAsset, providerName, providerIconUrl } =
                 preview;
 
