@@ -8,13 +8,12 @@ import styled, { useTheme } from 'styled-components';
 import {
   AccountTypes,
 } from 'etherspot';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 
 import TextInput from '../TextInput';
-import { SelectOption } from '../SelectInput/SelectInput';
 import {
   useEtherspot,
   useTransactionBuilder,
@@ -28,7 +27,6 @@ import {
   addressesEqual, isValidEthereumAddress,
 } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
-import AccountSwitch3Input from '../AccountSwitch3Input';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
 import {
@@ -39,6 +37,7 @@ import {
 } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -69,7 +68,7 @@ const KlimaStakingTransactionBlock = ({
   errorMessages,
   values,
 }: IKlimaStakingTransactionBlock) => {
-  const { sdk, providerAddress, accountAddress } = useEtherspot();
+  const { smartWalletOnly, providerAddress, accountAddress } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
@@ -181,6 +180,7 @@ const KlimaStakingTransactionBlock = ({
         onChange={(accountType) => {
           setSelectedAccountType(accountType);
         }}
+        hideKeyBased={smartWalletOnly}
         errorMessage={errorMessages?.accountType}
       />
       <NetworkAssetSelectInput
@@ -238,12 +238,12 @@ const KlimaStakingTransactionBlock = ({
         />
       )}
       <WalletReceiveWrapper>
-        <AccountSwitch3Input
+        <AccountSwitchInput
           label="You will receive on"
           selectedAccountType={selectedReceiveAccountType}
           onChange={(value) => {
             setSelectedReceiveAccountType(value);
-            if (value == 'Custom') {
+            if (value == DestinationWalletEnum.Custom) {
               setUseCustomAddress(true);
               return;
             }
@@ -251,6 +251,8 @@ const KlimaStakingTransactionBlock = ({
             setUseCustomAddress(false);
             setCustomReceiverAddress(null);
           }}
+          hideKeyBased={smartWalletOnly}
+          showCustom
         />
       </WalletReceiveWrapper>
       {useCustomAddress && (
