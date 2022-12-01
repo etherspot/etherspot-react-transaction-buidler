@@ -379,7 +379,6 @@ const TransactionBuilderContextProvider = ({
       for (const transactionBlock of transactionBlocks) {
         const result = await buildCrossChainAction(sdk, transactionBlock);
         if (!result?.crossChainAction || result?.errorMessage) {
-          console.log('382 ERROR HAPPENED HERE', result);
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
         }
@@ -523,7 +522,6 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        console.log('586 ERROR HAPPENED HERE', result);
         showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
         return;
@@ -547,7 +545,6 @@ const TransactionBuilderContextProvider = ({
       }
 
       if (errorOnLiFi) {
-        console.log('550 ERROR HAPPENED HERE', result);
         showAlertModal(errorOnLiFi);
         setIsSubmitting(false);
         return;
@@ -558,7 +555,6 @@ const TransactionBuilderContextProvider = ({
       const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
 
       if (stakingTxns.errorMessage) {
-        console.log('561 ERROR HAPPENED HERE', result);
         showAlertModal(stakingTxns.errorMessage);
         setIsSubmitting(false);
         return;
@@ -579,7 +575,6 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        console.log('581 ERROR HAPPENED HERE', result);
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         setIsSubmitting(false);
         return;

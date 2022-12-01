@@ -80,7 +80,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       setDispatchId(null);
 
       if (!errorMessage) return;
-      console.log('83 ERROR HAPPENED HERE', errorMessage);
       showAlertModal(errorMessage);
     },
     [dispatchId, crossChainActions],
