@@ -353,8 +353,7 @@ const ActionPreview = ({
 			estimated.gasCost,
 			nativeAssetPerChainId[chainId].decimals,
 		);
-		const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol
-			}`;
+		const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol}`;
 		if (!estimated.usdPrice) return gasCostFormatted;
 
 		return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
@@ -549,7 +548,7 @@ const ActionPreview = ({
         {!!route && (
           <TransactionAction>
             <Label>Route</Label>
-            <RouteOption route={route} showActions />
+            <RouteOption route={route} cost={cost} showActions />
           </TransactionAction>
         )}
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} />}
@@ -579,7 +578,7 @@ const ActionPreview = ({
         {previewList.map((preview) => {
           if (!preview) return null;
 
-          const { asset, chainId, fromAddress } = preview;
+          const { asset, fromAddress } = preview;
           const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
           const receiverAddress = preview.receiverAddress as string;
 
