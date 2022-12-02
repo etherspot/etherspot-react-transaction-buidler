@@ -169,17 +169,14 @@ interface TransactionPreviewInterface {
   showSignButton?: boolean;
   setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
-  hasSignedIn?: boolean;
 }
 
 const TransactionStatus = ({
   crossChainAction,
   setIsTransactionDone,
-  hasSignedIn,
 }: {
   crossChainAction: ICrossChainAction;
   setIsTransactionDone: (value: boolean) => void;
-  hasSignedIn?: boolean;
 }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
@@ -379,7 +376,6 @@ const TransactionStatus = ({
                         ).format('mm:ss')}
                     </TransactionStatusClock>
                   )}
-                {hasSignedIn && (
                   <TransactionStatusWrapper>
                     <TransactionStatusMessageWrapper>
                       {!!actionStatusIconBackgroundColor && (
@@ -416,7 +412,6 @@ const TransactionStatus = ({
                       </ClickableText>
                     )}
                   </TransactionStatusWrapper>
-                )}
               </>
             )}
           </TransactionStatusAction>
@@ -437,7 +432,6 @@ const ActionPreview = ({
   showEditButton = false,
   setIsTransactionDone,
   showStatus = true,
-  hasSignedIn = false,
 }: TransactionPreviewInterface) => {
 	const { accountAddress, providerAddress } = useEtherspot();
 	const theme: Theme = useTheme();
@@ -593,8 +587,7 @@ const ActionPreview = ({
 				<TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
-          hasSignedIn={hasSignedIn}
-          />
+        />
 			</Card>
 		);
 	}
@@ -692,7 +685,7 @@ const ActionPreview = ({
             <RouteOption route={route} cost={cost} showActions />
           </TransactionAction>
         )}
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}  hasSignedIn={hasSignedIn} />}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
   }
@@ -841,7 +834,7 @@ const ActionPreview = ({
           </TransactionAction>
         )}
 
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} hasSignedIn={hasSignedIn}/>}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
   }
@@ -940,7 +933,7 @@ const ActionPreview = ({
             })}
           </RouteWrapper>
         </TransactionAction>
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} hasSignedIn={hasSignedIn}/>}
+        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
   }

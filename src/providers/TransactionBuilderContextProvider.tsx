@@ -742,7 +742,6 @@ const TransactionBuilderContextProvider = ({
                     key={`preview-${crossChainActionInProcessing.id}`}
                     crossChainAction={crossChainActionInProcessing}
                     setIsTransactionDone={setIsTransactionDone}
-                    hasSignedIn={processingCrossChainActionId ? true : false}
                     onRemove={(isTransactionDone)
                       ? () => setCrossChainActions([])
                       : undefined
@@ -1273,9 +1272,8 @@ const TransactionBuilderContextProvider = ({
                         )
                       }
                       showEditButton={!disableEdit}
-                      showStatus={!disableEdit}
+                      showStatus={!!processingCrossChainActionId}
                       setIsTransactionDone={setIsTransactionDone}
-                      hasSignedIn={processingCrossChainActionId ? true : false}
                     />
                   )
                 }
