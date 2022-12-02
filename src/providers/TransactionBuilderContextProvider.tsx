@@ -843,52 +843,32 @@ const TransactionBuilderContextProvider = ({
       <div onClick={hideMenu}>
         {!!processingCrossChainActionId && (
           <>
-            {dispatchedCrossChainActions &&
-              dispatchedCrossChainActions.map((action) => (
-                <TransactionBlocksWrapper
-                  highlight={
-                    !!action?.batchTransactions?.length &&
-                    !!action.multiCallData
-                  }
-                >
-                  {!!action?.batchTransactions?.length &&
-                    !!action.multiCallData && (
-                      <TransactionBlocksWrapperIcon>
-                        {ChainIcon}
-                      </TransactionBlocksWrapperIcon>
-                    )}
-                  {action?.batchTransactions?.length ? (
-                    action.batchTransactions.map((block, i) => (
-                      <ActionPreview
-                        key={`preview-${block.id}`}
-                        crossChainAction={block}
-                        showStatus={
-                          Number(action?.batchTransactions?.length) - 1 === i
-                        }
-                        setIsTransactionDone={setIsTransactionDone}
-                        hasSignedIn={action ? true : false}
-                        onRemove={
-                          isTransactionDone
-                            ? () => setCrossChainActions([])
-                            : undefined
-                        }
-                      />
-                    ))
-                  ) : (
-                    <ActionPreview
-                      key={`preview-${action.id}`}
-                      crossChainAction={action}
-                      setIsTransactionDone={setIsTransactionDone}
-                      hasSignedIn={processingCrossChainActionId ? true : false}
-                      onRemove={
-                        isTransactionDone
-                          ? () => setCrossChainActions([])
-                          : undefined
-                      }
-                    />
-                  )}
-                </TransactionBlocksWrapper>
-              ))}
+            {crossChainActionInProcessing && (
+              <TransactionBlocksWrapper highlight={
+                !!crossChainActionInProcessing?.batchTransactions?.length &&
+                !!crossChainActionInProcessing.multiCallData
+              }>
+                {
+                  !!crossChainActionInProcessing?.batchTransactions?.length &&
+                  !!crossChainActionInProcessing.multiCallData && (
+                    <TransactionBlocksWrapperIcon>
+                      {ChainIcon}
+                    </TransactionBlocksWrapperIcon>
+                  )
+                }
+                {
+                  <ActionPreview
+                    key={`preview-${crossChainActionInProcessing.id}`}
+                    crossChainAction={crossChainActionInProcessing}
+                    setIsTransactionDone={setIsTransactionDone}
+                    onRemove={(isTransactionDone)
+                      ? () => setCrossChainActions([])
+                      : undefined
+                    }
+                  />
+                }
+              </TransactionBlocksWrapper>
+            )}
             {!isTransactionDone && (
               <PrimaryButton disabled marginTop={30} marginBottom={30}>
                 Processing...
@@ -1583,17 +1563,21 @@ const TransactionBuilderContextProvider = ({
                           (currentCrossChainAction) =>
                             currentCrossChainAction.id !== crossChainAction.id
                         )
-                      );
-                      setIsSigningAction(false);
-                      showAlertModal('Transaction sent!');
-                    }}
-                    onEdit={() =>
-                      setEditingTransactionBlock(
-                        transactionBlocks.find(
-                          (transactionBlock) =>
-                            transactionBlock.id ===
-                            crossChainAction.relatedTransactionBlockId
-                        ) ?? null
+                      }
+                      showEditButton={!disableEdit}
+                      showStatus={!!processingCrossChainActionId}
+                      setIsTransactionDone={setIsTransactionDone}
+                    />
+                  )
+                }
+
+                return (
+                  <TransactionBlocksWrapper highlight={!!multiCallBlocks.length}>
+                    {
+                      !!multiCallBlocks.length && (
+                        <TransactionBlocksWrapperIcon>
+                          {ChainIcon}
+                        </TransactionBlocksWrapperIcon>
                       )
                     }
                     showEditButton={!disableEdit}
