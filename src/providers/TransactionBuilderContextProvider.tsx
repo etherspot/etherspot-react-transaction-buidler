@@ -738,28 +738,16 @@ const TransactionBuilderContextProvider = ({
                   )
                 }
                 {
-                  crossChainActionInProcessing?.batchTransactions?.length
-                    ? crossChainActionInProcessing.batchTransactions.map((block, i) => <ActionPreview
-                        key={`preview-${block.id}`}
-                        crossChainAction={block}
-                        showStatus={Number(crossChainActionInProcessing?.batchTransactions?.length) - 1 === i}
-                        setIsTransactionDone={setIsTransactionDone}
-                        hasSignedIn={processingCrossChainActionId ? true : false}
-                        onRemove={(isTransactionDone) ? () => setCrossChainActions([]
-                        )
-                          : undefined
-                        }
-                      />)
-                    : <ActionPreview
-                        key={`preview-${crossChainActionInProcessing.id}`}
-                        crossChainAction={crossChainActionInProcessing}
-                        setIsTransactionDone={setIsTransactionDone}
-                        hasSignedIn={processingCrossChainActionId ? true : false}
-                        onRemove={(isTransactionDone) ? () => setCrossChainActions([]
-                        )
-                          : undefined
-                        }
-                      />
+                  <ActionPreview
+                    key={`preview-${crossChainActionInProcessing.id}`}
+                    crossChainAction={crossChainActionInProcessing}
+                    setIsTransactionDone={setIsTransactionDone}
+                    hasSignedIn={processingCrossChainActionId ? true : false}
+                    onRemove={(isTransactionDone)
+                      ? () => setCrossChainActions([])
+                      : undefined
+                    }
+                  />
                 }
               </TransactionBlocksWrapper>
             )}
