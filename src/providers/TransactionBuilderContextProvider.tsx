@@ -414,7 +414,6 @@ const TransactionBuilderContextProvider = ({
             // Create new CrossChainAction with multicalls batched
             let chainTx: ICrossChainAction = { ...allActionList[0], batchTransactions: allActionList };
             newCrossChainActions = [...newCrossChainActions, chainTx];
-            console.log('log', newCrossChainActions);
           }
         } else if (
           foundChainIndex > -1 &&

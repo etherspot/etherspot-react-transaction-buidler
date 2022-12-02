@@ -443,7 +443,6 @@ const ActionPreview = ({
 	const theme: Theme = useTheme();
 
 	const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
-  console.log("onRemove", onRemove)
   const onCopy = (valueToCopy: string) => {
       navigator.clipboard.writeText(valueToCopy).then((res) => {
         alert("Copied!");

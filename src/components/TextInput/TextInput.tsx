@@ -125,7 +125,7 @@ const TextInput = ({
         onValueChange(res);
       }
     } catch (error) {
-      console.log(error)
+      //
     }
   };
 
