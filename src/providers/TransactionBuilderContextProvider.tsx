@@ -46,6 +46,7 @@ import {
   BridgeActionIcon,
   ChainIcon,
 } from '../components/TransactionBlock/Icons';
+import { DestinationWalletEnum } from '../enums/wallet.enum';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -1081,7 +1082,7 @@ const TransactionBuilderContextProvider = ({
                       {(
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
-                      ) && (
+                      ) && transactionBlock.values?.accountType === DestinationWalletEnum.Contract && (
                           <MultiCallButton
                             disabled={!!disabled}
                             onClick={async () => {
