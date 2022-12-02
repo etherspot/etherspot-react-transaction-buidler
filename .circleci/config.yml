@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Install dependencies
           command: npm install
-      - run: 
+      - run:
           name: Trigger BUIDLer demo dApp deployment
           command: |
             if [ "$CIRCLE_BRANCH" = "develop" ]; then
@@ -58,7 +58,7 @@ jobs:
           command: echo "ETHERSPOT_PROJECT_KEY=$ETHERSPOT_PROJECT_KEY" > ~/etherspot-react-transaction-buidler/.env
       - run:
           name: Build Etherpot React Transaction BUIDLer
-          command: npm run rollup:build
+          command: NODE_ENV=production npm run rollup:build
       - run:
           name: Publish package to npm
           command: npm publish --access=public
