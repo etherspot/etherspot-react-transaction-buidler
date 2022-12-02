@@ -343,6 +343,11 @@ const TransactionBuilderContextProvider = ({
     [crossChainActions],
   );
 
+  const isEstimationFailing = useMemo(
+    () => crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage),
+    [crossChainActions],
+  );
+
   const onValidate = useCallback(() => {
     let validationErrors: IValidationErrors = {};
     transactionBlocks.forEach((transactionBlock) => {
@@ -459,6 +464,7 @@ const TransactionBuilderContextProvider = ({
         web3Provider,
         crossChainAction,
         providerAddress,
+        accountAddress,
       );
 
       setCrossChainActions((current) =>
@@ -468,14 +474,14 @@ const TransactionBuilderContextProvider = ({
         }),
       );
     });
-  }, [crossChainActions, setCrossChainActions, getSdkForChainId, web3Provider, providerAddress]);
+  }, [crossChainActions, setCrossChainActions, getSdkForChainId, web3Provider, providerAddress, accountAddress]);
 
   useEffect(() => {
     estimateCrossChainActions();
   }, [estimateCrossChainActions]);
 
   const onSubmitClick = useCallback(async () => {
-    if (isSubmitting || isEstimatingCrossChainActions) return;
+    if (isSubmitting || isEstimatingCrossChainActions || isEstimationFailing) return;
     setIsSubmitting(true);
 
     if (!crossChainActions) {
@@ -550,7 +556,14 @@ const TransactionBuilderContextProvider = ({
         return;
       }
 
-      const estimateGas = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
+      const estimateGas = await estimateCrossChainAction(
+        getSdkForChainId(CHAIN_ID.POLYGON),
+        web3Provider,
+        crossChainAction.destinationCrossChainAction[0],
+        providerAddress,
+        accountAddress,
+        PolygonUSDCAddress
+      );
 
       const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
 
@@ -560,7 +573,14 @@ const TransactionBuilderContextProvider = ({
         return;
       }
 
-      const estimated = await estimateCrossChainAction(getSdkForChainId(CHAIN_ID.POLYGON), web3Provider, crossChainAction.destinationCrossChainAction[0], providerAddress, PolygonUSDCAddress);
+      const estimated = await estimateCrossChainAction(
+        getSdkForChainId(CHAIN_ID.POLYGON),
+        web3Provider,
+        crossChainAction.destinationCrossChainAction[0],
+        providerAddress,
+        accountAddress,
+        PolygonUSDCAddress
+      );
 
       crossChainAction = {
         ...crossChainAction,
@@ -591,7 +611,16 @@ const TransactionBuilderContextProvider = ({
       dispatchCrossChainActions(crossChainActionsToDispatch);
       setIsSubmitting(false);
     }
-  }, [dispatchCrossChainActions, crossChainActions, showAlertModal, isSubmitting, isEstimatingCrossChainActions]);
+  }, [
+    dispatchCrossChainActions,
+    crossChainActions,
+    showAlertModal,
+    isSubmitting,
+    isEstimatingCrossChainActions,
+    providerAddress,
+    accountAddress,
+    isEstimationFailing
+  ]);
 
   const setTransactionBlockValues = (
     transactionBlockId: string,
@@ -733,15 +762,12 @@ const TransactionBuilderContextProvider = ({
                       />
                 }
               </TransactionBlocksWrapper>
-            )
-            }
-            {
-              !isTransactionDone && (
-                <PrimaryButton disabled marginTop={30} marginBottom={30}>
-                  Processing...
-                </PrimaryButton>
-              )
-            }
+            )}
+            {!isTransactionDone && (
+              <PrimaryButton disabled marginTop={30} marginBottom={30}>
+                Processing...
+              </PrimaryButton>
+            )}
           </>
         )}
         {!!editingTransactionBlock && !processingCrossChainActionId && (
@@ -1285,11 +1311,12 @@ const TransactionBuilderContextProvider = ({
             <PrimaryButton
               marginTop={30}
               onClick={onSubmitClick}
-              disabled={isSubmitting || isEstimatingCrossChainActions}
+              disabled={isSubmitting || isEstimatingCrossChainActions || isEstimationFailing}
             >
               {isSubmitting && !isEstimatingCrossChainActions && 'Executing...'}
               {isEstimatingCrossChainActions && !isSubmitting && 'Estimating...'}
-              {!isSubmitting && !isEstimatingCrossChainActions && 'Execute'}
+              {!isSubmitting && !isEstimatingCrossChainActions && !isEstimationFailing && 'Execute'}
+              {!isSubmitting && !isEstimatingCrossChainActions && isEstimationFailing && 'Estimation failed'}
             </PrimaryButton>
             <br />
             <SecondaryButton marginTop={10} onClick={() => setCrossChainActions([])} disabled={isSubmitting}>

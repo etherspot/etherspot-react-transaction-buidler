@@ -470,11 +470,9 @@ const ActionPreview = ({
 
     const gasCostNumericString = ethers.utils.formatUnits(
       estimated.gasCost,
-      nativeAssetPerChainId[chainId].decimals
+      nativeAssetPerChainId[chainId].decimals,
     );
-    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${
-      nativeAssetPerChainId[chainId].symbol
-    }`;
+    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol}`;
     if (!estimated.usdPrice) return gasCostFormatted;
 
     return formatAmountDisplay(
@@ -692,7 +690,7 @@ const ActionPreview = ({
         {!!route && (
           <TransactionAction>
             <Label>Route</Label>
-            <RouteOption route={route} showActions />
+            <RouteOption route={route} cost={cost} showActions />
           </TransactionAction>
         )}
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}  hasSignedIn={hasSignedIn} />}
@@ -703,10 +701,8 @@ const ActionPreview = ({
   const previewSend = (preview: SendAssetActionPreview | null, network: Chain | undefined, chainTitle: string) => {
     if (!preview) return null;
 
-    const { asset, chainId, fromAddress } = preview;
-    const amount = formatAmountDisplay(
-      ethers.utils.formatUnits(asset.amount, asset.decimals)
-    );
+    const { asset, fromAddress } = preview;
+    const amount = formatAmountDisplay(ethers.utils.formatUnits(asset.amount, asset.decimals));
     const receiverAddress = preview.receiverAddress as string;
 
     return (

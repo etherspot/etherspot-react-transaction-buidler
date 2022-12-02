@@ -31,7 +31,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [dispatchId, setDispatchId] = useState<string | null>(null);
 
-  const { getSdkForChainId, web3Provider, providerAddress } = useEtherspot();
+  const { getSdkForChainId, web3Provider, providerAddress, accountAddress } = useEtherspot();
   const { showAlertModal } = useTransactionBuilderModal();
 
   const dispatchCrossChainActions = useCallback(
@@ -317,6 +317,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
               web3Provider,
               crossChainAction,
               providerAddress,
+              accountAddress,
             );
             return { ...crossChainAction, estimated };
           },
@@ -341,7 +342,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     setTimeout(() => {
       restoreProcessing();
     }, 3000);
-  }, [getSdkForChainId, web3Provider, providerAddress]);
+  }, [getSdkForChainId, web3Provider, providerAddress, accountAddress]);
 
   useEffect(() => {
     const validPendingCrossChainActionsWithBatches = crossChainActions.filter(

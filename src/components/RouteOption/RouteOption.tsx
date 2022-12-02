@@ -18,6 +18,7 @@ interface RouteOptionProps {
   route?: Route;
   isChecked?: boolean;
   showActions?: boolean;
+  cost?: string;
 }
 
 const OfferDetails = styled.div`
@@ -68,6 +69,7 @@ const RouteOption = ({
   route,
   isChecked,
   showActions,
+  cost,
 }: RouteOptionProps) => {
   const theme: Theme = useTheme();
 
@@ -102,7 +104,7 @@ const RouteOption = ({
             {!!route?.gasCostUSD && (
               <>
                 <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>Gas price</Text>
-                <Text size={14} marginRight={22} medium inline>{formatAmountDisplay(route.gasCostUSD, '$')}</Text>
+                <Text size={14} marginRight={22} medium inline>{cost}</Text>
               </>
             )}
             {!!firstStep?.estimate?.executionDuration && (
