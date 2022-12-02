@@ -256,6 +256,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
               try {
                 const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: batchHash });
                 transactionHash = submittedBatch?.transaction?.hash;
+                if (!submittedBatch) status = CROSS_CHAIN_ACTION_STATUS.FAILED;
               } catch (e) {
                 //
               }
@@ -339,9 +340,14 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
     if (!hasPending) return;
 
-    setTimeout(() => {
+    const restoreProcessingTimeout = setTimeout(() => {
       restoreProcessing();
     }, 3000);
+
+    return () => {
+      if (!restoreProcessingTimeout) return;
+      clearTimeout(restoreProcessingTimeout);
+    }
   }, [getSdkForChainId, web3Provider, providerAddress, accountAddress]);
 
   useEffect(() => {
