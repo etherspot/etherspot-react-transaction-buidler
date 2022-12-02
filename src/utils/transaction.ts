@@ -918,6 +918,7 @@ export const estimateCrossChainAction = async (
   web3Provider: WalletProviderLike | Web3WalletProvider | null,
   crossChainAction: ICrossChainAction,
   providerAddress?: string | null,
+  accountAddress?: string | null,
   feeToken?: string,
 ): Promise<ICrossChainActionEstimation> => {
   let gasCost = null;
@@ -927,6 +928,31 @@ export const estimateCrossChainAction = async (
 
   if (!sdk || (crossChainAction.useWeb3Provider && !web3Provider)) {
     return { errorMessage: 'Failed to estimate!' };
+  }
+
+  let feeAssetBalanceBN = ethers.BigNumber.from(0);
+  try {
+    const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
+    const { items: balances } = await sdk.getAccountBalances({
+      account: balancesForAddress as string,
+      tokens: feeToken ? [feeToken] : undefined,
+      chainId: crossChainAction.chainId,
+    });
+
+    const feeAssetBalance = balances.find((balance) => feeToken && addressesEqual(balance.token, feeToken) || balance.token === null);
+    if (feeAssetBalance) feeAssetBalanceBN = feeAssetBalance.balance;
+
+    crossChainAction.transactions.map((transactionsToSend) => {
+      const { value } = transactionsToSend;
+      if (!value) return;
+
+      // sub value from balance if native asset
+      if (transactionsToSend.value && !feeToken) feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
+
+      // TODO: when fee token added sub value from balance if fee token and tx includes fee token transfer
+    });
+  } catch (e) {
+    //
   }
 
   if (crossChainAction.useWeb3Provider) {
@@ -952,12 +978,6 @@ export const estimateCrossChainAction = async (
         errorMessage = e?.message;
       }
     }
-
-    try {
-      usdPrice = await getNativeAssetPriceInUsd(crossChainAction.chainId);
-    } catch (e) {
-      //
-    }
   } else {
     try {
       if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
@@ -981,6 +1001,10 @@ export const estimateCrossChainAction = async (
         errorMessage = e?.message;
       }
     }
+  }
+
+  if (feeAssetBalanceBN.isZero() || (gasCost && feeAssetBalanceBN.lt(gasCost))) {
+    return { errorMessage: 'Not enough gas!' };
   }
 
   try {

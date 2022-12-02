@@ -62,6 +62,7 @@ import {
   BridgeActionIcon,
   ChainIcon,
 } from '../components/TransactionBlock/Icons';
+import { DestinationWalletEnum } from '../enums/wallet.enum';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -380,6 +381,11 @@ const TransactionBuilderContextProvider = ({
     [crossChainActions]
   );
 
+  const isEstimationFailing = useMemo(
+    () => crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage),
+    [crossChainActions],
+  );
+
   const onValidate = useCallback(() => {
     let validationErrors: IValidationErrors = {};
     transactionBlocks.forEach((transactionBlock) => {
@@ -535,7 +541,8 @@ const TransactionBuilderContextProvider = ({
         getSdkForChainId(crossChainAction.chainId),
         web3Provider,
         crossChainAction,
-        providerAddress
+        providerAddress,
+        accountAddress,
       );
 
       setCrossChainActions((current) =>
@@ -563,7 +570,7 @@ const TransactionBuilderContextProvider = ({
   }, [estimateCrossChainActions]);
 
   const onSubmitClick = useCallback(async () => {
-    if (isSubmitting || isEstimatingCrossChainActions) return;
+    if (isSubmitting || isEstimatingCrossChainActions || isEstimationFailing) return;
     setIsSubmitting(true);
 
     if (!crossChainActions) {
@@ -649,6 +656,7 @@ const TransactionBuilderContextProvider = ({
         web3Provider,
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
+        accountAddress,
         PolygonUSDCAddress
       );
 
@@ -674,6 +682,7 @@ const TransactionBuilderContextProvider = ({
         web3Provider,
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
+        accountAddress,
         PolygonUSDCAddress
       );
 
@@ -711,6 +720,9 @@ const TransactionBuilderContextProvider = ({
     showAlertModal,
     isSubmitting,
     isEstimatingCrossChainActions,
+    providerAddress,
+    accountAddress,
+    isEstimationFailing
   ]);
 
   const setTransactionBlockValues = (
@@ -1607,13 +1619,12 @@ const TransactionBuilderContextProvider = ({
             <PrimaryButton
               marginTop={30}
               onClick={onSubmitClick}
-              disabled={isSubmitting || isEstimatingCrossChainActions}
+              disabled={isSubmitting || isEstimatingCrossChainActions || isEstimationFailing}
             >
               {isSubmitting && !isEstimatingCrossChainActions && 'Executing...'}
-              {isEstimatingCrossChainActions &&
-                !isSubmitting &&
-                'Estimating...'}
-              {!isSubmitting && !isEstimatingCrossChainActions && 'Execute'}
+              {isEstimatingCrossChainActions && !isSubmitting && 'Estimating...'}
+              {!isSubmitting && !isEstimatingCrossChainActions && !isEstimationFailing && 'Execute'}
+              {!isSubmitting && !isEstimatingCrossChainActions && isEstimationFailing && 'Estimation failed'}
             </PrimaryButton>
             <br />
             <SecondaryButton
