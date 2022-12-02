@@ -168,10 +168,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     const { transactionHash, batchHash } = result;
 
     const updatedCrossChainActions = crossChainActions.map((crossChainAction) => {
-      if (
-        crossChainAction.id !== firstUnsentCrossChainAction.id &&
-        firstUnsentCrossChainAction.multiCallData?.id !== crossChainAction.multiCallData?.id
-      ) return crossChainAction;
+      if (crossChainAction.id !== firstUnsentCrossChainAction.id
+        || firstUnsentCrossChainAction.multiCallData?.id !== crossChainAction.multiCallData?.id) {
+        return crossChainAction;
+      }
 
       let isUnsentTransactionUpdated = false;
       const updatedTransactions = crossChainAction.transactions.reduce(
@@ -203,6 +203,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     });
 
     setCrossChainActions(updatedCrossChainActions);
+    setProcessingCrossChainActionId(null);
   }, [
     crossChainActions,
     getSdkForChainId,
@@ -256,6 +257,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
               try {
                 const submittedBatch = await sdkForChain.getGatewaySubmittedBatch({ hash: batchHash });
                 transactionHash = submittedBatch?.transaction?.hash;
+                if (!submittedBatch) status = CROSS_CHAIN_ACTION_STATUS.FAILED;
               } catch (e) {
                 //
               }
@@ -339,9 +341,14 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
     if (!hasPending) return;
 
-    setTimeout(() => {
+    const restoreProcessingTimeout = setTimeout(() => {
       restoreProcessing();
     }, 3000);
+
+    return () => {
+      if (!restoreProcessingTimeout) return;
+      clearTimeout(restoreProcessingTimeout);
+    }
   }, [getSdkForChainId, web3Provider, providerAddress, accountAddress]);
 
   useEffect(() => {

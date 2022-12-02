@@ -478,7 +478,6 @@ const TransactionBuilderContextProvider = ({
               batchTransactions: allActionList,
             };
             newCrossChainActions = [...newCrossChainActions, chainTx];
-            console.log('log', newCrossChainActions);
           }
         } else if (
           foundChainIndex > -1 &&
