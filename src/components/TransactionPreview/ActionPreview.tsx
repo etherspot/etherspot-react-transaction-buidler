@@ -193,9 +193,9 @@ const TransactionStatus = ({
     // show cross chain tx explorer link if bridge action
     if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
       const explorerLink = crossChainAction?.preview?.route?.steps?.[0]?.tool === 'connext'
-        ? 'https://connextscan.io/tx'
-        : 'https://socketscan.io/tx';
-      window.open(`${explorerLink}/${transactionHash}`, '_blank');
+        ? `https://connextscan.io/tx/${transactionHash}?source=search`
+        : `https://socketscan.io/tx/${transactionHash}`
+      window.open(explorerLink, '_blank');
       return;
     }
 
@@ -262,7 +262,7 @@ const TransactionStatus = ({
       {statusPreviewTransactions.map((transaction, index) => {
         const transactionStatus =
           transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
-        
+
         const showAsApproval =
         crossChainAction.useWeb3Provider &&
           isERC20ApprovalTransactionData(transaction.data as string);
@@ -593,9 +593,9 @@ const ActionPreview = ({
 						)}
 					</ValueWrapper>
 				</TransactionAction>
-				<TransactionStatus 
-          crossChainAction={crossChainAction} 
-          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} 
+				<TransactionStatus
+          crossChainAction={crossChainAction}
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
           hasSignedIn={hasSignedIn}
           />
 			</Card>
