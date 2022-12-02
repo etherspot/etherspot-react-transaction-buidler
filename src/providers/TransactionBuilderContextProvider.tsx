@@ -79,7 +79,10 @@ export interface IMulticallBlock {
   hideFor?: ITransactionBlockType;
 }
 
-const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
+const TransactionBlockListItemWrapper = styled.div<{
+  disabled?: boolean;
+  removeMarginBottom?: boolean;
+}>`
   ${({ theme, disabled }) =>
     disabled && `color: ${theme.color.text.cardDisabled}`};
   text-align: left;
@@ -97,6 +100,8 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
       text-decoration: underline;
     }
   `}
+
+  ${({ removeMarginBottom }) => removeMarginBottom && `margin-bottom: 0;`};
 `;
 
 const TopNavigation = styled.div`
@@ -340,6 +345,7 @@ const TransactionBuilderContextProvider = ({
   const [editingTransactionBlock, setEditingTransactionBlock] =
     useState<ITransactionBlock | null>(null);
   const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false);
+  const [showHistoryLink, setShowHistoryLink] = useState<boolean>(false);
   let multiCallList: string[] = [];
 
   const theme: Theme = useTheme();
@@ -714,6 +720,7 @@ const TransactionBuilderContextProvider = ({
       dispatchCrossChainActions(crossChainActionsToDispatch);
       setIsSubmitting(false);
     }
+    setShowHistoryLink(true);
   }, [
     dispatchCrossChainActions,
     crossChainActions,
@@ -839,6 +846,24 @@ const TransactionBuilderContextProvider = ({
         />
       </TopNavigation>
       <div onClick={hideMenu}>
+        {showHistoryLink && (
+          <Card
+            onCloseButtonClick={() => setShowHistoryLink(false)}
+            showCloseButton
+            marginBottom={20}
+          >
+            <TransactionBlockListItemWrapper
+              onClick={() => {
+                hideMenu();
+                showModal(<History />);
+                setShowHistoryLink(false);
+              }}
+              removeMarginBottom
+            >
+              &bull; {'View History'}
+            </TransactionBlockListItemWrapper>
+          </Card>
+        )}
         {!!processingCrossChainActionId && (
           <>
             {crossChainActionInProcessing && (
@@ -1187,6 +1212,7 @@ const TransactionBuilderContextProvider = ({
 
                 return (
                   <TransactionBlocksWrapper
+                    key={`tx-wrapper-${transactionBlock.id}`}
                     highlight={!!multiCallBlocks?.length}
                   >
                     {!!multiCallBlocks?.length ? (
@@ -1596,6 +1622,7 @@ const TransactionBuilderContextProvider = ({
 
                 return (
                   <TransactionBlocksWrapper
+                    key={`preview-wrapper-${crossChainAction.id}`}
                     highlight={!!multiCallBlocks.length}
                   >
                     {!!multiCallBlocks.length && (

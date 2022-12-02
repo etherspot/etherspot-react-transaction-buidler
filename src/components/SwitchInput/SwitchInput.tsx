@@ -10,11 +10,13 @@ const Label = styled.div`
   font-size: 14px;
 `;
 
-const Wrapper = styled.div<{ inline?: boolean; disabled: boolean; }>`
+const Wrapper = styled.div<{ inline?: boolean; disabled: boolean }>`
   margin-bottom: 18px;
   width: 100%;
 
-  ${({ inline }) => inline && `
+  ${({ inline }) =>
+    inline &&
+    `
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -25,8 +27,10 @@ const Wrapper = styled.div<{ inline?: boolean; disabled: boolean; }>`
       margin-right: 8px;
     }
   `}
-  
-  ${({ disabled }) => disabled && `
+
+  ${({ disabled }) =>
+    disabled &&
+    `
     opacity: 0.3;
   `}
 `;
@@ -42,8 +46,12 @@ const InputWrapper = styled.div`
   flex: 1;
 `;
 
-const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percentageWidth: number }>`
-  font-family: "PTRootUIWebMedium", sans-serif;
+const SwitchOption = styled.div<{
+  isActive: boolean;
+  disabled: boolean;
+  percentageWidth: number;
+}>`
+  font-family: 'PTRootUIWebMedium', sans-serif;
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
   background: ${({ theme }) => theme.color.background.switchInputInactiveTab};
@@ -52,7 +60,10 @@ const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percenta
   min-height: 34px;
   line-height: 34px;
 
-  ${({ isActive, disabled }) => !isActive && !disabled && `
+  ${({ isActive, disabled }) =>
+    !isActive &&
+    !disabled &&
+    `
     cursor: pointer;
 
     &:hover {
@@ -60,7 +71,9 @@ const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percenta
     }
   `}
 
-  ${({ isActive, theme }) => isActive && `
+  ${({ isActive, theme }) =>
+    isActive &&
+    `
     border-radius: 6px;
     box-shadow: 0.5px 0 2px 0 rgba(107, 107, 107, 0.44);
     color: ${theme.color.text.switchInputActiveTab};
@@ -99,6 +112,7 @@ const SwitchInput = ({
       <InputWrapper>
         {options.map((option) => (
           <SwitchOption
+            key={`switch-option-${option.title}`}
             disabled={disabled}
             isActive={option.value === selectedOption.value}
             onClick={() => !disabled && onChange && onChange(option)}
@@ -111,6 +125,6 @@ const SwitchInput = ({
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
     </Wrapper>
   );
-}
+};
 
 export default SwitchInput;
