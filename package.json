@@ -33,7 +33,7 @@
   },
   "scripts": {
     "prepare": "npm run rollup:build",
-    "postinstall: "rm -rf node_modules/react node_modfules/react-dom"
+    "postinstall: "rm -rf node_modules/react node_modfules/react-dom",
     "rollup:build": "NODE_OPTIONS=--max-old-space-size=8192 rollup -c",
     "rollup:watch": "rollup -c -w"
   },
