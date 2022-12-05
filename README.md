@@ -56,7 +56,6 @@ You can set up BUIDLER locally and develop new features for it. Please follow th
 - First, check out the Etherspot BUIDLER Example dapp [here](https://github.com/etherspot/etherspot-react-transaction-buidler-demo-dapp)
 - Then, checkout this repository
 - In this repository directory: run `npm install && npm link`
-- In this repository directory: remove `react` and `react-dom` from `node_modules`
 - In this repository directory:: run `npm run rollup:watch` - this project is now being watched for code changes
 - In this the Example dapp directory: run `npm install && npm link @etherspot/react-transaction-buidler`
 - In this the Example dapp directory: run `npm run start`
