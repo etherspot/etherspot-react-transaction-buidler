@@ -59,7 +59,7 @@ You can set up BUIDLER locally and develop new features for it. Please follow th
 - In this repository directory: remove `react` and `react-dom` from `node_modules`
 - In this repository directory:: run `npm run rollup:watch` - this project is now being watched for code changes
 - In this the Example dapp directory: run `npm install && npm link @etherspot/react-transaction-buidler`
-- In this the Example dapp directory: run npm run start`
+- In this the Example dapp directory: run `npm run start`
 
 You can now make code changes in this repository and changes will be reflected in the Example dapp.
 
