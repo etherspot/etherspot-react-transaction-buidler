@@ -43,12 +43,25 @@ import {
 /**
  * This is all that is needed to get started.
  * To customise this, see the possible props
- * you can pass in. the docs.
+ * you can pass in the docs.
  */
 function RenderEtherspot(props) {
   return <Etherspot />;
 }
 ```
+
+## Developing locally
+You can set up BUIDLER locally and develop new features for it. Please follow the instructures below:
+
+- First, check out the Etherspot BUIDLER Example dapp [here](https://github.com/etherspot/etherspot-react-transaction-buidler-demo-dapp)
+- Then, checkout this repository
+- In this repository directory: run `npm install && npm link`
+- In this repository directory:: run `npm run rollup:watch` - this project is now being watched for code changes
+- In this the Example dapp directory: run `npm install && npm link @etherspot/react-transaction-buidler`
+- In this the Example dapp directory: run `npm run start`
+
+You can now make code changes in this repository and changes will be reflected in the Example dapp.
+
 ## Contributions
 
 Follow [guide](./CONTRIBUTING.md)
