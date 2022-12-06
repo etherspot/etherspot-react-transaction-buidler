@@ -476,6 +476,16 @@ const TransactionBuilderContextProvider = ({
     });
   }, [crossChainActions, setCrossChainActions, getSdkForChainId, web3Provider, providerAddress, accountAddress]);
 
+  const setCrossChainActionGasTokenAddress = async (
+    crossChainActionId: string,
+    gasTokenAddress: string | null,
+  ) => {
+    setCrossChainActions((current) => current.map((crossChainAction) => {
+      if (crossChainAction.id !== crossChainActionId) return crossChainAction;
+      return { ...crossChainAction, gasTokenAddress };
+    }));
+  }
+
   useEffect(() => {
     estimateCrossChainActions();
   }, [estimateCrossChainActions]);
@@ -668,6 +678,7 @@ const TransactionBuilderContextProvider = ({
       resetTransactionBlockFieldValidationError,
       resetAllTransactionBlockFieldValidationError,
       setTransactionBlockFieldValidationError,
+      setCrossChainActionGasTokenAddress,
     }),
     [],
   );
