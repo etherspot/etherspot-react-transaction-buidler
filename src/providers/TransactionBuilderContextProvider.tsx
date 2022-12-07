@@ -47,6 +47,7 @@ import {
   ChainIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
+import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -482,7 +483,7 @@ const TransactionBuilderContextProvider = ({
   ) => {
     setCrossChainActions((current) => current.map((crossChainAction) => {
       if (crossChainAction.id !== crossChainActionId) return crossChainAction;
-      return { ...crossChainAction, gasTokenAddress };
+      return { ...crossChainAction, gasTokenAddress, estimated: null, isEstimating: false };
     }));
   }
 
@@ -508,7 +509,6 @@ const TransactionBuilderContextProvider = ({
     }
 
     if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
-      const PolygonUSDCAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
       let crossChainAction = crossChainActions[0];
 
       if (!crossChainAction.receiveAmount) {
@@ -533,6 +533,7 @@ const TransactionBuilderContextProvider = ({
         : await submitEtherspotAndWaitForTransactionHash(
           getSdkForChainId(crossChainAction.chainId) as Sdk,
           crossChainAction.transactions,
+          crossChainAction.gasTokenAddress ?? undefined,
         );
       if (
         result?.errorMessage ||
@@ -572,7 +573,6 @@ const TransactionBuilderContextProvider = ({
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
         accountAddress,
-        PolygonUSDCAddress
       );
 
       const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
@@ -589,7 +589,6 @@ const TransactionBuilderContextProvider = ({
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
         accountAddress,
-        PolygonUSDCAddress
       );
 
       crossChainAction = {
@@ -599,13 +598,16 @@ const TransactionBuilderContextProvider = ({
         chainId: CHAIN_ID.POLYGON,
       }
 
-      result = await submitEtherspotAndWaitForTransactionHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.transactions, PolygonUSDCAddress);
+      result = await submitEtherspotAndWaitForTransactionHash(
+        getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+        crossChainAction.transactions,
+        POLYGON_USDC_CONTRACT_ADDRESS,
+      );
 
       if (
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        // showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         setIsSubmitting(false);
         return;
       }
@@ -1231,6 +1233,7 @@ const TransactionBuilderContextProvider = ({
                             : await submitEtherspotTransactionsBatch(
                               getSdkForChainId(crossChainAction.chainId) as Sdk,
                               crossChainAction.transactions,
+                              crossChainAction.gasTokenAddress ?? undefined,
                             );
 
                         if (
@@ -1238,7 +1241,6 @@ const TransactionBuilderContextProvider = ({
                           (!result?.transactionHash?.length && !result?.batchHash?.length)
                         ) {
                           setIsSigningAction(false);
-                          // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
                           return;
                         }
 

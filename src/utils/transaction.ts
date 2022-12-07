@@ -40,6 +40,7 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
+import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export const klimaDaoStaking = async (
   amount: string,
@@ -196,7 +197,7 @@ export const buildCrossChainAction = async (
             toChainId: CHAIN_ID.POLYGON, //Polygon
             fromAmount: amountBN,
             fromTokenAddress: fromAssetAddress,
-            toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // USDC on Polygon
+            toTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS, // USDC on Polygon
             toAddress: sdk.state.accountAddress,
           });
           const bestRoute = routes.items.reduce((best: any, route) => {
@@ -324,6 +325,7 @@ export const buildCrossChainAction = async (
               estimated: null,
               useWeb3Provider: false,
               destinationCrossChainAction: [],
+              gasTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS
             }],
           };
 
@@ -692,8 +694,6 @@ export const submitEtherspotTransactionsBatch = async (
       await sdk.batchExecuteAccountTransaction({ to, value, data });
     }
 
-    await sdk.estimateGatewayBatch();
-
     await sdk.estimateGatewayBatch({ feeToken });
     const result = await sdk.submitGatewayBatch();
     ({ hash: batchHash } = result);
@@ -919,7 +919,6 @@ export const estimateCrossChainAction = async (
   crossChainAction: ICrossChainAction,
   providerAddress?: string | null,
   accountAddress?: string | null,
-  feeToken?: string,
 ): Promise<ICrossChainActionEstimation> => {
   let gasCost = null;
   let usdPrice = null;
@@ -935,11 +934,15 @@ export const estimateCrossChainAction = async (
     const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
     const { items: balances } = await sdk.getAccountBalances({
       account: balancesForAddress as string,
-      tokens: feeToken ? [feeToken] : undefined,
+      tokens: crossChainAction?.gasTokenAddress ? [crossChainAction.gasTokenAddress] : undefined,
       chainId: crossChainAction.chainId,
     });
 
-    const feeAssetBalance = balances.find((balance) => feeToken && addressesEqual(balance.token, feeToken) || balance.token === null);
+    const feeAssetBalance = balances.find((
+      balance,
+    ) => (crossChainAction.gasTokenAddress && addressesEqual(balance.token, crossChainAction.gasTokenAddress))
+      || balance.token === null);
+
     if (feeAssetBalance) feeAssetBalanceBN = feeAssetBalance.balance;
 
     crossChainAction.transactions.map((transactionsToSend) => {
@@ -947,7 +950,7 @@ export const estimateCrossChainAction = async (
       if (!value) return;
 
       // sub value from balance if native asset
-      if (transactionsToSend.value && !feeToken) feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
+      if (transactionsToSend.value && !crossChainAction.gasTokenAddress) feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
 
       // TODO: when fee token added sub value from balance if fee token and tx includes fee token transfer
     });
@@ -992,9 +995,11 @@ export const estimateCrossChainAction = async (
         await sdk.batchExecuteAccountTransaction({ to, value, data });
       }
 
-      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
+      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({
+        feeToken: crossChainAction.gasTokenAddress ?? undefined,
+      });
       gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
-      feeAmount = feeToken ? gatewayBatchEstimation.feeAmount : null;
+      feeAmount = crossChainAction.gasTokenAddress ? gatewayBatchEstimation.feeAmount : null;
     } catch (e) {
       errorMessage = parseEtherspotErrorMessageIfAvailable(e);
       if (!errorMessage && e instanceof Error) {

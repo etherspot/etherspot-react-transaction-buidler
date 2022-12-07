@@ -10,6 +10,7 @@ import Card from "../Card";
 import { ClickableText, Text } from "../Text";
 import RouteOption from "../RouteOption";
 import { CombinedRoundedImages, RoundedImage } from "../Image";
+import GasTokenSelect from '../GasTokenSelect';
 
 // Utils
 import {
@@ -584,6 +585,7 @@ const ActionPreview = ({
 						)}
 					</ValueWrapper>
 				</TransactionAction>
+        <GasTokenSelect crossChainAction={crossChainAction} />
 				<TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
@@ -685,6 +687,7 @@ const ActionPreview = ({
             <RouteOption route={route} cost={cost} showActions />
           </TransactionAction>
         )}
+        <GasTokenSelect crossChainAction={crossChainAction} />
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
@@ -698,55 +701,58 @@ const ActionPreview = ({
     const receiverAddress = preview.receiverAddress as string;
 
     return (
-      <TransactionAction>
-        <Label>You send</Label>
-        <ValueWrapper>
-          <CombinedRoundedImages
-            title={asset.symbol}
-            url={asset.iconUrl}
-            smallImageTitle={chainTitle}
-            smallImageUrl={network?.iconUrl}
-          />
-          <ValueBlock>
-            <Text size={16} marginBottom={1} medium block>
-              {amount} {asset.symbol}
-            </Text>
-            <Text size={12}>On {chainTitle}</Text>
-          </ValueBlock>
-          <ValueBlock>
-            <Text
-              size={12}
-              marginBottom={2}
-              color={theme.color?.text?.innerLabel}
-              medium
-              block
-            >
-              Gas price
-            </Text>
+      <>
+        <TransactionAction>
+          <Label>You send</Label>
+          <ValueWrapper>
+            <CombinedRoundedImages
+              title={asset.symbol}
+              url={asset.iconUrl}
+              smallImageTitle={chainTitle}
+              smallImageUrl={network?.iconUrl}
+            />
+            <ValueBlock>
+              <Text size={16} marginBottom={1} medium block>
+                {amount} {asset.symbol}
+              </Text>
+              <Text size={12}>On {chainTitle}</Text>
+            </ValueBlock>
+            <ValueBlock>
+              <Text
+                size={12}
+                marginBottom={2}
+                color={theme.color?.text?.innerLabel}
+                medium
+                block
+              >
+                Gas price
+              </Text>
+              <Text size={16} medium>
+                {cost ?? "N/A"}
+              </Text>
+            </ValueBlock>
+          </ValueWrapper>
+          <ValueWrapper marginTop={8}>
             <Text size={16} medium>
-              {cost ?? "N/A"}
+              {!!fromAddress && (
+                <>
+                  From &nbsp;
+                  <ClickableText onClick={() => onCopy(fromAddress)}>
+                    {humanizeHexString(fromAddress)}
+                  </ClickableText>
+                  &nbsp;
+                </>
+              )}
+              {fromAddress ? "to" : "To"}
+              &nbsp;
+              <ClickableText onClick={() => onCopy(receiverAddress)}>
+                {humanizeHexString(receiverAddress)}
+              </ClickableText>
             </Text>
-          </ValueBlock>
-        </ValueWrapper>
-        <ValueWrapper marginTop={8}>
-          <Text size={16} medium>
-            {!!fromAddress && (
-              <>
-                From &nbsp;
-                <ClickableText onClick={() => onCopy(fromAddress)}>
-                  {humanizeHexString(fromAddress)}
-                </ClickableText>
-                &nbsp;
-              </>
-            )}
-            {fromAddress ? "to" : "To"}
-            &nbsp;
-            <ClickableText onClick={() => onCopy(receiverAddress)}>
-              {humanizeHexString(receiverAddress)}
-            </ClickableText>
-          </Text>
-        </ValueWrapper>
-      </TransactionAction>
+          </ValueWrapper>
+        </TransactionAction>
+        <GasTokenSelect crossChainAction={crossChainAction} />
+      </>
     );
   }
 
@@ -932,6 +938,7 @@ const ActionPreview = ({
               );
             })}
           </RouteWrapper>
+          <GasTokenSelect crossChainAction={crossChainAction} />
         </TransactionAction>
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
