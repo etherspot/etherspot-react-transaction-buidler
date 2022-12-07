@@ -85,7 +85,7 @@ const GasTokenSelect = ({
 }: GasTokenSelectProps) => {
   const [showOptions, setShowOptions] = useState(false);
   const [gasAssets, setGasAssets] = useState<IAssetWithBalance[]>([]);
-  const { setTransactionBlockValues, setCrossChainActionGasTokenAddress } = useTransactionBuilder();
+  const { setCrossChainActionGasTokenAddress } = useTransactionBuilder();
   const { getGasAssetsForChainId } = useEtherspot();
   const theme: Theme = useTheme();
 

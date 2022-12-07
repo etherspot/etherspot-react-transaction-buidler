@@ -170,6 +170,7 @@ interface TransactionPreviewInterface {
   showSignButton?: boolean;
   setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
+  showGasAssetSelect?: boolean;
 }
 
 const TransactionStatus = ({
@@ -433,6 +434,7 @@ const ActionPreview = ({
   showEditButton = false,
   setIsTransactionDone,
   showStatus = true,
+  showGasAssetSelect = false,
 }: TransactionPreviewInterface) => {
 	const { accountAddress, providerAddress } = useEtherspot();
 	const theme: Theme = useTheme();
@@ -585,7 +587,7 @@ const ActionPreview = ({
 						)}
 					</ValueWrapper>
 				</TransactionAction>
-        <GasTokenSelect crossChainAction={crossChainAction} />
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
 				<TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
@@ -687,7 +689,7 @@ const ActionPreview = ({
             <RouteOption route={route} cost={cost} showActions />
           </TransactionAction>
         )}
-        <GasTokenSelect crossChainAction={crossChainAction} />
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );
@@ -751,7 +753,7 @@ const ActionPreview = ({
             </Text>
           </ValueWrapper>
         </TransactionAction>
-        <GasTokenSelect crossChainAction={crossChainAction} />
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
       </>
     );
   }
@@ -938,7 +940,7 @@ const ActionPreview = ({
               );
             })}
           </RouteWrapper>
-          <GasTokenSelect crossChainAction={crossChainAction} />
+          {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         </TransactionAction>
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>

@@ -1287,6 +1287,7 @@ const TransactionBuilderContextProvider = ({
                       showEditButton={!disableEdit}
                       showStatus={!!processingCrossChainActionId}
                       setIsTransactionDone={setIsTransactionDone}
+                      showGasAssetSelect
                     />
                   )
                 }
