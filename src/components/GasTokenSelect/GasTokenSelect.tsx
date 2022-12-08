@@ -16,10 +16,9 @@ import {
 } from '../../hooks';
 import { ICrossChainAction } from '../../types/crossChainAction';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
-import { addressesEqual } from 'etherspot';
 import { formatAmountDisplay } from '../../utils/common';
 import { RoundedImage } from '../Image';
-import { isZeroAddress } from '../../utils/validation';
+import { isZeroAddress, addressesEqual } from '../../utils/validation';
 import { Text } from '../Text';
 import { Theme } from '../../utils/theme';
 
