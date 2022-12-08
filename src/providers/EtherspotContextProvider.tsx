@@ -353,10 +353,6 @@ const EtherspotContextProvider = ({
     } catch (e) {
       //
     }
-    try {
-    } catch (e) {
-      //
-    }
 
     return gasAssets;
   }, [getSdkForChainId, getSupportedAssetsWithBalancesForChainId]);
