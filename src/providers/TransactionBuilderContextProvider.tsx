@@ -389,6 +389,12 @@ const TransactionBuilderContextProvider = ({
           break;
         }
 
+        // no multicall/batching for key based
+        if (result?.crossChainAction?.useWeb3Provider) {
+          newCrossChainActions = [...newCrossChainActions, result.crossChainAction];
+          continue;
+        }
+
         const action = result.crossChainAction;
         const foundChainIndex = newCrossChainActions.findIndex(
           (x) => x?.chainId === action.chainId && x?.type === action.type && !x?.multiCallData,
