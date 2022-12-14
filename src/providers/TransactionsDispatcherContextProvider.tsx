@@ -158,6 +158,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       : await submitEtherspotTransactionsBatch(
           getSdkForChainId(firstUnsentCrossChainAction.chainId) as Sdk,
           transactionsToSend,
+          firstUnsentCrossChainAction.gasTokenAddress ?? undefined,
         );
 
     if (result?.errorMessage || (!result?.transactionHash?.length && !result?.batchHash?.length)) {

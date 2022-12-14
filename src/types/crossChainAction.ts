@@ -97,6 +97,7 @@ export type ICrossChainAction = {
   transactions: ICrossChainActionTransaction[];
   isEstimating: boolean;
   estimated: ICrossChainActionEstimation | null;
+  gasTokenAddress?: string | null;
   useWeb3Provider?: boolean;
   batchTransactions?: ICrossChainAction[];
   batchHash?: string;

@@ -25,6 +25,7 @@ export interface EtherspotContextData {
     totalWorthPerAddress: ITotalWorthPerAddress;
     logout: () => void;
     smartWalletOnly: boolean;
+    getGasAssetsForChainId: (chainId: number, sender?: string) => Promise<IAssetWithBalance[]>;
   }
 }
 
