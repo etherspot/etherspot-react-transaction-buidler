@@ -673,7 +673,7 @@ export const buildCrossChainAction = async (
 export const submitEtherspotTransactionsBatch = async (
   sdk: EtherspotSdk,
   transactions: ExecuteAccountTransactionDto[],
-  feeToken?: string,
+  feeTokenAddress?: string,
 ): Promise<{
   batchHash?: string;
   errorMessage?: string;
@@ -694,6 +694,7 @@ export const submitEtherspotTransactionsBatch = async (
       await sdk.batchExecuteAccountTransaction({ to, value, data });
     }
 
+    const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
     await sdk.estimateGatewayBatch({ feeToken });
     const result = await sdk.submitGatewayBatch();
     ({ hash: batchHash } = result);
@@ -710,7 +711,7 @@ export const submitEtherspotTransactionsBatch = async (
 export const submitEtherspotAndWaitForTransactionHash = async (
   sdk: EtherspotSdk,
   transactions: ExecuteAccountTransactionDto[],
-  feeToken?: string,
+  feeTokenAddress?: string,
 ): Promise<{
   transactionHash?: string;
   errorMessage?: string;
@@ -731,12 +732,12 @@ export const submitEtherspotAndWaitForTransactionHash = async (
       await sdk.batchExecuteAccountTransaction({ to, value, data });
     }
 
+    const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
     await sdk.estimateGatewayBatch({ feeToken });
-
     const result = await sdk.submitGatewayBatch();
 
-    // ({ hash: batchHash } = result);
     let temporaryBatchSubscription: Subscription;
+
     return new Promise<{
       transactionHash?: string;
       errorMessage?: string;
@@ -932,15 +933,19 @@ export const estimateCrossChainAction = async (
   let feeAssetBalanceBN = ethers.BigNumber.from(0);
   try {
     const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
+    const getAccountBalancesTokens = !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction?.gasTokenAddress)
+      ? undefined
+      : [crossChainAction.gasTokenAddress];
     const { items: balances } = await sdk.getAccountBalances({
       account: balancesForAddress as string,
-      tokens: crossChainAction?.gasTokenAddress ? [crossChainAction.gasTokenAddress] : undefined,
+      tokens: getAccountBalancesTokens,
       chainId: crossChainAction.chainId,
     });
 
     const feeAssetBalance = balances.find((
       balance,
-    ) => (crossChainAction.gasTokenAddress && addressesEqual(balance.token, crossChainAction.gasTokenAddress))
+    ) => (!isZeroAddress(crossChainAction.gasTokenAddress)
+        && addressesEqual(balance.token, crossChainAction.gasTokenAddress))
       || balance.token === null);
 
     if (feeAssetBalance) feeAssetBalanceBN = feeAssetBalance.balance;
@@ -950,7 +955,10 @@ export const estimateCrossChainAction = async (
       if (!value) return;
 
       // sub value from balance if native asset
-      if (transactionsToSend.value && !crossChainAction.gasTokenAddress) feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
+      if ((!crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction.gasTokenAddress))
+        && transactionsToSend.value) {
+        feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
+      }
 
       // TODO: when fee token added sub value from balance if fee token and tx includes fee token transfer
     });
@@ -995,11 +1003,13 @@ export const estimateCrossChainAction = async (
         await sdk.batchExecuteAccountTransaction({ to, value, data });
       }
 
-      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({
-        feeToken: crossChainAction.gasTokenAddress ?? undefined,
-      });
+      const feeToken = !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction.gasTokenAddress)
+        ? undefined
+        : crossChainAction.gasTokenAddress;
+
+      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
       gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
-      feeAmount = crossChainAction.gasTokenAddress ? gatewayBatchEstimation.feeAmount : null;
+      feeAmount = feeToken ? gatewayBatchEstimation.feeAmount : null;
     } catch (e) {
       errorMessage = parseEtherspotErrorMessageIfAvailable(e);
       if (!errorMessage && e instanceof Error) {

@@ -11,7 +11,7 @@ export interface TransactionBuilderContextData {
     resetTransactionBlockFieldValidationError: (id: string, field: string) => void;
     resetAllTransactionBlockFieldValidationError: (id: string) => void;
     setTransactionBlockFieldValidationError: (id: string, field: string, errorMessage: string) => void;
-    setCrossChainActionGasTokenAddress: (crossChainActionId: string, gasTokenAddress: string) => void;
+    setCrossChainActionGasTokenAddress: (crossChainActionId: string, gasTokenAddress: string | null) => void;
   };
 }
 
