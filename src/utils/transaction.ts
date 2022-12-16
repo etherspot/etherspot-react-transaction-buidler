@@ -1065,6 +1065,12 @@ export const getFirstCrossChainActionByStatus = (
 ): ICrossChainAction | undefined =>
   crossChainActions.find(({ transactions }) => transactions.find((transaction) => transaction.status === status));
 
+export const filterCrossChainActionsByStatus = (
+  crossChainActions: ICrossChainAction[],
+  status: string,
+): ICrossChainAction[] =>
+  crossChainActions.filter(({ transactions }) => transactions.find((transaction) => transaction.status === status));
+
 export const getCrossChainActionTransactionsByStatus = (
   crossChainActionTransactions: ICrossChainActionTransaction[],
   status: string,
@@ -1075,13 +1081,22 @@ export const updateCrossChainActionsTransactionsStatus = (
   crossChainActions: ICrossChainAction[],
   status: string,
 ): ICrossChainAction[] =>
-  crossChainActions.map((crossChainActionToDispatch) => ({
-    ...crossChainActionToDispatch,
-    transactions: crossChainActionToDispatch.transactions.map((transaction) => ({
-      ...transaction,
-      status,
-    })),
-  }));
+  crossChainActions.map((crossChainActionToDispatch) => updateCrossChainActionTransactionsStatus(
+    crossChainActionToDispatch,
+    status,
+  ));
+
+export const updateCrossChainActionTransactionsStatus = (
+  crossChainAction: ICrossChainAction,
+  status: string,
+): ICrossChainAction => ({
+  ...crossChainAction,
+  transactions: crossChainAction.transactions.map((transaction) => ({
+    ...transaction,
+    status,
+  })),
+});
+
 export const rejectUnsentCrossChainActionsTransactions = (
   crossChainActions: ICrossChainAction[],
 ): ICrossChainAction[] =>
