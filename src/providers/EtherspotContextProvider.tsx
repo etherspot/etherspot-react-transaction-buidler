@@ -276,6 +276,37 @@ const EtherspotContextProvider = ({
     return [];
   }, [sdk, accountAddress]);
 
+  // Mayukh
+  const getAccountBalanceByChainId = useCallback(async (
+    assetsChainId: number,
+    balancesForAddress: string | null = accountAddress,
+  ) => {
+    if (!sdk) return [];
+
+    let computedAccount;
+    if (!balancesForAddress) {
+      try {
+        computedAccount = await connect();
+      } catch (e) {
+        //
+      }
+    }
+    if (!balancesForAddress && !computedAccount) return [];
+
+    try {
+      const res = await sdk.getAccountBalances({
+        account: balancesForAddress ?? computedAccount,
+        chainId: assetsChainId,
+      });
+      console.log("Boom", res)
+    } catch (err) {
+
+    }
+
+    return []
+
+  }, [sdk, accountAddress])
+
   const getSupportedAssetsWithBalancesForChainId = useCallback(async (
     assetsChainId: number,
     positiveBalancesOnly: boolean = false,
@@ -346,6 +377,7 @@ const EtherspotContextProvider = ({
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       getSupportedAssetsWithBalancesForChainId,
+      getAccountBalanceByChainId,
       providerAddress,
       web3Provider: provider,
       totalWorthPerAddress,
@@ -363,6 +395,7 @@ const EtherspotContextProvider = ({
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       getSupportedAssetsWithBalancesForChainId,
+      getAccountBalanceByChainId,
       providerAddress,
       provider,
       totalWorthPerAddress,

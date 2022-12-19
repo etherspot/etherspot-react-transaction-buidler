@@ -262,7 +262,7 @@ const NetworkAssetSelectInput = ({
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
   const theme: Theme = useTheme();
 
-  const { sdk, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
+  const { sdk, getSupportedAssetsWithBalancesForChainId, getAccountBalanceByChainId } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
@@ -286,6 +286,16 @@ const NetworkAssetSelectInput = ({
         );
       } catch (e) {
         //
+      }
+
+      try {
+        let balanceByNetwork = getAccountBalanceByChainId(
+          preselectedNetwork.chainId,
+          walletAddress,
+        )
+        console.log(balanceByNetwork, "balanceByNetwork")
+      } catch (error) {
+        
       }
 
       if (!shouldUpdate) return;
