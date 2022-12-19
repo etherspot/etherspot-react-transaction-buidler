@@ -716,7 +716,6 @@ export const submitEtherspotAndWaitForTransactionHash = async (
   transactionHash?: string;
   errorMessage?: string;
 }> => {
-  let transactionHash;
   let errorMessage;
 
   try {
@@ -741,7 +740,7 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     return new Promise<{
       transactionHash?: string;
       errorMessage?: string;
-    }>((resolve, reject) => {
+    }>((resolve) => {
       temporaryBatchSubscription = sdk.notifications$
         .pipe(
           rxjsMap(async (notification) => {
@@ -946,7 +945,7 @@ export const estimateCrossChainAction = async (
       balance,
     ) => (!isZeroAddress(crossChainAction.gasTokenAddress)
         && addressesEqual(balance.token, crossChainAction.gasTokenAddress))
-      || balance.token === null);
+      || (isZeroAddress(crossChainAction.gasTokenAddress) && balance.token === null));
 
     if (feeAssetBalance) feeAssetBalanceBN = feeAssetBalance.balance;
 
@@ -955,12 +954,21 @@ export const estimateCrossChainAction = async (
       if (!value) return;
 
       // sub value from balance if native asset
-      if ((!crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction.gasTokenAddress))
-        && transactionsToSend.value) {
+      if (isZeroAddress(crossChainAction.gasTokenAddress)) {
         feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
+        return;
       }
 
-      // TODO: when fee token added sub value from balance if fee token and tx includes fee token transfer
+      const outgoingAsset = crossChainAction.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
+        ? crossChainAction.preview.asset
+        : crossChainAction.preview.fromAsset;
+
+      // sub outgoing erc20 if it matches gas token address
+      if (addressesEqual(crossChainAction.gasTokenAddress, outgoingAsset.address)) {
+        const assetAmountBN = ethers.utils.parseUnits(outgoingAsset.amount, outgoingAsset.decimals);
+        feeAssetBalanceBN = feeAssetBalanceBN.sub(assetAmountBN);
+        return;
+      }
     });
   } catch (e) {
     //
