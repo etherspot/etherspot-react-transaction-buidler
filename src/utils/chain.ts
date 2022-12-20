@@ -140,7 +140,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Optimism',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/avalanche.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/avalanche.svg',
   },
   [CHAIN_ID.AURORA]: {
     chainId: CHAIN_ID.AURORA,
