@@ -284,6 +284,7 @@ const EtherspotContextProvider = ({
     if (!sdk) return [];
 
     let computedAccount;
+    let balance 
     if (!balancesForAddress) {
       try {
         computedAccount = await connect();
@@ -298,12 +299,13 @@ const EtherspotContextProvider = ({
         account: balancesForAddress ?? computedAccount,
         chainId: assetsChainId,
       });
+      balance = res
       console.log("Boom", res)
     } catch (err) {
-
+      console.log("Boom", err)
     }
 
-    return []
+    return balance
 
   }, [sdk, accountAddress])
 

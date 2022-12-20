@@ -260,6 +260,7 @@ const NetworkAssetSelectInput = ({
   const [assetSearchQuery, setAssetSearchQuery] = useState<string>('');
   const [selectedNetworkAssets, setSelectedNetworkAssets] = useState<IAssetWithBalance[]>([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
+  const [supportedChainWithBalance, setSupportedChainWithBalance] = useState<Chain[]>(supportedChains)
   const theme: Theme = useTheme();
 
   const { sdk, getSupportedAssetsWithBalancesForChainId, getAccountBalanceByChainId } = useEtherspot();
@@ -288,16 +289,6 @@ const NetworkAssetSelectInput = ({
         //
       }
 
-      try {
-        let balanceByNetwork = getAccountBalanceByChainId(
-          preselectedNetwork.chainId,
-          walletAddress,
-        )
-        console.log(balanceByNetwork, "balanceByNetwork")
-      } catch (error) {
-        
-      }
-
       if (!shouldUpdate) return;
 
       setSelectedNetworkAssets(supportedAssets);
@@ -315,10 +306,39 @@ const NetworkAssetSelectInput = ({
     walletAddress,
   ]);
 
+  useEffect(() => {
+    const handleBalanceGet = async () => {
+      if (!sdk) return;
+      let balanceByChain = []
+      for (let index = 0; index < supportedChains.length; index++) {
+        const element = supportedChains[index];
+        try {
+          let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+            element.chainId,
+            true,
+            walletAddress,
+          );
+          console.log("shsjhs", supportedAssets)
+          balanceByChain.push({
+            el: element.title,
+            balances: supportedAssets
+          })
+        } catch (e) {
+          //
+        }
+        
+      }
+      console.log(balanceByChain, "supportedChain")
+    }
+    handleBalanceGet()
+  }, [supportedChains, sdk])
+
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
     return orderBy(filtered, [(asset) => asset.balanceWorthUsd ?? 0, 'name'], ['desc', 'asc']);
   }, [selectedNetworkAssets, assetSearchQuery]);
+
+  console.log("filteredSelectedNetworkAssets", filteredSelectedNetworkAssets)
 
   const onListItemClick = (asset: IAssetWithBalance, amountBN?: BigNumber) => {
     if (onAssetSelect) onAssetSelect(asset, amountBN);
