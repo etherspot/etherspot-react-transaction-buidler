@@ -317,8 +317,8 @@ const NetworkAssetSelectInput = ({
             element.chainId,
             true,
             walletAddress,
+            false
           );
-          console.log("shsjhs", supportedAssets)
           balanceByChain.push({
             el: element.title,
             balances: supportedAssets
@@ -328,7 +328,18 @@ const NetworkAssetSelectInput = ({
         }
         
       }
-      console.log(balanceByChain, "supportedChain")
+      let _balanceByChain = balanceByChain.map((bal) => {
+        return {
+          el: bal.el,
+          total: bal.balances.reduce((acc,curr)=>{
+            if(curr.balanceWorthUsd){
+              return acc + curr.balanceWorthUsd
+            }
+            return acc
+          }, 0)
+        }
+      })
+      console.log(_balanceByChain, "supportedChain")
     }
     handleBalanceGet()
   }, [supportedChains, sdk])
@@ -338,7 +349,6 @@ const NetworkAssetSelectInput = ({
     return orderBy(filtered, [(asset) => asset.balanceWorthUsd ?? 0, 'name'], ['desc', 'asc']);
   }, [selectedNetworkAssets, assetSearchQuery]);
 
-  console.log("filteredSelectedNetworkAssets", filteredSelectedNetworkAssets)
 
   const onListItemClick = (asset: IAssetWithBalance, amountBN?: BigNumber) => {
     if (onAssetSelect) onAssetSelect(asset, amountBN);

@@ -230,11 +230,11 @@ const EtherspotContextProvider = ({
     assets: TokenListToken[],
     assetsChainId: number,
     balancesForAddress: string | null = accountAddress,
+    recompute: boolean = true,
   ) => {
     if (!sdk) return [];
-
     let computedAccount;
-    if (!balancesForAddress) {
+    if (!balancesForAddress && recompute) {
       try {
         computedAccount = await connect();
       } catch (e) {
@@ -300,9 +300,7 @@ const EtherspotContextProvider = ({
         chainId: assetsChainId,
       });
       balance = res
-      console.log("Boom", res)
     } catch (err) {
-      console.log("Boom", err)
     }
 
     return balance
@@ -313,9 +311,10 @@ const EtherspotContextProvider = ({
     assetsChainId: number,
     positiveBalancesOnly: boolean = false,
     balancesForAddress: string | null = accountAddress,
+    recompute: boolean = true,
   ): Promise<IAssetWithBalance[]> => {
     const supportedAssets = await getSupportedAssetsForChainId(assetsChainId);
-    const fromAssetsBalances = await getAssetsBalancesForChainId(supportedAssets, assetsChainId, balancesForAddress);
+    const fromAssetsBalances = await getAssetsBalancesForChainId(supportedAssets, assetsChainId, balancesForAddress, recompute);
 
     // only get prices for assets with balances
     const assetsPrices = await getAssetsPrices(assetsChainId, fromAssetsBalances.map((asset) => asset.token));
