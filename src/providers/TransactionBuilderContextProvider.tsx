@@ -787,40 +787,6 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {!!editingTransactionBlock && !crossChainActionsInProcessing?.length && (
-          <>
-            <Card
-              key={`transaction-block-edit-${editingTransactionBlock.id}`}
-              marginBottom={20}
-              showCloseButton={false}
-            >
-              <TransactionBlock
-                key={`block-edit-${editingTransactionBlock.id}`}
-                {...editingTransactionBlock}
-                errorMessages={transactionBlockValidationErrors[editingTransactionBlock.id]}
-              />
-            </Card>
-            <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-              {isChecking ? 'Saving...' : 'Save'}
-            </PrimaryButton>
-            <SecondaryButton
-              marginTop={10}
-              onClick={() => {
-                setEditingTransactionBlock(null);
-                // reset value changes, editingTransactionBlock storing initial before edits
-                setTransactionBlocks((current) =>
-                  current.map((currentTransactionBlock) => {
-                    if (currentTransactionBlock.id !== editingTransactionBlock?.id)
-                      return currentTransactionBlock;
-                    return editingTransactionBlock;
-                  }),
-                );
-              }}
-            >
-              Go back to preview
-            </SecondaryButton>
-          </>
-        )}
         {(!crossChainActions?.length || !!editingTransactionBlock) && !crossChainActionsInProcessing?.length && (
           <>
             {(editingTransactionBlock ? [editingTransactionBlock] : transactionBlocks).map((transactionBlock, i) => {
