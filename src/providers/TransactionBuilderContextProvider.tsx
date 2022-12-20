@@ -395,6 +395,12 @@ const TransactionBuilderContextProvider = ({
           break;
         }
 
+        // no multicall/batching for key based
+        if (result?.crossChainAction?.useWeb3Provider) {
+          newCrossChainActions = [...newCrossChainActions, result.crossChainAction];
+          continue;
+        }
+
         const action = result.crossChainAction;
         const foundChainIndex = newCrossChainActions.findIndex(
           (x) => x?.chainId === action.chainId && x?.type === action.type && !x?.multiCallData,
@@ -815,9 +821,9 @@ const TransactionBuilderContextProvider = ({
             </SecondaryButton>
           </>
         )}
-        {!crossChainActions?.length && !crossChainActionsInProcessing?.length && !editingTransactionBlock && (
+        {(!crossChainActions?.length || !!editingTransactionBlock) && !crossChainActionsInProcessing?.length && (
           <>
-            {transactionBlocks.map((transactionBlock, i) => {
+            {(editingTransactionBlock ? [editingTransactionBlock] : transactionBlocks).map((transactionBlock, i) => {
               let disabled = false;
               let multiCallBlocks: ITransactionBlock[] = [];
 
@@ -1044,7 +1050,7 @@ const TransactionBuilderContextProvider = ({
                             )
                           }
                           // Should only have the option to delete last multicall, any change mid structure should reset the entire block
-                          showCloseButton={j === multiCallBlocks.length - 1}
+                          showCloseButton={(multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) || (multiCallBlocks.length === 1 && !editingTransactionBlock)}
                         >
                           <TransactionBlock
                             key={`block-${multiCallBlock.id}`}
@@ -1054,8 +1060,8 @@ const TransactionBuilderContextProvider = ({
                             }
                           />
                           {
-                            j === multiCallBlocks.length - 1 &&
-                            (multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP || multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET)
+                            j === multiCallBlocks.length - 1
+                            && (multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP || multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET)
                             && (
                               <MultiCallButton
                                 disabled={!!disabled}
@@ -1094,7 +1100,7 @@ const TransactionBuilderContextProvider = ({
                             ),
                         )
                       }
-                      showCloseButton
+                      showCloseButton={!editingTransactionBlock}
                     >
                       <TransactionBlock
                         key={`block-${transactionBlock.id}`}
@@ -1104,7 +1110,10 @@ const TransactionBuilderContextProvider = ({
                       {(
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
-                      ) && transactionBlock.values?.accountType === DestinationWalletEnum.Contract && (
+                      )
+                        && transactionBlock.values?.accountType === DestinationWalletEnum.Contract
+                        && !editingTransactionBlock
+                        && (
                           <MultiCallButton
                             disabled={!!disabled}
                             onClick={async () => {
@@ -1126,7 +1135,7 @@ const TransactionBuilderContextProvider = ({
                 </TransactionBlocksWrapper>
               );
             })}
-            {!showTransactionBlockSelect && !hideAddTransactionButton && !crossChainActionsInProcessing?.length && (
+            {!showTransactionBlockSelect && !hideAddTransactionButton && !editingTransactionBlock && (
               <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
                 <AiOutlinePlusCircle size={24} />
                 <span>Add transaction</span>
@@ -1135,10 +1144,28 @@ const TransactionBuilderContextProvider = ({
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br />
-                <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-                  {isChecking ? 'Checking...' : 'Review'}
+                <PrimaryButton marginTop={editingTransactionBlock ? 0 : 30} onClick={onContinueClick} disabled={isChecking}>
+                  {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
+                  {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
                 </PrimaryButton>
               </>
+            )}
+            {!!editingTransactionBlock && (
+              <SecondaryButton
+                marginTop={10}
+                onClick={() => {
+                  setEditingTransactionBlock(null);
+                  // reset value changes, editingTransactionBlock storing initial before edits
+                  setTransactionBlocks((current) => current.map((currentTransactionBlock) => {
+                    if (currentTransactionBlock.id !== editingTransactionBlock?.id){
+                      return currentTransactionBlock;
+                    }
+                    return editingTransactionBlock;
+                  }));
+                }}
+              >
+                Go back to preview
+              </SecondaryButton>
             )}
             {showTransactionBlockSelect && (
               <Card onCloseButtonClick={() => setShowTransactionBlockSelect(false)} showCloseButton>
