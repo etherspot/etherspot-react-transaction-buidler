@@ -260,10 +260,10 @@ const NetworkAssetSelectInput = ({
   const [assetSearchQuery, setAssetSearchQuery] = useState<string>('');
   const [selectedNetworkAssets, setSelectedNetworkAssets] = useState<IAssetWithBalance[]>([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
-  const [supportedChainWithBalance, setSupportedChainWithBalance] = useState<Chain[]>(supportedChains)
+  const [supportedChainWithBalance, setSupportedChainWithBalance] = useState<any>(supportedChains)
   const theme: Theme = useTheme();
 
-  const { sdk, getSupportedAssetsWithBalancesForChainId, getAccountBalanceByChainId } = useEtherspot();
+  const { sdk, getSupportedAssetsWithBalancesForChainId, getSmartWalletBalancesPerChain, balancePerChainSmartWallet } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
@@ -308,41 +308,11 @@ const NetworkAssetSelectInput = ({
 
   useEffect(() => {
     const handleBalanceGet = async () => {
-      if (!sdk) return;
-      let balanceByChain = []
-      for (let index = 0; index < supportedChains.length; index++) {
-        const element = supportedChains[index];
-        try {
-          let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
-            element.chainId,
-            true,
-            walletAddress,
-            false
-          );
-          balanceByChain.push({
-            el: element.title,
-            balances: supportedAssets
-          })
-        } catch (e) {
-          //
-        }
-        
-      }
-      let _balanceByChain = balanceByChain.map((bal) => {
-        return {
-          el: bal.el,
-          total: bal.balances.reduce((acc,curr)=>{
-            if(curr.balanceWorthUsd){
-              return acc + curr.balanceWorthUsd
-            }
-            return acc
-          }, 0)
-        }
-      })
-      console.log(_balanceByChain, "supportedChain")
+      if (!sdk || !walletAddress) return;
+      await getSmartWalletBalancesPerChain(walletAddress, supportedChains)
     }
     handleBalanceGet()
-  }, [supportedChains, sdk])
+  }, [supportedChains, sdk, walletAddress])
 
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
@@ -408,8 +378,10 @@ const NetworkAssetSelectInput = ({
                   setPreselectedNetwork(supportedChain)
                 }}
               >
-                {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
-                {supportedChain.title}
+                <>
+                  {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
+                  {supportedChain.title} &#183; ${(balancePerChainSmartWallet && balancePerChainSmartWallet.length) ? balancePerChainSmartWallet.filter((item:any) => item.chain === supportedChain.chainId)[0]?.total : '-'}
+                </>
               </OptionListItem>
           ))}
         </OptionList>

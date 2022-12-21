@@ -23,6 +23,7 @@ import {
 
 import { EtherspotContext } from '../contexts';
 import {
+  Chain,
   nativeAssetPerChainId,
 } from '../utils/chain';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
@@ -49,6 +50,12 @@ export type IAssetWithBalance = IAsset & {
 
 export interface ITotalWorthPerAddress {
   [address: string]: number
+}
+
+export interface IBalanceByChain {
+  total: Number;
+  title: string;
+  chain: Number;
 }
 
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
@@ -85,6 +92,7 @@ const EtherspotContextProvider = ({
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
+  const [balancePerChainSmartWallet, setBalancePerChainSmartWallet] = useState<IBalanceByChain[] | null>(null)
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -276,6 +284,37 @@ const EtherspotContextProvider = ({
     return [];
   }, [sdk, accountAddress]);
 
+  const getSmartWalletBalancesPerChain = useCallback(async (walletAddress: string, supportedChains: Chain[]) => {
+    if (!sdk || !walletAddress) return;
+    let balanceByChain : IBalanceByChain[] = []
+    for (let index = 0; index < supportedChains.length; index++) {
+      const element = supportedChains[index];
+      try {
+        let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+          element.chainId,
+          true,
+          walletAddress,
+          false
+        );
+        balanceByChain.push({
+          title: element.title,
+          chain: element.chainId,
+          total: Number(supportedAssets.reduce((acc,curr)=>{
+            if(curr.balanceWorthUsd){
+              return acc + curr.balanceWorthUsd
+            }
+            return acc
+          }, 0).toFixed(2))
+        })
+      } catch (e) {
+        //
+      }
+      
+    }
+    setBalancePerChainSmartWallet(balanceByChain)
+    return balanceByChain
+  },[sdk, accountAddress])
+
   // Mayukh
   const getAccountBalanceByChainId = useCallback(async (
     assetsChainId: number,
@@ -375,8 +414,10 @@ const EtherspotContextProvider = ({
       chainId,
       setChainId,
       getSdkForChainId,
+      balancePerChainSmartWallet,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
+      getSmartWalletBalancesPerChain,
       getSupportedAssetsWithBalancesForChainId,
       getAccountBalanceByChainId,
       providerAddress,
@@ -393,8 +434,10 @@ const EtherspotContextProvider = ({
       chainId,
       setChainId,
       getSdkForChainId,
+      balancePerChainSmartWallet,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
+      getSmartWalletBalancesPerChain,
       getSupportedAssetsWithBalancesForChainId,
       getAccountBalanceByChainId,
       providerAddress,
