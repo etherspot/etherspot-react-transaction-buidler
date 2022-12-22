@@ -171,6 +171,7 @@ const SendAssetTransactionBlock = ({
         showPositiveBalanceAssets
         showQuickInputButtons
         disabled={!!fixed || !!multiCallData}
+        accountType={selectedAccountType}
       />
       {selectedAsset && selectedNetwork && (
         <TextInput

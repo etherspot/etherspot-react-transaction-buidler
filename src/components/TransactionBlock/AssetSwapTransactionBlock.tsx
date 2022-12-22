@@ -311,6 +311,7 @@ const AssetSwapTransactionBlock = ({
         showPositiveBalanceAssets
         showQuickInputButtons
         disabled={!!fixed || !!multiCallData}
+        accountType={selectedAccountType}
       />
       {!!selectedNetwork && (
         <>

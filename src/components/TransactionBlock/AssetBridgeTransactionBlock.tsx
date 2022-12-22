@@ -315,6 +315,7 @@ const AssetBridgeTransactionBlock = ({
         showPositiveBalanceAssets
         showQuickInputButtons
         disabled={!!fixed || !!multiCallData}
+        accountType={selectedAccountType}
       />
       <NetworkAssetSelectInput
         label="To"
@@ -332,6 +333,7 @@ const AssetBridgeTransactionBlock = ({
         disabled={!selectedFromNetwork || !selectedFromAsset}
         hideChainIds={selectedFromNetwork ? [selectedFromNetwork.chainId] : undefined}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+        accountType={selectedAccountType}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
