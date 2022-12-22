@@ -837,16 +837,6 @@ export const submitWeb3ProviderTransactions = async (
       };
       // @ts-ignore
       transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
-
-      let status = CROSS_CHAIN_ACTION_STATUS.PENDING;
-      while (status == CROSS_CHAIN_ACTION_STATUS.PENDING) {
-        status = await getTransactionStatus(sdk, transactionHash);
-        await sleep(10);
-      }
-
-      if (status === CROSS_CHAIN_ACTION_STATUS.FAILED) {
-        errorMessage = 'Transaction Submitted got Failed';
-      }
     }
   } catch (e) {
     if (e instanceof Error) {
