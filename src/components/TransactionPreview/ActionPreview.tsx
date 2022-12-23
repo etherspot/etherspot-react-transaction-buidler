@@ -940,8 +940,8 @@ const ActionPreview = ({
               );
             })}
           </RouteWrapper>
-          {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         </TransactionAction>
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
       </Card>
     );

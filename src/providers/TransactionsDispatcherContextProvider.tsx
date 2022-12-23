@@ -104,8 +104,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       CROSS_CHAIN_ACTION_STATUS.UNSENT,
     );
 
-    console.log({ unsentCrossChainActions, processingCrossChainActionIds })
-
     if (!unsentCrossChainActions?.length) return;
 
     let updatedCrossChainActions = [...crossChainActions];
@@ -137,8 +135,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         unsentCrossChainAction.transactions,
         CROSS_CHAIN_ACTION_STATUS.PENDING,
       );
-
-      console.log({ pendingCrossChainActionTransactions })
 
       // if web3 pending  wait before pending completes
       const hasUnsentAndPendingWeb3ProviderTransactions = unsentCrossChainAction.useWeb3Provider
@@ -294,7 +290,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
               CROSS_CHAIN_ACTION_STATUS.PENDING,
             )[0];
             if (!sdkForChain || !firstPending) return storedCrossChainAction;
-            console.log({ firstPending })
 
             let { status, transactionHash } = firstPending;
 
@@ -313,14 +308,12 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
                 const submittedTransaction = await sdkForChain.getTransaction({
                   hash: transactionHash,
                 });
-                console.log({ submittedTransaction })
                 if (submittedTransaction?.status === TransactionStatuses.Completed) {
                   status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
                 } else if (submittedTransaction?.status === TransactionStatuses.Reverted) {
                   status = CROSS_CHAIN_ACTION_STATUS.FAILED;
                 }
               } catch (e) {
-                console.log('errr!!!!', { e })
                 //
               }
             }
