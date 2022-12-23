@@ -97,6 +97,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   const processDispatchedCrossChainActions = useCallback(async () => {
     if (!crossChainActions?.length || !dispatchId) return;
 
+    let updateExpired = false;
+
     const unsentCrossChainActions = filterCrossChainActionsByStatus(
       crossChainActions,
       CROSS_CHAIN_ACTION_STATUS.UNSENT,
@@ -107,6 +109,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     let updatedCrossChainActions = [...crossChainActions];
 
     await Promise.all(unsentCrossChainActions.map(async (unsentCrossChainAction) => {
+      if (updateExpired) return;
+
       let unsentCrossChainActionTransactions: ICrossChainActionTransaction[] = [];
 
       if (unsentCrossChainAction.batchTransactions?.length) {
@@ -132,9 +136,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         CROSS_CHAIN_ACTION_STATUS.PENDING,
       );
 
-      // if web3 pending and unsent wait before pending completes
+      // if web3 pending wait before pending completes
       const hasUnsentAndPendingWeb3ProviderTransactions = unsentCrossChainAction.useWeb3Provider
-        && !!unsentCrossChainActionTransactions?.length
         && !!pendingCrossChainActionTransactions?.length;
 
       if (hasUnsentAndPendingWeb3ProviderTransactions
@@ -148,10 +151,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       }
 
       const sdkForChain = getSdkForChainId(targetChainId);
-      if (!sdkForChain) {
-        resetCrossChainActions('Unable to get retrieve SDK for chain ID!', unsentCrossChainAction.id);
-        return;
-      }
+      if (!sdkForChain) return;
 
       setProcessingCrossChainActionIds((currentIds) => [
         ...currentIds ?? [],
@@ -240,6 +240,10 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
       setCrossChainActions(updatedCrossChainActions);
     }));
+
+    return () => {
+      updateExpired = true;
+    }
   }, [
     crossChainActions,
     getSdkForChainId,
@@ -315,11 +319,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
             }
 
             const updatedTransactions = transactions.map((transaction) => {
-              if (
-                storedCrossChainAction.useWeb3Provider &&
-                transactionHash !== transaction.transactionHash
-              )
-                return transaction;
+              if (transactionHash !== transaction.transactionHash) return transaction;
+
               return {
                 ...transaction,
                 transactionHash,
@@ -331,6 +332,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
             return { ...storedCrossChainAction, transactions: updatedTransactions };
           }),
         );
+
+        if (id === dispatchId) setCrossChainActions(updatedStoredGroupedCrossChainActions[id])
       }),
     );
 
@@ -343,7 +346,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         ),
     );
 
-    // // set oldest pending
+    // set oldest pending
     if (oldestGroupedCrossChainActionsId) {
       setDispatchId(oldestGroupedCrossChainActionsId);
       const crossChainActionsToRestore: ICrossChainAction[] = await Promise.all(
@@ -388,6 +391,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }, [getSdkForChainId, web3Provider, providerAddress, accountAddress]);
 
   useEffect(() => {
+    let sdkSubscriptions: Subscription[] = [];
+
     const validPendingCrossChainActionsWithBatches = crossChainActions.filter(
       (crossChainAction) =>
         crossChainAction.chainId &&
@@ -397,8 +402,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
           CROSS_CHAIN_ACTION_STATUS.PENDING,
         ).length,
     );
-
-    let subscriptions: Subscription[] = [];
 
     validPendingCrossChainActionsWithBatches.map((crossChainAction) => {
       const sdkForChain = getSdkForChainId(crossChainAction.chainId);
@@ -461,14 +464,14 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
           )
           .subscribe();
 
-        subscriptions.push(subscription);
+        sdkSubscriptions.push(subscription);
       } catch (e) {
         //
       }
     });
 
     return () => {
-      subscriptions.forEach((subscription) => {
+      sdkSubscriptions.forEach((subscription) => {
         try {
           if (subscription?.closed) return;
           subscription.unsubscribe();
@@ -478,6 +481,72 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       });
     };
   }, [crossChainActions, getSdkForChainId]);
+
+  useEffect(() => {
+    let updateExpired = false;
+
+    const validPendingWeb3CrossChainActions = crossChainActions.filter(
+      (crossChainAction) => crossChainAction.useWeb3Provider
+        && getCrossChainActionTransactionsByStatus(
+          crossChainAction.transactions,
+          CROSS_CHAIN_ACTION_STATUS.PENDING,
+        ).length,
+    );
+
+    const checkWeb3TransactionStatuses = () => {
+      validPendingWeb3CrossChainActions.map(async (crossChainAction) => {
+        const sdkForChain = getSdkForChainId(crossChainAction.chainId);
+        if (!sdkForChain) return;
+
+        await Promise.all(crossChainAction.transactions.map(async (transaction) => {
+          if (!transaction?.transactionHash || updateExpired) return;
+
+          try {
+            const submittedTransaction = await sdkForChain.getTransaction({
+              hash: transaction.transactionHash,
+            });
+
+            let status: string | undefined;
+
+            if (submittedTransaction?.status === TransactionStatuses.Completed) {
+              status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+            } else if (submittedTransaction?.status === TransactionStatuses.Reverted) {
+              status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+            }
+
+            if (!status) return;
+
+            setCrossChainActions((current) => current.map((currentCrossChainAction) => {
+              if (crossChainAction.id !== currentCrossChainAction.id) return currentCrossChainAction;
+              return {
+                ...currentCrossChainAction,
+                transactions: currentCrossChainAction.transactions.map((currentTransaction) => {
+                  if (currentTransaction.transactionHash !== transaction.transactionHash) {
+                    return currentTransaction;
+                  }
+                  return { ...currentTransaction, status, finishTimestamp: +new Date() };
+                }),
+              };
+            }));
+          } catch (e) {
+            //
+          }
+        }))
+      });
+    }
+
+    if (!validPendingWeb3CrossChainActions.length) return;
+
+    checkWeb3TransactionStatuses();
+
+    const timeout = setTimeout(() => { checkWeb3TransactionStatuses(); }, 3000);
+
+    return () => {
+      updateExpired = true;
+      if (!timeout) return;
+      clearTimeout(timeout);
+    };
+  }, [crossChainActions, getSdkForChainId, web3Provider]);
 
   useEffect(() => {
     restoreProcessing();
