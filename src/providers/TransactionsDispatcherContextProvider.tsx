@@ -136,7 +136,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
         CROSS_CHAIN_ACTION_STATUS.PENDING,
       );
 
-      // if web3 pending  wait before pending completes
+      // if web3 pending wait before pending completes
       const hasUnsentAndPendingWeb3ProviderTransactions = unsentCrossChainAction.useWeb3Provider
         && !!pendingCrossChainActionTransactions?.length;
 
