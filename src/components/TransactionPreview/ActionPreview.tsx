@@ -184,7 +184,7 @@ const TransactionStatus = ({
   const { getSdkForChainId } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
-  const [prevStatus, setPrevStatus] = useState<string | null>(null);
+  const [prevStatus, setPrevStatus] = useState<{ [id: string]: string }>({});
 
   const { chainId, batchHash: transactionsBatchHash } = crossChainAction;
 
@@ -317,14 +317,14 @@ const TransactionStatus = ({
           if (
             transactionStatus !== CROSS_CHAIN_ACTION_STATUS.UNSENT &&
             transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING &&
-            !prevStatus
+            !prevStatus[index]
           ) {
-            setPrevStatus(transactionStatus);
+            setPrevStatus((current) => ({ ...current, [index]: transactionStatus }));
             timeout = setTimeout(() => {
-              setPrevStatus(null);
+              setPrevStatus((current) => ({ ...current, [index]: undefined }));
             }, 2000);
           }else{
-            setPrevStatus(null);
+            setPrevStatus((current) => ({ ...current, [index]: undefined }));
           }
           if (
             (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED ||
@@ -348,7 +348,7 @@ const TransactionStatus = ({
               'no-hash'
             }-${index}`}
           >
-            {prevStatus ? (
+            {prevStatus[index] ? (
               <TransactionStatusWrapper>
                 <TransactionStatusMessageWrapper>
                   <StatusIconWrapper
