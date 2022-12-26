@@ -267,7 +267,7 @@ const TransactionStatus = ({
           isERC20ApprovalTransactionData(transaction.data as string);
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: "Sign message",
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? "Submit transaction" : "Sign message",
           [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
           [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
           [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
@@ -357,7 +357,7 @@ const TransactionStatus = ({
                     <BiCheck size={16} />
                   </StatusIconWrapper>
                   <Text size={16} medium>
-                    {'Sign message'}
+                    {crossChainAction.useWeb3Provider ? 'Submit transaction' : 'Sign message'}
                   </Text>
                 </TransactionStatusMessageWrapper>
               </TransactionStatusWrapper>
