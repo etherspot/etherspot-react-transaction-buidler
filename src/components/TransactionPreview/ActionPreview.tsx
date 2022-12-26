@@ -188,9 +188,9 @@ const TransactionStatus = ({
 
   const { chainId, batchHash: transactionsBatchHash } = crossChainAction;
 
-  const previewTransaction = (transactionHash?: string) => {
+  const previewTransaction = (transactionHash?: string, approvalTransaction: boolean = false) => {
     // show cross chain tx explorer link if bridge action
-    if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
+    if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE && !approvalTransaction) {
       const explorerLink = crossChainAction?.preview?.route?.steps?.[0]?.tool === 'connext'
         ? `https://connextscan.io/tx/${transactionHash}?source=search`
         : `https://socketscan.io/tx/${transactionHash}`
@@ -207,7 +207,7 @@ const TransactionStatus = ({
     window.open(explorerLink, '_blank');
   };
 
-  const previewBatchTransaction = async () => {
+  const previewBatchTransaction = async (approvalTransaction: boolean = false) => {
     if (isGettingExplorerLink) return;
 
     setIsGettingExplorerLink(true);
@@ -231,7 +231,7 @@ const TransactionStatus = ({
     }
 
     setIsGettingExplorerLink(false);
-    previewTransaction(transactionHash);
+    previewTransaction(transactionHash, approvalTransaction);
   };
 
   useEffect(() => {
@@ -262,9 +262,9 @@ const TransactionStatus = ({
         const transactionStatus =
           transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
-        const showAsApproval =
-        crossChainAction.useWeb3Provider &&
-          isERC20ApprovalTransactionData(transaction.data as string);
+        const showAsApproval = crossChainAction.useWeb3Provider
+          && isERC20ApprovalTransactionData(transaction.data as string)
+          && index === 0; // show first tx approval only, bridge tx that are index > 0 can include approval method too
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
           [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? "Submit transaction" : "Sign message",
@@ -397,11 +397,11 @@ const TransactionStatus = ({
                       <ClickableText
                         disabled={isGettingExplorerLink}
                         onClick={() => {
-                          if (crossChainAction.useWeb3Provider)
-                            return previewTransaction(
-                              transaction.transactionHash
-                            );
-                          previewBatchTransaction();
+                          if (crossChainAction.useWeb3Provider) {
+                            previewTransaction(transaction.transactionHash, showAsApproval);
+                            return;
+                          }
+                          previewBatchTransaction(showAsApproval);
                         }}
                       >
                         <Text
