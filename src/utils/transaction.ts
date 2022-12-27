@@ -1,7 +1,6 @@
 import {
   AccountTypes,
-  ExchangeOffer,
-  ExchangeProviders,
+  BridgingQuote,
   GatewayTransactionStates,
   LiFiStatus,
   NotificationTypes,
@@ -11,7 +10,6 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 import {
-  BigNumber,
   BigNumberish,
   ethers,
 } from 'ethers';
@@ -43,43 +41,39 @@ import { ITransactionBlock } from '../types/transactionBlock';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export const klimaDaoStaking = async (
-  amount: string,
+  routeToKlima?: BridgingQuote | null,
   receiverAddress?: string,
   sdk?: EtherspotSdk | null,
-): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[], returnAmount: BigNumber, provider?: ExchangeProviders } }> => {
+  flag?: Boolean,
+  amount?: string,
+): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[], provider?: string } }> => {
   if (!sdk) return { errorMessage: 'No sdk found' };
+
+  if (!routeToKlima) return { errorMessage: 'No routes found' }
 
   try {
     const fromAssetAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
     const createTimestamp = +new Date();
-    const offers = await sdk.getExchangeOffers({
-      fromChainId: CHAIN_ID.POLYGON,
-      fromAmount: amount,
-      fromTokenAddress: fromAssetAddress, //USDC on Polygon
-      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815', // KLIMA on Polygon
-    });
 
-    const bestOffer = offers.reduce((best: ExchangeOffer | null, offer) => {
-      if (!best || best.receiveAmount.lt(offer.receiveAmount)) return offer;
-      return best;
-    }, null);
+    const bestRoute = routeToKlima;
 
-    if (!bestOffer) {
-      return { errorMessage: 'Failed build KLIMA swap transaction!' };
-    }
-
-    let transactions: ICrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
-      ...transaction,
-      chainId: CHAIN_ID.POLYGON,
+    let transactions = [{
+      to: bestRoute.transaction.to,
+      value: bestRoute.transaction.value as string,
+      data: bestRoute.transaction.data as string,
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-    }));
+    }]
+
+    if(flag) {
+      return { result: { transactions, provider: 'LiFi' } };
+    }
 
     // not native asset and no erc20 approval transaction included
-    if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.POLYGON].address) && transactions.length === 1) {
+    if (!addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.POLYGON].address) && transactions.length === 1 && bestRoute.approvalData) {
       const abi = getContractAbi(ContractNames.ERC20Token);
       const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, amount);
+      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(bestRoute.approvalData.approvalAddress, bestRoute.approvalData.amount);
       if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
         return { errorMessage: 'Failed build bridge approval transaction!' };
       }
@@ -88,7 +82,7 @@ export const klimaDaoStaking = async (
         to: approvalTransactionRequest.to,
         data: approvalTransactionRequest.data,
         chainId: CHAIN_ID.POLYGON,
-        value: 0,
+        value: '0',
         createTimestamp,
         status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       };
@@ -97,8 +91,8 @@ export const klimaDaoStaking = async (
     }
 
     const abi = getContractAbi(ContractNames.ERC20Token);
-    const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, '0x4e78011ce80ee02d2c3e649fb657e45898257815'); // Klima ojn Polygon
-    const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.('0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227', bestOffer.receiveAmount); // Klima staking
+    const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, '0x4e78011ce80ee02d2c3e649fb657e45898257815'); // Klima on Polygon
+    const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.('0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227', bestRoute.estimate.toAmount); // Klima staking
     if (!klimaApprovalTransactionRequest || !klimaApprovalTransactionRequest.to) {
       return { errorMessage: 'Failed build bridge approval transaction!' };
     }
@@ -107,7 +101,7 @@ export const klimaDaoStaking = async (
       to: klimaApprovalTransactionRequest.to,
       data: klimaApprovalTransactionRequest.data,
       chainId: CHAIN_ID.POLYGON,
-      value: 0,
+      value: '0',
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
@@ -116,7 +110,7 @@ export const klimaDaoStaking = async (
       "function stake(uint256 value)",
     ];
     const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>('klimaStakingContract', klimaStakingAbi, '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'); // Klima ojn Polygon
-    const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestOffer.receiveAmount); // Klima staking
+    const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestRoute.estimate.toAmount); // Klima staking
     if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
       return { errorMessage: 'Failed build bridge approval transaction!' };
     }
@@ -125,36 +119,14 @@ export const klimaDaoStaking = async (
       to: klimaStakeTransactionRequest.to,
       data: klimaStakeTransactionRequest.data,
       chainId: CHAIN_ID.POLYGON,
-      value: 0,
+      value: '0',
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
     transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
 
-    if (receiverAddress && receiverAddress != sdk.state.accountAddress) {
-      const sKlimaTokenAbi = [
-        "function transfer(address to, uint256 value)",
-      ]
-      const sKlimaContract = sdk.registerContract<{ encodeTransfer(to: string, value: BigNumberish): TransactionRequest }>('erc20Contract', sKlimaTokenAbi, '0xb0C22d8D350C67420f06F48936654f567C73E8C8');
-      const sKlimaSendTransactionRequest = sKlimaContract.encodeTransfer?.(receiverAddress, bestOffer.receiveAmount);
-      if (!sKlimaSendTransactionRequest || !sKlimaSendTransactionRequest.to) {
-        return { errorMessage: 'Failed build sKlima send transaction!' };
-      }
-
-      const sKlimaSendTransaction = {
-        to: sKlimaSendTransactionRequest.to,
-        data: sKlimaSendTransactionRequest.data,
-        chainId: CHAIN_ID.POLYGON,
-        value: 0,
-        createTimestamp,
-        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-      };
-
-      transactions = [...transactions, sKlimaSendTransaction];
-    }
-
-    return { result: { transactions, returnAmount: bestOffer.receiveAmount, provider: bestOffer.provider } };
+    return { result: { transactions, provider: 'LiFi' } };
   } catch (e) {
     return { errorMessage: 'Failed to get staking exchange transaction' }
   }
@@ -174,7 +146,10 @@ export const buildCrossChainAction = async (
     && !!transactionBlock?.values?.fromAssetDecimals
     && !!transactionBlock?.values?.fromAssetSymbol
     && !!transactionBlock?.values?.amount
-    && !!transactionBlock?.values?.receiverAddress) {
+    && !!transactionBlock?.values?.receiverAddress
+    && !!transactionBlock?.values?.routeToKlima
+    && !!transactionBlock?.values?.routeToUSDC
+    && !!transactionBlock?.values?.receiveAmount) {
     try {
       const {
         values: {
@@ -185,6 +160,11 @@ export const buildCrossChainAction = async (
           fromAssetIconUrl,
           amount,
           accountType,
+          routeToKlima,
+          routeToUSDC,
+          receiveAmount,
+          receiverAddress,
+          toolUsed,
         },
       } = transactionBlock;
 
@@ -192,70 +172,23 @@ export const buildCrossChainAction = async (
 
       if (fromChainId !== CHAIN_ID.POLYGON) {
         try {
-          const routes = await sdk.getAdvanceRoutesLiFi({
-            fromChainId,
-            toChainId: CHAIN_ID.POLYGON, //Polygon
-            fromAmount: amountBN,
-            fromTokenAddress: fromAssetAddress,
-            toTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS, // USDC on Polygon
-            toAddress: sdk.state.accountAddress,
-          });
-          const bestRoute = routes.items.reduce((best: any, route) => {
-            if (!best || BigNumber.from(best['toAmount']).lt(route.toAmount)) return route;
-            return best;
-          }, null);
-
-          if (!bestRoute) {
-            return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
-          }
-
-          const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
-
           let destinationTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
 
-          if (bestRoute.containsSwitchChain) {
-            advancedRouteSteps.forEach(step => {
-              if (step.chainId === CHAIN_ID.POLYGON) {
-                return destinationTxns.push({
-                  to: step.to as string,
-                  value: step.value,
-                  data: step.data,
-                  createTimestamp,
-                  status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-                })
-              }
-              return transactions.push({
-                to: step.to as string,
-                value: step.value,
-                data: step.data,
-                createTimestamp,
-                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-              })
-            })
-          } else {
-            transactions = advancedRouteSteps.map(({
-              to,
-              value,
-              data,
-              chainId,
-            }) => ({
-              to: to as string,
-              value,
-              data,
-              chainId: chainId ?? fromChainId,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            }));
-          }
+          transactions = [{
+            to: routeToUSDC.transaction.to,
+            value: routeToUSDC.transaction.value as string,
+            data: routeToUSDC.transaction.data as string,
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          }];
 
-          if (ethers.utils.isAddress(bestRoute.fromToken.address)
-            && !addressesEqual(bestRoute.fromToken.address, nativeAssetPerChainId[fromChainId].address)
-            && transactions.length === 1
-            && bestRoute.fromAmount) {
+          if (ethers.utils.isAddress(fromAssetAddress)
+            && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address)
+            && routeToUSDC.approvalData?.approvalAddress) {
             const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, bestRoute.fromToken.address);
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, bestRoute.fromAmount);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(routeToUSDC.approvalData.approvalAddress, routeToUSDC.approvalData.amount);
             if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
               return { errorMessage: 'Failed build bridge approval transaction!' };
             }
@@ -263,7 +196,7 @@ export const buildCrossChainAction = async (
             const approvalTransaction = {
               to: approvalTransactionRequest.to,
               data: approvalTransactionRequest.data,
-              value: 0,
+              value: '0',
               createTimestamp,
               status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
             };
@@ -271,13 +204,15 @@ export const buildCrossChainAction = async (
             transactions = [approvalTransaction, ...transactions];
           }
 
-          const result = await klimaDaoStaking(BigNumber.from(bestRoute.toAmount).sub('250000').toString(), sdk.state.walletAddress, sdk);
+          const result = await klimaDaoStaking(routeToKlima, receiverAddress, sdk, true, '0');
 
           if (result.errorMessage) return { errorMessage: result.errorMessage };
 
-          result.result?.transactions.map((element) => {
-            destinationTxns.push(element);
-          });
+          if (result.result?.transactions?.length) {
+            result.result?.transactions.map((element) => {
+              destinationTxns.push(element);
+            });
+          }
 
           const preview = {
             fromChainId,
@@ -288,17 +223,17 @@ export const buildCrossChainAction = async (
               amount: amountBN.toString(),
               iconUrl: fromAssetIconUrl,
             },
-            amount: BigNumber.from(bestRoute.toAmount),
+            amount: ethers.utils.parseUnits(receiveAmount ?? '0', 9),
             toAsset: {
               address: '0x4e78011ce80ee02d2c3e649fb657e45898257815',
               decimals: 9,
               symbol: 'sKlima',
-              amount: result.result?.returnAmount.toString() ?? '0',
+              amount: ethers.utils.parseUnits(receiveAmount ?? '0', 9).toString(),
               iconUrl: 'https://polygonscan.com/token/images/klimadao_32.png',
             },
             receiverAddress: transactionBlock?.values?.receiverAddress,
-            providerName: result.result?.provider ? swapServiceIdToDetails[result.result.provider].title : 'Unknown provider',
-            providerIconUrl: result.result?.provider ? swapServiceIdToDetails[result.result.provider].iconUrl : '',
+            providerName: result.result?.provider ?? 'Unknown provider',
+            providerIconUrl: result.result?.provider ?? '',
           };
 
           const crossChainAction: ICrossChainAction = {
@@ -310,9 +245,9 @@ export const buildCrossChainAction = async (
             transactions,
             isEstimating: false,
             estimated: null,
-            containsSwitchChain: bestRoute.containsSwitchChain,
-            bridgeUsed: bestRoute.steps[0].tool,
-            receiveAmount: bestRoute.toAmount,
+            containsSwitchChain: false,
+            bridgeUsed: toolUsed,
+            receiveAmount: ethers.utils.parseUnits(routeToUSDC.estimate.toAmount ?? '0', 6).toString(),
             useWeb3Provider: accountType === AccountTypes.Key,
             destinationCrossChainAction: [{
               id: uniqueId(`${createTimestamp}-`),
@@ -325,7 +260,6 @@ export const buildCrossChainAction = async (
               estimated: null,
               useWeb3Provider: false,
               destinationCrossChainAction: [],
-              gasTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS
             }],
           };
 

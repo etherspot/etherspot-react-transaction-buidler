@@ -586,7 +586,7 @@ const TransactionBuilderContextProvider = ({
         accountAddress,
       );
 
-      const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
+      const stakingTxns = await klimaDaoStaking(null, transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON), false, BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString())
 
       if (stakingTxns.errorMessage) {
         showAlertModal(stakingTxns.errorMessage);
@@ -619,6 +619,7 @@ const TransactionBuilderContextProvider = ({
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
+        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         setIsSubmitting(false);
         return;
       }

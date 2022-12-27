@@ -6,9 +6,9 @@ import React, {
 } from 'react';
 import styled, { useTheme } from 'styled-components';
 import {
-  AccountTypes,
+  AccountTypes, BridgingQuote, CrossChainServiceProvider,
 } from 'etherspot';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
@@ -24,7 +24,7 @@ import {
   formatMaxAmount,
 } from '../../utils/common';
 import {
-  addressesEqual, isValidEthereumAddress,
+  addressesEqual, isValidAmount, isValidEthereumAddress,
 } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
@@ -33,11 +33,16 @@ import {
   IAssetWithBalance,
 } from '../../providers/EtherspotContextProvider';
 import {
-  CombinedRoundedImages,
+  CombinedRoundedImages, RoundedImage,
 } from '../Image';
 import { Pill } from '../Text';
+import Text from '../Text/Text';
 import { Theme } from '../../utils/theme';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
+import { debounce } from 'lodash';
+import SelectInput from '../SelectInput';
+import { SelectOption } from '../SelectInput/SelectInput';
+import { bridgeServiceIdToDetails } from '../../utils/bridge';
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -48,6 +53,10 @@ export interface IKlimaStakingTransactionBlockValues {
   amount?: string;
   accountType: AccountTypes;
   receiverAddress?: string;
+  receiveAmount?: string;
+  routeToUSDC?: BridgingQuote;
+  routeToKlima?: BridgingQuote;
+  toolUsed?: string;
 }
 
 const Title = styled.h3`
@@ -63,16 +72,38 @@ const WalletReceiveWrapper = styled.div`
 	flex-direction: row;
 `;
 
+const OfferDetails = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-family: 'PTRootUIWebMedium', sans-serif;
+`;
+
+const mapRouteToOption = (route: BridgingQuote) => {
+  // const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
+  return {
+    title: bridgeServiceIdToDetails['lifi'].title,
+    value: route.estimate.toAmount,
+    iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
+  };
+};
+
 const KlimaStakingTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
   values,
 }: IKlimaStakingTransactionBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress } = useEtherspot();
+  const { smartWalletOnly, providerAddress, accountAddress, sdk } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
+  const [receiveAmount, setReceiveAmount] = useState<string>('');
+  const [routeToUSDC, setRouteToUSDC] = useState<BridgingQuote[]>([]);
+  const [routeToKlima, setRouteToKlima] = useState<BridgingQuote[]>([]);
+  const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
+  const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
+  const [toolUsed, setToolUsed] = useState<string>('');
 
   const defaultCustomReceiverAddress = values?.receiverAddress
     && !addressesEqual(providerAddress, values?.receiverAddress)
@@ -143,6 +174,17 @@ const KlimaStakingTransactionBlock = ({
       return;
     }
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+
+    if (routeToUSDC.length == 0 || routeToKlima.length == 0 || isRouteFetching || !toolUsed) {
+      setTransactionBlockFieldValidationError(
+        transactionBlockId,
+        'route',
+        'No offer selected'
+      )
+      return;
+    }
+
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     setTransactionBlockValues(transactionBlockId, {
       fromChainId: selectedFromNetwork?.chainId ?? undefined,
       fromAssetAddress: selectedFromAsset?.address ?? undefined,
@@ -152,6 +194,10 @@ const KlimaStakingTransactionBlock = ({
       amount,
       accountType: selectedAccountType,
       receiverAddress: receiverAddress ?? undefined,
+      routeToUSDC: routeToUSDC[0],
+      routeToKlima: routeToKlima[0],
+      receiveAmount,
+      toolUsed,
     });
   }, [
     selectedFromNetwork,
@@ -159,6 +205,10 @@ const KlimaStakingTransactionBlock = ({
     amount,
     selectedAccountType,
     receiverAddress,
+    routeToUSDC,
+    routeToKlima,
+    receiveAmount,
+    toolUsed,
   ]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -170,6 +220,100 @@ const KlimaStakingTransactionBlock = ({
     return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals);
   }, [amount, selectedFromAsset]);
 
+  const resetRoutes = () => {
+    setRouteToUSDC([]);
+    setRouteToKlima([]);
+    setReceiveAmount('');
+    resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
+    setIsRouteFetching(false);
+    setSelectedRoute(null);
+    setToolUsed('');
+  }
+
+  const computeReceiveAmount = useCallback(debounce(async () => {
+    resetRoutes();
+    if (!sdk || !selectedFromNetwork || !selectedFromAsset || !isValidAmount(amount) || (remainingSelectedFromAssetBalance <= 0)) {
+      return;
+    }
+
+    setIsRouteFetching(true);
+
+    if (selectedFromAsset?.assetPriceUsd) {
+      if(+amount * selectedFromAsset.assetPriceUsd < 0.4) {
+        setTransactionBlockFieldValidationError(
+          transactionBlockId,
+          'amount',
+          'Minimum amount 0.4 USD',
+        );
+        resetRoutes();
+        return;
+      }
+    }
+
+
+    const routeToUsdc = await sdk.getCrossChainQuotes({
+      fromChainId: selectedFromNetwork.chainId,
+      toChainId: CHAIN_ID.POLYGON,
+      fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+      fromTokenAddress: selectedFromAsset.address,
+      toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+      toAddress: sdk.state.accountAddress,
+      serviceProvider: CrossChainServiceProvider.LiFi,
+    })
+
+    setRouteToUSDC(routeToUsdc.items);
+
+    if(routeToUsdc.items.length === 0) {
+      setIsRouteFetching(false);
+      resetRoutes();
+      return;
+    }
+
+    const routeToKlima = await sdk.getCrossChainQuotes({
+      fromChainId: CHAIN_ID.POLYGON,
+      toChainId: CHAIN_ID.POLYGON,
+      fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('250000'),
+      fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
+      toAddress: receiverAddress ?? undefined,
+      serviceProvider: CrossChainServiceProvider.LiFi,
+    })
+
+    if (routeToKlima.items.length > 0) {
+      setSelectedRoute(mapRouteToOption(routeToKlima.items[0]));
+      setToolUsed(routeToUsdc.items[0].LiFiBridgeUsed ?? '');
+      setRouteToKlima(routeToKlima.items);
+      setReceiveAmount(ethers.utils.formatUnits(routeToKlima.items[0].estimate.toAmount, klimaAsset.decimals));
+      resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
+      setIsRouteFetching(false);
+    } else {
+      resetRoutes();
+    }
+  }, 200),[
+    selectedFromNetwork,
+    selectedFromAsset,
+    amount,
+    selectedAccountType,
+    receiverAddress,
+  ])
+
+  useEffect(() => { computeReceiveAmount(); }, [computeReceiveAmount]);
+
+  const renderOption = (option: SelectOption) => (
+    <OfferDetails>
+      <RoundedImage title={option.title} url={option.iconUrl} size={24} />
+      <div>
+        <Text size={12} marginBottom={2} medium block>
+          {option.title}
+        </Text>
+        {!!receiveAmount && (
+          <Text size={16} medium>
+            {receiveAmount} {klimaAsset.symbol}
+          </Text>
+        )}
+      </div>
+    </OfferDetails>
+  );
 
   return (
     <>
@@ -266,6 +410,19 @@ const KlimaStakingTransactionBlock = ({
           placeholder="Insert address"
           noLabel
           showPasteButton
+        />
+      )}
+      {!!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
+        <SelectInput
+          label={`Offer`}
+          options={ selectedRoute ? [selectedRoute] : []}
+          isLoading={isRouteFetching}
+          selectedOption={selectedRoute}
+          renderOptionListItemContent={renderOption}
+          renderSelectedOptionContent={renderOption}
+          placeholder="Offer"
+          errorMessage={!isRouteFetching ? errorMessages?.route : ''}
+          noOpen={true}
         />
       )}
     </>
