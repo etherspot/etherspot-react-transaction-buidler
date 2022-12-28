@@ -284,67 +284,70 @@ const EtherspotContextProvider = ({
     return [];
   }, [sdk, accountAddress]);
 
-  const getSmartWalletBalancesPerChain = useCallback(async (walletAddress: string, supportedChains: Chain[]) => {
-    if (!sdk || !walletAddress) return;
-    let balanceByChain : IBalanceByChain[] = []
-    for (let index = 0; index < supportedChains.length; index++) {
-      const element = supportedChains[index];
-      try {
-        let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
-          element.chainId,
-          true,
-          walletAddress,
-          false
-        );
-        balanceByChain.push({
-          title: element.title,
-          chain: element.chainId,
-          total: Number(supportedAssets.reduce((acc,curr)=>{
-            if(curr.balanceWorthUsd){
-              return acc + curr.balanceWorthUsd
-            }
-            return acc
-          }, 0).toFixed(2))
+  const getSmartWalletBalancesPerChain = useCallback(
+    async (walletAddress: string, supportedChains: Chain[]) => {
+      if (!sdk || !walletAddress) return;
+      let balanceByChain: IBalanceByChain[] = [];
+      await Promise.all(
+        supportedChains.map(async (element) => {
+          try {
+            let supportedAssets =
+              await getSupportedAssetsWithBalancesForChainId(
+                element.chainId,
+                true,
+                walletAddress,
+                false
+              );
+            balanceByChain.push({
+              title: element.title,
+              chain: element.chainId,
+              total: supportedAssets.reduce((sum, asset) => {
+                if (asset.balanceWorthUsd) {
+                  return sum + asset.balanceWorthUsd;
+                }
+                return sum;
+              }, 0),
+            });
+          } catch (e) {
+            //
+          }
         })
-      } catch (e) {
-        //
+      );
+      setBalancePerChainSmartWallet(balanceByChain);
+      console.log('balanceByChain2', balanceByChain);
+    },
+    [sdk, accountAddress]
+  );
+
+  const getAccountBalanceByChainId = useCallback(
+    async (
+      assetsChainId: number,
+      balancesForAddress: string | null = accountAddress
+    ) => {
+      if (!sdk) return [];
+
+      let computedAccount;
+      let balance;
+      if (!balancesForAddress) {
+        try {
+          computedAccount = await connect();
+        } catch (e) {
+          //
+        }
       }
-      
-    }
-    setBalancePerChainSmartWallet(balanceByChain)
-    return balanceByChain
-  },[sdk, accountAddress])
+      if (!balancesForAddress && !computedAccount) return [];
 
-  // Mayukh
-  const getAccountBalanceByChainId = useCallback(async (
-    assetsChainId: number,
-    balancesForAddress: string | null = accountAddress,
-  ) => {
-    if (!sdk) return [];
-
-    let computedAccount;
-    let balance 
-    if (!balancesForAddress) {
       try {
-        computedAccount = await connect();
-      } catch (e) {
-        //
-      }
-    }
-    if (!balancesForAddress && !computedAccount) return [];
+        balance = await sdk.getAccountBalances({
+          account: balancesForAddress ?? computedAccount,
+          chainId: assetsChainId,
+        });
+      } catch (err) {}
 
-    try {
-      const res = await sdk.getAccountBalances({
-        account: balancesForAddress ?? computedAccount,
-        chainId: assetsChainId,
-      });
-      balance = res
-    } catch (err) {
-    }
-
-    return balance
-
-  }, [sdk, accountAddress])
+      return balance;
+    },
+    [sdk, accountAddress]
+  );
 
   const getSupportedAssetsWithBalancesForChainId = useCallback(async (
     assetsChainId: number,

@@ -29,6 +29,7 @@ import { formatAmountDisplay } from '../../utils/common';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
   position: relative;
@@ -310,7 +311,7 @@ const NetworkAssetSelectInput = ({
   useEffect(() => {
     const handleBalanceGet = async () => {
       if (!sdk || !walletAddress) return;
-      let balanceee = await getSmartWalletBalancesPerChain(walletAddress, supportedChains)
+      await getSmartWalletBalancesPerChain(walletAddress, supportedChains)
     }
     handleBalanceGet()
   }, [supportedChains, sdk, walletAddress])
@@ -333,18 +334,21 @@ const NetworkAssetSelectInput = ({
     supportedChain: Chain,
     accType?: string
   ) => {
-    if (accType === 'Contract' && label === 'From') {
+    if (accType === DestinationWalletEnum.Contract && label === 'From') {
       return balancePerChainSmartWallet && balancePerChainSmartWallet.length
-        ? '・$' +
-            balancePerChainSmartWallet?.filter(
-              (item: any) => item.chain === supportedChain.chainId
-            )[0]?.total
+        ? formatAmountDisplay(
+            String(
+              balancePerChainSmartWallet?.filter(
+                (item: any) => item.chain === supportedChain.chainId
+              )[0]?.total
+            ),
+            '$'
+          )
         : '・$0';
-    }
-    else if(accType === 'Key' && label === 'From'){
+    } else if (accType === DestinationWalletEnum.Key && label === 'From') {
       return '$0';
     }
-    return ''
+    return '$0';
   };
 
   return (
