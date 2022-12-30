@@ -596,6 +596,116 @@ const ActionPreview = ({
 		);
 	}
 
+  if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
+		const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress } = preview;
+
+		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+
+		const toNetwork = supportedChains[1];
+
+		const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[CHAIN_ID.POLYGON].toUpperCase();
+
+		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+
+		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+
+		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+
+		return (
+			<Card
+				title='PLR Dao Staking'
+				marginBottom={20}
+				onCloseButtonClick={onRemove}
+				showCloseButton={showCloseButton}
+				additionalTopButtons={additionalTopButtons}
+			>
+				<DoubleTransactionActionsInSingleRow>
+					<TransactionAction>
+						<Label>You send</Label>
+						<ValueWrapper>
+							<CombinedRoundedImages
+								title={fromAsset.symbol}
+								url={fromAsset.iconUrl}
+								smallImageTitle={fromChainTitle}
+								smallImageUrl={fromNetwork?.iconUrl}
+							/>
+							<div>
+								<Text size={16} marginBottom={1} medium block>
+									{fromAmount} {fromAsset.symbol}
+								</Text>
+								<Text size={12}>On {fromChainTitle}</Text>
+							</div>
+						</ValueWrapper>
+					</TransactionAction>
+					<TransactionAction>
+						<Label>You receive</Label>
+						<ValueWrapper>
+							<CombinedRoundedImages
+								title={toAsset.symbol}
+								url={toAsset.iconUrl}
+								smallImageTitle={toChainTitle}
+								smallImageUrl={toNetwork?.iconUrl}
+							/>
+							<div>
+								<Text size={16} marginBottom={3} medium block>
+									{toAmount} {toAsset.symbol}
+								</Text>
+								<Text size={12}>On {toChainTitle}</Text>
+							</div>
+						</ValueWrapper>
+					</TransactionAction>
+				</DoubleTransactionActionsInSingleRow>
+				{!!senderAddress && !!receiverAddress && (
+					<TransactionAction>
+						<Text size={16} medium>
+							<>
+								From &nbsp;
+								<ClickableText onClick={() => onCopy(senderAddress)}>
+									{humanizeHexString(senderAddress)}
+								</ClickableText>
+								&nbsp;
+							</>
+							to &nbsp;
+							<ClickableText onClick={() => onCopy(receiverAddress)}>
+								{humanizeHexString(receiverAddress)}
+							</ClickableText>
+						</Text>
+					</TransactionAction>
+				)}
+				<TransactionAction>
+					<Label>Route</Label>
+					<ValueWrapper>
+						<RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
+						<ValueBlock>
+							<Text size={12} marginBottom={2} medium block>
+								{providerName}
+							</Text>
+							<Text size={16} medium>
+								{toAmount} {toAsset.symbol}{' '}
+							</Text>
+						</ValueBlock>
+						{!!cost && (
+							<ValueBlock>
+								<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
+									Gas price
+								</Text>
+								<Text size={16} medium>
+									{cost}
+								</Text>
+							</ValueBlock>
+						)}
+					</ValueWrapper>
+				</TransactionAction>
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
+				<TransactionStatus
+          crossChainAction={crossChainAction}
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+        />
+			</Card>
+		);
+	}
+  
 	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
 		const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
 
