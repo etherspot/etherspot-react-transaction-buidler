@@ -1016,7 +1016,9 @@ export const estimateCrossChainAction = async (
     }
   }
 
-  if (feeAssetBalanceBN.isZero() || (gasCost && feeAssetBalanceBN.lt(gasCost))) {
+  if (feeAssetBalanceBN.isZero()
+    || (!feeAmount && gasCost && feeAssetBalanceBN.lt(gasCost))
+    || (feeAmount && feeAssetBalanceBN.lt(feeAmount))) {
     return { errorMessage: 'Not enough gas!' };
   }
 
