@@ -19,17 +19,17 @@ import {
 import { useEtherspot } from '../../hooks';
 import {
   Chain,
+  CHAIN_ID,
   supportedChains,
 } from '../../utils/chain';
-import {
-  IAssetWithBalance,
-} from '../../providers/EtherspotContextProvider';
+import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { containsText } from '../../utils/validation';
 import { formatAmountDisplay } from '../../utils/common';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
+import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
   position: relative;
@@ -265,7 +265,13 @@ const NetworkAssetSelectInput = ({
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
   const theme: Theme = useTheme();
 
-  const { sdk, getSupportedAssetsWithBalancesForChainId, getSmartWalletBalancesPerChain, balancePerChainSmartWallet } = useEtherspot();
+  const {
+    sdk,
+    getSupportedAssetsWithBalancesForChainId,
+    getSmartWalletBalancesPerChain,
+    balancePerChainSmartWallet,
+    setBalancePerChainSmartWallet,
+  } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
@@ -311,16 +317,48 @@ const NetworkAssetSelectInput = ({
   useEffect(() => {
     const handleBalanceGet = async () => {
       if (!sdk || !walletAddress) return;
-      await getSmartWalletBalancesPerChain(walletAddress, supportedChains)
-    }
-    handleBalanceGet()
-  }, [supportedChains, sdk, walletAddress])
+      await getSmartWalletBalancesPerChain(walletAddress, supportedChains);
+    };
+    handleBalanceGet();
+  }, [supportedChains, sdk, walletAddress]);
 
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
     return orderBy(filtered, [(asset) => asset.balanceWorthUsd ?? 0, 'name'], ['desc', 'asc']);
   }, [selectedNetworkAssets, assetSearchQuery]);
 
+  useEffect(() => {
+    const updateAvalancheBalance = () => {
+      if (
+        !sdk ||
+        !walletAddress ||
+        !preselectedNetwork ||
+        preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
+        !balancePerChainSmartWallet ||
+        filteredSelectedNetworkAssets.length
+      )
+        return;
+      setBalancePerChainSmartWallet([
+        ...balancePerChainSmartWallet,
+        {
+          total: filteredSelectedNetworkAssets.reduce((acc, curr) => {
+            return curr.balanceWorthUsd ? acc + curr.balanceWorthUsd : acc;
+          }, 0),
+          title: supportedChains.filter(
+            (element) => element.chainId === CHAIN_ID.AVALANCHE
+          )[0].title,
+          chain: CHAIN_ID.AVALANCHE,
+        },
+      ]);
+    };
+    updateAvalancheBalance();
+  }, [
+    sdk,
+    supportedChains,
+    walletAddress,
+    preselectedNetwork,
+    filteredSelectedNetworkAssets,
+  ]);
 
   const onListItemClick = (asset: IAssetWithBalance, amountBN?: BigNumber) => {
     if (onAssetSelect) onAssetSelect(asset, amountBN);
@@ -334,17 +372,20 @@ const NetworkAssetSelectInput = ({
     supportedChain: Chain,
     accType?: string
   ) => {
-    if (accType === DestinationWalletEnum.Contract && label === 'From') {
-      return balancePerChainSmartWallet && balancePerChainSmartWallet.length
-        ? formatAmountDisplay(
-            String(
-              balancePerChainSmartWallet?.filter(
-                (item: any) => item.chain === supportedChain.chainId
-              )[0]?.total
-            ),
-            '$'
-          )
-        : '・$0';
+    if (
+      accType === DestinationWalletEnum.Contract &&
+      label === 'From' &&
+      balancePerChainSmartWallet &&
+      balancePerChainSmartWallet.length
+    ) {
+      let balanceByChain = balancePerChainSmartWallet.filter(
+        (item: any) => item.chain === supportedChain.chainId
+      );
+      return balancePerChainSmartWallet &&
+        balancePerChainSmartWallet.length &&
+        balanceByChain.length
+        ? formatAmountDisplay(String(balanceByChain[0].total), '$')
+        : '$0';
     } else if (accType === DestinationWalletEnum.Key && label === 'From') {
       return '$0';
     }

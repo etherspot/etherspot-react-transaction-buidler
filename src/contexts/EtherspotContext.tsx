@@ -29,6 +29,7 @@ export interface EtherspotContextData {
     totalWorthPerAddress: ITotalWorthPerAddress;
     logout: () => void;
     smartWalletOnly: boolean;
+    setBalancePerChainSmartWallet: (balances : IBalanceByChain[]) => void;
   }
 }
 
