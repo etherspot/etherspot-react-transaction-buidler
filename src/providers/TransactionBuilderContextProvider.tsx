@@ -39,7 +39,7 @@ import { ActionPreview } from '../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
-import { CHAIN_ID, Chain } from '../utils/chain';
+import { CHAIN_ID, Chain, plrDaoAsset } from '../utils/chain';
 import Card from '../components/Card';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import {
@@ -49,7 +49,7 @@ import {
   ChainIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
-import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { POLYGON_USDC_CONTRACT_ADDRESS , POLYGON_MUMBAI_TESTNET_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -673,7 +673,7 @@ const TransactionBuilderContextProvider = ({
       let flag = 1, errorOnLiFi;
       while (flag) {
         try {
-          const status = await getCrossChainStatusByHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.chainId, CHAIN_ID.POLYGON, result.transactionHash, crossChainAction.bridgeUsed)
+          const status = await getCrossChainStatusByHash(getSdkForChainId(plrDaoAsset.chainId) as Sdk, crossChainAction.chainId, plrDaoAsset.chainId, result.transactionHash, crossChainAction.bridgeUsed)
           if (status?.status == "DONE" && status.subStatus == "COMPLETED") {
             flag = 0;
           } else if (status?.status === "FAILED") {
@@ -701,7 +701,7 @@ const TransactionBuilderContextProvider = ({
         accountAddress,
       );
 
-      const stakingTxns = await plrDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "PLR_DAO_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
+      const stakingTxns = await plrDaoStaking(null, BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "PLR_DAO_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(plrDaoAsset.chainId))
       if (stakingTxns.errorMessage) {
         showAlertModal(stakingTxns.errorMessage);
         setIsSubmitting(false);
@@ -709,7 +709,7 @@ const TransactionBuilderContextProvider = ({
       }
 
       const estimated = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
+        getSdkForChainId(plrDaoAsset.chainId),
         web3Provider,
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
@@ -720,13 +720,13 @@ const TransactionBuilderContextProvider = ({
         ...crossChainAction,
         estimated,
         transactions: stakingTxns.result?.transactions ?? [],
-        chainId: CHAIN_ID.POLYGON,
+        chainId: plrDaoAsset.chainId,
       }
 
       result = await submitEtherspotAndWaitForTransactionHash(
-        getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+        getSdkForChainId(plrDaoAsset.chainId) as Sdk,
         crossChainAction.transactions,
-        POLYGON_USDC_CONTRACT_ADDRESS,
+        POLYGON_MUMBAI_TESTNET_USDC_CONTRACT_ADDRESS,
       );
 
       if (
