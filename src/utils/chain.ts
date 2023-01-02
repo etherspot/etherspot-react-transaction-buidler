@@ -197,11 +197,11 @@ export const klimaAsset: IAssetWithBalance = {
 }
 
 export const plrDaoAsset: IAssetWithBalance = {
-  address: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-  chainId: CHAIN_ID.POLYGON,
+  address: '0x92334318FB7f002c2ca3a6A146250133108f462b', //TODO change this PLR Dao mainnet token address
+  chainId: 80001,//TODO change this PLR Dao mainnet chain id
   name: 'Pillar DAO',
   symbol: 'PillarDAO',
-  decimals: 9,
+  decimals: 18,
   logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
   balance: BigNumber.from(0),
   assetPriceUsd: null,

@@ -170,13 +170,10 @@ const PlrDaoStakingTransactionBlock = ({
         // needed computed account address before calling getExchangeOffers
         if (!accountAddress) await sdk.computeContractAccount();
         const offers = await sdk.getExchangeOffers({
-          fromChainId: plrDaoAsset.chainId,
-          fromAmount: ethers.utils.parseUnits(
-            amount,
-            selectedFromAsset.decimals
-          ),
+          fromChainId: selectedFromAsset.chainId,
+          fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+          toTokenAddress: plrDaoAsset.address,
           fromTokenAddress: selectedFromAsset.address,
-          toTokenAddress: plrDaoAsset.address, // PLR Dao on Polygon
         });
         return offers;
       } catch (e) {
