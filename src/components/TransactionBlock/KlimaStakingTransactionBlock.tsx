@@ -4,6 +4,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
 import {
   AccountTypes, BridgingQuote, CrossChainServiceProvider,
@@ -13,7 +14,7 @@ import { BigNumber, ethers } from 'ethers';
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 
-import TextInput from '../TextInput';
+// Components
 import {
   useEtherspot,
   useTransactionBuilder,
@@ -35,13 +36,15 @@ import {
 import {
   CombinedRoundedImages, RoundedImage,
 } from '../Image';
+import TextInput from '../TextInput';
 import { Pill } from '../Text';
 import Text from '../Text/Text';
 import { Theme } from '../../utils/theme';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
-import { debounce } from 'lodash';
 import SelectInput from '../SelectInput';
 import { SelectOption } from '../SelectInput/SelectInput';
+
+// constants
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 
 export interface IKlimaStakingTransactionBlockValues {
@@ -80,7 +83,6 @@ const OfferDetails = styled.div`
 `;
 
 const mapRouteToOption = (route: BridgingQuote) => {
-  // const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
   return {
     title: bridgeServiceIdToDetails['lifi'].title,
     value: route.estimate.toAmount,
@@ -154,15 +156,13 @@ const KlimaStakingTransactionBlock = ({
   ]);
 
   useEffect(() => {
-    if (selectedFromAsset?.assetPriceUsd) {
-      if(+amount * selectedFromAsset.assetPriceUsd < 0.4) {
-        setTransactionBlockFieldValidationError(
-          transactionBlockId,
-          'amount',
-          'Minimum amount 0.4 USD',
-        );
-        return;
-      }
+    if (selectedFromAsset?.assetPriceUsd && (+amount * selectedFromAsset.assetPriceUsd < 0.4)) {
+      setTransactionBlockFieldValidationError(
+        transactionBlockId,
+        'amount',
+        'Minimum amount 0.4 USD',
+      );
+      return;
     }
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
@@ -250,43 +250,47 @@ const KlimaStakingTransactionBlock = ({
       }
     }
 
+    try {
 
-    const routeToUsdc = await sdk.getCrossChainQuotes({
-      fromChainId: selectedFromNetwork.chainId,
-      toChainId: CHAIN_ID.POLYGON,
-      fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-      fromTokenAddress: selectedFromAsset.address,
-      toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-      toAddress: sdk.state.accountAddress,
-      serviceProvider: CrossChainServiceProvider.LiFi,
-    })
+      const routeToUsdc = await sdk.getCrossChainQuotes({
+        fromChainId: selectedFromNetwork.chainId,
+        toChainId: CHAIN_ID.POLYGON,
+        fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+        fromTokenAddress: selectedFromAsset.address,
+        toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+        toAddress: sdk.state.accountAddress,
+        serviceProvider: CrossChainServiceProvider.LiFi,
+      })
 
-    setRouteToUSDC(routeToUsdc.items);
+      setRouteToUSDC(routeToUsdc.items);
 
-    if(routeToUsdc.items.length === 0) {
-      setIsRouteFetching(false);
-      resetRoutes();
-      return;
-    }
+      if(routeToUsdc.items.length === 0) {
+        setIsRouteFetching(false);
+        resetRoutes();
+        return;
+      }
 
-    const routeToKlima = await sdk.getCrossChainQuotes({
-      fromChainId: CHAIN_ID.POLYGON,
-      toChainId: CHAIN_ID.POLYGON,
-      fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('250000'),
-      fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-      toAddress: receiverAddress ?? undefined,
-      serviceProvider: CrossChainServiceProvider.LiFi,
-    })
+      const routeToKlima = await sdk.getCrossChainQuotes({
+        fromChainId: CHAIN_ID.POLYGON,
+        toChainId: CHAIN_ID.POLYGON,
+        fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('250000'),
+        fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+        toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
+        toAddress: receiverAddress ?? undefined,
+        serviceProvider: CrossChainServiceProvider.LiFi,
+      })
 
-    if (routeToKlima.items.length > 0) {
-      setSelectedRoute(mapRouteToOption(routeToKlima.items[0]));
-      setToolUsed(routeToUsdc.items[0].LiFiBridgeUsed ?? '');
-      setRouteToKlima(routeToKlima.items);
-      setReceiveAmount(ethers.utils.formatUnits(routeToKlima.items[0].estimate.toAmount, klimaAsset.decimals));
-      resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
-      setIsRouteFetching(false);
-    } else {
+      if (routeToKlima.items.length > 0) {
+        setSelectedRoute(mapRouteToOption(routeToKlima.items[0]));
+        setToolUsed(routeToUsdc.items[0].LiFiBridgeUsed ?? '');
+        setRouteToKlima(routeToKlima.items);
+        setReceiveAmount(ethers.utils.formatUnits(routeToKlima.items[0].estimate.toAmount, klimaAsset.decimals));
+        resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
+        setIsRouteFetching(false);
+      } else {
+        resetRoutes();
+      }
+    } catch (err) {
       resetRoutes();
     }
   }, 200),[

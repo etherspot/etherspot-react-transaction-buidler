@@ -1,6 +1,7 @@
 import {
   AccountTypes,
   BridgingQuote,
+  CrossChainServiceProvider,
   GatewayTransactionStates,
   LiFiStatus,
   NotificationTypes,
@@ -10,6 +11,7 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 import {
+  BigNumber,
   BigNumberish,
   ethers,
 } from 'ethers';
@@ -49,7 +51,20 @@ export const klimaDaoStaking = async (
 ): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[], provider?: string } }> => {
   if (!sdk) return { errorMessage: 'No sdk found' };
 
-  if (!routeToKlima) return { errorMessage: 'No routes found' }
+  if (!routeToKlima) {
+    const quotes = await sdk.getCrossChainQuotes({
+      fromChainId: CHAIN_ID.POLYGON,
+      toChainId: CHAIN_ID.POLYGON,
+      fromAmount: BigNumber.from(amount).sub('250000'),
+      fromTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS,
+      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
+      toAddress: receiverAddress ?? undefined,
+      serviceProvider: CrossChainServiceProvider.LiFi,
+    })
+    if (quotes.items.length > 0)
+      routeToKlima = quotes.items[0];
+    else return { errorMessage: 'No routes found for staking. Please try again' };
+  }
 
   try {
     const fromAssetAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
@@ -65,7 +80,7 @@ export const klimaDaoStaking = async (
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     }]
 
-    if(flag) {
+    if (flag) {
       return { result: { transactions, provider: 'LiFi' } };
     }
 

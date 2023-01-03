@@ -558,7 +558,13 @@ const TransactionBuilderContextProvider = ({
       let flag = 1, errorOnLiFi;
       while (flag) {
         try {
-          const status = await getCrossChainStatusByHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.chainId, CHAIN_ID.POLYGON, result.transactionHash, crossChainAction.bridgeUsed)
+          const status = await getCrossChainStatusByHash(getSdkForChainId(
+            CHAIN_ID.POLYGON) as Sdk, 
+            crossChainAction.chainId, 
+            CHAIN_ID.POLYGON, 
+            result.transactionHash, 
+            crossChainAction.bridgeUsed
+          )
           if (status?.status == "DONE" && status.subStatus == "COMPLETED") {
             flag = 0;
           } else if (status?.status === "FAILED") {
@@ -586,7 +592,13 @@ const TransactionBuilderContextProvider = ({
         accountAddress,
       );
 
-      const stakingTxns = await klimaDaoStaking(null, transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON), false, BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString())
+      const stakingTxns = await klimaDaoStaking(
+        transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.routeToKlima : null, 
+        transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '',
+        getSdkForChainId(CHAIN_ID.POLYGON),
+        false,
+        BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString()
+      )
 
       if (stakingTxns.errorMessage) {
         showAlertModal(stakingTxns.errorMessage);
