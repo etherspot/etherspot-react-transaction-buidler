@@ -464,11 +464,15 @@ const ActionPreview = ({
     if (isEstimating) return "Estimating...";
     if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
 
-    const gasCostNumericString = ethers.utils.formatUnits(
-      estimated.gasCost,
-      nativeAssetPerChainId[chainId].decimals,
-    );
-    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol}`;
+    const gasCostNumericString = estimated.feeAmount && crossChainAction.gasTokenDecimals
+      ? ethers.utils.formatUnits(estimated.feeAmount, crossChainAction.gasTokenDecimals)
+      : ethers.utils.formatUnits(estimated.gasCost, nativeAssetPerChainId[chainId].decimals);
+
+    const gasAssetSymbol = estimated.feeAmount && crossChainAction.gasTokenSymbol
+      ? crossChainAction.gasTokenSymbol
+      : nativeAssetPerChainId[chainId].symbol;
+
+    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${gasAssetSymbol}`;
     if (!estimated.usdPrice) return gasCostFormatted;
 
     return formatAmountDisplay(
