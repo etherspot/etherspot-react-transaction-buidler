@@ -5,7 +5,8 @@ export interface TransactionsDispatcherContextData {
   data: {
     dispatchedCrossChainActions: ICrossChainAction[];
     dispatchCrossChainActions: (actions: ICrossChainAction[], status?: string) => void;
-    processingCrossChainActionId: string | null;
+    processingCrossChainActionIds: string[] | null;
+    resetDispatchedCrossChainActions: (errorMessage?: string, processingIdToRemove?: string) => void;
   }
 }
 

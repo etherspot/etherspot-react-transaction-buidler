@@ -11,6 +11,7 @@ import postcss from 'rollup-plugin-postcss';
 
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === 'production';
 
 const packageJson = require('./package.json');
 
@@ -21,12 +22,12 @@ export default [
       {
         file: packageJson.main,
         format: 'cjs',
-        sourcemap: true,
+        sourcemap: !isProduction,
       },
       {
         file: packageJson.module,
         format: 'esm',
-        sourcemap: true,
+        sourcemap: !isProduction,
       },
     ],
     watch: {
@@ -41,7 +42,7 @@ export default [
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
-        exclude: ['./example/**']
+        exclude: ['./example/**', './src/test/**']
       }),
       replace({
         __ETHERSPOT_PROJECT_KEY__: process.env.ETHERSPOT_PROJECT_KEY ?? '',

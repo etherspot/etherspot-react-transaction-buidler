@@ -262,7 +262,7 @@ const NetworkAssetSelectInput = ({
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
   const theme: Theme = useTheme();
 
-  const { sdk, getSupportedAssetsForChainId, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
+  const { sdk, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
@@ -270,30 +270,40 @@ const NetworkAssetSelectInput = ({
     setShowSelectModal(!showSelectModal);
   }, [disabled, showSelectModal, selectedNetwork]);
 
-  const updateSelectedNetworkAssets = useCallback(async () => {
-    if (!sdk || !preselectedNetwork || preselectedNetwork.chainId === selectedNetwork?.chainId) return;
-    setIsLoadingAssets(true);
-    setSelectedNetworkAssets([]);
-    const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
-      preselectedNetwork.chainId,
-      showPositiveBalanceAssets,
-      walletAddress,
-    );
-    setSelectedNetworkAssets(supportedAssets);
+  useEffect(() => {
+    let shouldUpdate = true;
 
-    setIsLoadingAssets(false);
+    const updateSelectedNetworkAssets = async () => {
+      if (!sdk || !preselectedNetwork) return;
+      setIsLoadingAssets(true);
+
+      let supportedAssets: IAssetWithBalance[] = [];
+      try {
+        supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+          preselectedNetwork.chainId,
+          showPositiveBalanceAssets,
+          walletAddress,
+        );
+      } catch (e) {
+        //
+      }
+
+      if (!shouldUpdate) return;
+
+      setSelectedNetworkAssets(supportedAssets);
+      setIsLoadingAssets(false);
+    }
+
+    updateSelectedNetworkAssets();
+
+    return () => { shouldUpdate = false; }
   }, [
     sdk,
     preselectedNetwork,
-    getSupportedAssetsForChainId,
     getSupportedAssetsWithBalancesForChainId,
     showPositiveBalanceAssets,
     walletAddress,
   ]);
-
-  useEffect(() => { 
-    updateSelectedNetworkAssets(); 
-  }, [updateSelectedNetworkAssets]);
 
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
@@ -339,7 +349,7 @@ const NetworkAssetSelectInput = ({
               e.stopPropagation()
               setPreselectedNetwork(null)
             }
-          } 
+          }
           disabled={disabled}>
           {!!preselectedNetwork?.iconUrl && <RoundedImage url={preselectedNetwork?.iconUrl} title={preselectedNetwork.title} size={24} />}
           {preselectedNetwork.title}
@@ -373,9 +383,9 @@ const NetworkAssetSelectInput = ({
               {selectedNetworkAssets?.length > 5 && (
                 <SearchInputWrapper htmlFor={searchInputId}>
                   <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
-                  <SearchInput id={searchInputId} 
-                    onChange={(e: any) => setAssetSearchQuery(e?.target?.value)} 
-                    placeholder="Search" 
+                  <SearchInput id={searchInputId}
+                    onChange={(e: any) => setAssetSearchQuery(e?.target?.value)}
+                    placeholder="Search"
                     onClick={(e:any) => e.stopPropagation()}
                     onFocus={(e: any) => {
                       e.stopPropagation();
@@ -385,7 +395,7 @@ const NetworkAssetSelectInput = ({
               )}
               <OptionsScroll>
                 {filteredSelectedNetworkAssets.map((asset, index) => (
-                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`} 
+                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`}
                   onClick={(e:any) => {
                     e.stopPropagation();
                     if(!showQuickInputButtons){

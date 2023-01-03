@@ -28,67 +28,67 @@ export const supportedChains: Chain[] = [
   {
     chainId: CHAIN_ID.ETHEREUM_MAINNET,
     title: 'Ethereum',
-    iconUrl: 'https://tokens.1inch.exchange/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
     explorerUrl: 'https://etherscan.io/tx/',
   },
   {
     chainId: CHAIN_ID.POLYGON,
     title: 'Polygon',
-    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_polygon.jpg&w=64&q=75',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
     explorerUrl: 'https://polygonscan.com/tx/',
   },
   {
     chainId: CHAIN_ID.BINANCE,
     title: 'BNB Chain',
-    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_binance.jpg&w=64&q=75',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/binance.svg',
     explorerUrl: 'https://bscscan.com/tx/',
   },
   {
     chainId: CHAIN_ID.XDAI,
     title: 'Gnosis Chain (xDai)',
-    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_xdai.jpg&w=64&q=75',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/gnosis.png',
     explorerUrl: 'https://blockscout.com/xdai/mainnet/tx/',
   },
   {
     chainId: CHAIN_ID.AVALANCHE,
     title: 'Avalanche',
-    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_avalanche.jpg&w=64&q=75',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/avalanche.svg',
     explorerUrl: 'https://snowtrace.io/tx/',
   },
   {
     chainId: CHAIN_ID.OPTIMISM,
     title: 'Optimism',
-    iconUrl: 'https://tokens.1inch.io/0x4200000000000000000000000000000000000042.png',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/optimism.png',
     explorerUrl: 'https://optimistic.etherscan.io/tx/',
   },
   {
     chainId: CHAIN_ID.ARBITRUM,
     title: 'Arbitrum',
-    iconUrl: 'https://app.1inch.io/assets/images/network-logos/arbitrum.svg',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/arbitrum.svg',
     explorerUrl: 'https://arbiscan.io/tx/',
   },
   {
     chainId: CHAIN_ID.AURORA,
     title: 'Aurora',
-    iconUrl: 'https://app.1inch.io/assets/images/network-logos/aurora.svg',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/aurora.svg',
     explorerUrl: 'https://aurorascan.dev/tx/',
   },
   {
     chainId: CHAIN_ID.FANTOM,
     title: 'Fantom',
-    iconUrl: 'https://app.1inch.io/assets/images/network-logos/fantom.svg',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/fantom.svg',
     explorerUrl: 'https://ftmscan.com/tx/',
   },
   {
     chainId: CHAIN_ID.MOONBEAM,
     title: 'Moonbeam',
-    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_moonbeam.jpg&w=64&q=75',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/moonbeam.png',
     explorerUrl: 'https://moonscan.io/tx/',
   },
   {
     chainId: CHAIN_ID.CELO,
     title: 'CELO',
-    iconUrl: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
     explorerUrl: 'https://explorer.celo.org/mainnet/tx/',
   },
 ];
@@ -100,7 +100,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Ether',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://tokens.1inch.exchange/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
   },
   [CHAIN_ID.POLYGON]: {
     chainId: CHAIN_ID.POLYGON,
@@ -108,7 +108,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Matic',
     symbol: 'MATIC',
     decimals: 18,
-    logoURI: 'https://tokens.1inch.exchange/0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/native_tokens/matic.png',
   },
   [CHAIN_ID.BINANCE]: {
     chainId: CHAIN_ID.BINANCE,
@@ -116,7 +116,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'BNB',
     symbol: 'BNB',
     decimals: 18,
-    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_binance.jpg&w=64&q=75',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/binance.svg',
   },
   [CHAIN_ID.XDAI]: {
     chainId: CHAIN_ID.XDAI,
@@ -124,7 +124,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'xDAI',
     symbol: 'XDAI',
     decimals: 18,
-    logoURI: 'https://tokens.1inch.exchange/0x6b175474e89094c44da98b954eedeac495271d0f.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/native_tokens/xdai.png',
   },
   [CHAIN_ID.AVALANCHE]: {
     chainId: CHAIN_ID.AVALANCHE,
@@ -132,7 +132,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Avalanche',
     symbol: 'AVAX',
     decimals: 18,
-    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_avalanche.jpg&w=64&q=75',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/avalanche.svg',
   },
   [CHAIN_ID.OPTIMISM]: {
     chainId: CHAIN_ID.OPTIMISM,
@@ -140,7 +140,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Optimism',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://tokens.1inch.io/0x4200000000000000000000000000000000000042.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/avalanche.svg',
   },
   [CHAIN_ID.AURORA]: {
     chainId: CHAIN_ID.AURORA,
@@ -148,7 +148,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Aurora',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://app.1inch.io/assets/images/network-logos/aurora.svg',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/aurora.svg',
   },
   [CHAIN_ID.ARBITRUM]: {
     chainId: CHAIN_ID.ARBITRUM,
@@ -156,7 +156,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Arbitrum',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://app.1inch.io/assets/images/network-logos/arbitrum.svg',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/arbitrum.svg',
   },
   [CHAIN_ID.FANTOM]: {
     chainId: CHAIN_ID.FANTOM,
@@ -164,7 +164,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Fantom',
     symbol: 'FTM',
     decimals: 18,
-    logoURI: 'https://app.1inch.io/assets/images/network-logos/fantom.svg',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/fantom.svg',
   },
   [CHAIN_ID.MOONBEAM]: {
     chainId: CHAIN_ID.MOONBEAM,
@@ -172,7 +172,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Moonbeam',
     symbol: 'GLMR',
     decimals: 18,
-    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_moonbeam.jpg&w=64&q=75',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/moonbeam.png',
   },
   [CHAIN_ID.CELO]: {
     chainId: CHAIN_ID.CELO,
@@ -180,7 +180,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Celo',
     symbol: 'CELO',
     decimals: 18,
-    logoURI: 'https://chainlist.org/_next/image?url=https%3A%2F%2Fdefillama.com%2Fchain-icons%2Frsz_celo.jpg&w=64&q=75',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
   },
 };
 
@@ -190,7 +190,7 @@ export const klimaAsset: IAssetWithBalance = {
   name: 'Klima DAO',
   symbol: 'sKLIMA',
   decimals: 9,
-  logoURI: 'https://polygonscan.com/token/images/klimadao_32.png',
+  logoURI: 'https://public.etherspot.io/buidler/chain_logos/klimadao.png',
   balance: BigNumber.from(0),
   assetPriceUsd: null,
   balanceWorthUsd: null,

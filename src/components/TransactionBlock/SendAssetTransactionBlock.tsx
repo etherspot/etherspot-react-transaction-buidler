@@ -22,6 +22,7 @@ export interface ISendAssetTransactionBlockValues {
   selectedAsset?: IAssetWithBalance;
   amount?: string;
   isFromEtherspotWallet?: boolean;
+  accountType?: string;
 }
 
 const Title = styled.h3`
@@ -101,6 +102,7 @@ const SendAssetTransactionBlock = ({
         receiverAddress,
         isFromEtherspotWallet,
         fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
+        accountType: selectedAccountType
       },
       multiCallData || undefined,
     );
