@@ -19,6 +19,23 @@ import {
   useEtherspot,
   useTransactionBuilder,
 } from '../../hooks';
+import AccountSwitchInput from '../AccountSwitchInput';
+import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
+import {
+  CombinedRoundedImages, RoundedImage,
+} from '../Image';
+import TextInput from '../TextInput';
+import { Pill } from '../Text';
+import Text from '../Text/Text';
+import SelectInput from '../SelectInput';
+import { SelectOption } from '../SelectInput/SelectInput';
+
+// providers
+import {
+  IAssetWithBalance,
+} from '../../providers/EtherspotContextProvider';
+
+// utils
 import {
   formatAmountDisplay,
   formatAssetAmountInput,
@@ -27,25 +44,12 @@ import {
 import {
   addressesEqual, isValidAmount, isValidEthereumAddress,
 } from '../../utils/validation';
-import AccountSwitchInput from '../AccountSwitchInput';
-import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
-import {
-  IAssetWithBalance,
-} from '../../providers/EtherspotContextProvider';
-import {
-  CombinedRoundedImages, RoundedImage,
-} from '../Image';
-import TextInput from '../TextInput';
-import { Pill } from '../Text';
-import Text from '../Text/Text';
 import { Theme } from '../../utils/theme';
-import { DestinationWalletEnum } from '../../enums/wallet.enum';
-import SelectInput from '../SelectInput';
-import { SelectOption } from '../SelectInput/SelectInput';
+import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
 
 // constants
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -179,7 +183,7 @@ const KlimaStakingTransactionBlock = ({
       setTransactionBlockFieldValidationError(
         transactionBlockId,
         'route',
-        'No offer selected'
+        'Please try with different inputs/amount'
       )
       return;
     }
@@ -289,9 +293,11 @@ const KlimaStakingTransactionBlock = ({
         setIsRouteFetching(false);
       } else {
         resetRoutes();
+        setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount')
       }
     } catch (err) {
       resetRoutes();
+      setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount')
     }
   }, 200),[
     selectedFromNetwork,
