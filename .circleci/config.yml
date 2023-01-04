@@ -63,7 +63,7 @@ jobs:
             NODE_ENV=production npm run rollup:build
       - run:
           name: Publish package to npm
-          command: npm publish --access=public
+          command: NODE_ENV=production npm publish --access=public
       - run:
           name: Announce Publish
           command: |
