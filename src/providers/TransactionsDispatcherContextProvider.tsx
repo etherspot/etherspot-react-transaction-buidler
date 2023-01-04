@@ -539,8 +539,6 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       });
     }
 
-    if (!validPendingWeb3CrossChainActions.length) return;
-
     checkWeb3TransactionStatuses();
 
     const timeout = setTimeout(() => { checkWeb3TransactionStatuses(); }, 3000);

@@ -29,7 +29,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, supportedChains } from './chain';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
-import { getNativeAssetPriceInUsd } from '../services/coingecko';
+import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
 import { sleep, TransactionRequest } from 'etherspot/dist/sdk/common';
@@ -902,12 +902,9 @@ export const estimateCrossChainAction = async (
         ? crossChainAction.preview.asset
         : crossChainAction.preview.fromAsset;
 
-      // sub outgoing erc20 if it matches gas token address
-      if (addressesEqual(crossChainAction.gasTokenAddress, outgoingAsset.address)) {
-        const assetAmountBN = ethers.utils.parseUnits(outgoingAsset.amount, outgoingAsset.decimals);
-        feeAssetBalanceBN = feeAssetBalanceBN.sub(assetAmountBN);
-        return;
-      }
+      // sub outgoing erc20 only if it matches gas token address
+      if (outgoingAsset.address && !addressesEqual(crossChainAction.gasTokenAddress, outgoingAsset.address)) return;
+      feeAssetBalanceBN = feeAssetBalanceBN.sub(outgoingAsset.amount);
     });
   } catch (e) {
     //
@@ -965,12 +962,16 @@ export const estimateCrossChainAction = async (
     }
   }
 
-  if (feeAssetBalanceBN.isZero() || (gasCost && feeAssetBalanceBN.lt(gasCost))) {
+  if (feeAssetBalanceBN.isZero()
+    || (!feeAmount && gasCost && feeAssetBalanceBN.lt(gasCost))
+    || (feeAmount && feeAssetBalanceBN.lt(feeAmount))) {
     return { errorMessage: 'Not enough gas!' };
   }
 
   try {
-    usdPrice = await getNativeAssetPriceInUsd(crossChainAction.chainId);
+    usdPrice = feeAmount && crossChainAction.gasTokenAddress
+      ? await getAssetPriceInUsd(crossChainAction.chainId, crossChainAction.gasTokenAddress)
+      : await getNativeAssetPriceInUsd(crossChainAction.chainId);
   } catch (e) {
     //
   }
