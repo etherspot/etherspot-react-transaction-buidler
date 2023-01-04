@@ -213,7 +213,7 @@ export const changeToChain = async (chainId: number): Promise<boolean> => {
     // @ts-ignore
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: ethers.utils.hexlify(chainId) }], // chainId must be in hexadecimal numbers
+      params: [{ chainId: '0x' + chainId.toString(16) }], // chainId must be in hexadecimal numbers
     });
     return true;
   } catch (error) {
@@ -226,7 +226,7 @@ export const changeToChain = async (chainId: number): Promise<boolean> => {
           params: [
             {
               title: supportedChain.title,
-              chainId: ethers.utils.hexlify(chainId),
+              chainId: '0x' + chainId.toString(16),
             },
           ],
         });
