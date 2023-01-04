@@ -54,9 +54,9 @@ export interface ITotalWorthPerAddress {
 }
 
 export interface IBalanceByChain {
-  total: Number;
+  total: number;
   title: string;
-  chain: Number;
+  chain: number;
 }
 
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};

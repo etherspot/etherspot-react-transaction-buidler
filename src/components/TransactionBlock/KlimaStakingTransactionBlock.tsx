@@ -182,6 +182,7 @@ const KlimaStakingTransactionBlock = ({
         }}
         hideKeyBased={smartWalletOnly}
         errorMessage={errorMessages?.accountType}
+        showTotals
       />
       <NetworkAssetSelectInput
         label="From"
