@@ -271,6 +271,11 @@ const NetworkAssetSelectInput = ({
     getSmartWalletBalancesPerChain,
     balancePerChainSmartWallet,
     setBalancePerChainSmartWallet,
+    balancePerChainKeybasedWallet,
+    providerAddress,
+    accountAddress,
+    getKeybasedWalletBalancesPerChain,
+    setBalancePerChainKeybasedWallet,
   } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
@@ -316,11 +321,19 @@ const NetworkAssetSelectInput = ({
 
   useEffect(() => {
     const handleBalanceGet = async () => {
-      if (!sdk || !walletAddress) return;
-      await getSmartWalletBalancesPerChain(walletAddress, supportedChains);
+      if (!sdk || !accountAddress) return;
+      await getSmartWalletBalancesPerChain(accountAddress, supportedChains);
     };
     handleBalanceGet();
-  }, [supportedChains, sdk, walletAddress]);
+  }, [supportedChains, sdk, accountAddress]);
+
+  useEffect(() => {
+    const handleKeybasedBalanceGet = async () => {
+      if (!sdk || !providerAddress) return;
+      await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
+    };
+    handleKeybasedBalanceGet();
+  }, [supportedChains, sdk, providerAddress]);
 
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
@@ -328,14 +341,15 @@ const NetworkAssetSelectInput = ({
   }, [selectedNetworkAssets, assetSearchQuery]);
 
   useEffect(() => {
-    const updateAvalancheBalance = () => {
+    const updateAvalancheBalanceSmart = () => {
       if (
         !sdk ||
         !walletAddress ||
         !preselectedNetwork ||
         preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
         !balancePerChainSmartWallet ||
-        filteredSelectedNetworkAssets.length
+        filteredSelectedNetworkAssets.length ||
+        accountType !== DestinationWalletEnum.Contract
       )
         return;
       setBalancePerChainSmartWallet([
@@ -351,11 +365,46 @@ const NetworkAssetSelectInput = ({
         },
       ]);
     };
-    updateAvalancheBalance();
+    updateAvalancheBalanceSmart();
   }, [
     sdk,
     supportedChains,
-    walletAddress,
+    accountAddress,
+    preselectedNetwork,
+    filteredSelectedNetworkAssets,
+  ]);
+
+  useEffect(() => {
+    const updateAvalancheBalanceKeybased = () => {
+      if (
+        !sdk ||
+        !walletAddress ||
+        !preselectedNetwork ||
+        preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
+        !balancePerChainKeybasedWallet ||
+        filteredSelectedNetworkAssets.length ||
+        accountType !== DestinationWalletEnum.Key
+      )
+        return;
+
+      setBalancePerChainKeybasedWallet([
+        ...balancePerChainKeybasedWallet,
+        {
+          total: filteredSelectedNetworkAssets.reduce((acc, curr) => {
+            return curr.balanceWorthUsd ? acc + curr.balanceWorthUsd : acc;
+          }, 0),
+          title: supportedChains.filter(
+            (element) => element.chainId === CHAIN_ID.AVALANCHE
+          )[0].title,
+          chain: CHAIN_ID.AVALANCHE,
+        },
+      ]);
+    };
+    updateAvalancheBalanceKeybased();
+  }, [
+    sdk,
+    supportedChains,
+    providerAddress,
     preselectedNetwork,
     filteredSelectedNetworkAssets,
   ]);
@@ -384,12 +433,24 @@ const NetworkAssetSelectInput = ({
       return balancePerChainSmartWallet &&
         balancePerChainSmartWallet.length &&
         balanceByChain.length
-        ? formatAmountDisplay(String(balanceByChain[0].total), '$')
-        : '$0';
-    } else if (accType === DestinationWalletEnum.Key && label === 'From') {
-      return '$0';
+        ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
+        : ' · $0';
+    } else if (
+      accType === DestinationWalletEnum.Key &&
+      label === 'From' &&
+      balancePerChainKeybasedWallet &&
+      balancePerChainKeybasedWallet.length
+    ) {
+      let balanceByChain = balancePerChainKeybasedWallet.filter(
+        (item: any) => item.chain === supportedChain.chainId
+      );
+      return balancePerChainKeybasedWallet &&
+        balancePerChainKeybasedWallet.length &&
+        balanceByChain.length
+        ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
+        : ' · $0';
     }
-    return '$0';
+    return ' · $0';
   };
 
   return (

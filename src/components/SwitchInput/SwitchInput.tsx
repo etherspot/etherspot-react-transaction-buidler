@@ -99,28 +99,37 @@ const SwitchInput = ({
   disabled = false,
   showTotals = false
 }: TextInputProps) => {
-  const { balancePerChainSmartWallet } = useEtherspot()
+  const { balancePerChainSmartWallet, balancePerChainKeybasedWallet } = useEtherspot()
 
   const showTotalByWalletType = useCallback(
     (walletType: DestinationWalletEnum) => {
       const sum: number = 0;
-      if (balancePerChainSmartWallet && balancePerChainSmartWallet.length) {
+      if (
+        balancePerChainSmartWallet &&
+        balancePerChainSmartWallet.length &&
+        balancePerChainKeybasedWallet &&
+        balancePerChainKeybasedWallet.length
+      ) {
         switch (walletType) {
           case DestinationWalletEnum.Contract:
-            return `$${balancePerChainSmartWallet
+            return ` · $${balancePerChainSmartWallet
               .reduce((acc, curr) => {
                 return acc + curr.total;
               }, sum)
               .toFixed(0)}`;
           case DestinationWalletEnum.Key:
-            return `$0`;
+            return ` · $${balancePerChainKeybasedWallet
+              .reduce((acc, curr) => {
+                return acc + curr.total;
+              }, sum)
+              .toFixed(0)}`;
           default:
             return '';
         }
       }
       return '';
     },
-    [balancePerChainSmartWallet]
+    [balancePerChainSmartWallet, balancePerChainKeybasedWallet]
   );
   
   return (
