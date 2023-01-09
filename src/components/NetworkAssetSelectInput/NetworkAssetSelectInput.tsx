@@ -283,7 +283,7 @@ const NetworkAssetSelectInput = ({
     let shouldUpdate = true;
 
     const updateSelectedNetworkAssets = async () => {
-      if (!sdk || !preselectedNetwork || preselectedNetwork.chainId === selectedNetwork?.chainId) return;
+      if (!sdk || !preselectedNetwork) return;
       setIsLoadingAssets(true);
 
       let supportedAssets: IAssetWithBalance[] = [];

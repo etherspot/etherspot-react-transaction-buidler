@@ -31,6 +31,8 @@ export interface Theme {
       selectInputExpandedHover?: string,
       toDropdownColor?: string,
       secondary?: string,
+      selectInputRadioOn?: string,
+      selectInputRadioOff?: string,
     },
     text?: {
       main?: string,
@@ -98,6 +100,8 @@ export const defaultTheme: Theme = {
       selectInputExpandedHover: "#F8EFEA",
       toDropdownColor: '#F8EFEA',
       secondary: '#9889e4',
+      selectInputRadioOn: '#ff7733',
+      selectInputRadioOff: '#F8EFEA',
     },
     text: {
       main: '#fff',

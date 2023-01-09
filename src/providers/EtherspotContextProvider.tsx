@@ -60,8 +60,8 @@ export interface IBalanceByChain {
 }
 
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
-
 let supportedAssetsPerChainId: { [chainId: number]: IAsset[] } = {};
+let gasTokenAddressesPerChainId: { [chainId: number]: string[] } = {};
 
 const EtherspotContextProvider = ({
   children,
@@ -403,6 +403,37 @@ const EtherspotContextProvider = ({
       : assetsWithBalances;
   }, [getSupportedAssetsForChainId, accountAddress, getAssetsBalancesForChainId]);
 
+  const getGasAssetsForChainId = useCallback(async (assetsChainId: number, senderAddress?: string): Promise<IAssetWithBalance[]> => {
+    const sdkForChainId = getSdkForChainId(assetsChainId);
+    if (!sdkForChainId) return [];
+
+    let gasAssets: IAssetWithBalance[] = [];
+
+    try {
+      if (!gasTokenAddressesPerChainId[assetsChainId]?.length) {
+        const gasTokens = await sdkForChainId.getGatewaySupportedTokens();
+        gasTokenAddressesPerChainId[assetsChainId] = gasTokens.map((gasToken) => gasToken.address);
+      }
+
+      const supportedAssetsWithBalances = await getSupportedAssetsWithBalancesForChainId(
+        assetsChainId,
+        true,
+        senderAddress,
+      );
+
+      gasAssets = supportedAssetsWithBalances.filter((
+        supportedAsset,
+      ) => gasTokenAddressesPerChainId[assetsChainId].some((
+        gasTokenAddress,
+      ) => isZeroAddress(supportedAsset.address)
+        || addressesEqual(gasTokenAddress, supportedAsset.address)));
+    } catch (e) {
+      //
+    }
+
+    return gasAssets;
+  }, [getSdkForChainId, getSupportedAssetsWithBalancesForChainId]);
+
   const logout = useCallback(() => {
     sdkPerChain = {};
     setProvider(null);
@@ -432,6 +463,7 @@ const EtherspotContextProvider = ({
       logout,
       smartWalletOnly,
       setBalancePerChainSmartWallet,
+      getGasAssetsForChainId,
     }),
     [
       connect,
@@ -453,6 +485,7 @@ const EtherspotContextProvider = ({
       logout,
       smartWalletOnly,
       setBalancePerChainSmartWallet,
+      getGasAssetsForChainId,
     ],
   );
 

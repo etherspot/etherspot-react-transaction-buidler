@@ -11,6 +11,7 @@ export const formatAssetAmountInput = (
   const formattedAmount = amount
     .replace(/[^.\d]/g, '')
     .replace(/^(\d*\.?)|(\d*)\.?/g, "$1$2")
+    .replace(/^\./, '0.');
 
   if (decimals === 0) return formattedAmount.split('.')[0];
 

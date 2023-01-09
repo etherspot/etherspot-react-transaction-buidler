@@ -30,6 +30,7 @@ export interface EtherspotContextData {
     logout: () => void;
     smartWalletOnly: boolean;
     setBalancePerChainSmartWallet: (balances : IBalanceByChain[]) => void;
+    getGasAssetsForChainId: (chainId: number, sender?: string) => Promise<IAssetWithBalance[]>;
   }
 }
 

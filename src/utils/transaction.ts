@@ -29,7 +29,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, supportedChains } from './chain';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
-import { getNativeAssetPriceInUsd } from '../services/coingecko';
+import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
 import { sleep, TransactionRequest } from 'etherspot/dist/sdk/common';
@@ -40,6 +40,7 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
+import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export const klimaDaoStaking = async (
   amount: string,
@@ -196,7 +197,7 @@ export const buildCrossChainAction = async (
             toChainId: CHAIN_ID.POLYGON, //Polygon
             fromAmount: amountBN,
             fromTokenAddress: fromAssetAddress,
-            toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // USDC on Polygon
+            toTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS, // USDC on Polygon
             toAddress: sdk.state.accountAddress,
           });
           const bestRoute = routes.items.reduce((best: any, route) => {
@@ -324,6 +325,7 @@ export const buildCrossChainAction = async (
               estimated: null,
               useWeb3Provider: false,
               destinationCrossChainAction: [],
+              gasTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS
             }],
           };
 
@@ -671,7 +673,7 @@ export const buildCrossChainAction = async (
 export const submitEtherspotTransactionsBatch = async (
   sdk: EtherspotSdk,
   transactions: ExecuteAccountTransactionDto[],
-  feeToken?: string,
+  feeTokenAddress?: string,
 ): Promise<{
   batchHash?: string;
   errorMessage?: string;
@@ -692,8 +694,7 @@ export const submitEtherspotTransactionsBatch = async (
       await sdk.batchExecuteAccountTransaction({ to, value, data });
     }
 
-    await sdk.estimateGatewayBatch();
-
+    const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
     await sdk.estimateGatewayBatch({ feeToken });
     const result = await sdk.submitGatewayBatch();
     ({ hash: batchHash } = result);
@@ -710,12 +711,11 @@ export const submitEtherspotTransactionsBatch = async (
 export const submitEtherspotAndWaitForTransactionHash = async (
   sdk: EtherspotSdk,
   transactions: ExecuteAccountTransactionDto[],
-  feeToken?: string,
+  feeTokenAddress?: string,
 ): Promise<{
   transactionHash?: string;
   errorMessage?: string;
 }> => {
-  let transactionHash;
   let errorMessage;
 
   try {
@@ -731,16 +731,16 @@ export const submitEtherspotAndWaitForTransactionHash = async (
       await sdk.batchExecuteAccountTransaction({ to, value, data });
     }
 
+    const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
     await sdk.estimateGatewayBatch({ feeToken });
-
     const result = await sdk.submitGatewayBatch();
 
-    // ({ hash: batchHash } = result);
     let temporaryBatchSubscription: Subscription;
+
     return new Promise<{
       transactionHash?: string;
       errorMessage?: string;
-    }>((resolve, reject) => {
+    }>((resolve) => {
       temporaryBatchSubscription = sdk.notifications$
         .pipe(
           rxjsMap(async (notification) => {
@@ -837,16 +837,6 @@ export const submitWeb3ProviderTransactions = async (
       };
       // @ts-ignore
       transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
-
-      let status = CROSS_CHAIN_ACTION_STATUS.PENDING;
-      while (status == CROSS_CHAIN_ACTION_STATUS.PENDING) {
-        status = await getTransactionStatus(sdk, transactionHash);
-        await sleep(10);
-      }
-
-      if (status === CROSS_CHAIN_ACTION_STATUS.FAILED) {
-        errorMessage = 'Transaction Submitted got Failed';
-      }
     }
   } catch (e) {
     if (e instanceof Error) {
@@ -919,7 +909,6 @@ export const estimateCrossChainAction = async (
   crossChainAction: ICrossChainAction,
   providerAddress?: string | null,
   accountAddress?: string | null,
-  feeToken?: string,
 ): Promise<ICrossChainActionEstimation> => {
   let gasCost = null;
   let usdPrice = null;
@@ -933,13 +922,21 @@ export const estimateCrossChainAction = async (
   let feeAssetBalanceBN = ethers.BigNumber.from(0);
   try {
     const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
+    const getAccountBalancesTokens = !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction?.gasTokenAddress)
+      ? undefined
+      : [crossChainAction.gasTokenAddress];
     const { items: balances } = await sdk.getAccountBalances({
       account: balancesForAddress as string,
-      tokens: feeToken ? [feeToken] : undefined,
+      tokens: getAccountBalancesTokens,
       chainId: crossChainAction.chainId,
     });
 
-    const feeAssetBalance = balances.find((balance) => feeToken && addressesEqual(balance.token, feeToken) || balance.token === null);
+    const feeAssetBalance = balances.find((
+      balance,
+    ) => (!isZeroAddress(crossChainAction.gasTokenAddress)
+        && addressesEqual(balance.token, crossChainAction.gasTokenAddress))
+      || (isZeroAddress(crossChainAction.gasTokenAddress) && balance.token === null));
+
     if (feeAssetBalance) feeAssetBalanceBN = feeAssetBalance.balance;
 
     crossChainAction.transactions.map((transactionsToSend) => {
@@ -947,9 +944,18 @@ export const estimateCrossChainAction = async (
       if (!value) return;
 
       // sub value from balance if native asset
-      if (transactionsToSend.value && !feeToken) feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
+      if (isZeroAddress(crossChainAction.gasTokenAddress)) {
+        feeAssetBalanceBN = feeAssetBalanceBN.sub(value);
+        return;
+      }
 
-      // TODO: when fee token added sub value from balance if fee token and tx includes fee token transfer
+      const outgoingAsset = crossChainAction.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
+        ? crossChainAction.preview.asset
+        : crossChainAction.preview.fromAsset;
+
+      // sub outgoing erc20 only if it matches gas token address
+      if (outgoingAsset.address && !addressesEqual(crossChainAction.gasTokenAddress, outgoingAsset.address)) return;
+      feeAssetBalanceBN = feeAssetBalanceBN.sub(outgoingAsset.amount);
     });
   } catch (e) {
     //
@@ -992,6 +998,10 @@ export const estimateCrossChainAction = async (
         await sdk.batchExecuteAccountTransaction({ to, value, data });
       }
 
+      const feeToken = !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction.gasTokenAddress)
+        ? undefined
+        : crossChainAction.gasTokenAddress;
+
       const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
       gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
       feeAmount = feeToken ? gatewayBatchEstimation.feeAmount : null;
@@ -1003,12 +1013,16 @@ export const estimateCrossChainAction = async (
     }
   }
 
-  if (feeAssetBalanceBN.isZero() || (gasCost && feeAssetBalanceBN.lt(gasCost))) {
+  if (feeAssetBalanceBN.isZero()
+    || (!feeAmount && gasCost && feeAssetBalanceBN.lt(gasCost))
+    || (feeAmount && feeAssetBalanceBN.lt(feeAmount))) {
     return { errorMessage: 'Not enough gas!' };
   }
 
   try {
-    usdPrice = await getNativeAssetPriceInUsd(crossChainAction.chainId);
+    usdPrice = feeAmount && crossChainAction.gasTokenAddress
+      ? await getAssetPriceInUsd(crossChainAction.chainId, crossChainAction.gasTokenAddress)
+      : await getNativeAssetPriceInUsd(crossChainAction.chainId);
   } catch (e) {
     //
   }
@@ -1050,6 +1064,12 @@ export const getFirstCrossChainActionByStatus = (
 ): ICrossChainAction | undefined =>
   crossChainActions.find(({ transactions }) => transactions.find((transaction) => transaction.status === status));
 
+export const filterCrossChainActionsByStatus = (
+  crossChainActions: ICrossChainAction[],
+  status: string,
+): ICrossChainAction[] =>
+  crossChainActions.filter(({ transactions }) => transactions.find((transaction) => transaction.status === status));
+
 export const getCrossChainActionTransactionsByStatus = (
   crossChainActionTransactions: ICrossChainActionTransaction[],
   status: string,
@@ -1060,13 +1080,22 @@ export const updateCrossChainActionsTransactionsStatus = (
   crossChainActions: ICrossChainAction[],
   status: string,
 ): ICrossChainAction[] =>
-  crossChainActions.map((crossChainActionToDispatch) => ({
-    ...crossChainActionToDispatch,
-    transactions: crossChainActionToDispatch.transactions.map((transaction) => ({
-      ...transaction,
-      status,
-    })),
-  }));
+  crossChainActions.map((crossChainActionToDispatch) => updateCrossChainActionTransactionsStatus(
+    crossChainActionToDispatch,
+    status,
+  ));
+
+export const updateCrossChainActionTransactionsStatus = (
+  crossChainAction: ICrossChainAction,
+  status: string,
+): ICrossChainAction => ({
+  ...crossChainAction,
+  transactions: crossChainAction.transactions.map((transaction) => ({
+    ...transaction,
+    status,
+  })),
+});
+
 export const rejectUnsentCrossChainActionsTransactions = (
   crossChainActions: ICrossChainAction[],
 ): ICrossChainAction[] =>

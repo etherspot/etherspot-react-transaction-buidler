@@ -30,6 +30,7 @@ import {
   submitWeb3ProviderTransaction,
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
+  getFirstCrossChainActionByStatus,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -47,6 +48,7 @@ import {
   ChainIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
+import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -336,8 +338,12 @@ const TransactionBuilderContextProvider = ({
   } = useEtherspot();
 
   const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
-  const { dispatchCrossChainActions, processingCrossChainActionId, dispatchedCrossChainActions } =
-    useTransactionsDispatcher();
+  const {
+    dispatchCrossChainActions,
+    processingCrossChainActionIds,
+    dispatchedCrossChainActions,
+    resetDispatchedCrossChainActions,
+  } = useTransactionsDispatcher();
 
   const isEstimatingCrossChainActions = useMemo(
     () => crossChainActions?.some((crossChainAction) => crossChainAction.isEstimating) ?? false,
@@ -387,6 +393,12 @@ const TransactionBuilderContextProvider = ({
         if (!result?.crossChainAction || result?.errorMessage) {
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
+        }
+
+        // no multicall/batching for key based
+        if (result?.crossChainAction?.useWeb3Provider) {
+          newCrossChainActions = [...newCrossChainActions, result.crossChainAction];
+          continue;
         }
 
         const action = result.crossChainAction;
@@ -476,6 +488,25 @@ const TransactionBuilderContextProvider = ({
     });
   }, [crossChainActions, setCrossChainActions, getSdkForChainId, web3Provider, providerAddress, accountAddress]);
 
+  const setCrossChainActionGasToken = async (
+    crossChainActionId: string,
+    gasTokenAddress: string | null,
+    gasTokenDecimals: number | null,
+    gasTokenSymbol: string | null,
+  ) => {
+    setCrossChainActions((current) => current.map((crossChainAction) => {
+      if (crossChainAction.id !== crossChainActionId) return crossChainAction;
+      return {
+        ...crossChainAction,
+        gasTokenAddress,
+        gasTokenDecimals,
+        gasTokenSymbol,
+        estimated: null,
+        isEstimating: false,
+      };
+    }));
+  }
+
   useEffect(() => {
     estimateCrossChainActions();
   }, [estimateCrossChainActions]);
@@ -498,7 +529,6 @@ const TransactionBuilderContextProvider = ({
     }
 
     if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
-      const PolygonUSDCAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
       let crossChainAction = crossChainActions[0];
 
       if (!crossChainAction.receiveAmount) {
@@ -523,6 +553,7 @@ const TransactionBuilderContextProvider = ({
         : await submitEtherspotAndWaitForTransactionHash(
           getSdkForChainId(crossChainAction.chainId) as Sdk,
           crossChainAction.transactions,
+          crossChainAction.gasTokenAddress ?? undefined,
         );
       if (
         result?.errorMessage ||
@@ -562,7 +593,6 @@ const TransactionBuilderContextProvider = ({
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
         accountAddress,
-        PolygonUSDCAddress
       );
 
       const stakingTxns = await klimaDaoStaking(BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "KLIMA_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(CHAIN_ID.POLYGON))
@@ -579,7 +609,6 @@ const TransactionBuilderContextProvider = ({
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
         accountAddress,
-        PolygonUSDCAddress
       );
 
       crossChainAction = {
@@ -589,13 +618,16 @@ const TransactionBuilderContextProvider = ({
         chainId: CHAIN_ID.POLYGON,
       }
 
-      result = await submitEtherspotAndWaitForTransactionHash(getSdkForChainId(CHAIN_ID.POLYGON) as Sdk, crossChainAction.transactions, PolygonUSDCAddress);
+      result = await submitEtherspotAndWaitForTransactionHash(
+        getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+        crossChainAction.transactions,
+        POLYGON_USDC_CONTRACT_ADDRESS,
+      );
 
       if (
         result?.errorMessage ||
         (!result?.transactionHash?.length)
       ) {
-        // showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         setIsSubmitting(false);
         return;
       }
@@ -668,6 +700,7 @@ const TransactionBuilderContextProvider = ({
       resetTransactionBlockFieldValidationError,
       resetAllTransactionBlockFieldValidationError,
       setTransactionBlockFieldValidationError,
+      setCrossChainActionGasToken,
     }),
     [],
   );
@@ -682,12 +715,17 @@ const TransactionBuilderContextProvider = ({
     (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
   );
 
-  const crossChainActionInProcessing = useMemo(() => {
-    if (!processingCrossChainActionId) return;
-    return dispatchedCrossChainActions?.find(
-      (crossChainAction) => crossChainAction.id === processingCrossChainActionId,
+  const crossChainActionsInProcessing = useMemo(() => {
+    if (!processingCrossChainActionIds?.length) return;
+    return dispatchedCrossChainActions?.filter(
+      (crossChainAction) => processingCrossChainActionIds.some((id) => id === crossChainAction.id),
     );
-  }, [processingCrossChainActionId, dispatchedCrossChainActions]);
+  }, [processingCrossChainActionIds, dispatchedCrossChainActions]);
+
+  const hasProcessingUnsent = useMemo(() => !!getFirstCrossChainActionByStatus(
+    dispatchedCrossChainActions ?? [],
+    CROSS_CHAIN_ACTION_STATUS.UNSENT,
+  ), [dispatchedCrossChainActions]);
 
   const [showMulticallOptions, setShowMulticallOptions] = useState<string | null>(null);
 
@@ -722,9 +760,9 @@ const TransactionBuilderContextProvider = ({
         />
       </TopNavigation>
       <div onClick={hideMenu}>
-        {!!processingCrossChainActionId && (
+        {!!crossChainActionsInProcessing?.length && (
           <>
-            {crossChainActionInProcessing && (
+            {crossChainActionsInProcessing.map((crossChainActionInProcessing) => (
               <TransactionBlocksWrapper highlight={
                 !!crossChainActionInProcessing?.batchTransactions?.length &&
                 !!crossChainActionInProcessing.multiCallData
@@ -741,59 +779,26 @@ const TransactionBuilderContextProvider = ({
                   <ActionPreview
                     key={`preview-${crossChainActionInProcessing.id}`}
                     crossChainAction={crossChainActionInProcessing}
-                    setIsTransactionDone={setIsTransactionDone}
-                    onRemove={(isTransactionDone)
-                      ? () => setCrossChainActions([])
-                      : undefined
-                    }
                   />
                 }
               </TransactionBlocksWrapper>
-            )}
-            {!isTransactionDone && (
-              <PrimaryButton disabled marginTop={30} marginBottom={30}>
-                Processing...
-              </PrimaryButton>
+            ))}
+            {!hasProcessingUnsent && (
+              <SecondaryButton
+                marginTop={10}
+                onClick={() => {
+                  resetDispatchedCrossChainActions()
+                  setTransactionBlocks(mappedDefaultTransactionBlocks)
+                }}
+              >
+                Leave
+              </SecondaryButton>
             )}
           </>
         )}
-        {!!editingTransactionBlock && !processingCrossChainActionId && (
+        {(!crossChainActions?.length || !!editingTransactionBlock) && !crossChainActionsInProcessing?.length && (
           <>
-            <Card
-              key={`transaction-block-edit-${editingTransactionBlock.id}`}
-              marginBottom={20}
-              showCloseButton={false}
-            >
-              <TransactionBlock
-                key={`block-edit-${editingTransactionBlock.id}`}
-                {...editingTransactionBlock}
-                errorMessages={transactionBlockValidationErrors[editingTransactionBlock.id]}
-              />
-            </Card>
-            <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-              {isChecking ? 'Saving...' : 'Save'}
-            </PrimaryButton>
-            <SecondaryButton
-              marginTop={10}
-              onClick={() => {
-                setEditingTransactionBlock(null);
-                // reset value changes, editingTransactionBlock storing initial before edits
-                setTransactionBlocks((current) =>
-                  current.map((currentTransactionBlock) => {
-                    if (currentTransactionBlock.id !== editingTransactionBlock?.id)
-                      return currentTransactionBlock;
-                    return editingTransactionBlock;
-                  }),
-                );
-              }}
-            >
-              Go back to preview
-            </SecondaryButton>
-          </>
-        )}
-        {!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock && (
-          <>
-            {transactionBlocks.map((transactionBlock, i) => {
+            {(editingTransactionBlock ? [editingTransactionBlock] : transactionBlocks).map((transactionBlock, i) => {
               let disabled = false;
               let multiCallBlocks: ITransactionBlock[] = [];
 
@@ -1020,7 +1025,7 @@ const TransactionBuilderContextProvider = ({
                             )
                           }
                           // Should only have the option to delete last multicall, any change mid structure should reset the entire block
-                          showCloseButton={j === multiCallBlocks.length - 1}
+                          showCloseButton={(multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) || (multiCallBlocks.length === 1 && !editingTransactionBlock)}
                         >
                           <TransactionBlock
                             key={`block-${multiCallBlock.id}`}
@@ -1030,8 +1035,8 @@ const TransactionBuilderContextProvider = ({
                             }
                           />
                           {
-                            j === multiCallBlocks.length - 1 &&
-                            (multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP || multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET)
+                            j === multiCallBlocks.length - 1
+                            && (multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP || multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET)
                             && (
                               <MultiCallButton
                                 disabled={!!disabled}
@@ -1070,7 +1075,7 @@ const TransactionBuilderContextProvider = ({
                             ),
                         )
                       }
-                      showCloseButton
+                      showCloseButton={!editingTransactionBlock}
                     >
                       <TransactionBlock
                         key={`block-${transactionBlock.id}`}
@@ -1080,7 +1085,10 @@ const TransactionBuilderContextProvider = ({
                       {(
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
                         transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
-                      ) && transactionBlock.values?.accountType === DestinationWalletEnum.Contract && (
+                      )
+                        && transactionBlock.values?.accountType === DestinationWalletEnum.Contract
+                        && !editingTransactionBlock
+                        && (
                           <MultiCallButton
                             disabled={!!disabled}
                             onClick={async () => {
@@ -1102,7 +1110,7 @@ const TransactionBuilderContextProvider = ({
                 </TransactionBlocksWrapper>
               );
             })}
-            {!showTransactionBlockSelect && !hideAddTransactionButton && (
+            {!showTransactionBlockSelect && !hideAddTransactionButton && !editingTransactionBlock && (
               <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
                 <AiOutlinePlusCircle size={24} />
                 <span>Add transaction</span>
@@ -1111,10 +1119,28 @@ const TransactionBuilderContextProvider = ({
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br />
-                <PrimaryButton marginTop={30} onClick={onContinueClick} disabled={isChecking}>
-                  {isChecking ? 'Checking...' : 'Review'}
+                <PrimaryButton marginTop={editingTransactionBlock ? 0 : 30} onClick={onContinueClick} disabled={isChecking}>
+                  {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
+                  {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
                 </PrimaryButton>
               </>
+            )}
+            {!!editingTransactionBlock && (
+              <SecondaryButton
+                marginTop={10}
+                onClick={() => {
+                  setEditingTransactionBlock(null);
+                  // reset value changes, editingTransactionBlock storing initial before edits
+                  setTransactionBlocks((current) => current.map((currentTransactionBlock) => {
+                    if (currentTransactionBlock.id !== editingTransactionBlock?.id){
+                      return currentTransactionBlock;
+                    }
+                    return editingTransactionBlock;
+                  }));
+                }}
+              >
+                Go back to preview
+              </SecondaryButton>
             )}
             {showTransactionBlockSelect && (
               <Card onCloseButtonClick={() => setShowTransactionBlockSelect(false)} showCloseButton>
@@ -1170,7 +1196,7 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {!!crossChainActions?.length && !processingCrossChainActionId && !editingTransactionBlock && (
+        {!!crossChainActions?.length && !crossChainActionsInProcessing?.length && !editingTransactionBlock && (
           <>
             {
               crossChainActions.map((crossChainAction) => {
@@ -1220,6 +1246,7 @@ const TransactionBuilderContextProvider = ({
                             : await submitEtherspotTransactionsBatch(
                               getSdkForChainId(crossChainAction.chainId) as Sdk,
                               crossChainAction.transactions,
+                              crossChainAction.gasTokenAddress ?? undefined,
                             );
 
                         if (
@@ -1227,7 +1254,6 @@ const TransactionBuilderContextProvider = ({
                           (!result?.transactionHash?.length && !result?.batchHash?.length)
                         ) {
                           setIsSigningAction(false);
-                          // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
                           return;
                         }
 
@@ -1272,8 +1298,9 @@ const TransactionBuilderContextProvider = ({
                         )
                       }
                       showEditButton={!disableEdit}
-                      showStatus={!!processingCrossChainActionId}
+                      showStatus={!!crossChainActionsInProcessing?.length}
                       setIsTransactionDone={setIsTransactionDone}
+                      showGasAssetSelect
                     />
                   )
                 }
@@ -1309,17 +1336,6 @@ const TransactionBuilderContextProvider = ({
               Go back
             </SecondaryButton>
           </>
-        )}
-        {isTransactionDone && (
-          <AddTransactionButton
-            onClick={() => {
-              setShowTransactionBlockSelect(true);
-              setIsTransactionDone(false);
-            }}
-          >
-            <AiOutlinePlusCircle size={24} />
-            <span>Add transaction</span>
-          </AddTransactionButton>
         )}
       </div>
       {showMenu && (

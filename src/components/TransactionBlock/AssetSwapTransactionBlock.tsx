@@ -193,7 +193,6 @@ const AssetSwapTransactionBlock = ({
 
   const onAmountChange = useCallback(
     (newAmount: string) => {
-      if (isNaN(+newAmount)) return;
       resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
       const decimals = selectedFromAsset?.decimals ?? 18;
       const updatedAmount = formatAssetAmountInput(newAmount, decimals);
