@@ -3,6 +3,7 @@ import {
   BigNumber,
   ethers,
 } from 'ethers';
+import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 
 export const formatAssetAmountInput = (
   amount: string,
@@ -11,6 +12,7 @@ export const formatAssetAmountInput = (
   const formattedAmount = amount
     .replace(/[^.\d]/g, '')
     .replace(/^(\d*\.?)|(\d*)\.?/g, "$1$2")
+    .replace(/^\./, '0.');
 
   if (decimals === 0) return formattedAmount.split('.')[0];
 
@@ -71,3 +73,12 @@ export const humanizeHexString = (
 export const getTimeBasedUniqueId = (): string => uniqueId(`${+new Date()}-`);
 
 export const formatMaxAmount = (maxAmountBN: BigNumber, decimals: number): string => ethers.utils.formatUnits(maxAmountBN, decimals);
+
+export const sumAssetsBalanceWorth = (supportedAssets: IAssetWithBalance[]) => {
+  return supportedAssets.reduce((sum, asset) => {
+    if (asset.balanceWorthUsd) {
+      return sum + asset.balanceWorthUsd;
+    }
+    return sum;
+  }, 0);
+};

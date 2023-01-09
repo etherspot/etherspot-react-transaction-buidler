@@ -11,6 +11,12 @@ export interface TransactionBuilderContextData {
     resetTransactionBlockFieldValidationError: (id: string, field: string) => void;
     resetAllTransactionBlockFieldValidationError: (id: string) => void;
     setTransactionBlockFieldValidationError: (id: string, field: string, errorMessage: string) => void;
+    setCrossChainActionGasToken: (
+      crossChainActionId: string,
+      gasTokenAddress: string | null,
+      gasTokenDecimals: number | null,
+      gasTokenSymbol: string | null,
+    ) => void;
   };
 }
 

@@ -24,7 +24,7 @@ import {
 } from '../../utils/chain';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { containsText } from '../../utils/validation';
-import { formatAmountDisplay } from '../../utils/common';
+import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../utils/common';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
@@ -269,8 +269,8 @@ const NetworkAssetSelectInput = ({
     sdk,
     getSupportedAssetsWithBalancesForChainId,
     getSmartWalletBalancesPerChain,
-    balancePerChainSmartWallet,
-    setBalancePerChainSmartWallet,
+    smartWalletBalanceByChain,
+    setsmartWalletBalanceByChain,
     balancePerChainKeybasedWallet,
     providerAddress,
     accountAddress,
@@ -288,7 +288,7 @@ const NetworkAssetSelectInput = ({
     let shouldUpdate = true;
 
     const updateSelectedNetworkAssets = async () => {
-      if (!sdk || !preselectedNetwork || preselectedNetwork.chainId === selectedNetwork?.chainId) return;
+      if (!sdk || !preselectedNetwork) return;
       setIsLoadingAssets(true);
 
       let supportedAssets: IAssetWithBalance[] = [];
@@ -342,25 +342,20 @@ const NetworkAssetSelectInput = ({
 
   useEffect(() => {
     const updateAvalancheBalanceSmart = () => {
-      if (
-        !sdk ||
+      if (!sdk ||
         !walletAddress ||
         !preselectedNetwork ||
         preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
-        !balancePerChainSmartWallet ||
-        filteredSelectedNetworkAssets.length ||
-        accountType !== DestinationWalletEnum.Contract
-      )
+        !smartWalletBalanceByChain ||
+        filteredSelectedNetworkAssets.length
+      ) {
         return;
-      setBalancePerChainSmartWallet([
-        ...balancePerChainSmartWallet,
+      }
+      setsmartWalletBalanceByChain([
+        ...smartWalletBalanceByChain,
         {
-          total: filteredSelectedNetworkAssets.reduce((acc, curr) => {
-            return curr.balanceWorthUsd ? acc + curr.balanceWorthUsd : acc;
-          }, 0),
-          title: supportedChains.filter(
-            (element) => element.chainId === CHAIN_ID.AVALANCHE
-          )[0].title,
+          total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
+          title: (supportedChains.find(({ chainId }) =>  chainId === CHAIN_ID.AVALANCHE) as Chain).title,
           chain: CHAIN_ID.AVALANCHE,
         },
       ]);
@@ -424,33 +419,27 @@ const NetworkAssetSelectInput = ({
     if (
       accType === DestinationWalletEnum.Contract &&
       label === 'From' &&
-      balancePerChainSmartWallet &&
-      balancePerChainSmartWallet.length
+      smartWalletBalanceByChain?.length
     ) {
-      let balanceByChain = balancePerChainSmartWallet.filter(
+      let balanceByChain = smartWalletBalanceByChain.filter(
         (item: any) => item.chain === supportedChain.chainId
       );
-      return balancePerChainSmartWallet &&
-        balancePerChainSmartWallet.length &&
-        balanceByChain.length
+      return smartWalletBalanceByChain?.length && balanceByChain.length
         ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
-        : ' · $0';
+        : '$0';
     } else if (
       accType === DestinationWalletEnum.Key &&
       label === 'From' &&
-      balancePerChainKeybasedWallet &&
-      balancePerChainKeybasedWallet.length
+      balancePerChainKeybasedWallet?.length
     ) {
       let balanceByChain = balancePerChainKeybasedWallet.filter(
         (item: any) => item.chain === supportedChain.chainId
       );
-      return balancePerChainKeybasedWallet &&
-        balancePerChainKeybasedWallet.length &&
-        balanceByChain.length
+      return balancePerChainKeybasedWallet?.length && balanceByChain.length
         ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
         : ' · $0';
     }
-    return ' · $0';
+    return ''
   };
 
   return (

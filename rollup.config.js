@@ -42,7 +42,7 @@ export default [
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
-        exclude: ['./example/**']
+        exclude: ['./example/**', './src/test/**']
       }),
       replace({
         __ETHERSPOT_PROJECT_KEY__: process.env.ETHERSPOT_PROJECT_KEY ?? '',

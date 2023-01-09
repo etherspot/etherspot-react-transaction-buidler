@@ -104,8 +104,9 @@ const zeroAddressConstants = [
   '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF',
 ];
 
-// TODO: apply this to all zero addres checks
-export const isZeroAddress = (address: string | undefined): boolean => !!address && zeroAddressConstants.some((zeroAddress) => addressesEqual(address, zeroAddress));
+export const isZeroAddress = (
+  address: string | undefined | null,
+): boolean => !address || (!!address && zeroAddressConstants.some((zeroAddress) => addressesEqual(address, zeroAddress)));
 
 export const isNativeAssetAddress = (
   address: string | undefined,

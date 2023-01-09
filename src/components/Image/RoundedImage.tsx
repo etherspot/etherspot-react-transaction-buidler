@@ -4,18 +4,20 @@ import styled from 'styled-components';
 const Image = styled.img<{
   size?: number,
   noMarginRight?: boolean;
+  marginRight?: number;
   marginTop?: number;
 }>`
   height: ${({ size }) => size ?? 32}px;
   width: ${({ size }) => size ?? 32}px;
   border-radius: 50%;
-  ${({ noMarginRight }) => !noMarginRight && `margin-right: 11px`};
+  ${({ noMarginRight, marginRight }) => !noMarginRight && `margin-right: ${marginRight ?? 11}px`};
   ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px`};
 `;
 
 const FallbackImage = styled.div<{
   size?: number;
   noMarginRight?: boolean;
+  marginRight?: number;
   marginTop?: number;
 }>`
   font-family: "PTRootUIWebBold", sans-serif;
@@ -24,7 +26,7 @@ const FallbackImage = styled.div<{
   height: ${({ size }) => size ?? 32}px;
   width: ${({ size }) => size ?? 32}px;
   border-radius: 50%;
-  ${({ noMarginRight }) => !noMarginRight && `margin-right: 11px`};
+  ${({ noMarginRight, marginRight }) => !noMarginRight && `margin-right: ${marginRight ?? 11}px`};
   background: ${({ theme }) => theme.color.background.roundedImageFallback};
   color: ${({ theme }) => theme.color.text.roundedImageFallback};
   text-align: center;
@@ -37,6 +39,7 @@ const RoundedImage = ({
 	url,
 	size,
 	noMarginRight,
+  marginRight,
 	style,
   marginTop,
 }: {
@@ -46,12 +49,13 @@ const RoundedImage = ({
 	noMarginRight?: boolean;
 	style?: React.CSSProperties;
   marginTop?: number,
+  marginRight?: number;
 })=> {
   const [useFallback, setUseFallback] = useState(false);
 
 	if (useFallback || !url) {
 		return (
-			<FallbackImage size={size} noMarginRight={noMarginRight}>
+			<FallbackImage size={size} noMarginRight={noMarginRight} marginRight={marginRight}>
 				{title[0]}
 			</FallbackImage>
 		);
@@ -64,6 +68,7 @@ const RoundedImage = ({
 			src={url}
 			alt={title}
 			noMarginRight={noMarginRight}
+      marginRight={marginRight}
       marginTop={marginTop}
 			onError={({ currentTarget }) => {
 				currentTarget.onerror = null;
