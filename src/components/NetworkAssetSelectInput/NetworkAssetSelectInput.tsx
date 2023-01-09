@@ -24,7 +24,7 @@ import {
 } from '../../utils/chain';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { containsText } from '../../utils/validation';
-import { formatAmountDisplay } from '../../utils/common';
+import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../utils/common';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
@@ -269,8 +269,8 @@ const NetworkAssetSelectInput = ({
     sdk,
     getSupportedAssetsWithBalancesForChainId,
     getSmartWalletBalancesPerChain,
-    balancePerChainSmartWallet,
-    setBalancePerChainSmartWallet,
+    smartWalletBalanceByChain,
+    setsmartWalletBalanceByChain,
   } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
@@ -329,24 +329,20 @@ const NetworkAssetSelectInput = ({
 
   useEffect(() => {
     const updateAvalancheBalance = () => {
-      if (
-        !sdk ||
+      if (!sdk ||
         !walletAddress ||
         !preselectedNetwork ||
         preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
-        !balancePerChainSmartWallet ||
+        !smartWalletBalanceByChain ||
         filteredSelectedNetworkAssets.length
-      )
+      ) {
         return;
-      setBalancePerChainSmartWallet([
-        ...balancePerChainSmartWallet,
+      }
+      setsmartWalletBalanceByChain([
+        ...smartWalletBalanceByChain,
         {
-          total: filteredSelectedNetworkAssets.reduce((acc, curr) => {
-            return curr.balanceWorthUsd ? acc + curr.balanceWorthUsd : acc;
-          }, 0),
-          title: supportedChains.filter(
-            (element) => element.chainId === CHAIN_ID.AVALANCHE
-          )[0].title,
+          total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
+          title: (supportedChains.find(({ chainId }) =>  chainId === CHAIN_ID.AVALANCHE) as Chain).title,
           chain: CHAIN_ID.AVALANCHE,
         },
       ]);
@@ -375,15 +371,12 @@ const NetworkAssetSelectInput = ({
     if (
       accType === DestinationWalletEnum.Contract &&
       label === 'From' &&
-      balancePerChainSmartWallet &&
-      balancePerChainSmartWallet.length
+      smartWalletBalanceByChain?.length
     ) {
-      let balanceByChain = balancePerChainSmartWallet.filter(
+      let balanceByChain = smartWalletBalanceByChain.filter(
         (item: any) => item.chain === supportedChain.chainId
       );
-      return balancePerChainSmartWallet &&
-        balancePerChainSmartWallet.length &&
-        balanceByChain.length
+      return smartWalletBalanceByChain?.length && balanceByChain.length
         ? formatAmountDisplay(String(balanceByChain[0].total), '$')
         : '$0';
     } else if (accType === DestinationWalletEnum.Key && label === 'From') {

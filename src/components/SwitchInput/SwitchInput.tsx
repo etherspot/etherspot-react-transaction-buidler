@@ -99,15 +99,15 @@ const SwitchInput = ({
   disabled = false,
   showTotals = false
 }: TextInputProps) => {
-  const { balancePerChainSmartWallet } = useEtherspot()
+  const { smartWalletBalanceByChain } = useEtherspot()
 
   const showTotalByWalletType = useCallback(
     (walletType: DestinationWalletEnum) => {
       const sum: number = 0;
-      if (balancePerChainSmartWallet && balancePerChainSmartWallet.length) {
+      if (smartWalletBalanceByChain?.length) {
         switch (walletType) {
           case DestinationWalletEnum.Contract:
-            return `$${balancePerChainSmartWallet
+            return `$${smartWalletBalanceByChain
               .reduce((acc, curr) => {
                 return acc + curr.total;
               }, sum)
@@ -120,7 +120,7 @@ const SwitchInput = ({
       }
       return '';
     },
-    [balancePerChainSmartWallet]
+    [smartWalletBalanceByChain]
   );
   
   return (

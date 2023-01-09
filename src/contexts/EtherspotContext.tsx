@@ -19,7 +19,7 @@ export interface EtherspotContextData {
     getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
     isConnecting: boolean;
     sdk: EtherspotSdk | null;
-    balancePerChainSmartWallet: IBalanceByChain[] | null;
+    smartWalletBalanceByChain: IBalanceByChain[] | null;
     getSupportedAssetsForChainId: (chainId: number) => Promise<IAsset[]>;
     getAssetsBalancesForChainId: (assets: IAsset[], chainId: number, address?: string | null, recompute?: boolean ) => Promise<AccountBalance[]>;
     getSupportedAssetsWithBalancesForChainId: (chainId: number, positiveBalancesOnly?: boolean, address?: string | null, recompute?: boolean ) => Promise<IAssetWithBalance[]>;
@@ -29,7 +29,7 @@ export interface EtherspotContextData {
     totalWorthPerAddress: ITotalWorthPerAddress;
     logout: () => void;
     smartWalletOnly: boolean;
-    setBalancePerChainSmartWallet: (balances : IBalanceByChain[]) => void;
+    setsmartWalletBalanceByChain: (balances : IBalanceByChain[]) => void;
     getGasAssetsForChainId: (chainId: number, sender?: string) => Promise<IAssetWithBalance[]>;
   }
 }
