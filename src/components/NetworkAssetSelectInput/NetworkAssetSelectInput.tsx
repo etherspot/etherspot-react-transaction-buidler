@@ -378,11 +378,6 @@ const NetworkAssetSelectInput = ({
   ]);
 
   useEffect(() => {
-    console.log("smartWalletBalanceByChain",smartWalletBalanceByChain)
-  }, [smartWalletBalanceByChain])
-  
-
-  useEffect(() => {
     const updateAvalancheBalanceKeybased = () => {
       if (
         !sdk ||
@@ -401,8 +396,8 @@ const NetworkAssetSelectInput = ({
           (element) => element.chain !== CHAIN_ID.AVALANCHE
         ),
         {
-          total: filteredSelectedNetworkAssets.reduce((acc, curr) => {
-            return curr.balanceWorthUsd ? acc + curr.balanceWorthUsd : acc;
+          total: filteredSelectedNetworkAssets.reduce((sum, asset) => {
+            return asset.balanceWorthUsd ? sum + asset.balanceWorthUsd : sum;
           }, 0),
           title: supportedChains.filter(
             (element) => element.chainId === CHAIN_ID.AVALANCHE
@@ -449,7 +444,7 @@ const NetworkAssetSelectInput = ({
       keybasedWalletBalanceByChain?.length
     ) {
       let balanceByChain = keybasedWalletBalanceByChain.filter(
-        (item: any) => item.chain === supportedChain.chainId
+        (item) => item.chain === supportedChain.chainId
       );
       return keybasedWalletBalanceByChain?.length && balanceByChain.length
         ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
