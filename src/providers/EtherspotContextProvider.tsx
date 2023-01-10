@@ -95,7 +95,7 @@ const EtherspotContextProvider = ({
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
   const [smartWalletBalanceByChain, setsmartWalletBalanceByChain] = useState<IBalanceByChain[] | null>(null)
-  const [balancePerChainKeybasedWallet, setBalancePerChainKeybasedWallet] = useState<IBalanceByChain[] | null>(null);
+  const [keybasedWalletBalanceByChain, setKeybasedWalletBalanceByChain] = useState<IBalanceByChain[] | null>(null);
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -348,7 +348,7 @@ const EtherspotContextProvider = ({
             }
           })
       );
-      setBalancePerChainKeybasedWallet(balanceByChain);
+      setKeybasedWalletBalanceByChain(balanceByChain);
     },
     [sdk, providerAddress]
   );
@@ -483,7 +483,7 @@ const EtherspotContextProvider = ({
       setChainId,
       getSdkForChainId,
       smartWalletBalanceByChain,
-      balancePerChainKeybasedWallet,
+      keybasedWalletBalanceByChain,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       getSmartWalletBalancesByChain,
@@ -495,7 +495,7 @@ const EtherspotContextProvider = ({
       logout,
       smartWalletOnly,
       setsmartWalletBalanceByChain,
-      setBalancePerChainKeybasedWallet,
+      setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
     }),
@@ -508,7 +508,7 @@ const EtherspotContextProvider = ({
       setChainId,
       getSdkForChainId,
       smartWalletBalanceByChain,
-      balancePerChainKeybasedWallet,
+      keybasedWalletBalanceByChain,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       getSmartWalletBalancesByChain,
@@ -520,7 +520,7 @@ const EtherspotContextProvider = ({
       logout,
       smartWalletOnly,
       setsmartWalletBalanceByChain,
-      setBalancePerChainKeybasedWallet,
+      setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
     ],
