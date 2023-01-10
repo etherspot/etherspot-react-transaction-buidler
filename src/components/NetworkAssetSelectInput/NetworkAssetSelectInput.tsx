@@ -268,7 +268,7 @@ const NetworkAssetSelectInput = ({
   const {
     sdk,
     getSupportedAssetsWithBalancesForChainId,
-    getSmartWalletBalancesPerChain,
+    getSmartWalletBalancesByChain,
     smartWalletBalanceByChain,
     setsmartWalletBalanceByChain,
   } = useEtherspot();
@@ -317,7 +317,7 @@ const NetworkAssetSelectInput = ({
   useEffect(() => {
     const handleBalanceGet = async () => {
       if (!sdk || !walletAddress) return;
-      await getSmartWalletBalancesPerChain(walletAddress, supportedChains);
+      await getSmartWalletBalancesByChain(walletAddress, supportedChains);
     };
     handleBalanceGet();
   }, [supportedChains, sdk, walletAddress]);

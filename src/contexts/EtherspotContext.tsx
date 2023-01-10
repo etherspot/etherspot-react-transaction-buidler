@@ -23,7 +23,7 @@ export interface EtherspotContextData {
     getSupportedAssetsForChainId: (chainId: number) => Promise<IAsset[]>;
     getAssetsBalancesForChainId: (assets: IAsset[], chainId: number, address?: string | null, recompute?: boolean ) => Promise<AccountBalance[]>;
     getSupportedAssetsWithBalancesForChainId: (chainId: number, positiveBalancesOnly?: boolean, address?: string | null, recompute?: boolean ) => Promise<IAssetWithBalance[]>;
-    getSmartWalletBalancesPerChain: (walletAddress: string, supportedChains: Chain[]) => Promise<any>;
+    getSmartWalletBalancesByChain: (walletAddress: string, supportedChains: Chain[]) => Promise<any>;
     getAccountBalanceByChainId: (chainId: number, address?: string | null) => Promise<any>;
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
     totalWorthPerAddress: ITotalWorthPerAddress;
