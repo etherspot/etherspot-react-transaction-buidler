@@ -39,7 +39,7 @@ import { ActionPreview } from '../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
-import { CHAIN_ID, Chain, plrDaoAsset } from '../utils/chain';
+import { CHAIN_ID, Chain, plrDaoAsset, plrDaoConstants } from '../utils/chain';
 import Card from '../components/Card';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import {
@@ -49,7 +49,7 @@ import {
   ChainIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
-import { POLYGON_USDC_CONTRACT_ADDRESS , POLYGON_MUMBAI_TESTNET_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -726,7 +726,7 @@ const TransactionBuilderContextProvider = ({
       result = await submitEtherspotAndWaitForTransactionHash(
         getSdkForChainId(plrDaoAsset.chainId) as Sdk,
         crossChainAction.transactions,
-        POLYGON_MUMBAI_TESTNET_USDC_CONTRACT_ADDRESS,
+        plrDaoConstants.polygonAddress,
       );
 
       if (

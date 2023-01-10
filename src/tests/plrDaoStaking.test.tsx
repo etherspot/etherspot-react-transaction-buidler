@@ -4,6 +4,8 @@ import {
   getExchangeOffers,
   getStakingExchangeTransaction,
 } from './mockApi';
+import { validateTransactionBlockValues } from '../../src/utils/validation';
+import { formatAmountDisplay } from '../utils/common';
 
 jest.mock('axios');
 
@@ -91,69 +93,28 @@ describe('On click of Review', () => {
   });
 });
 
+describe('Format amount entered (convert into dollars and give a round figure)', () => {
+  let assetPriceUsd = 0.995126;
+  let amount = 0.749886343124469601; // 25% is selected
+  it('formatAmountDisplay', () => {
+    expect(formatAmountDisplay(+amount * assetPriceUsd, '$')).toBe('$0.75');
+  });
+});
+
 describe('Pillar Dao staking validation checks', () => {
-  function selectChainId(id: string) {
-    if (!id) return Promise.reject(new Error('No source chain selected!'));
-  }
-  function addAmount(amount: string) {
-    if (!amount) return Promise.reject(new Error('Incorrect asset amount!'));
-  }
-  function selectFromAssetAddress(address: string) {
-    if (!address)
-      return Promise.reject(new Error('Invalid source asset selected!'));
-  }
-  function selectFromAssetSymbol(symbol: string) {
-    if (!symbol)
-      return Promise.reject(new Error('Invalid source asset selected!'));
-  }
-  function selectFromAssetDecimal(decimal: string) {
-    if (!decimal)
-      return Promise.reject(new Error('Invalid source asset selected!'));
-  }
-  function addReceiverAddress(address: string) {
-    if (!address) return Promise.reject(new Error('Invalid receiver address!'));
-  }
-  function selectAccountType(type: string) {
-    if (!type) return Promise.reject(new Error('No account type selected!'));
-  }
-
+  const values: any = {
+    chainId: '',
+    amount: '',
+  };
+  const transactionBlock: any = {
+    type: 'PLR_DAO_STAKE',
+    values,
+  };
   it('selectChainId', async () => {
-    await expect(selectChainId('')).rejects.toThrow(
-      'No source chain selected!'
-    );
-  });
-
-  it('addAmount', async () => {
-    await expect(addAmount('')).rejects.toThrow('Incorrect asset amount!');
-  });
-
-  it('selectFromAssetAddress', async () => {
-    await expect(selectFromAssetAddress('')).rejects.toThrow(
-      'Invalid source asset selected!'
-    );
-  });
-
-  it('selectFromAssetSymbol', async () => {
-    await expect(selectFromAssetSymbol('')).rejects.toThrow(
-      'Invalid source asset selected!'
-    );
-  });
-
-  it('selectFromAssetDecimal', async () => {
-    await expect(selectFromAssetDecimal('')).rejects.toThrow(
-      'Invalid source asset selected!'
-    );
-  });
-
-  it('addReceiverAddress', async () => {
-    await expect(addReceiverAddress('')).rejects.toThrow(
-      'Invalid receiver address!'
-    );
-  });
-
-  it('selectAccountType', async () => {
-    await expect(selectAccountType('')).rejects.toThrow(
-      'No account type selected!'
+    await expect(validateTransactionBlockValues(transactionBlock)).toEqual(
+      expect.objectContaining({
+        fromChainId: 'No source chain selected!',
+      })
     );
   });
 });

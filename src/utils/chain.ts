@@ -197,8 +197,8 @@ export const klimaAsset: IAssetWithBalance = {
 }
 
 export const plrDaoAsset: IAssetWithBalance = {
-  address: '0x92334318FB7f002c2ca3a6A146250133108f462b', //TODO change this PLR Dao mainnet token address
-  chainId: 80001,//TODO change this PLR Dao mainnet chain id
+  address: '0x92334318FB7f002c2ca3a6A146250133108f462b',
+  chainId: 80001,
   name: 'Pillar DAO',
   symbol: 'PillarDAO',
   decimals: 18,
@@ -206,6 +206,11 @@ export const plrDaoAsset: IAssetWithBalance = {
   balance: BigNumber.from(0),
   assetPriceUsd: null,
   balanceWorthUsd: null,
+}
+
+export const plrDaoConstants={
+  stakingAddress: '0x92334318FB7f002c2ca3a6A146250133108f462b',
+  polygonAddress: '0xe6b8a5cf854791412c1f6efc7caf629f5df1c747'
 }
 
 export const changeToChain = async (chainId: number): Promise<boolean> => {
