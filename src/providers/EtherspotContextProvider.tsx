@@ -287,7 +287,7 @@ const EtherspotContextProvider = ({
     return [];
   }, [sdk, accountAddress]);
 
-  const getSmartWalletBalancesPerChain = useCallback(
+  const getSmartWalletBalancesByChain = useCallback(
     async (walletAddress: string, supportedChains: Chain[]) => {
       if (!sdk || !walletAddress) return;
       let balanceByChain: IBalanceByChain[] = [];
@@ -486,7 +486,7 @@ const EtherspotContextProvider = ({
       balancePerChainKeybasedWallet,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
-      getSmartWalletBalancesPerChain,
+      getSmartWalletBalancesByChain,
       getSupportedAssetsWithBalancesForChainId,
       getAccountBalanceByChainId,
       providerAddress,
@@ -511,7 +511,7 @@ const EtherspotContextProvider = ({
       balancePerChainKeybasedWallet,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
-      getSmartWalletBalancesPerChain,
+      getSmartWalletBalancesByChain,
       getSupportedAssetsWithBalancesForChainId,
       getAccountBalanceByChainId,
       providerAddress,

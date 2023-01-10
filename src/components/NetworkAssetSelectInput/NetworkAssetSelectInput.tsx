@@ -268,7 +268,7 @@ const NetworkAssetSelectInput = ({
   const {
     sdk,
     getSupportedAssetsWithBalancesForChainId,
-    getSmartWalletBalancesPerChain,
+    getSmartWalletBalancesByChain,
     smartWalletBalanceByChain,
     setsmartWalletBalanceByChain,
     balancePerChainKeybasedWallet,
@@ -321,8 +321,8 @@ const NetworkAssetSelectInput = ({
 
   useEffect(() => {
     const handleBalanceGet = async () => {
-      if (!sdk || !accountAddress) return;
-      await getSmartWalletBalancesPerChain(accountAddress, supportedChains);
+      if (!sdk || !walletAddress) return;
+      await getSmartWalletBalancesByChain(walletAddress, supportedChains);
     };
     handleBalanceGet();
   }, [supportedChains, sdk, accountAddress]);
