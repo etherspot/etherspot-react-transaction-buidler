@@ -352,17 +352,13 @@ const NetworkAssetSelectInput = ({
       ) {
         return;
       }
-      setSmartWalletBalanceByChain([
-        ...smartWalletBalanceByChain.filter(
-          (element) => element.chain !== CHAIN_ID.AVALANCHE
-        ),
+      setSmartWalletBalanceByChain((prev) => [
+        ...prev?.filter((element) => element.chain !== CHAIN_ID.AVALANCHE),
         {
           total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
-          title: (
-            supportedChains.find(
-              ({ chainId }) => chainId === CHAIN_ID.AVALANCHE
-            ) as Chain
-          ).title,
+          title: supportedChains.filter(
+            (element) => element.chainId === CHAIN_ID.AVALANCHE
+          )[0].title,
           chain: CHAIN_ID.AVALANCHE,
         },
       ]);
@@ -391,12 +387,10 @@ const NetworkAssetSelectInput = ({
       )
         return;
 
-      setKeybasedWalletBalanceByChain([
-        ...keybasedWalletBalanceByChain.filter(
-          (element) => element.chain !== CHAIN_ID.AVALANCHE
-        ),
+      setKeybasedWalletBalanceByChain((prev) => [
+        ...prev?.filter((element) => element.chain !== CHAIN_ID.AVALANCHE),
         {
-          total: sumAssetsBalanceWorth( filteredSelectedNetworkAssets),
+          total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
           title: supportedChains.filter(
             (element) => element.chainId === CHAIN_ID.AVALANCHE
           )[0].title,
