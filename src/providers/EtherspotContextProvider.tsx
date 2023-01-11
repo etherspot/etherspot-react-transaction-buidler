@@ -94,7 +94,7 @@ const EtherspotContextProvider = ({
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
-  const [smartWalletBalanceByChain, setsmartWalletBalanceByChain] = useState<IBalanceByChain[] | null>(null)
+  const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[] | null>(null)
   const [keybasedWalletBalanceByChain, setKeybasedWalletBalanceByChain] = useState<IBalanceByChain[] | null>(null);
 
   // map from generic web3 provider if needed
@@ -312,7 +312,7 @@ const EtherspotContextProvider = ({
             }
           })
       );
-      setsmartWalletBalanceByChain(balanceByChain);
+      setSmartWalletBalanceByChain(balanceByChain);
     },
     [sdk, accountAddress]
   );
@@ -326,8 +326,7 @@ const EtherspotContextProvider = ({
           .filter((element) => element.chainId !== CHAIN_ID.AVALANCHE)
           .map(async (element) => {
             try {
-              let supportedAssets =
-                await getSupportedAssetsWithBalancesForChainId(
+              let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
                   element.chainId,
                   true,
                   walletAddress,
@@ -336,12 +335,7 @@ const EtherspotContextProvider = ({
               balanceByChain.push({
                 title: element.title,
                 chain: element.chainId,
-                total: supportedAssets.reduce((sum, asset) => {
-                  if (asset.balanceWorthUsd) {
-                    return sum + asset.balanceWorthUsd;
-                  }
-                  return sum;
-                }, 0),
+                total: sumAssetsBalanceWorth(supportedAssets),
               });
             } catch (e) {
               //
@@ -494,7 +488,7 @@ const EtherspotContextProvider = ({
       totalWorthPerAddress,
       logout,
       smartWalletOnly,
-      setsmartWalletBalanceByChain,
+      setSmartWalletBalanceByChain,
       setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
@@ -519,7 +513,7 @@ const EtherspotContextProvider = ({
       totalWorthPerAddress,
       logout,
       smartWalletOnly,
-      setsmartWalletBalanceByChain,
+      setSmartWalletBalanceByChain,
       setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,

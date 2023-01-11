@@ -270,7 +270,7 @@ const NetworkAssetSelectInput = ({
     getSupportedAssetsWithBalancesForChainId,
     getSmartWalletBalancesByChain,
     smartWalletBalanceByChain,
-    setsmartWalletBalanceByChain,
+    setSmartWalletBalanceByChain,
     keybasedWalletBalanceByChain,
     providerAddress,
     accountAddress,
@@ -341,7 +341,7 @@ const NetworkAssetSelectInput = ({
   }, [selectedNetworkAssets, assetSearchQuery]);
 
   useEffect(() => {
-    const updateAvalancheBalanceSmart = () => {
+    const updateAvalancheSmartWalletBalance = () => {
       if (!sdk ||
         !walletAddress ||
         !preselectedNetwork ||
@@ -352,7 +352,7 @@ const NetworkAssetSelectInput = ({
       ) {
         return;
       }
-      setsmartWalletBalanceByChain([
+      setSmartWalletBalanceByChain([
         ...smartWalletBalanceByChain.filter(
           (element) => element.chain !== CHAIN_ID.AVALANCHE
         ),
@@ -367,7 +367,7 @@ const NetworkAssetSelectInput = ({
         },
       ]);
     };
-    updateAvalancheBalanceSmart();
+    updateAvalancheSmartWalletBalance();
   }, [
     sdk,
     supportedChains,
@@ -378,7 +378,7 @@ const NetworkAssetSelectInput = ({
   ]);
 
   useEffect(() => {
-    const updateAvalancheBalanceKeybased = () => {
+    const updateAvalancheKeybasedBalance = () => {
       if (
         !sdk ||
         !walletAddress ||
@@ -396,9 +396,7 @@ const NetworkAssetSelectInput = ({
           (element) => element.chain !== CHAIN_ID.AVALANCHE
         ),
         {
-          total: filteredSelectedNetworkAssets.reduce((sum, asset) => {
-            return asset.balanceWorthUsd ? sum + asset.balanceWorthUsd : sum;
-          }, 0),
+          total: sumAssetsBalanceWorth( filteredSelectedNetworkAssets),
           title: supportedChains.filter(
             (element) => element.chainId === CHAIN_ID.AVALANCHE
           )[0].title,
@@ -406,7 +404,7 @@ const NetworkAssetSelectInput = ({
         },
       ]);
     };
-    updateAvalancheBalanceKeybased();
+    updateAvalancheKeybasedBalance();
   }, [
     sdk,
     supportedChains,
@@ -438,7 +436,8 @@ const NetworkAssetSelectInput = ({
       return smartWalletBalanceByChain?.length && balanceByChain.length
         ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
         : '$0';
-    } else if (
+    } 
+    if (
       accType === DestinationWalletEnum.Key &&
       label === 'From' &&
       keybasedWalletBalanceByChain?.length
