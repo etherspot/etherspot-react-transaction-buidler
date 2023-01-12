@@ -261,6 +261,7 @@ const KlimaStakingTransactionBlock = ({
         toChainId: CHAIN_ID.POLYGON,
         fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
         fromTokenAddress: selectedFromAsset.address,
+        fromAddress: selectedAccountType === AccountTypes.Key ? sdk.state.walletAddress : sdk.state.accountAddress,
         toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
         toAddress: sdk.state.accountAddress,
         serviceProvider: CrossChainServiceProvider.LiFi,
