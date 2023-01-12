@@ -295,17 +295,17 @@ const EtherspotContextProvider = ({
       await Promise.all(
         supportedChains
           .filter(({ chainId }) => chainId !== CHAIN_ID.AVALANCHE)
-          .map(async (element) => {
+          .map(async (chain) => {
             try {
               let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
-                  element.chainId,
+                  chain.chainId,
                   true,
                   walletAddress,
                   false
                 );
               balanceByChain.push({
-                title: element.title,
-                chain: element.chainId,
+                title: chain.title,
+                chain: chain.chainId,
                 total: sumAssetsBalanceWorth(supportedAssets),
               });
             } catch (e) {
