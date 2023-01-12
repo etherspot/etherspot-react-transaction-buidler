@@ -769,7 +769,6 @@ export const submitWeb3ProviderTransactions = async (
     return { errorMessage: 'Unable to find connected Web3 provider!' };
   }
 
-  // TODO: check against current
   // Even if its on same chain it returns correctly so that we dont have to check against current chainId
   const changed = await changeToChain(chainId);
   if (!changed) return { errorMessage: 'Unable to change to selected network!' };
