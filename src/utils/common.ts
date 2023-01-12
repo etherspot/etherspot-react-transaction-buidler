@@ -74,8 +74,8 @@ export const getTimeBasedUniqueId = (): string => uniqueId(`${+new Date()}-`);
 
 export const formatMaxAmount = (maxAmountBN: BigNumber, decimals: number): string => ethers.utils.formatUnits(maxAmountBN, decimals);
 
-export const sumAssetsBalanceWorth = (supportedAssets: any) => {
-  return supportedAssets.reduce((sum: number, asset: { balanceWorthUsd: number; }) => {
+export const sumAssetsBalanceWorth = (supportedAssets: IAssetWithBalance[]) => {
+  return supportedAssets.reduce((sum: number, asset: IAssetWithBalance ) => {
     if (asset.balanceWorthUsd) {
       return sum + asset.balanceWorthUsd;
     }

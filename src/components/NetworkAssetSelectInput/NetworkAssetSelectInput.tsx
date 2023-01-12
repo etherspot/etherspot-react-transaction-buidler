@@ -319,22 +319,6 @@ const NetworkAssetSelectInput = ({
     walletAddress,
   ]);
 
-  useEffect(() => {
-    const handleBalanceGet = async () => {
-      if (!sdk || !walletAddress) return;
-      await getSmartWalletBalancesByChain(walletAddress, supportedChains);
-    };
-    handleBalanceGet();
-  }, [supportedChains, sdk, accountAddress]);
-
-  useEffect(() => {
-    const handleKeybasedBalanceGet = async () => {
-      if (!sdk || !providerAddress) return;
-      await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
-    };
-    handleKeybasedBalanceGet();
-  }, [supportedChains, sdk, providerAddress]);
-
   const filteredSelectedNetworkAssets = useMemo(() => {
     const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
     return orderBy(filtered, [(asset) => asset.balanceWorthUsd ?? 0, 'name'], ['desc', 'asc']);
@@ -342,11 +326,8 @@ const NetworkAssetSelectInput = ({
 
   useEffect(() => {
     const updateAvalancheSmartWalletBalance = () => {
-      if (!sdk ||
-        !walletAddress ||
-        !preselectedNetwork ||
+      if (!preselectedNetwork ||
         preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
-        !smartWalletBalanceByChain ||
         !filteredSelectedNetworkAssets.length ||
         isLoadingAssets
       ) {
@@ -375,12 +356,9 @@ const NetworkAssetSelectInput = ({
 
   useEffect(() => {
     const updateAvalancheKeybasedBalance = () => {
-      if (
-        !sdk ||
-        !walletAddress ||
+      if (!walletAddress ||
         !preselectedNetwork ||
         preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
-        !keybasedWalletBalanceByChain ||
         !filteredSelectedNetworkAssets.length ||
         accountType !== DestinationWalletEnum.Key ||
         isLoadingAssets

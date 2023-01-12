@@ -26,6 +26,7 @@ import {
   Chain,
   CHAIN_ID,
   nativeAssetPerChainId,
+  supportedChains,
 } from '../utils/chain';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import {
@@ -327,11 +328,11 @@ const EtherspotContextProvider = ({
           .map(async (element) => {
             try {
               let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
-                  element.chainId,
-                  true,
-                  walletAddress,
-                  false
-                );
+                element.chainId,
+                true,
+                walletAddress,
+                false
+              );
               balanceByChain.push({
                 title: element.title,
                 chain: element.chainId,
@@ -466,6 +467,22 @@ const EtherspotContextProvider = ({
     setAccountAddress(null);
     if (onLogout) onLogout();
   }, [setProvider, setProviderAddress, setAccountAddress, onLogout]);
+
+  useEffect(() => {
+    const handleBalanceGet = async () => {
+      if (!sdk || !accountAddress) return;
+      await getSmartWalletBalancesByChain(accountAddress, supportedChains);
+    };
+    handleBalanceGet();
+  }, [supportedChains, sdk, accountAddress]);
+
+  useEffect(() => {
+    const handleKeybasedBalanceGet = async () => {
+      if (!sdk || !providerAddress) return;
+      await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
+    };
+    handleKeybasedBalanceGet();
+  }, [supportedChains, sdk, providerAddress]);
 
   const contextData = useMemo(
     () => ({
