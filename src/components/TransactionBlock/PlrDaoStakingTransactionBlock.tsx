@@ -32,6 +32,7 @@ import { swapServiceIdToDetails } from '../../utils/swap';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import { Pill } from '../Text';
+import CloseButton from '../Button/closeButtonWhite';
 import { Theme } from '../../utils/theme';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import Text from '../Text/Text';
@@ -69,6 +70,51 @@ const OfferDetails = styled.div`
   font-family: 'PTRootUIWebMedium', sans-serif;
 `;
 
+const Container = styled.div`
+  align-items: center;
+  font-family: 'PTRootUIWebMedium', sans-serif;
+  background: #21002e;
+  color: #fefefe;
+  padding: 16px;
+  margin: 5px;
+  border-image: linear-gradient(#346ecd, #cd34a2) 30;
+  border-width: 2px;
+  border-style: solid;
+`;
+
+const Value = styled.div`
+  font-family: 'PTRootUIWebMedium', sans-serif;
+  color: #57c2d6;
+  display: contents;
+`;
+
+const Total = styled.div`
+  font-family: 'PTRootUIWebMedium', sans-serif;
+  color: #ff0065;
+  display: contents;
+  font-weight: bold;
+`;
+
+const HorizontalLine = styled.div`
+  margin: 9px 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #23a9c9, #cd34a2);
+`;
+
+const Bold = styled.p`
+  font-weight: bold;
+`;
+
+//TODO : change color of block if polygon has less than 10,000 plr on keybased / smart wallet
+const Block = styled.div`
+  font-size: 12px;
+  padding: 2px;
+  text-indent: 2px;
+  display: flex;
+  color: ${(props) => props.color === 'red' && '#ff0065'};
+`;
+
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
   return {
@@ -86,6 +132,7 @@ const PlrDaoStakingTransactionBlock = ({
 }: IPlrDaoStakingMembershipBlock) => {
   const { smartWalletOnly, providerAddress, accountAddress, sdk } =
     useEtherspot();
+
   const [amount, setAmount] = useState<string>('');
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
     values?.offer ? mapOfferToOption(values?.offer) : null
@@ -100,9 +147,17 @@ const PlrDaoStakingTransactionBlock = ({
   const [selectedAccountType, setSelectedAccountType] = useState<string>(
     AccountTypes.Contract
   );
+  const [closeButton, setCloseButton] = useState<boolean | null>(true);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(
     null
   );
+  const [totalBalance, setTotalBalance] = useState<number>(0);
+  const [keyBasedTotal, setKeyBasedTotal] = useState<string>('');
+  const [smartWalletTotal, setSmartWalletTotal] = useState<string>('');
+  const [accounts, setAccounts] = useState<
+    { chainName: string; keybasedWallet: number; smartWallet: number }[]
+  >([{ chainName: 'Ethereum', keybasedWallet: 0, smartWallet: 0 }]);
+
   const fixed = multiCallData?.fixed ?? false;
   const defaultCustomReceiverAddress =
     values?.receiverAddress &&
@@ -144,6 +199,75 @@ const PlrDaoStakingTransactionBlock = ({
     );
   }, [selectedFromNetwork]);
 
+  const apiCalls = async (chainId: number, name: string) => {
+    const smartWalletAccount =
+      accountAddress &&
+      (await sdk!.getAccountBalances({
+        account: accountAddress,
+        chainId,
+      }));
+
+    const keyBasedWalletAccount =
+      providerAddress &&
+      (await sdk!.getAccountBalances({
+        account: providerAddress,
+        chainId,
+      }));
+    const smartWallet =
+      smartWalletAccount &&
+      smartWalletAccount.items
+        .map((i) => parseInt(i.balance._hex, 16))
+        .reduce((a, b) => a + b);
+
+    const keybasedWallet =
+      keyBasedWalletAccount &&
+      keyBasedWalletAccount.items
+        .map((i) => parseInt(i.balance._hex, 16))
+        .reduce((a, b) => a + b);
+
+    return {
+      chainName: name,
+      keybasedWallet: keybasedWallet || 0,
+      smartWallet: smartWallet || 0,
+    };
+  };
+
+  const fetchAllAssets = async () => {
+    let resultArray = [];
+    for (let chain of supportedChains) {
+      const result = await apiCalls(chain.chainId, chain.title); // TODO: use promise.allSettle
+      resultArray.push(result);
+    }
+
+    const totalOfKeybased = resultArray.reduce((accumulator, object) => {
+      return accumulator + object.keybasedWallet;
+    }, 0);
+
+    const totalOfSmartWallet = resultArray.reduce((accumulator, object) => {
+      return accumulator + object.smartWallet;
+    }, 0);
+    const totalBalance = totalOfKeybased + totalOfSmartWallet;
+
+    const keyBased = formatAmountDisplay(totalOfKeybased, '$');
+    const newKeyBasedString =
+      keyBased.length > 8 ? `${keyBased.substring(0, 7)}...` : keyBased;
+
+    const smartWallet = formatAmountDisplay(totalOfSmartWallet, '$');
+    const newSmartWalletString =
+      smartWallet.length > 8
+        ? `${smartWallet.substring(0, 7)}...`
+        : smartWallet;
+
+    setTotalBalance(totalBalance);
+    setKeyBasedTotal(newKeyBasedString);
+    setSmartWalletTotal(newSmartWalletString);
+    setAccounts(resultArray);
+  };
+
+  useEffect(() => {
+    fetchAllAssets();
+  }, [fetchAllAssets, accountAddress, providerAddress]);
+
   const updateAvailableOffers = useCallback<
     () => Promise<ExchangeOffer[] | undefined>
   >(
@@ -171,7 +295,10 @@ const PlrDaoStakingTransactionBlock = ({
         if (!accountAddress) await sdk.computeContractAccount();
         const offers = await sdk.getExchangeOffers({
           fromChainId: selectedFromAsset.chainId,
-          fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+          fromAmount: ethers.utils.parseUnits(
+            amount,
+            selectedFromAsset.decimals
+          ),
           toTokenAddress: plrDaoAsset.address,
           fromTokenAddress: selectedFromAsset.address,
         });
@@ -203,16 +330,6 @@ const PlrDaoStakingTransactionBlock = ({
   const availableOffersOptions = useMemo(
     () => availableOffers?.map(mapOfferToOption),
     [availableOffers]
-  );
-
-  const onAmountChange = useCallback(
-    (newAmount: string) => {
-      resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-      const decimals = selectedFromAsset?.decimals ?? 18;
-      const updatedAmount = formatAssetAmountInput(newAmount, decimals);
-      setAmount(updatedAmount);
-    },
-    [selectedFromAsset]
   );
 
   const receiverAddress = useMemo(() => {
@@ -329,7 +446,52 @@ const PlrDaoStakingTransactionBlock = ({
   return (
     <>
       <Title>Stake into Pillar DAO</Title>
+      {closeButton && (
+        <Container>
+          <CloseButton
+            onClick={() => {
+              setCloseButton(false);
+            }}
+          />
+          <Text style={{ fontSize: '16px' }}>
+            To become DAO member, you need to stake <Value>10,000 PLR</Value>{' '}
+            tokens on Polygon.
+          </Text>
+          <HorizontalLine></HorizontalLine>
+          <Text style={{ fontSize: '14px' }}>
+            You have{' '}
+            <Total>
+              {totalBalance
+                ? `${formatAmountDisplay(totalBalance, '')}`
+                : '...'}{' '}
+              PLR
+            </Total>{' '}
+            {`tokens on ${supportedChains.length} chains and 2 wallets`}
+          </Text>{' '}
+          {'\n'}
+          {accounts.map(({ chainName, keybasedWallet, smartWallet }) => (
+            <Text style={{ fontSize: '12px' }}>
+              {keybasedWallet > 0 && (
+                <Block color= {(chainName==='Polygon' && keybasedWallet<10000) ? 'red' :''}>
+                  {`\u25CF`}
+                  <Bold>{formatAmountDisplay(keybasedWallet, '')} PLR</Bold> on
+                  <Bold>{chainName}</Bold> on <Bold> Keybased Wallet</Bold>
+                </Block>
+              )}
+              {smartWallet > 0 && (
+                <Block color= {(chainName==='Polygon' && smartWallet<10000) ? 'red' :''}>
+                  {`\u25CF`}
+                  <Bold>{formatAmountDisplay(smartWallet, '')} PLR</Bold> on
+                  <Bold>{chainName}</Bold> on <Bold> Smart Wallet</Bold>
+                </Block>
+              )}
+            </Text>
+          ))}
+        </Container>
+      )}
       <AccountSwitchInput
+        smartWalletTotal={smartWalletTotal}
+        keyBasedWalletTotal={keyBasedTotal}
         label="From wallet"
         selectedAccountType={selectedAccountType}
         onChange={(accountType) => {
@@ -369,7 +531,6 @@ const PlrDaoStakingTransactionBlock = ({
           );
           setSelectedFromNetwork(network);
         }}
-        hideChainIds={[CHAIN_ID.POLYGON]}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
         errorMessage={
@@ -397,44 +558,6 @@ const PlrDaoStakingTransactionBlock = ({
             : providerAddress
         }
       />
-      {selectedFromAsset && selectedFromNetwork && (
-        <TextInput
-          label="You stake"
-          onValueChange={onAmountChange}
-          value={amount}
-          placeholder="0"
-          inputBottomText={
-            selectedFromAsset?.assetPriceUsd && amount
-              ? `${formatAmountDisplay(
-                  +amount * selectedFromAsset.assetPriceUsd,
-                  '$'
-                )}`
-              : undefined
-          }
-          inputLeftComponent={
-            <CombinedRoundedImages
-              url={selectedFromAsset.logoURI}
-              smallImageUrl={selectedFromNetwork.iconUrl}
-              title={selectedFromAsset.symbol}
-              smallImageTitle={selectedFromNetwork.title}
-            />
-          }
-          inputTopRightComponent={
-            <Pill
-              label="Remaining"
-              value={`${formatAmountDisplay(
-                remainingSelectedFromAssetBalance ?? 0
-              )} ${selectedFromAsset.symbol}`}
-              valueColor={
-                (remainingSelectedFromAssetBalance ?? 0) < 0
-                  ? theme.color?.text?.errorMessage
-                  : undefined
-              }
-            />
-          }
-          errorMessage={errorMessages?.amount}
-        />
-      )}
       <WalletReceiveWrapper>
         <AccountSwitchInput
           label="You will receive on"

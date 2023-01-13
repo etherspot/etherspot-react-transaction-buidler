@@ -4,6 +4,8 @@ import { SelectOption } from '../SelectInput/SelectInput';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 interface AccountSwitchInputProps {
+  smartWalletTotal?:string;
+  keyBasedWalletTotal?:string;
   label?: string;
   errorMessage?: string;
   selectedAccountType: string;
@@ -15,6 +17,8 @@ interface AccountSwitchInputProps {
 }
 
 const AccountSwitchInput = ({
+  smartWalletTotal,
+  keyBasedWalletTotal,
   label,
   errorMessage,
   selectedAccountType,
@@ -25,11 +29,11 @@ const AccountSwitchInput = ({
   hideKeyBased = false,
 }: AccountSwitchInputProps) => {
   let walletOptions = [
-    { title: 'Smart Wallet', value: DestinationWalletEnum.Contract},
+    { title: smartWalletTotal ? `${smartWalletTotal} Smart Wallet`: 'Smart Wallet', value: DestinationWalletEnum.Contract},
   ];
 
   if (!hideKeyBased) {
-    walletOptions = [{ title: 'Key based', value: DestinationWalletEnum.Key }, ...walletOptions];
+    walletOptions = [{ title: keyBasedWalletTotal ? `${keyBasedWalletTotal} Key based`:'Key based', value: DestinationWalletEnum.Key }, ...walletOptions];
   }
 
   if (showCustom) {

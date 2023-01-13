@@ -15,6 +15,7 @@ export const CHAIN_ID = {
   FANTOM: 250,
   CELO: 42220,
   MOONBEAM: 1284,
+  GNOSIS:100
 };
 
 export interface Chain {
@@ -209,7 +210,7 @@ export const plrDaoAsset: IAssetWithBalance = {
 }
 
 export const plrDaoConstants={
-  stakingAddress: '0x92334318FB7f002c2ca3a6A146250133108f462b',
+  stakingAddress: '0xD54aE8275fCe00930d732F93Cf2fC0d588752f9A',
   polygonAddress: '0xe6b8a5cf854791412c1f6efc7caf629f5df1c747'
 }
 
