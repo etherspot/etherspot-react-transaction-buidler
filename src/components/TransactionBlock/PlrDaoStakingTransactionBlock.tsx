@@ -350,16 +350,6 @@ const PlrDaoStakingTransactionBlock = ({
     const offer = availableOffers?.find(
       (availableOffer) => availableOffer.provider === selectedOffer?.value
     );
-    if (selectedFromAsset?.assetPriceUsd) {
-      if (+amount * selectedFromAsset.assetPriceUsd < 0.4) {
-        setTransactionBlockFieldValidationError(
-          transactionBlockId,
-          'amount',
-          'Minimum amount 0.4 USD'
-        );
-        return;
-      }
-    }
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
       setTransactionBlockFieldValidationError(
@@ -393,26 +383,6 @@ const PlrDaoStakingTransactionBlock = ({
     selectedAccountType,
     receiverAddress,
   ]);
-
-  const remainingSelectedFromAssetBalance = useMemo(() => {
-    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero())
-      return 0;
-
-    if (!amount)
-      return +ethers.utils.formatUnits(
-        selectedFromAsset.balance,
-        selectedFromAsset.decimals
-      );
-
-    const assetAmountBN = ethers.utils.parseUnits(
-      amount,
-      selectedFromAsset.decimals
-    );
-    return +ethers.utils.formatUnits(
-      selectedFromAsset.balance.sub(assetAmountBN),
-      selectedFromAsset.decimals
-    );
-  }, [amount, selectedFromAsset]);
 
   const RenderOption = (option: SelectOption) => {
     const availableOffer = availableOffers?.find(
