@@ -378,6 +378,7 @@ const TransactionBuilderContextProvider = ({
     web3Provider,
     logout,
     smartWalletOnly,
+    chainId,
   } = useEtherspot();
 
   const { showConfirmModal, showAlertModal, showModal } =
@@ -867,35 +868,49 @@ const TransactionBuilderContextProvider = ({
   >(null);
 
   const onBuyClick = async () => {
-    if (!accountAddress || !sdk) return;
+    const maticSdk = getSdkForChainId(CHAIN_ID.POLYGON);
 
+    if (!accountAddress || !maticSdk) return;
+
+    let account = await maticSdk.getAccount();
+    if (!account || account.address !== accountAddress) {
+      await maticSdk.computeContractAccount();
+      account = await maticSdk.getAccount();
+    }
+
+    if (!account) return;
+
+    let base64Hash = '';
     let onRampOptions = {
       lang: 'fr',
       tab: 'buy',
       tabs: 'buy',
-      net: 'mainnet',
+      chain: 'matic_mainnet',
+      net: 'matic_mainnet',
       nets: 'arbitrum_mainnet,avalanche_mainnet,bsc_mainnet,fantom_mainnet,mainnet,optimism_mainnet,xdai_mainnet',
       crys: 'AVAX,BNB,BTCB,BUSD,DAI,ETH,FRAX,LUSD,MAI,MATIC,RBTC,RDOC,RIF,USDC,USDT,WBTC,WETH,XCHF,XDAI,XTZ',
       rfr: 'etherspot',
       bsc: 'GBP',
+      bdc: 'MATIC',
+      mode: 'dark',
       hash: '',
       code: '',
       addr: '',
     };
     const code = Math.floor(Math.random() * 8999) + 1000;
     const message = 'MtPelerin-' + code;
-    const account = await sdk.getAccount();
-    let base64Hash = '';
+    onRampOptions.code = code.toString();
+    onRampOptions.addr = account.address || '';
 
     if (account.state === AccountStates.UnDeployed) {
-      const submittedGateway = await deployAccount(sdk);
+      const submittedGateway = await deployAccount(maticSdk);
       if (!submittedGateway) return;
 
-      sdk.notifications$
+      maticSdk.notifications$
         .pipe(
           map(async (notification) => {
             if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
-              const submittedBatch = await sdk.getGatewaySubmittedBatch({
+              const submittedBatch = await maticSdk.getGatewaySubmittedBatch({
                 hash: submittedGateway.hash,
               });
 
@@ -914,7 +929,7 @@ const TransactionBuilderContextProvider = ({
                 submittedBatch?.transaction?.state ===
                 GatewayTransactionStates.Sent
               ) {
-                const signature = await sdk.signMessage({ message });
+                const signature = await maticSdk.signMessage({ message });
                 base64Hash = Buffer.from(
                   signature.replace('0x', ''),
                   'hex'
@@ -925,25 +940,15 @@ const TransactionBuilderContextProvider = ({
         )
         .subscribe();
     } else {
-      sdk
-        ?.signMessage({ message })
-        .then((hash) => {
-          const base64Hash = Buffer.from(
-            hash.replace('0x', ''),
-            'hex'
-          ).toString('base64');
-          return base64Hash;
-        })
-        .catch(console.log);
+      const signature = await maticSdk.signMessage({ message });
+      base64Hash = Buffer.from(signature.replace('0x', ''), 'hex').toString(
+        'base64'
+      );
     }
 
     if (!base64Hash) return;
 
-    console.log('base64Hash', base64Hash);
-
     onRampOptions.hash = base64Hash;
-    onRampOptions.code = code.toString();
-    onRampOptions.addr = accountAddress || '';
     const options = formUrlOptions(onRampOptions);
     window.open(
       `https://buy.mtpelerin.com/${options}`,
