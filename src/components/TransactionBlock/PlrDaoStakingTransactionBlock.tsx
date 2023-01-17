@@ -30,8 +30,7 @@ import {
 } from '../../utils/chain';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
-import { Pill } from '../Text';
+import { RoundedImage } from '../Image';
 import CloseButton from '../Button/closeButtonWhite';
 import { Theme } from '../../utils/theme';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
@@ -233,17 +232,31 @@ const PlrDaoStakingTransactionBlock = ({
   };
 
   const fetchAllAssets = async () => {
-    let resultArray = [];
-    for (let chain of supportedChains) {
-      const result = await apiCalls(chain.chainId, chain.title); // TODO: use promise.allSettle
-      resultArray.push(result);
+    let accountBalanceArray = [];
+    const chains = [
+      { chainId: 137, title: 'Polygon' },
+      { chainId: 100, title: 'Gnosis chain (xDai)' },
+    ];
+    const result = await Promise.allSettled(
+      chains.map(async ({ chainId, title }) => {
+        try {
+          const data = await apiCalls(chainId, title);
+          return data;
+        } catch (err) {
+          console.error(`Error: ${err}`);
+        }
+      })
+    );
+    for (let key of result) {
+      if (key.status === 'fulfilled' && key?.value) {
+        accountBalanceArray.push(key?.value);
+      }
     }
-
-    const totalOfKeybased = resultArray.reduce((accumulator, object) => {
+    const totalOfKeybased = accountBalanceArray.reduce((accumulator, object) => {
       return accumulator + object.keybasedWallet;
     }, 0);
 
-    const totalOfSmartWallet = resultArray.reduce((accumulator, object) => {
+    const totalOfSmartWallet = accountBalanceArray.reduce((accumulator, object) => {
       return accumulator + object.smartWallet;
     }, 0);
     const totalBalance = totalOfKeybased + totalOfSmartWallet;
@@ -261,12 +274,12 @@ const PlrDaoStakingTransactionBlock = ({
     setTotalBalance(totalBalance);
     setKeyBasedTotal(newKeyBasedString);
     setSmartWalletTotal(newSmartWalletString);
-    setAccounts(resultArray);
+    setAccounts(accountBalanceArray);
   };
 
   useEffect(() => {
     fetchAllAssets();
-  }, [fetchAllAssets, accountAddress, providerAddress]);
+  }, [fetchAllAssets]);
 
   const updateAvailableOffers = useCallback<
     () => Promise<ExchangeOffer[] | undefined>
@@ -442,14 +455,24 @@ const PlrDaoStakingTransactionBlock = ({
           {accounts.map(({ chainName, keybasedWallet, smartWallet }) => (
             <Text style={{ fontSize: '12px' }}>
               {keybasedWallet > 0 && (
-                <Block color= {(chainName==='Polygon' && keybasedWallet<10000) ? 'red' :''}>
+                <Block
+                  color={
+                    chainName === 'Polygon' && keybasedWallet < 10000
+                      ? 'red'
+                      : ''
+                  }
+                >
                   {`\u25CF`}
                   <Bold>{formatAmountDisplay(keybasedWallet, '')} PLR</Bold> on
                   <Bold>{chainName}</Bold> on <Bold> Keybased Wallet</Bold>
                 </Block>
               )}
               {smartWallet > 0 && (
-                <Block color= {(chainName==='Polygon' && smartWallet<10000) ? 'red' :''}>
+                <Block
+                  color={
+                    chainName === 'Polygon' && smartWallet < 10000 ? 'red' : ''
+                  }
+                >
                   {`\u25CF`}
                   <Bold>{formatAmountDisplay(smartWallet, '')} PLR</Bold> on
                   <Bold>{chainName}</Bold> on <Bold> Smart Wallet</Bold>
@@ -474,6 +497,18 @@ const PlrDaoStakingTransactionBlock = ({
       />
       <NetworkAssetSelectInput
         label="From"
+        hideChainIds={[
+          CHAIN_ID.ETHEREUM_MAINNET,
+          CHAIN_ID.BINANCE,
+          CHAIN_ID.AVALANCHE,
+          CHAIN_ID.OPTIMISM,
+          CHAIN_ID.ARBITRUM,
+          CHAIN_ID.AURORA,
+          CHAIN_ID.FANTOM,
+          CHAIN_ID.CELO,
+          CHAIN_ID.MOONBEAM,
+          CHAIN_ID.XDAI,
+        ]}
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(
             transactionBlockId,
@@ -492,7 +527,9 @@ const PlrDaoStakingTransactionBlock = ({
             'fromAssetDecimals'
           );
           setSelectedFromAsset(asset);
-          setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
+          setAmount(
+            asset.balance ? formatMaxAmount(asset.balance, asset.decimals) : ''
+          );
         }}
         onNetworkSelect={(network) => {
           resetTransactionBlockFieldValidationError(

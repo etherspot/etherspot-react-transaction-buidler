@@ -473,7 +473,6 @@ export const buildCrossChainAction = async (
 
       const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-      if (fromChainId !== plrDaoAsset.chainId) {
         try {
           const routes = await sdk.getAdvanceRoutesLiFi({
             fromChainId,
@@ -616,9 +615,6 @@ export const buildCrossChainAction = async (
           return { errorMessage: 'Failed to get bridge route!' };
         }
 
-      } else {
-        return { errorMessage: 'Failed to fetch any offers for this asset to USDC' }
-      }
     } catch (e) {
       return { errorMessage: 'Failed to get PLR Dao staking transaction!' };
     }
