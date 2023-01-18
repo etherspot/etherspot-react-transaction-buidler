@@ -7,7 +7,7 @@ jobs:
   install:
     working_directory: ~/etherspot-react-transaction-buidler
     docker:
-      - image: circleci/node:16.3.0
+      - image: cimg/node:16.19.0
         auth:
           username: $DOCKERHUB_USER
           password: $DOCKERHUB_PASSWORD
@@ -63,7 +63,7 @@ jobs:
             NODE_ENV=production npm run rollup:build
       - run:
           name: Publish package to npm
-          command: npm publish --access=public
+          command: NODE_ENV=production npm publish --access=public
       - run:
           name: Announce Publish
           command: |
