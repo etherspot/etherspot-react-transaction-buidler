@@ -26,6 +26,7 @@ import {
   Chain,
   CHAIN_ID,
   nativeAssetPerChainId,
+  supportedChains,
 } from '../utils/chain';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import {
@@ -94,7 +95,8 @@ const EtherspotContextProvider = ({
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
-  const [smartWalletBalanceByChain, setsmartWalletBalanceByChain] = useState<IBalanceByChain[] | null>(null)
+  const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[]>([])
+  const [keybasedWalletBalanceByChain, setKeybasedWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -293,14 +295,44 @@ const EtherspotContextProvider = ({
       await Promise.all(
         supportedChains
           .filter(({ chainId }) => chainId !== CHAIN_ID.AVALANCHE)
-          .map(async (element) => {
+          .map(async (chain) => {
             try {
               let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
-                  element.chainId,
+                  chain.chainId,
                   true,
                   walletAddress,
                   false
                 );
+              balanceByChain.push({
+                title: chain.title,
+                chain: chain.chainId,
+                total: sumAssetsBalanceWorth(supportedAssets),
+              });
+            } catch (e) {
+              //
+            }
+          })
+      );
+      setSmartWalletBalanceByChain(balanceByChain);
+    },
+    [sdk, accountAddress]
+  );
+
+  const getKeybasedWalletBalancesPerChain = useCallback(
+    async (walletAddress: string, supportedChains: Chain[]) => {
+      if (!sdk || !walletAddress) return;
+      let balanceByChain: IBalanceByChain[] = [];
+      await Promise.all(
+        supportedChains
+          .filter((element) => element.chainId !== CHAIN_ID.AVALANCHE)
+          .map(async (element) => {
+            try {
+              let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+                element.chainId,
+                true,
+                walletAddress,
+                false
+              );
               balanceByChain.push({
                 title: element.title,
                 chain: element.chainId,
@@ -311,9 +343,9 @@ const EtherspotContextProvider = ({
             }
           })
       );
-      setsmartWalletBalanceByChain(balanceByChain);
+      setKeybasedWalletBalanceByChain(balanceByChain);
     },
-    [sdk, accountAddress]
+    [sdk, providerAddress]
   );
 
   const getAccountBalanceByChainId = useCallback(
@@ -436,6 +468,22 @@ const EtherspotContextProvider = ({
     if (onLogout) onLogout();
   }, [setProvider, setProviderAddress, setAccountAddress, onLogout]);
 
+  useEffect(() => {
+    const handleBalanceGet = async () => {
+      if (!sdk || !accountAddress) return;
+      await getSmartWalletBalancesByChain(accountAddress, supportedChains);
+    };
+    handleBalanceGet();
+  }, [supportedChains, sdk, accountAddress]);
+
+  useEffect(() => {
+    const handleKeybasedBalanceGet = async () => {
+      if (!sdk || !providerAddress) return;
+      await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
+    };
+    handleKeybasedBalanceGet();
+  }, [supportedChains, sdk, providerAddress]);
+
   const contextData = useMemo(
     () => ({
       connect,
@@ -446,6 +494,7 @@ const EtherspotContextProvider = ({
       setChainId,
       getSdkForChainId,
       smartWalletBalanceByChain,
+      keybasedWalletBalanceByChain,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       getSmartWalletBalancesByChain,
@@ -456,7 +505,9 @@ const EtherspotContextProvider = ({
       totalWorthPerAddress,
       logout,
       smartWalletOnly,
-      setsmartWalletBalanceByChain,
+      setSmartWalletBalanceByChain,
+      setKeybasedWalletBalanceByChain,
+      getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
     }),
     [
@@ -468,6 +519,7 @@ const EtherspotContextProvider = ({
       setChainId,
       getSdkForChainId,
       smartWalletBalanceByChain,
+      keybasedWalletBalanceByChain,
       getSupportedAssetsForChainId,
       getAssetsBalancesForChainId,
       getSmartWalletBalancesByChain,
@@ -478,7 +530,9 @@ const EtherspotContextProvider = ({
       totalWorthPerAddress,
       logout,
       smartWalletOnly,
-      setsmartWalletBalanceByChain,
+      setSmartWalletBalanceByChain,
+      setKeybasedWalletBalanceByChain,
+      getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
     ],
   );
