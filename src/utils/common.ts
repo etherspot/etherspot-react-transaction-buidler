@@ -1,5 +1,9 @@
 import { uniqueId } from 'lodash';
-import { BigNumber, ethers } from 'ethers';
+import {
+  BigNumber,
+  ethers,
+} from 'ethers';
+import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 
 export const formatAssetAmountInput = (
   amount: string,
@@ -89,4 +93,13 @@ export const formUrlOptions = (options: { [key: string]: string }): string => {
     optionStr += `${!optionStr ? '?' : '&'}${key}=${encodeURIComponent(value)}`;
   });
   return optionStr;
+}
+
+export const sumAssetsBalanceWorth = (supportedAssets: IAssetWithBalance[]) => {
+  return supportedAssets.reduce((sum: number, asset: IAssetWithBalance) => {
+    if (asset.balanceWorthUsd) {
+      return sum + asset.balanceWorthUsd;
+    }
+    return sum;
+  }, 0);
 };

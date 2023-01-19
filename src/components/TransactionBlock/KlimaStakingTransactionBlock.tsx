@@ -337,6 +337,7 @@ const KlimaStakingTransactionBlock = ({
         }}
         hideKeyBased={smartWalletOnly}
         errorMessage={errorMessages?.accountType}
+        showTotals
       />
       <NetworkAssetSelectInput
         label="From"
@@ -359,6 +360,7 @@ const KlimaStakingTransactionBlock = ({
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
+        accountType={selectedAccountType}
       />
       <NetworkAssetSelectInput
         label="To"
@@ -366,6 +368,7 @@ const KlimaStakingTransactionBlock = ({
         selectedAsset={klimaAsset}
         disabled={true}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+        accountType={selectedAccountType}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput

@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import styled from 'styled-components';
 
 import { SelectOption } from '../SelectInput/SelectInput';
+
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
+
+import { useEtherspot } from '../../hooks';
 
 const Label = styled.div`
   display: inline-block;
@@ -82,6 +86,7 @@ interface TextInputProps {
   onChange?: (value: SelectOption) => void;
   inlineLabel?: boolean;
   disabled?: boolean;
+  showTotals?: boolean;
 }
 
 const SwitchInput = ({
@@ -92,7 +97,37 @@ const SwitchInput = ({
   onChange,
   inlineLabel = false,
   disabled = false,
+  showTotals = false
 }: TextInputProps) => {
+  const { smartWalletBalanceByChain, keybasedWalletBalanceByChain } = useEtherspot()
+
+  const showTotalByWalletType = useCallback(
+    (walletType: DestinationWalletEnum) => {
+      const sum: number = 0;
+      if (smartWalletBalanceByChain?.length && 
+        keybasedWalletBalanceByChain?.length) {
+        switch (walletType) {
+          case DestinationWalletEnum.Contract:
+            return `$${smartWalletBalanceByChain
+              .reduce((acc, curr) => {
+                return acc + curr.total;
+              }, sum)
+              .toFixed(0)}`;
+          case DestinationWalletEnum.Key:
+            return ` · $${keybasedWalletBalanceByChain
+              .reduce((acc, curr) => {
+                return acc + curr.total;
+              }, sum)
+              .toFixed(0)}`;
+          default:
+            return '';
+        }
+      }
+      return '';
+    },
+    [smartWalletBalanceByChain, keybasedWalletBalanceByChain]
+  );
+  
   return (
     <Wrapper inline={inlineLabel} disabled={disabled}>
       {!!label && <Label>{label}</Label>}
@@ -104,7 +139,7 @@ const SwitchInput = ({
             onClick={() => !disabled && onChange && onChange(option)}
             percentageWidth={100 / options.length}
           >
-            {option.title}
+            {option.title} {showTotals && showTotalByWalletType(option.value)}
           </SwitchOption>
         ))}
       </InputWrapper>
