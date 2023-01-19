@@ -464,10 +464,7 @@ const ActionPreview = ({
     if (isEstimating) return "Estimating...";
     if (!estimated || !estimated?.gasCost) {
       if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && crossChainAction.useWeb3Provider && crossChainAction.gasCost) {
-        return formatAmountDisplay(
-          `${crossChainAction.gasCost}`,
-          "$"
-        );
+        return formatAmountDisplay(crossChainAction.gasCost, '$');
       }
       return estimated?.errorMessage;
     }
