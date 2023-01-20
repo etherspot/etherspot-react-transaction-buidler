@@ -264,6 +264,7 @@ export const buildCrossChainAction = async (
             bridgeUsed: toolUsed,
             receiveAmount: ethers.utils.parseUnits(routeToUSDC.estimate.toAmount ?? '0', 6).toString(),
             useWeb3Provider: accountType === AccountTypes.Key,
+            gasCost: routeToUSDC.estimate.gasCosts.amountUSD,
             destinationCrossChainAction: [{
               id: uniqueId(`${createTimestamp}-`),
               relatedTransactionBlockId: transactionBlock.id,

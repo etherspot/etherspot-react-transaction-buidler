@@ -462,7 +462,12 @@ const ActionPreview = ({
 
   const cost = useMemo(() => {
     if (isEstimating) return "Estimating...";
-    if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
+    if (!estimated || !estimated?.gasCost) {
+      if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && crossChainAction.useWeb3Provider && crossChainAction.gasCost) {
+        return formatAmountDisplay(crossChainAction.gasCost, '$');
+      }
+      return estimated?.errorMessage;
+    }
 
     const gasCostNumericString = estimated.feeAmount && crossChainAction.gasTokenDecimals
       ? ethers.utils.formatUnits(estimated.feeAmount, crossChainAction.gasTokenDecimals)
