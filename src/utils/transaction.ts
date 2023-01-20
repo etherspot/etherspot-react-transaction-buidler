@@ -552,7 +552,7 @@ export const buildCrossChainAction = async (
             transactions = [approvalTransaction, ...transactions];
           }
 
-          const result = await plrDaoStaking(offer,BigNumber.from(bestRoute.toAmount).sub('250000').toString(), sdk.state.walletAddress, sdk);
+          const result = await plrDaoStaking(offer,BigNumber.from(bestRoute.toAmount).toString(), sdk.state.walletAddress, sdk);
 
           if (result.errorMessage) return { errorMessage: result.errorMessage };
 

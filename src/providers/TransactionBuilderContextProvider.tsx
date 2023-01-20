@@ -1416,6 +1416,7 @@ const TransactionBuilderContextProvider = ({
                         )
                       }
                       showEditButton={!disableEdit}
+                      isSubmitTrue={isSubmitting}
                       showStatus={!!crossChainActionsInProcessing?.length}
                       setIsTransactionDone={setIsTransactionDone}
                       showGasAssetSelect

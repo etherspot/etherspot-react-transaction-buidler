@@ -233,12 +233,8 @@ const PlrDaoStakingTransactionBlock = ({
 
   const fetchAllAssets = async () => {
     let accountBalanceArray = [];
-    const chains = [
-      { chainId: 137, title: 'Polygon' },
-      { chainId: 100, title: 'Gnosis chain (xDai)' },
-    ];
     const result = await Promise.allSettled(
-      chains.map(async ({ chainId, title }) => {
+      supportedChains.map(async ({ chainId, title }) => {
         try {
           const data = await apiCalls(chainId, title);
           return data;
@@ -497,18 +493,6 @@ const PlrDaoStakingTransactionBlock = ({
       />
       <NetworkAssetSelectInput
         label="From"
-        hideChainIds={[
-          CHAIN_ID.ETHEREUM_MAINNET,
-          CHAIN_ID.BINANCE,
-          CHAIN_ID.AVALANCHE,
-          CHAIN_ID.OPTIMISM,
-          CHAIN_ID.ARBITRUM,
-          CHAIN_ID.AURORA,
-          CHAIN_ID.FANTOM,
-          CHAIN_ID.CELO,
-          CHAIN_ID.MOONBEAM,
-          CHAIN_ID.XDAI,
-        ]}
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(
             transactionBlockId,
@@ -528,7 +512,7 @@ const PlrDaoStakingTransactionBlock = ({
           );
           setSelectedFromAsset(asset);
           setAmount(
-            asset.balance ? formatMaxAmount(asset.balance, asset.decimals) : ''
+            amountBN ? formatMaxAmount(amountBN, asset.decimals) : ''
           );
         }}
         onNetworkSelect={(network) => {

@@ -198,8 +198,8 @@ export const klimaAsset: IAssetWithBalance = {
 }
 
 export const plrDaoAsset: IAssetWithBalance = {
-  address: '0x92334318FB7f002c2ca3a6A146250133108f462b',
-  chainId: 80001,
+  address: '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774',
+  chainId: CHAIN_ID.POLYGON,
   name: 'Pillar DAO',
   symbol: 'PillarDAO',
   decimals: 18,
@@ -210,8 +210,8 @@ export const plrDaoAsset: IAssetWithBalance = {
 }
 
 export const plrDaoConstants={
-  stakingAddress: '0xD54aE8275fCe00930d732F93Cf2fC0d588752f9A',
-  polygonAddress: '0xe6b8a5cf854791412c1f6efc7caf629f5df1c747'
+  stakingAddress: '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227',
+  polygonAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'
 }
 
 export const changeToChain = async (chainId: number): Promise<boolean> => {

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import styled, { useTheme } from "styled-components";
 import { ethers } from "ethers";
 import { HiOutlinePencilAlt } from "react-icons/hi";
-import { BsClockHistory, BiCheck, IoClose, FaSignature } from "react-icons/all";
+import { BsClockHistory, BiCheck, IoClose, FaSignature , CgSandClock} from "react-icons/all";
 import { CHAIN_ID_TO_NETWORK_NAME } from "etherspot/dist/sdk/network/constants";
 
 // Components
@@ -159,6 +159,31 @@ const Row = styled.div.attrs((props: { center: boolean }) => props)`
   ${({ center }) => center && 'align-items: center;'};
 `;
 
+const PrepareTransaction = styled.div`
+  position: relative;
+  margin-bottom: 18px;
+  color: ${({ theme }) => theme.color.text.selectInput};
+  border-radius: 8px;
+  padding: 8px 14px;
+  word-break: break-all;
+  display: flex;
+`;
+
+const PrepareTransactionWrapper = styled.div`
+  position: relative;
+  margin-bottom: 18px;
+  background: ${({ theme }) => theme.color.background.selectInput};
+  color: ${({ theme }) => theme.color.text.selectInput};
+  border-radius: 8px;
+  padding: 8px 14px;
+  word-break: break-all;
+  width: 100%;
+`
+const ColoredText = styled.div`
+  color: ${(props) => props.color && props.color};
+  padding: 14px;
+  word-break: initial;
+`
 interface TransactionPreviewInterface {
   crossChainAction: ICrossChainAction;
   onRemove?: () => void;
@@ -167,6 +192,7 @@ interface TransactionPreviewInterface {
   signButtonDisabled?: boolean;
   editButtonDisabled?: boolean;
   showEditButton?: boolean;
+  isSubmitTrue?: boolean;
   showSignButton?: boolean;
   setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
@@ -432,14 +458,35 @@ const ActionPreview = ({
   editButtonDisabled = false,
   showSignButton = false,
   showEditButton = false,
+  isSubmitTrue = false,
   setIsTransactionDone,
   showStatus = true,
   showGasAssetSelect = false,
 }: TransactionPreviewInterface) => {
+  const [minutes, setMinutes] = useState(0);
+  const [seconds, setSeconds] = useState(30);
 	const { accountAddress, providerAddress } = useEtherspot();
 	const theme: Theme = useTheme();
 
 	const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
+
+  useEffect(() => {
+    if(!isSubmitTrue){
+      setSeconds(0);
+      setMinutes(0);
+    }
+    const interval = setInterval(() => {
+        setSeconds(seconds => (seconds + 1) % 60);
+        setMinutes(minutes => {
+            if (seconds === 0) {
+                return minutes + 1;
+            }
+            return minutes;
+        });
+    }, 1000);
+    return () => clearInterval(interval);
+}, [isSubmitTrue]);
+
   const onCopy = (valueToCopy: string) => {
       navigator.clipboard.writeText(valueToCopy).then((res) => {
         alert("Copied!");
@@ -622,7 +669,7 @@ const ActionPreview = ({
 			>
 				<DoubleTransactionActionsInSingleRow>
 					<TransactionAction>
-						<Label>You send</Label>
+						<ColoredText>You send</ColoredText>
 						<ValueWrapper>
 							<CombinedRoundedImages
 								title={fromAsset.symbol}
@@ -639,7 +686,7 @@ const ActionPreview = ({
 						</ValueWrapper>
 					</TransactionAction>
 					<TransactionAction>
-						<Label>You receive</Label>
+						<ColoredText color='#5fc9e0' >You receive</ColoredText>
 						<ValueWrapper>
 							<CombinedRoundedImages
 								title={toAsset.symbol}
@@ -674,7 +721,7 @@ const ActionPreview = ({
 					</TransactionAction>
 				)}
 				<TransactionAction>
-					<Label>Route</Label>
+					<ColoredText color='#5fc9e0'>Route</ColoredText>
 					<ValueWrapper>
 						<RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
 						<ValueBlock>
@@ -688,7 +735,7 @@ const ActionPreview = ({
 						{!!cost && (
 							<ValueBlock>
 								<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
-									Gas price
+                  Gas price
 								</Text>
 								<Text size={16} medium>
 									{cost}
@@ -697,6 +744,27 @@ const ActionPreview = ({
 						)}
 					</ValueWrapper>
 				</TransactionAction>
+        {isSubmitTrue && (
+          <PrepareTransaction>
+            <ColoredText
+              color='#5fc9e0'
+            >
+              {minutes}:{`${seconds < 10 ? '0' : ''}${seconds}`}
+            </ColoredText>
+            <PrepareTransactionWrapper>
+              <ValueWrapper>
+                <StatusIconWrapper
+                  color={theme?.color?.background?.statusIconPending}
+                >
+                  <CgSandClock size={14} />
+                </StatusIconWrapper>
+                <Text size={16} medium>
+                  Preparing Transaction
+                </Text>
+              </ValueWrapper>
+            </PrepareTransactionWrapper>
+          </PrepareTransaction>
+        )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
 				<TransactionStatus
           crossChainAction={crossChainAction}
