@@ -1192,6 +1192,7 @@ export const estimateCrossChainAction = async (
   let usdPrice = null;
   let errorMessage;
   let feeAmount = null;
+  let timeStamp = null;
 
   if (!sdk || (crossChainAction.useWeb3Provider && !web3Provider)) {
     return { errorMessage: 'Failed to estimate!' };
@@ -1247,7 +1248,7 @@ export const estimateCrossChainAction = async (
 
     try {
       for (const transactionsToSend of crossChainAction.transactions) {
-        const { to, data, value } = transactionsToSend;
+        const { to, data, value, createTimestamp} = transactionsToSend;
         // @ts-ignore
         const estimatedTx = await web3Provider.sendRequest('eth_estimateGas', [
           {
@@ -1257,6 +1258,7 @@ export const estimateCrossChainAction = async (
             data,
           },
         ]);
+        timeStamp = createTimestamp;
         gasLimit = gasLimit.add(estimatedTx);
       }
       if (!gasLimit.isZero()) gasCost = gasLimit;
@@ -1304,7 +1306,7 @@ export const estimateCrossChainAction = async (
     //
   }
 
-  return { gasCost, errorMessage, usdPrice, feeAmount };
+  return { gasCost, errorMessage, usdPrice, feeAmount, timeStamp };
 };
 
 export const getTransactionStatus = async (sdk: EtherspotSdk, hash: string): Promise<string> => {

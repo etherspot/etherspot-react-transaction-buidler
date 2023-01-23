@@ -180,7 +180,7 @@ const PrepareTransactionWrapper = styled.div`
   width: 100%;
 `
 const ColoredText = styled.div`
-  color: ${(props) => props.color && props.color};
+  color: ${(props) => props.color && props.color}; 
   padding: 14px;
   word-break: initial;
 `
@@ -686,7 +686,7 @@ const ActionPreview = ({
 						</ValueWrapper>
 					</TransactionAction>
 					<TransactionAction>
-						<ColoredText color='#5fc9e0' >You receive</ColoredText>
+						<ColoredText>You receive</ColoredText>
 						<ValueWrapper>
 							<CombinedRoundedImages
 								title={toAsset.symbol}
@@ -720,35 +720,41 @@ const ActionPreview = ({
 						</Text>
 					</TransactionAction>
 				)}
-				<TransactionAction>
-					<ColoredText color='#5fc9e0'>Route</ColoredText>
-					<ValueWrapper>
-						<RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
-						<ValueBlock>
-							<Text size={12} marginBottom={2} medium block>
-								{providerName}
-							</Text>
-							<Text size={16} medium>
-								{toAmount} {toAsset.symbol}{' '}
-							</Text>
-						</ValueBlock>
-						{!!cost && (
-							<ValueBlock>
-								<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
-                  Gas price
-								</Text>
-								<Text size={16} medium>
-									{cost}
-								</Text>
-							</ValueBlock>
-						)}
-					</ValueWrapper>
-				</TransactionAction>
+				 <TransactionAction>
+        {/* TODO:Pass prop color = 5fc9e0 in dark mode. */}
+          <ColoredText>Route</ColoredText>
+          <ValueWrapper>
+            <RoundedImage
+              title={providerName ?? 'Unknown'}
+              url={providerIconUrl}
+            />
+            <ValueBlock>
+              <Text size={12} marginBottom={2} medium block>
+                {providerName}
+              </Text>
+              <Text size={16} medium>
+                {toAmount} {toAsset.symbol}{' '}
+              </Text>
+            </ValueBlock>
+          </ValueWrapper>
+          <ValueWrapper>
+            {!!cost && (
+              <>
+                <ColoredText>Gas price</ColoredText>
+                {cost}
+              </>
+            )}
+            {estimated?.timeStamp && (
+              <>
+                <ColoredText>Time</ColoredText>
+                {moment(estimated?.timeStamp).format("m [min], s [sec]")}
+              </>
+            )}
+          </ValueWrapper>
+        </TransactionAction>
         {isSubmitTrue && (
           <PrepareTransaction>
-            <ColoredText
-              color='#5fc9e0'
-            >
+            <ColoredText>
               {minutes}:{`${seconds < 10 ? '0' : ''}${seconds}`}
             </ColoredText>
             <PrepareTransactionWrapper>

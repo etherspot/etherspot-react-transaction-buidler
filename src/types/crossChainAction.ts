@@ -106,6 +106,7 @@ export interface ICrossChainActionEstimation {
 	usdPrice?: number | null;
 	errorMessage?: string;
 	feeAmount?: BigNumber | null;
+  timeStamp?: number | null;
 }
 
 export type ICrossChainAction = {
