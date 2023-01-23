@@ -407,7 +407,7 @@ const NetworkAssetSelectInput = ({
       );
       return smartWalletBalanceByChain?.length && balanceByChain.length
         ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
-        : '$0';
+        : ' · $0';
     } 
     if (
       accType === DestinationWalletEnum.Key &&
