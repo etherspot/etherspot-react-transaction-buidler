@@ -44,6 +44,7 @@ interface KlimaStakingActionPreview {
 
 interface PlrStakingActionPreview {
 	fromChainId: number;
+  hasEnoughPLR: boolean;
 	fromAsset: AssetTransfer;
 	toAsset: AssetTransfer;
 	providerName: string;
