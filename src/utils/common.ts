@@ -77,7 +77,7 @@ export const sumAssetsBalanceWorth = (supportedAssets: IAssetWithBalance[]) => {
   }, 0);
 };
 
-export const formUrlOptions = (options: { [key: string]: string }): string => {
+export const buildUrlOptions = (options: { [key: string]: string }): string => {
   let optionStr = '';
   Object.keys(options).map((key: string) => {
     let value = options[key];

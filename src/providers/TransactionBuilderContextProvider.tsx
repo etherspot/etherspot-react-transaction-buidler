@@ -37,7 +37,7 @@ import {
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { formUrlOptions, getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
+import { buildUrlOptions, getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
@@ -46,6 +46,7 @@ import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherCon
 import { SendActionIcon, SwapActionIcon, BridgeActionIcon, ChainIcon } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { openMtPelerinTab } from '../utils/pelerin';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -731,7 +732,12 @@ const TransactionBuilderContextProvider = ({
 
   const [showMulticallOptions, setShowMulticallOptions] = useState<string | null>(null);
 
-  const onBuyClick = async () => {
+  // Mt Pelerin
+  const [deployingAccount, setDeployingAccount] = useState(false);
+
+  const onBuyClick = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    event.preventDefault();
+
     const maticSdk = getSdkForChainId(CHAIN_ID.POLYGON);
 
     if (!accountAddress || !maticSdk) return;
@@ -744,66 +750,7 @@ const TransactionBuilderContextProvider = ({
 
     if (!account) return;
 
-    let base64Hash = '';
-    let onRampOptions = {
-      lang: 'fr',
-      tab: 'buy',
-      tabs: 'buy',
-      chain: 'matic_mainnet',
-      net: 'matic_mainnet',
-      nets: 'arbitrum_mainnet,avalanche_mainnet,bsc_mainnet,fantom_mainnet,mainnet,optimism_mainnet,xdai_mainnet',
-      crys: 'AVAX,BNB,BTCB,BUSD,DAI,ETH,FRAX,LUSD,MAI,MATIC,RBTC,RDOC,RIF,USDC,USDT,WBTC,WETH,XCHF,XDAI,XTZ',
-      rfr: 'etherspot',
-      bsc: 'GBP',
-      bdc: 'MATIC',
-      mode: 'dark',
-      hash: '',
-      code: '',
-      addr: '',
-    };
-    const code = Math.floor(Math.random() * 8999) + 1000;
-    const message = 'MtPelerin-' + code;
-    onRampOptions.code = code.toString();
-    onRampOptions.addr = account.address || '';
-
-    if (account.state === AccountStates.UnDeployed) {
-      const submittedGateway = await deployAccount(maticSdk);
-      if (!submittedGateway) return;
-
-      maticSdk.notifications$
-        .pipe(
-          map(async (notification) => {
-            if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
-              const submittedBatch = await maticSdk.getGatewaySubmittedBatch({
-                hash: submittedGateway.hash,
-              });
-
-              const failedStates = [
-                GatewayTransactionStates.Canceling,
-                GatewayTransactionStates.Canceled,
-                GatewayTransactionStates.Reverted,
-              ];
-
-              if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
-                console.log('error', 'Failed to deploy the etherspot wallet');
-              } else if (submittedBatch?.transaction?.state === GatewayTransactionStates.Sent) {
-                const signature = await maticSdk.signMessage({ message });
-                base64Hash = Buffer.from(signature.replace('0x', ''), 'hex').toString('base64');
-              }
-            }
-          })
-        )
-        .subscribe();
-    } else {
-      const signature = await maticSdk.signMessage({ message });
-      base64Hash = Buffer.from(signature.replace('0x', ''), 'hex').toString('base64');
-    }
-
-    if (!base64Hash) return;
-
-    onRampOptions.hash = base64Hash;
-    const options = formUrlOptions(onRampOptions);
-    window.open(`https://buy.mtpelerin.com/${options}`, '_blank', 'noopener,noreferrer');
+    openMtPelerinTab(maticSdk, account, deployingAccount, setDeployingAccount, showAlertModal);
   };
 
   return (
@@ -821,7 +768,11 @@ const TransactionBuilderContextProvider = ({
               Account: {humanizeHexString(accountAddress)}
             </WalletAddress>
           )}
-          {accountAddress && <WalletAddress onClick={onBuyClick}>Buy</WalletAddress>}
+          {accountAddress && (
+            <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
+              {deployingAccount ? 'Deploying...' : 'Buy'}
+            </WalletAddress>
+          )}
           {!accountAddress && (
             <WalletAddress disabled>
               Account:{' '}
