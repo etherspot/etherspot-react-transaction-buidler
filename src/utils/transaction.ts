@@ -1082,5 +1082,5 @@ export const deployAccount = async (sdk: EtherspotSdk | null) => {
   sdk.clearGatewayBatch();
   await sdk.batchDeployAccount();
   await sdk.estimateGatewayBatch();
-  return await sdk.submitGatewayBatch();
+  return sdk.submitGatewayBatch();
 };
