@@ -405,9 +405,11 @@ const NetworkAssetSelectInput = ({
       let balanceByChain = smartWalletBalanceByChain.filter(
         (item: any) => item.chain === supportedChain.chainId
       );
-      return smartWalletBalanceByChain?.length && balanceByChain.length
-        ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
-        : ' · $0';
+      let displayBalance =
+        smartWalletBalanceByChain?.length && balanceByChain.length
+          ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
+          : '';
+      return displayBalance === ' · $0' ? '' : displayBalance;
     } 
     if (
       accType === DestinationWalletEnum.Key &&
@@ -417,9 +419,11 @@ const NetworkAssetSelectInput = ({
       let balanceByChain = keybasedWalletBalanceByChain.filter(
         (item) => item.chain === supportedChain.chainId
       );
-      return keybasedWalletBalanceByChain?.length && balanceByChain.length
-        ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
-        : ' · $0';
+      let displayBalance =
+        keybasedWalletBalanceByChain?.length && balanceByChain.length
+          ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
+          : '';
+      return displayBalance === ' · $0' ? '' : displayBalance;
     }
     return ''
   };
