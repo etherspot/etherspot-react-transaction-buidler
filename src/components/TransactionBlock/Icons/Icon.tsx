@@ -1,24 +1,26 @@
-import React from "react";
-import styled from "styled-components";
+import React from 'react';
+import styled from 'styled-components';
 
-const TransactionBlockIconWrapper = styled.div<{ big?: boolean }>`
+const TransactionBlockIconWrapper = styled.div<{
+  size?: number;
+  big?: boolean;
+}>`
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  ${({ size }) => `width: ${size || 18}px; height: ${size || 18}px;`};
   ${({ big }) => big && `width: 24px; height: 24px;`}
 `;
 
-const TransactionBlockIcon = (
-  {
-    children,
-    big
-  }: {
-    children: React.ReactNode,
-    big?: boolean
-  }
-) => {
+const TransactionBlockIcon = ({
+  children,
+  size,
+  big,
+}: {
+  children: React.ReactNode;
+  size?: number;
+  big?: boolean;
+}) => {
   return (
-    <TransactionBlockIconWrapper big={big}>
+    <TransactionBlockIconWrapper size={size} big={big}>
       {children}
     </TransactionBlockIconWrapper>
   );
