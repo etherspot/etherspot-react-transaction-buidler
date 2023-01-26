@@ -2,9 +2,8 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { AccountStates, GatewayTransactionStates, NotificationTypes, Sdk, sleep, TokenListToken } from 'etherspot';
+import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
-import { map } from 'rxjs/operators';
 
 // Types
 import {
@@ -32,12 +31,11 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
-  deployAccount,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { buildUrlOptions, getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
+import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
@@ -767,6 +765,7 @@ const TransactionBuilderContextProvider = ({
     };
     setTransactionBlocks((current) => current.concat(transactionBlock));
     setShowTransactionBlockSelect(false);
+  };
 
   // Mt Pelerin
   const [deployingAccount, setDeployingAccount] = useState(false);
@@ -1341,6 +1340,7 @@ const TransactionBuilderContextProvider = ({
                         transactions: updatedTransactions,
                         batchHash,
                       };
+
                       dispatchCrossChainActions([mappedPendingCrossChainAction], CROSS_CHAIN_ACTION_STATUS.PENDING);
                       setCrossChainActions((current) =>
                         current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id)
