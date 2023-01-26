@@ -73,6 +73,7 @@ interface KlimaStakingAction {
 	containsSwitchChain?: boolean;
 	receiveAmount?: string;
 	bridgeUsed?: string;
+  gasCost?: string;
 }
 
 export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {

@@ -2,8 +2,9 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { Sdk, sleep, TokenListToken } from 'etherspot';
+import { AccountStates, GatewayTransactionStates, NotificationTypes, Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
+import { map } from 'rxjs/operators';
 
 // Types
 import {
@@ -31,11 +32,12 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
+  deployAccount,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
+import { buildUrlOptions, getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
@@ -45,6 +47,7 @@ import { SendActionIcon, SwapActionIcon, BridgeActionIcon, ChainIcon } from '../
 import { DestinationWalletEnum } from '../enums/wallet.enum';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import WalletTransactionBlock from '../components/TransactionBlock/WalletTransactionBlock';
+import { openMtPelerinTab } from '../utils/pelerin';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -97,7 +100,7 @@ const WalletAddressesWrapper = styled.div`
 `;
 
 const WalletAddress = styled.span<{ disabled?: boolean }>`
-  margin-right: 40px;
+  margin-right: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -764,6 +767,34 @@ const TransactionBuilderContextProvider = ({
     };
     setTransactionBlocks((current) => current.concat(transactionBlock));
     setShowTransactionBlockSelect(false);
+
+  // Mt Pelerin
+  const [deployingAccount, setDeployingAccount] = useState(false);
+
+  const onBuyClick = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    event.preventDefault();
+
+    const maticSdk = getSdkForChainId(CHAIN_ID.POLYGON);
+
+    if (!accountAddress || !maticSdk) return;
+
+    let account = await maticSdk.getAccount();
+    if (!account || account.address !== accountAddress) {
+      try {
+        await maticSdk.computeContractAccount();
+        account = await maticSdk.getAccount();
+      } catch {
+        showAlertModal('There was an error fetching the account, please try again later.');
+        return;
+      }
+    }
+
+    if (!account) {
+      showAlertModal('There was an error fetching the account, please try again later.');
+      return;
+    }
+
+    openMtPelerinTab(maticSdk, account, deployingAccount, setDeployingAccount, showAlertModal);
   };
 
   return (
@@ -779,6 +810,11 @@ const TransactionBuilderContextProvider = ({
           {accountAddress && (
             <WalletAddress onClick={() => onCopy(accountAddress)}>
               Account: {humanizeHexString(accountAddress)}
+            </WalletAddress>
+          )}
+          {accountAddress && (
+            <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
+              {deployingAccount ? 'Deploying...' : 'Buy'}
             </WalletAddress>
           )}
           {!accountAddress && (
@@ -1305,7 +1341,6 @@ const TransactionBuilderContextProvider = ({
                         transactions: updatedTransactions,
                         batchHash,
                       };
-
                       dispatchCrossChainActions([mappedPendingCrossChainAction], CROSS_CHAIN_ACTION_STATUS.PENDING);
                       setCrossChainActions((current) =>
                         current.filter((currentCrossChainAction) => currentCrossChainAction.id !== crossChainAction.id)

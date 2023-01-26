@@ -108,7 +108,7 @@ const SwitchInput = ({
         keybasedWalletBalanceByChain?.length) {
         switch (walletType) {
           case DestinationWalletEnum.Contract:
-            return `$${smartWalletBalanceByChain
+            return ` · $${smartWalletBalanceByChain
               .reduce((acc, curr) => {
                 return acc + curr.total;
               }, sum)
