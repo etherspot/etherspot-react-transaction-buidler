@@ -478,11 +478,12 @@ const EtherspotContextProvider = ({
 
   useEffect(() => {
     const handleKeybasedBalanceGet = async () => {
-      if (!sdk || !providerAddress) return;
+      const isSdkConnected = sdk && accountAddress;
+      if (!isSdkConnected || !providerAddress) return;
       await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
     };
     handleKeybasedBalanceGet();
-  }, [supportedChains, sdk, providerAddress]);
+  }, [supportedChains, sdk, providerAddress, accountAddress]);
 
   const contextData = useMemo(
     () => ({
