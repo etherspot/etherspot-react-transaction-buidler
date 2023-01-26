@@ -1,17 +1,11 @@
 import { uniqueId } from 'lodash';
-import {
-  BigNumber,
-  ethers,
-} from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 
-export const formatAssetAmountInput = (
-  amount: string,
-  decimals: number = 18,
-): string => {
+export const formatAssetAmountInput = (amount: string, decimals: number = 18): string => {
   const formattedAmount = amount
     .replace(/[^.\d]/g, '')
-    .replace(/^(\d*\.?)|(\d*)\.?/g, "$1$2")
+    .replace(/^(\d*\.?)|(\d*)\.?/g, '$1$2')
     .replace(/^\./, '0.');
 
   if (decimals === 0) return formattedAmount.split('.')[0];
@@ -32,7 +26,7 @@ export const formatAmountDisplay = (amountRaw: string | number, leftSymbol?: str
 
   // check string to avoid underflow
   if ((amount !== '0.01' && amount.startsWith('0.01')) || amount.startsWith('0.00')) {
-    const [,fraction] = amount.split('.');
+    const [, fraction] = amount.split('.');
     let smallAmount = `~${leftSymbol ?? ''}0.`;
 
     [...fraction].every((digitString) => {
@@ -54,7 +48,7 @@ export const humanizeHexString = (
   hexString: string,
   startCharsCount: number = 5,
   endCharsCount: number = 4,
-  separator: string = '...',
+  separator: string = '...'
 ) => {
   const totalTruncatedSum = startCharsCount + endCharsCount + separator.length;
 
@@ -69,10 +63,10 @@ export const humanizeHexString = (
   return hexString;
 };
 
-
 export const getTimeBasedUniqueId = (): string => uniqueId(`${+new Date()}-`);
 
-export const formatMaxAmount = (maxAmountBN: BigNumber, decimals: number): string => ethers.utils.formatUnits(maxAmountBN, decimals);
+export const formatMaxAmount = (maxAmountBN: BigNumber, decimals: number): string =>
+  ethers.utils.formatUnits(maxAmountBN, decimals);
 
 export const sumAssetsBalanceWorth = (supportedAssets: IAssetWithBalance[]) => {
   return supportedAssets.reduce((sum: number, asset: IAssetWithBalance) => {
@@ -81,4 +75,13 @@ export const sumAssetsBalanceWorth = (supportedAssets: IAssetWithBalance[]) => {
     }
     return sum;
   }, 0);
+};
+
+export const buildUrlOptions = (options: { [key: string]: string }): string => {
+  let optionStr = '';
+  Object.keys(options).map((key: string) => {
+    let value = options[key];
+    optionStr += `${!optionStr ? '?' : '&'}${key}=${encodeURIComponent(value)}`;
+  });
+  return optionStr;
 };
