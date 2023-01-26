@@ -744,11 +744,19 @@ const TransactionBuilderContextProvider = ({
 
     let account = await maticSdk.getAccount();
     if (!account || account.address !== accountAddress) {
-      await maticSdk.computeContractAccount();
-      account = await maticSdk.getAccount();
+      try {
+        await maticSdk.computeContractAccount();
+        account = await maticSdk.getAccount();
+      } catch {
+        showAlertModal('There was an error fetching the account, please try again later.');
+        return;
+      }
     }
 
-    if (!account) return;
+    if (!account) {
+      showAlertModal('There was an error fetching the account, please try again later.');
+      return;
+    }
 
     openMtPelerinTab(maticSdk, account, deployingAccount, setDeployingAccount, showAlertModal);
   };

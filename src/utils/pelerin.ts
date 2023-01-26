@@ -71,7 +71,10 @@ export const openMtPelerinTab = async (
               const signature = await sdk.signMessage({ message });
               base64Hash = Buffer.from(signature.replace('0x', ''), 'hex').toString('base64');
 
-              if (!base64Hash) return;
+              if (!base64Hash) {
+                !!showAlert && showAlert('There was an error getting the signature, please try again.');
+                return;
+              }
 
               onRampOptions.hash = base64Hash;
               const options = buildUrlOptions(onRampOptions);
@@ -84,7 +87,10 @@ export const openMtPelerinTab = async (
   } else {
     const signature = await sdk.signMessage({ message });
     base64Hash = Buffer.from(signature.replace('0x', ''), 'hex').toString('base64');
-    if (!base64Hash) return;
+    if (!base64Hash) {
+      !!showAlert && showAlert('There was an error getting the signature, please try again.');
+      return;
+    }
 
     onRampOptions.hash = base64Hash;
     const options = buildUrlOptions(onRampOptions);
