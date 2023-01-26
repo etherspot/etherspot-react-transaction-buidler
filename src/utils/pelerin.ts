@@ -5,7 +5,7 @@ import { deployAccount } from './transaction';
 
 export const buildMtPelerinOptions = (code: string, address: string) => {
   let onRampOptions = {
-    lang: 'fr',
+    lang: 'en',
     tab: 'buy',
     tabs: 'buy',
     chain: 'matic_mainnet',
