@@ -14,6 +14,7 @@ interface AccountSwitchInputProps {
   disabled?: boolean;
   showCustom?: boolean;
   hideKeyBased?: boolean;
+  showTotals?: boolean;
 }
 
 const AccountSwitchInput = ({
@@ -27,6 +28,7 @@ const AccountSwitchInput = ({
   disabled = false,
   showCustom = false,
   hideKeyBased = false,
+  showTotals = false,
 }: AccountSwitchInputProps) => {
   let walletOptions = [
     { title: smartWalletTotal ? `${smartWalletTotal} Smart Wallet`: 'Smart Wallet', value: DestinationWalletEnum.Contract},
@@ -53,6 +55,7 @@ const AccountSwitchInput = ({
       errorMessage={errorMessage}
       inlineLabel={inlineLabel}
       disabled={disabled}
+      showTotals={showTotals}
     />
   );
 }

@@ -289,6 +289,7 @@ const AssetSwapTransactionBlock = ({
           hideKeyBased={smartWalletOnly}
           errorMessage={errorMessages?.accountType}
           disabled={!!fixed || !!multiCallData}
+          showTotals
         />
       )}
       <NetworkAssetSelectInput
@@ -310,6 +311,7 @@ const AssetSwapTransactionBlock = ({
         showPositiveBalanceAssets
         showQuickInputButtons
         disabled={!!fixed || !!multiCallData}
+        accountType={selectedAccountType}
       />
       {!!selectedNetwork && (
         <>

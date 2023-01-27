@@ -19,16 +19,17 @@ import {
 import { useEtherspot } from '../../hooks';
 import {
   Chain,
+  CHAIN_ID,
   supportedChains,
 } from '../../utils/chain';
-import {
-  IAssetWithBalance,
-} from '../../providers/EtherspotContextProvider';
+import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { containsText } from '../../utils/validation';
-import { formatAmountDisplay } from '../../utils/common';
+import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../utils/common';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
+import { DestinationWalletEnum } from '../../enums/wallet.enum';
+import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
   position: relative;
@@ -238,6 +239,7 @@ interface SelectInputProps {
   hideChainIds?: number[];
   walletAddress?: string | null;
   showQuickInputButtons?: boolean;
+  accountType: string;
 }
 
 const NetworkAssetSelectInput = ({
@@ -252,6 +254,7 @@ const NetworkAssetSelectInput = ({
   hideChainIds,
   walletAddress,
   showQuickInputButtons,
+  accountType,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -262,7 +265,18 @@ const NetworkAssetSelectInput = ({
   const [isLoadingAssets, setIsLoadingAssets] = useState<boolean>(false);
   const theme: Theme = useTheme();
 
-  const { sdk, getSupportedAssetsWithBalancesForChainId } = useEtherspot();
+  const {
+    sdk,
+    getSupportedAssetsWithBalancesForChainId,
+    getSmartWalletBalancesByChain,
+    smartWalletBalanceByChain,
+    setSmartWalletBalanceByChain,
+    keybasedWalletBalanceByChain,
+    providerAddress,
+    accountAddress,
+    getKeybasedWalletBalancesPerChain,
+    setKeybasedWalletBalanceByChain,
+  } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
@@ -310,6 +324,67 @@ const NetworkAssetSelectInput = ({
     return orderBy(filtered, [(asset) => asset.balanceWorthUsd ?? 0, 'name'], ['desc', 'asc']);
   }, [selectedNetworkAssets, assetSearchQuery]);
 
+  useEffect(() => {
+    const updateAvalancheSmartWalletBalance = () => {
+      if (!preselectedNetwork ||
+        preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
+        !filteredSelectedNetworkAssets.length ||
+        isLoadingAssets
+      ) {
+        return;
+      }
+      setSmartWalletBalanceByChain((prev) => [
+        ...prev?.filter((element) => element.chain !== CHAIN_ID.AVALANCHE),
+        {
+          total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
+          title: supportedChains.filter(
+            (element) => element.chainId === CHAIN_ID.AVALANCHE
+          )[0].title,
+          chain: CHAIN_ID.AVALANCHE,
+        },
+      ]);
+    };
+    updateAvalancheSmartWalletBalance();
+  }, [
+    sdk,
+    supportedChains,
+    accountAddress,
+    preselectedNetwork,
+    filteredSelectedNetworkAssets,
+    isLoadingAssets,
+  ]);
+
+  useEffect(() => {
+    const updateAvalancheKeybasedBalance = () => {
+      if (!walletAddress ||
+        !preselectedNetwork ||
+        preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
+        !filteredSelectedNetworkAssets.length ||
+        accountType !== DestinationWalletEnum.Key ||
+        isLoadingAssets
+      )
+        return;
+
+      setKeybasedWalletBalanceByChain((prev) => [
+        ...prev?.filter((element) => element.chain !== CHAIN_ID.AVALANCHE),
+        {
+          total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
+          title: supportedChains.filter(
+            (element) => element.chainId === CHAIN_ID.AVALANCHE
+          )[0].title,
+          chain: CHAIN_ID.AVALANCHE,
+        },
+      ]);
+    };
+    updateAvalancheKeybasedBalance();
+  }, [
+    sdk,
+    supportedChains,
+    providerAddress,
+    preselectedNetwork,
+    filteredSelectedNetworkAssets,
+  ]);
+
   const onListItemClick = (asset: IAssetWithBalance, amountBN?: BigNumber) => {
     if (onAssetSelect) onAssetSelect(asset, amountBN);
     if (onNetworkSelect && preselectedNetwork) onNetworkSelect(preselectedNetwork);
@@ -317,6 +392,41 @@ const NetworkAssetSelectInput = ({
     setPreselectedNetwork(null);
     setAssetSearchQuery('');
   }
+
+  const formatBalanceByChainByAccountType = (
+    supportedChain: Chain,
+    accType?: string
+  ) => {
+    if (
+      accType === DestinationWalletEnum.Contract &&
+      label === 'From' &&
+      smartWalletBalanceByChain?.length
+    ) {
+      let balanceByChain = smartWalletBalanceByChain.filter(
+        (item: any) => item.chain === supportedChain.chainId
+      );
+      let displayBalance =
+        smartWalletBalanceByChain?.length && balanceByChain.length
+          ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
+          : '';
+      return displayBalance === ' · $0' ? '' : displayBalance;
+    } 
+    if (
+      accType === DestinationWalletEnum.Key &&
+      label === 'From' &&
+      keybasedWalletBalanceByChain?.length
+    ) {
+      let balanceByChain = keybasedWalletBalanceByChain.filter(
+        (item) => item.chain === supportedChain.chainId
+      );
+      let displayBalance =
+        keybasedWalletBalanceByChain?.length && balanceByChain.length
+          ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
+          : '';
+      return displayBalance === ' · $0' ? '' : displayBalance;
+    }
+    return ''
+  };
 
   return (
     <Wrapper hover={!showSelectModal} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
@@ -368,8 +478,10 @@ const NetworkAssetSelectInput = ({
                   setPreselectedNetwork(supportedChain)
                 }}
               >
-                {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
-                {supportedChain.title}
+                <>
+                  {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
+                  {supportedChain.title} {formatBalanceByChainByAccountType(supportedChain, accountType)}
+                </>
               </OptionListItem>
           ))}
         </OptionList>

@@ -150,6 +150,7 @@ const SendAssetTransactionBlock = ({
         hideKeyBased={smartWalletOnly}
         errorMessage={errorMessages?.accountType}
         disabled={!!fixed || !!multiCallData}
+        showTotals
       />
       <NetworkAssetSelectInput
         label='From'
@@ -171,6 +172,7 @@ const SendAssetTransactionBlock = ({
         showPositiveBalanceAssets
         showQuickInputButtons
         disabled={!!fixed || !!multiCallData}
+        accountType={selectedAccountType}
       />
       {selectedAsset && selectedNetwork && (
         <TextInput

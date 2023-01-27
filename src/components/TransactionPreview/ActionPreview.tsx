@@ -509,13 +509,22 @@ const ActionPreview = ({
 
   const cost = useMemo(() => {
     if (isEstimating) return "Estimating...";
-    if (!estimated || !estimated?.gasCost) return estimated?.errorMessage;
+    if (!estimated || !estimated?.gasCost) {
+      if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && crossChainAction.useWeb3Provider && crossChainAction.gasCost) {
+        return formatAmountDisplay(crossChainAction.gasCost, '$');
+      }
+      return estimated?.errorMessage;
+    }
 
-    const gasCostNumericString = ethers.utils.formatUnits(
-      estimated.gasCost,
-      nativeAssetPerChainId[chainId].decimals,
-    );
-    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${nativeAssetPerChainId[chainId].symbol}`;
+    const gasCostNumericString = estimated.feeAmount && crossChainAction.gasTokenDecimals
+      ? ethers.utils.formatUnits(estimated.feeAmount, crossChainAction.gasTokenDecimals)
+      : ethers.utils.formatUnits(estimated.gasCost, nativeAssetPerChainId[chainId].decimals);
+
+    const gasAssetSymbol = estimated.feeAmount && crossChainAction.gasTokenSymbol
+      ? crossChainAction.gasTokenSymbol
+      : nativeAssetPerChainId[chainId].symbol;
+
+    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${gasAssetSymbol}`;
     if (!estimated.usdPrice) return gasCostFormatted;
 
     return formatAmountDisplay(

@@ -83,6 +83,7 @@ interface KlimaStakingAction {
 	containsSwitchChain?: boolean;
 	receiveAmount?: string;
 	bridgeUsed?: string;
+  gasCost?: string;
 }
 
 interface PlrStakingAction {
@@ -118,6 +119,8 @@ export type ICrossChainAction = {
   isEstimating: boolean;
   estimated: ICrossChainActionEstimation | null;
   gasTokenAddress?: string | null;
+  gasTokenDecimals?: number | null;
+  gasTokenSymbol?: string | null;
   useWeb3Provider?: boolean;
   batchTransactions?: ICrossChainAction[];
   batchHash?: string;
