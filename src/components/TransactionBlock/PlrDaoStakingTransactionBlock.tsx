@@ -215,7 +215,7 @@ const PlrDaoStakingTransactionBlock = ({
   const getWalletBalance = async (chainId: number, name: string) => {
     const accountBalancePromise = [];
     if (accountAddress && providerAddress) {
-      accountBalancePromise.push(getSupportedAssetsWithBalancesForChainId(chainId, true, '0x49e2a5d77fa210403864f74e6556f17a8fcf70b3'));
+      accountBalancePromise.push(getSupportedAssetsWithBalancesForChainId(chainId, true, accountAddress));
       accountBalancePromise.push(getSupportedAssetsWithBalancesForChainId(chainId, true, providerAddress));
     }
 
