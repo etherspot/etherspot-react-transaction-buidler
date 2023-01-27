@@ -236,7 +236,7 @@ const KlimaStakingTransactionBlock = ({
 
   const computeReceiveAmount = useCallback(debounce(async () => {
     resetRoutes();
-    if (!sdk || !selectedFromNetwork || !selectedFromAsset || !isValidAmount(amount) || (remainingSelectedFromAssetBalance <= 0)) {
+    if (!sdk || !selectedFromNetwork || !selectedFromAsset || !isValidAmount(amount) || (remainingSelectedFromAssetBalance < 0)) {
       return;
     }
 
