@@ -198,20 +198,27 @@ export const klimaAsset: IAssetWithBalance = {
 }
 
 export const plrDaoAsset: IAssetWithBalance = {
-  address: '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774',
-  chainId: CHAIN_ID.POLYGON,
-  name: 'Pillar DAO',
-  symbol: 'PillarDAO',
+  address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
+  chainId: 137,
+  name: "Pillar",
+  symbol: "PLR", 
   decimals: 18,
-  logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
+  logoURI: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
   balance: BigNumber.from(0),
   assetPriceUsd: null,
   balanceWorthUsd: null,
 }
 
-export const plrDaoConstants={
-  stakingAddress: '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227',
-  polygonAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'
+export const plrDaoMemberNFT = {
+  address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
+  chainId: 137,
+  name: "Pillar DAO Member NFT",
+  symbol: "PLR DAO NFT",
+  decimals: 18,
+  logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
+  balance: BigNumber.from(0),
+  assetPriceUsd: null,
+  balanceWorthUsd: null,
 }
 
 export const changeToChain = async (chainId: number): Promise<boolean> => {

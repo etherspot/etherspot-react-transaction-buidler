@@ -876,7 +876,7 @@ const ActionPreview = ({
 		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
 		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
 
 		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 

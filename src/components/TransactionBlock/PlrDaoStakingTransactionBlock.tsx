@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, ExchangeOffer } from 'etherspot';
+import { AccountTypes, ExchangeOffer, NftList } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
@@ -13,7 +13,6 @@ import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import {
   formatAmountDisplay,
-  formatAssetAmountInput,
   formatMaxAmount,
 } from '../../utils/common';
 import {
@@ -25,18 +24,16 @@ import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import {
   Chain,
-  CHAIN_ID,
   supportedChains,
   plrDaoAsset,
+  plrDaoMemberNFT,
 } from '../../utils/chain';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { RoundedImage } from '../Image';
-import CloseButton from '../Button/closeButtonWhite';
 import { Theme } from '../../utils/theme';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import Text from '../Text/Text';
-
 export interface IPlrDaoTransactionBlockValues {
   hasEnoughPLR: boolean;
   fromChainId?: number;
@@ -127,6 +124,9 @@ const mapOfferToOption = (offer: ExchangeOffer) => {
   };
 };
 
+// TODO:UNCOMMENT
+const MAX_PLR_TOKEN_LIMIT = 5;
+
 const PlrDaoStakingTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
@@ -138,7 +138,7 @@ const PlrDaoStakingTransactionBlock = ({
     providerAddress,
     accountAddress,
     sdk,
-    getSupportedAssetsForChainId,
+    getSupportedAssetsWithBalancesForChainId,
   } = useEtherspot();
 
   const [amount, setAmount] = useState<string>('');
@@ -150,31 +150,27 @@ const PlrDaoStakingTransactionBlock = ({
   >(values?.offer ? [values.offer] : null);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] =
     useState<boolean>(false);
-    const [hasEnoughPLR, setHasEnoughPLR] =
-    useState<boolean>(false);
+
   const [selectedFromAsset, setSelectedFromAsset] =
     useState<IAssetWithBalance | null>(values?.selectedAsset ?? null);
-  const [availableToAssets, setAvailableToAssets] = useState<
-    TokenListToken[] | null
-  >(null);
-  const [isLoadingAvailableToAssets, setIsLoadingAvailableToAssets] =
-    useState<boolean>(false);
-  const [selectedToAsset, setSelectedToAsset] = useState<TokenListToken | null>(
-    values?.toAsset ?? null
-  );
+
   const [selectedAccountType, setSelectedAccountType] = useState<string>(
     AccountTypes.Contract
   );
-  const [closeButton, setCloseButton] = useState<boolean | null>(true);
+
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(
     null
   );
-  const [totalBalance, setTotalBalance] = useState<number>(0);
-  const [keyBasedTotal, setKeyBasedTotal] = useState<string>('');
-  const [smartWalletTotal, setSmartWalletTotal] = useState<string>('');
-  const [accounts, setAccounts] = useState<
-    { chainName: string; keybasedWallet: number; smartWallet: number }[]
-  >([{ chainName: 'Ethereum', keybasedWallet: 0, smartWallet: 0 }]);
+  const [keyBasedTotal, setKeyBasedTotal] = useState<number>(0);
+  const [smartWalletTotal, setSmartWalletTotal] = useState<number>(0);
+
+  const [totalKeyBasedPLRTokens, setTotalKeyBasedPLRTokens] = useState<number>(0);
+  const [totalSmartWalletPLRTokens, setTotalSmartWalletPLRTokens] = useState<number>(0);
+
+  const [accounts, setAccounts] = useState<{}[]>([]);
+  const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
+
+  const hasEnoughPLR = totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
 
   const fixed = multiCallData?.fixed ?? false;
   const defaultCustomReceiverAddress =
@@ -190,12 +186,6 @@ const PlrDaoStakingTransactionBlock = ({
     !!defaultCustomReceiverAddress
   );
 
-  const mapAssetToOption = (asset: TokenListToken) => ({
-    title: asset.symbol,
-    value: asset.address,
-    iconUrl: asset.logoURI,
-  });
-
   const defaultSelectedReceiveAccountType =
     (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
     (values?.receiverAddress &&
@@ -203,6 +193,7 @@ const PlrDaoStakingTransactionBlock = ({
       addressesEqual(providerAddress, values?.receiverAddress))
       ? AccountTypes.Key
       : AccountTypes.Contract;
+  
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] =
     useState<string>(defaultSelectedReceiveAccountType);
 
@@ -211,8 +202,6 @@ const PlrDaoStakingTransactionBlock = ({
     resetTransactionBlockFieldValidationError,
     setTransactionBlockFieldValidationError,
   } = useTransactionBuilder();
-
-  const theme: Theme = useTheme();
 
   useEffect(() => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
@@ -223,129 +212,103 @@ const PlrDaoStakingTransactionBlock = ({
     );
   }, [selectedFromNetwork]);
 
-  const apiCalls = async (chainId: number, name: string) => {
-    const smartWalletAccount =
-      accountAddress &&
-      (await sdk!.getAccountBalances({
-        account: accountAddress,
-        chainId,
-      }));
+  const getWalletBalance = async (chainId: number, name: string) => {
+    const accountBalancePromise = [];
+    if (accountAddress && providerAddress) {
+      accountBalancePromise.push(getSupportedAssetsWithBalancesForChainId(chainId, true, '0x49e2a5d77fa210403864f74e6556f17a8fcf70b3'));
+      accountBalancePromise.push(getSupportedAssetsWithBalancesForChainId(chainId, true, providerAddress));
+    }
 
-    const keyBasedWalletAccount =
-      providerAddress &&
-      (await sdk!.getAccountBalances({
-        account: providerAddress,
-        chainId,
-      }));
-    const smartWallet =
-      smartWalletAccount &&
-      smartWalletAccount.items
-        .map((i) => parseInt(i.balance._hex, 16))
-        .reduce((a, b) => a + b);
+    return await Promise.allSettled(accountBalancePromise)
+      .then((response: any[]) => {
+        const accountWalletBalance = response.map(accountBalance => accountBalance?.status == 'fulfilled' && accountBalance?.value);
 
-    const keybasedWallet =
-      keyBasedWalletAccount &&
-      keyBasedWalletAccount.items
-        .map((i) => parseInt(i.balance._hex, 16))
-        .reduce((a, b) => a + b);
-    // const keybasedWallet = 100;
+        var smartWalletBalance = 0;
+        var smartWalletUSD = 0;
+        
+        var keyBasedBalance = 0;
+        var keyBasedUSD = 0;
 
-      if(name === 'Polygon' && keybasedWallet){
-        setHasEnoughPLR(keybasedWallet > 10000)
-      }
+        accountWalletBalance[0]?.forEach(({ symbol, decimals, balance, balanceWorthUsd}) => {
+          if(symbol == "PLR") {
+            smartWalletBalance += +ethers.utils.formatUnits(balance, decimals);
+          } else {
+            smartWalletUSD += balanceWorthUsd;
+          }
+        });
+        accountWalletBalance[1]?.forEach(({ symbol, decimals, balance, balanceWorthUsd}) => {
+          if(symbol == "PLR") {
+            keyBasedBalance += +ethers.utils.formatUnits(balance, decimals);
+          } else {
+            keyBasedUSD += balanceWorthUsd;
+          }
+        });
 
-    return {
-      chainName: name,
-      keybasedWallet: keybasedWallet || 0,
-      smartWallet: smartWallet || 0,
-    };
-  };
-
-  const fetchAllAssets = async () => {
-    let accountBalanceArray = [];
-    const result = await Promise.allSettled(
-      supportedChains.map(async ({ chainId, title }) => {
-        try {
-          const data = await apiCalls(chainId, title);
-          return data;
-        } catch (err) {
-          console.error(`Error: ${err}`);
-        }
+        return {
+          chainName: name,
+          keyBasedWallet: keyBasedBalance,
+          smartWallet: smartWalletBalance,
+          keyBasedUSD: keyBasedUSD,
+          smartWalletUSD: smartWalletUSD,
+        };
       })
+      .catch((error) => {
+        return {
+          chainName: name,
+          keyBasedWallet: 0,
+          smartWallet: 0,
+          keyBasedUSD: 0,
+          smartWalletUSD: 0,
+        }
+      });
+  };
+
+  const getBalanceForAllChains = async () => {
+    // TODO:UNCOMMENT
+    const chainPromise = [];
+    chainPromise.push(getWalletBalance(supportedChains[1].chainId, supportedChains[1].title))
+    // chainPromise.push(getWalletBalance(supportedChains[2].chainId, supportedChains[2].title))
+    chainPromise.push(getWalletBalance(supportedChains[3].chainId, supportedChains[3].title))
+    // chainPromise.push(getWalletBalance(supportedChains[3].chainId, supportedChains[3].title))
+    // supportedChains.forEach(async (chain) => {
+    //   chainPromise.push(getWalletBalance(chain.chainId, chain.title))
+    // });
+    return await Promise.allSettled(chainPromise).catch((e) => {
+      return [];
+    });
+  }
+
+  const fetchAllAccountBalances = async () => {
+    var accountBalanceWithSupportedChains = await getBalanceForAllChains().then((data) => data.map((d) => d.value));
+    accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
+      (data:any) => data.keyBasedWallet > 0 || data.smartWallet,
     );
-    for (let key of result) {
-      if (key.status === 'fulfilled' && key?.value) {
-        accountBalanceArray.push(key?.value);
-      }
-    }
-    const totalOfKeybased = accountBalanceArray.reduce(
-      (accumulator, object) => {
-        return accumulator + object.keybasedWallet;
-      },
-      0
-    );
+  
+    const totalOfKeyBased = accountBalanceWithSupportedChains.reduce((accumulator, object) => {
+      return accumulator + object.keyBasedUSD;
+    }, 0);
+    const totalOfSmartWallet = accountBalanceWithSupportedChains.reduce((accumulator, object) => {
+      return accumulator + object.smartWalletUSD;
+    }, 0);
+  
+    const totalKeyBasedPLRTokens = accountBalanceWithSupportedChains?.reduce((accumulator, object) => {
+      return accumulator + object.keyBasedWallet;
+    }, 0);
 
-    const totalOfSmartWallet = accountBalanceArray.reduce(
-      (accumulator, object) => {
-        return accumulator + object.smartWallet;
-      },
-      0
-    );
-    const totalBalance = totalOfKeybased + totalOfSmartWallet;
+    const totalSmartWalletPLRTokens = accountBalanceWithSupportedChains?.reduce((accumulator, object) => {
+      return accumulator + object.smartWallet;
+    }, 0);
 
-    const keyBased = formatAmountDisplay(totalOfKeybased, '$');
-    const newKeyBasedString =
-      keyBased.length > 8 ? `${keyBased.substring(0, 7)}...` : keyBased;
-
-    const smartWallet = formatAmountDisplay(totalOfSmartWallet, '$');
-    const newSmartWalletString =
-      smartWallet.length > 8
-        ? `${smartWallet.substring(0, 7)}...`
-        : smartWallet;
-
-    setTotalBalance(totalBalance);
-    setKeyBasedTotal(newKeyBasedString);
-    setSmartWalletTotal(newSmartWalletString);
-    setAccounts(accountBalanceArray);
+    setKeyBasedTotal(totalOfKeyBased);
+    setSmartWalletTotal(totalOfSmartWallet);
+    setTotalKeyBasedPLRTokens(totalKeyBasedPLRTokens);
+    setTotalSmartWalletPLRTokens(totalSmartWalletPLRTokens);
+    setAccounts(accountBalanceWithSupportedChains);
   };
 
   useEffect(() => {
-    fetchAllAssets();
-  }, [fetchAllAssets]);
-
-  const updateAvailableToAssets = useCallback(async () => {
-    if (!sdk || !selectedFromNetwork) return;
-    setIsLoadingAvailableToAssets(true);
-
-    try {
-      const assets = await getSupportedAssetsForChainId(
-        selectedFromNetwork.chainId
-      );
-      const toAsset = assets?.find((asset) =>
-        addressesEqual(
-          asset.address,
-          '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'
-        )
-      );
-      const availableAsset = assets?.filter((asset) =>
-        addressesEqual(
-          asset.address,
-          '0xa6b37fC85d870711C56FbcB8afe2f8dB049AE774'
-        )
-      );
-      resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
-      setSelectedToAsset(toAsset ?? null);
-      setAvailableToAssets(availableAsset ?? null);
-    } catch (e) {
-      //
-    }
-
-    setIsLoadingAvailableToAssets(false);
-  }, [sdk, selectedFromNetwork]);
-
-  useEffect(() => {
-    updateAvailableToAssets();
-  }, [updateAvailableToAssets, selectedFromNetwork, sdk]);
+    fetchAllAccountBalances();
+  }, []);
 
   const updateAvailableOffers = useCallback<
     () => Promise<ExchangeOffer[] | undefined>
@@ -378,7 +341,7 @@ const PlrDaoStakingTransactionBlock = ({
             amount,
             selectedFromAsset.decimals
           ),
-          toTokenAddress: (!hasEnoughPLR && selectedToAsset) ? selectedToAsset?.address : plrDaoAsset.address,
+          toTokenAddress: hasEnoughPLR ? plrDaoMemberNFT.address : plrDaoAsset.address,
           fromTokenAddress: selectedFromAsset.address,
         });
         return offers;
@@ -386,8 +349,19 @@ const PlrDaoStakingTransactionBlock = ({
         //
       }
     }, 200),
-    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress]
+    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType]
   );
+
+  useEffect(() => {
+    accountAddress || providerAddress && sdk?.getNftList({
+      account: accountAddress || providerAddress,
+    }).then((output:NftList) => {
+      if(output?.items?.length) {
+        setIsNFTMember(true);
+      }
+    });
+    
+  }, [sdk, accountAddress, providerAddress]);
 
   useEffect(() => {
     // this will ensure that the old data won't replace the new one
@@ -395,8 +369,11 @@ const PlrDaoStakingTransactionBlock = ({
     updateAvailableOffers().then((offers) => {
       if (active && offers) {
         setAvailableOffers(offers);
-        if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
         setIsLoadingAvailableOffers(false);
+        if (!offers.length) return;
+        const bestOffer: any = offers?.find((offer) => offer.provider == 'Lifi');
+        const selectedOffer = bestOffer?.provider ? bestOffer : offers[0];
+        setSelectedOffer(mapOfferToOption(selectedOffer));
       }
     });
 
@@ -445,11 +422,7 @@ const PlrDaoStakingTransactionBlock = ({
     setTransactionBlockValues(transactionBlockId, {
       hasEnoughPLR,
       fromChainId: selectedFromNetwork?.chainId ?? undefined,
-      fromAssetAddress: selectedFromAsset?.address ?? undefined,
-      fromAssetDecimals: selectedFromAsset?.decimals ?? undefined,
-      fromAssetSymbol: selectedFromAsset?.symbol ?? undefined,
-      fromAssetIconUrl: selectedFromAsset?.logoURI,
-      toAsset: selectedToAsset ?? undefined,
+      toAsset: hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset,
       fromAsset: selectedFromAsset ?? undefined,
       amount,
       offer,
@@ -495,215 +468,163 @@ const PlrDaoStakingTransactionBlock = ({
     );
   };
 
-  const availableToAssetsOptions = useMemo(
-    () => availableToAssets?.map(mapAssetToOption),
-    [availableToAssets]
-  );
-
-  return (
+  return !isNFTMember ? (
     <>
       <Title>Stake into Pillar DAO</Title>
-      {closeButton && (
-        <Container>
-          <CloseButton
-            onClick={() => {
-              setCloseButton(false);
-            }}
-          />
-          <Text style={{ fontSize: '16px' }}>
-            To become DAO member, you need to stake <Value>10,000 PLR</Value>{' '}
-            tokens on Polygon.
-          </Text>
-          <HorizontalLine></HorizontalLine>
+      <Container>
+        <Text style={{ fontSize: '16px' }}>
+          To become DAO member, you need to stake <Value>10,000 PLR</Value> tokens on Polygon.
+        </Text>
+        <HorizontalLine></HorizontalLine>
+        {
           <Text style={{ fontSize: '14px' }}>
             You have{' '}
-            <Total>
-              {totalBalance
-                ? `${formatAmountDisplay(totalBalance, '')}`
-                : '...'}{' '}
-              PLR
-            </Total>{' '}
-            {`tokens on ${supportedChains.length} chains and 2 wallets`}
-          </Text>{' '}
-          {'\n'}
-          {accounts.map(({ chainName, keybasedWallet, smartWallet }) => (
-            <Text style={{ fontSize: '12px' }}>
-              {keybasedWallet > 0 && (
-                <Block
-                  color={
-                    chainName === 'Polygon' && keybasedWallet < 10000
-                      ? 'red'
-                      : ''
-                  }
-                >
-                  {`\u25CF`}
-                  <Bold>{formatAmountDisplay(keybasedWallet, '')} PLR</Bold> on
-                  <Bold>{chainName}</Bold> on <Bold> Keybased Wallet</Bold>
-                </Block>
-              )}
-              {smartWallet > 0 && (
-                <Block
-                  color={
-                    chainName === 'Polygon' && smartWallet < 10000 ? 'red' : ''
-                  }
-                >
-                  {`\u25CF`}
-                  <Bold>{formatAmountDisplay(smartWallet, '')} PLR</Bold> on
-                  <Bold>{chainName}</Bold> on <Bold> Smart Wallet</Bold>
-                </Block>
-              )}
-            </Text>
-          ))}
-        </Container>
-      )}
-      {accounts.length ? <>
-      <AccountSwitchInput
-        smartWalletTotal={smartWalletTotal}
-        keyBasedWalletTotal={keyBasedTotal}
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          setSelectedAccountType(accountType);
-          setAvailableOffers(null);
-          setSelectedOffer(null);
-        }}
-        hideKeyBased={smartWalletOnly}
-        errorMessage={errorMessages?.accountType}
-      />
-      <NetworkAssetSelectInput
-        label="From"
-        onAssetSelect={(asset, amountBN) => {
-          resetTransactionBlockFieldValidationError(
-            transactionBlockId,
-            'amount'
-          );
-          resetTransactionBlockFieldValidationError(
-            transactionBlockId,
-            'fromAssetAddress'
-          );
-          resetTransactionBlockFieldValidationError(
-            transactionBlockId,
-            'fromAssetSymbol'
-          );
-          resetTransactionBlockFieldValidationError(
-            transactionBlockId,
-            'fromAssetDecimals'
-          );
-          setSelectedFromAsset(asset);
-          setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
-        }}
-        onNetworkSelect={(network) => {
-          resetTransactionBlockFieldValidationError(
-            transactionBlockId,
-            'fromChainId'
-          );
-          setSelectedFromNetwork(network);
-        }}
-        selectedNetwork={selectedFromNetwork}
-        selectedAsset={selectedFromAsset}
-        errorMessage={
-          errorMessages?.fromChainId ||
-          errorMessages?.fromAssetSymbol ||
-          errorMessages?.fromAssetAddress ||
-          errorMessages?.fromAssetDecimals
+            {hasEnoughPLR ? (
+              <Value>{`${formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens)}`} PLR</Value>
+            ) : (
+              <Total>{`${formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens)}`} PLR</Total>
+            )}
+            {' tokens '}
+            {accounts.length > 0
+              ? `on ${accounts.length == 1 ? `${accounts[0].chainName} chain` : `${accounts.length} chains `} on ${
+                  totalKeyBasedPLRTokens > 0 && totalSmartWalletPLRTokens > 0
+                    ? '2 wallets'
+                    : totalKeyBasedPLRTokens > 0
+                    ? 'Key Based'
+                    : 'Smart Wallet'
+                }`
+              : ''}
+          </Text>
         }
-        walletAddress={
-          selectedAccountType === AccountTypes.Contract
-            ? accountAddress
-            : providerAddress
-        }
-        showPositiveBalanceAssets
-        showQuickInputButtons
-      />
-      {hasEnoughPLR ? (
+        {'\n'}
+        {(totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT
+          ? []
+          : accounts
+        ).map(({ chainName, keyBasedWallet, smartWallet }) => (
+          <Text style={{ fontSize: '12px' }}>
+            {<Block></Block>}
+            {keyBasedWallet > 0 && (
+              <Block color={chainName === 'Polygon' && keyBasedWallet < MAX_PLR_TOKEN_LIMIT ? 'red' : ''}>
+                {`\u25CF`}
+                <Bold>{formatAmountDisplay(keyBasedWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
+                <Bold> Keybased Wallet</Bold>
+              </Block>
+            )}
+            {smartWallet > 0 && (
+              <Block color={chainName === 'Polygon' && smartWallet < MAX_PLR_TOKEN_LIMIT ? 'red' : ''}>
+                {`\u25CF`}
+                <Bold>{formatAmountDisplay(smartWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
+                <Bold> Smart Wallet</Bold>
+              </Block>
+            )}
+          </Text>
+        ))}
+      </Container>
+      <>
+        <AccountSwitchInput
+          smartWalletTotal={`$ ${formatAmountDisplay(smartWalletTotal)}`}
+          keyBasedWalletTotal={`$ ${formatAmountDisplay(keyBasedTotal)}`}
+          label="From wallet"
+          selectedAccountType={selectedAccountType}
+          onChange={(accountType) => {
+            setSelectedAccountType(accountType);
+            setAvailableOffers(null);
+            setSelectedOffer(null);
+          }}
+          hideKeyBased={smartWalletOnly}
+          errorMessage={errorMessages?.accountType}
+        />
+        <NetworkAssetSelectInput
+          label="From"
+          onAssetSelect={(asset, amountBN) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
+            setSelectedFromAsset(asset);
+            setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
+          }}
+          onNetworkSelect={(network) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
+            setSelectedFromNetwork(network);
+          }}
+          selectedNetwork={selectedFromNetwork}
+          selectedAsset={selectedFromAsset}
+          errorMessage={
+            errorMessages?.fromChainId ||
+            errorMessages?.fromAssetSymbol ||
+            errorMessages?.fromAssetAddress ||
+            errorMessages?.fromAssetDecimals
+          }
+          walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+          showPositiveBalanceAssets
+          showQuickInputButtons
+        />
         <NetworkAssetSelectInput
           label="To"
           selectedNetwork={supportedChains[1]}
-          selectedAsset={plrDaoAsset}
+          selectedAsset={hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset}
           disabled={true}
-          walletAddress={
-            selectedAccountType === AccountTypes.Contract
-              ? accountAddress
-              : providerAddress
-          }
+          walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         />
-      ) : (
-          <SelectInput
-            label="To"
-            options={availableToAssetsOptions ? availableToAssetsOptions : []}
-            isLoading={isLoadingAvailableToAssets}
-            selectedOption={
-              selectedToAsset ? mapAssetToOption(selectedToAsset) : null
-            }
-            errorMessage={errorMessages?.toAsset}
-            disabled={!!fixed}
+        <WalletReceiveWrapper>
+          <AccountSwitchInput
+            label="You will receive on"
+            selectedAccountType={selectedReceiveAccountType}
+            onChange={(value) => {
+              setSelectedReceiveAccountType(value);
+              if (value == DestinationWalletEnum.Custom) {
+                setUseCustomAddress(true);
+                return;
+              }
+              resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+              setUseCustomAddress(false);
+              setCustomReceiverAddress(null);
+            }}
+            hideKeyBased={smartWalletOnly}
+            showCustom
           />
-      )}
-      <WalletReceiveWrapper>
-        <AccountSwitchInput
-          label="You will receive on"
-          selectedAccountType={selectedReceiveAccountType}
-          onChange={(value) => {
-            setSelectedReceiveAccountType(value);
-            if (value == DestinationWalletEnum.Custom) {
-              setUseCustomAddress(true);
-              return;
-            }
-            resetTransactionBlockFieldValidationError(
-              transactionBlockId,
-              'receiverAddress'
-            );
-            setUseCustomAddress(false);
-            setCustomReceiverAddress(null);
-          }}
-          hideKeyBased={smartWalletOnly}
-          showCustom
-        />
-      </WalletReceiveWrapper>
-      {useCustomAddress && (
-        <TextInput
-          value={customReceiverAddress ?? ''}
-          onValueChange={(value) => {
-            resetTransactionBlockFieldValidationError(
-              transactionBlockId,
-              'receiverAddress'
-            );
-            setCustomReceiverAddress(value);
-          }}
-          errorMessage={errorMessages?.receiverAddress}
-          placeholder="Insert address"
-          noLabel
-          showPasteButton
-        />
-      )}
-      {!!selectedFromAsset && !!amount && (
-        <SelectInput
-          label={`Offer`}
-          options={availableOffersOptions ?? []}
-          isLoading={isLoadingAvailableOffers}
-          disabled={
-            !availableOffersOptions?.length || isLoadingAvailableOffers || fixed
-          }
-          selectedOption={selectedOffer}
-          onOptionSelect={(option) => {
-            resetTransactionBlockFieldValidationError(
-              transactionBlockId,
-              'offer'
-            );
-            setSelectedOffer(option);
-          }}
-          renderOptionListItemContent={RenderOption}
-          renderSelectedOptionContent={RenderOption}
-          placeholder="Select offer"
-          errorMessage={errorMessages?.offer}
-          noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
-          forceShow={
-            !!availableOffersOptions?.length &&
-            availableOffersOptions?.length > 1
-          }
-        />
-      )}
-      </>:<></>}
+        </WalletReceiveWrapper>
+        {useCustomAddress && (
+          <TextInput
+            value={customReceiverAddress ?? ''}
+            onValueChange={(value) => {
+              resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
+              setCustomReceiverAddress(value);
+            }}
+            errorMessage={errorMessages?.receiverAddress}
+            placeholder="Insert address"
+            noLabel
+            showPasteButton
+          />
+        )}
+        {!!selectedFromAsset && !!amount && (
+          <SelectInput
+            label={`Offer`}
+            options={availableOffersOptions ?? []}
+            isLoading={isLoadingAvailableOffers}
+            disabled={true}
+            selectedOption={selectedOffer}
+            onOptionSelect={(option) => {
+              resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
+              setSelectedOffer(option);
+            }}
+            renderOptionListItemContent={RenderOption}
+            renderSelectedOptionContent={RenderOption}
+            placeholder="Select offer"
+            errorMessage={errorMessages?.offer}
+          />
+        )}
+      </>
+    </>
+  ) : (
+    <>
+      <Title>Pillar DAO Membership</Title>
+      <Container>
+        <Text style={{ fontSize: '16px' }}>
+          Thank You!. You are already a Pillar DAO member.
+        </Text>
+      </Container>
     </>
   );
 };
