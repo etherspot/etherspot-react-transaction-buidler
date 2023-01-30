@@ -40,11 +40,18 @@ import History from '../components/History';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
+import { Text } from '../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import { SendActionIcon, SwapActionIcon, BridgeActionIcon, ChainIcon } from '../components/TransactionBlock/Icons';
+import {
+  SendActionIcon,
+  SwapActionIcon,
+  BridgeActionIcon,
+  ChainIcon,
+  WalletCopyIcon,
+} from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
-import WalletTransactionBlock from '../components/TransactionBlock/WalletTransactionBlock';
+import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
 
 export interface TransactionBuilderContextProps {
@@ -97,8 +104,13 @@ const WalletAddressesWrapper = styled.div`
   align-items: center;
 `;
 
-const WalletAddress = styled.span<{ disabled?: boolean }>`
-  margin-right: 20px;
+const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
+  margin-right: 16px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  ${({ theme, selected }) =>
+    !!selected && `color: ${theme.color.text.searchInput}; background-color: ${theme.color.background.topMenu};`}
+
   display: flex;
   justify-content: center;
   align-items: center;
@@ -293,7 +305,7 @@ const TransactionBuilderContextProvider = ({
   const mappedDefaultTransactionBlocks = defaultTransactionBlocks
     ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
     : [];
-  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>(mappedDefaultTransactionBlocks);
+  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>([]);
 
   type IValidationErrors = {
     [id: string]: ErrorMessages;
@@ -308,6 +320,7 @@ const TransactionBuilderContextProvider = ({
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
   const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false);
   let multiCallList: string[] = [];
+  const [showWalletBlock, setShowWalletBlock] = useState(true);
 
   const theme: Theme = useTheme();
 
@@ -801,8 +814,11 @@ const TransactionBuilderContextProvider = ({
       <TopNavigation>
         <WalletAddressesWrapper onClick={hideMenu}>
           {providerAddress && !smartWalletOnly && (
-            <WalletAddress onClick={() => onCopy(providerAddress)}>
-              Wallet: {humanizeHexString(providerAddress)}
+            <WalletAddress selected={showWalletBlock}>
+              <Text onClick={() => setShowWalletBlock(true)} marginRight={2}>
+                Wallet: {humanizeHexString(providerAddress)}
+              </Text>
+              <Text onClick={() => onCopy(providerAddress)}>{WalletCopyIcon}</Text>
             </WalletAddress>
           )}
           {!providerAddress && !smartWalletOnly && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
@@ -829,15 +845,19 @@ const TransactionBuilderContextProvider = ({
       </TopNavigation>
       <div onClick={hideMenu}>
         {/* Wallet */}
-        <TransactionBlocksWrapper>
-          <Card>
-            <WalletTransactionBlock
-              availableTransactionBlocks={availableTransactionBlocks}
-              hasTransactionBlockAdded={hasTransactionBlockAdded}
-              addTransactionBlock={addTransactionBlock}
-            />
-          </Card>
-        </TransactionBlocksWrapper>
+        {showWalletBlock && (
+          <TransactionBlocksWrapper>
+            <Card onCloseButtonClick={() => setShowWalletBlock(false)} showCloseButton>
+              <WalletTransactionBlock
+                availableTransactionBlocks={availableTransactionBlocks}
+                hasTransactionBlockAdded={hasTransactionBlockAdded}
+                addTransactionBlock={addTransactionBlock}
+                hideWalletBlock={() => setShowWalletBlock(false)}
+              />
+            </Card>
+          </TransactionBlocksWrapper>
+        )}
+
         {!!crossChainActionsInProcessing?.length && (
           <>
             {crossChainActionsInProcessing.map((crossChainActionInProcessing) => (

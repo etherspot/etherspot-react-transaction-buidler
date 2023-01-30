@@ -1,19 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
-import { AccountBalance, AccountTypes } from 'etherspot';
+import { Nft, NftCollection } from 'etherspot';
 
-import TextInput from '../TextInput';
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { Chain, supportedChains } from '../../utils/chain';
-import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
-import { Pill } from '../Text';
-import { Theme } from '../../utils/theme';
-import AccountSwitchInput from '../AccountSwitchInput';
-import { IMultiCallData, ITransactionBlock } from '../../types/transactionBlock';
+import { useEtherspot, useTransactionBuilder } from '../../../hooks';
+import { formatAmountDisplay } from '../../../utils/common';
+import { CHAIN_ID, Chain, supportedChains } from '../../../utils/chain';
+import { IAssetWithBalance } from '../../../providers/EtherspotContextProvider';
+import { CombinedRoundedImages, RoundedImage } from '../../Image';
+import { Theme } from '../../../utils/theme';
+import { ITransactionBlock } from '../../../types/transactionBlock';
 import {
   WalletAssetSearchIcon,
   WalletBridgeIcon,
@@ -25,23 +21,35 @@ import {
   WalletDropdownDownIcon,
   WalletCopyIcon,
   WalletCloseSearchIcon,
-} from './Icons';
-import { Text } from '../Text';
-import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../constants/transactionBuilderConstants';
-import { ISendAssetTransactionBlockValues } from './SendAssetTransactionBlock';
+} from '../Icons';
+import { Text } from '../../Text';
+import SwitchInput from '../../SwitchInput/SwitchInput';
+import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../../constants/transactionBuilderConstants';
+import { ISendAssetTransactionBlockValues } from '../SendAssetTransactionBlock';
 
-interface IChainAssets {
-  title: string;
-  chainId: number;
-  chain: Chain;
-  assets: IAssetWithBalance[];
-}
+// Local
+import WalletNftsList, { IChainNfts, INft } from './WalletNftsList';
+import WalletAssetsList, { IChainAssets } from './WalletAssetsList';
+
+const tabOptions = {
+  tokens: {
+    title: 'Tokens',
+    value: 'tokens',
+  },
+  nfts: {
+    title: 'Collectibles',
+    value: 'nfts',
+  },
+};
+
+type ITabs = keyof typeof tabOptions;
 
 export interface IWalletTransactionBlock {
   chain?: Chain;
   availableTransactionBlocks: ITransactionBlock[];
   hasTransactionBlockAdded: boolean;
   addTransactionBlock: (block: ITransactionBlock, isBridgeDisabled: boolean, isKlimaIncluded: boolean) => void;
+  hideWalletBlock: () => void;
 }
 
 const WalletTransactionBlock = ({
@@ -49,6 +57,7 @@ const WalletTransactionBlock = ({
   availableTransactionBlocks,
   hasTransactionBlockAdded,
   addTransactionBlock,
+  hideWalletBlock,
 }: IWalletTransactionBlock) => {
   const theme: Theme = useTheme();
 
@@ -58,58 +67,113 @@ const WalletTransactionBlock = ({
     providerAddress,
     accountAddress,
     getSupportedAssetsWithBalancesForChainId,
+    getNftsForChainId,
     smartWalletOnly,
     smartWalletBalanceByChain,
     sdk,
   } = useEtherspot();
 
-  const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(supportedChains[1]);
+  const [tab, setTab] = useState<ITabs>('tokens');
   const [fetchingAssets, setFetchingAssets] = useState(false);
+  const [fetchingNfts, setFetchingNfts] = useState(false);
   const [showAllChains, setShowAllChains] = useState(true);
 
   const [showChainDropdown, setShowChainDropdown] = useState(false);
   const [selectedChains, setSelectedChains] = useState<number[]>([supportedChains[1].chainId]);
   const [hideChainList, setHideChainList] = useState<number[]>([]);
-  const [displayAssets, setDisplayAssets] = useState<IAssetWithBalance[]>([]);
 
   const [walletTotal, setWalletTotal] = useState(0);
   const [chainAssets, setChainAssets] = useState<IChainAssets[] | null>(null);
+  const [chainNfts, setChainNfts] = useState<IChainNfts[] | null>(null);
+  const [displayAssets, setDisplayAssets] = useState<IAssetWithBalance[]>([]);
+  const [displayNfts, setDisplayNfts] = useState<INft[]>([]);
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
-  useEffect(() => {
-    const getAssets = async () => {
-      if (!chainAssets || fetchingAssets) {
-        setFetchingAssets(true);
-        let allAssets: IChainAssets[] = [];
-        supportedChains.map(async (chain, i) => {
-          try {
-            if (chain.chainId === 43114) return;
+  // Fetch assets
+  const getAssets = async () => {
+    if (fetchingAssets) return;
+    setFetchingAssets(true);
 
-            const assets = await getSupportedAssetsWithBalancesForChainId(chain.chainId, true, accountAddress);
+    let allAssets: IChainAssets[] = [];
+    supportedChains.map(async (chain, i) => {
+      try {
+        // Disabling Avalanche for the moment as it triggers another sign modal
+        if (chain.chainId === CHAIN_ID.AVALANCHE) return;
 
-            if (assets?.length) {
-              allAssets.push({
-                chain,
-                chainId: chain.chainId,
-                title: chain.title,
-                assets,
-              });
+        const assets = await getSupportedAssetsWithBalancesForChainId(chain.chainId, true, accountAddress);
 
-              setChainAssets(allAssets);
-            }
-          } catch (e) {
-            //
-          }
-          if (i === supportedChains.length - 1) {
-            setFetchingAssets(false);
-          }
-        });
+        if (assets?.length) {
+          allAssets.push({
+            chain,
+            title: chain.title,
+            assets,
+          });
+
+          setChainAssets(allAssets);
+        }
+      } catch (e) {
+        //
       }
-    };
+      if (i === supportedChains.length - 1) {
+        setFetchingAssets(false);
+      }
+    });
+  };
 
-    if (!accountAddress || !sdk) return;
+  const getNfts = async () => {
+    if (fetchingNfts) return;
+    setFetchingNfts(true);
+
+    let allNfts: IChainNfts[] = [];
+    supportedChains.map(async (chain, i) => {
+      try {
+        // Disabling Avalanche for the moment as it triggers another sign modal
+        if (chain.chainId === CHAIN_ID.AVALANCHE) return;
+
+        let collections = await getNftsForChainId(chain.chainId);
+
+        if (chain.chainId === CHAIN_ID.POLYGON) collections = tempNfts1;
+        if (chain.chainId === CHAIN_ID.BINANCE) collections = tempNfts2;
+
+        if (collections?.length) {
+          const nfts: INft[] = [];
+          collections.map(({ items, contractAddress, contractName }) => {
+            if (!items?.length) return;
+
+            items.map(({ tokenId, name, image }) => {
+              nfts.push({
+                chain,
+                contractAddress,
+                contractName,
+                tokenId,
+                name,
+                image,
+              });
+            });
+          });
+
+          allNfts.push({
+            chain,
+            title: chain.title,
+            nfts,
+          });
+
+          setChainNfts(allNfts);
+        }
+      } catch (e) {
+        //
+      }
+      if (i === supportedChains.length - 1) {
+        setFetchingNfts(false);
+      }
+    });
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    if (!accountAddress || !sdk || !!chainAssets) return;
 
     if (smartWalletBalanceByChain?.length) {
       const sum = 0;
@@ -123,11 +187,19 @@ const WalletTransactionBlock = ({
   }, [accountAddress, smartWalletBalanceByChain]);
 
   useEffect(() => {
+    if (tab !== 'nfts' || !!chainNfts) return;
+
+    getNfts();
+  }, [tab]);
+
+  // Sort assets + nfts
+  useEffect(() => {
     let assets: IAssetWithBalance[] = [];
+    let nfts: INft[] = [];
 
     if (chainAssets) {
       chainAssets.map((chainAsset) => {
-        if (!chainAsset.assets || !selectedChains.includes(chainAsset.chainId)) return;
+        if (!chainAsset.assets || !selectedChains.includes(chainAsset?.chain?.chainId)) return;
 
         chainAsset.assets.map((asset) => {
           if (
@@ -137,13 +209,31 @@ const WalletTransactionBlock = ({
           )
             return;
 
-          assets.push({ ...asset, chainId: chainAsset.chainId });
+          assets.push({ ...asset, chainId: chainAsset.chain.chainId });
+        });
+      });
+    }
+
+    if (chainNfts) {
+      chainNfts.map((chainNft) => {
+        if (!chainNft?.nfts || !selectedChains.includes(chainNft?.chain?.chainId)) return;
+
+        chainNft.nfts.map((nft) => {
+          if (
+            !!searchValue &&
+            !nft.contractName.toLowerCase().includes(searchValue.toLowerCase()) &&
+            !nft.name.toLowerCase().includes(searchValue.toLowerCase())
+          )
+            return;
+
+          nfts.push(nft);
         });
       });
     }
 
     setDisplayAssets(assets);
-  }, [chainAssets, selectedChains, showAllChains, searchValue]);
+    setDisplayNfts(nfts);
+  }, [chainAssets, chainNfts, selectedChains, showAllChains, searchValue]);
 
   const findTransactionBlock = (blockType: TRANSACTION_BLOCK_TYPE_KEY) => {
     return availableTransactionBlocks.find((item) => item?.type === blockType) || null;
@@ -241,6 +331,11 @@ const WalletTransactionBlock = ({
     else setHideChainList((current) => [...current, chainId]);
   };
 
+  const changeTab = (tab: ITabs) => {
+    resetModals();
+    setTab(tab);
+  };
+
   const onCopy = async (valueToCopy: string) => {
     try {
       await navigator.clipboard.writeText(valueToCopy);
@@ -282,6 +377,12 @@ const WalletTransactionBlock = ({
           <ActionButtonText>Bridge</ActionButtonText>
         </ActionButtonWrapper>
       </ButtonRow>
+
+      <SwitchInput
+        options={Object.values(tabOptions).map((tabs) => tabs)}
+        selectedOption={tabOptions[tab]}
+        onChange={(option) => changeTab(option.value)}
+      />
 
       <ButtonRow>
         <ChainButton onClick={() => setShowSearch(!showSearch)} remove_margin>
@@ -345,100 +446,30 @@ const WalletTransactionBlock = ({
         </ChainDropdownWrapper>
       )}
 
-      {showAllChains &&
-        chainAssets?.map((chainAsset) => {
-          // Check if asset exists
-          if (!chainAsset || !chainAsset.assets?.length) return null;
+      <WalletAssetsList
+        accountAddress={accountAddress}
+        tab={tab}
+        showAllChains={showAllChains}
+        selectedChains={selectedChains}
+        hideChainList={hideChainList}
+        chainAssets={chainAssets}
+        displayAssets={displayAssets}
+        smartWalletBalanceByChain={smartWalletBalanceByChain}
+        onCopy={onCopy}
+        toggleChainBlock={toggleChainBlock}
+      />
 
-          const chainId = chainAsset?.chain?.chainId || 0;
-          const chainTotal = smartWalletBalanceByChain?.find((bl) => bl.chain === chainAsset.chainId)?.total || 0;
-
-          if (!showAllChains && !selectedChains.includes(chainId)) return null;
-
-          return (
-            <ChainBlock>
-              {(showAllChains || selectedChains.length > 1) && (
-                <ChainBlockHeader show={!hideChainList.includes(chainId)}>
-                  <RoundedImage title={chainAsset.chain.title} url={chainAsset.chain.iconUrl} size={20} />
-
-                  <ChainBlockHeaderText>{`${chainAsset.title}・$${chainTotal.toFixed(2)}`}</ChainBlockHeaderText>
-
-                  <ChainHeaderCopyIcon onClick={() => onCopy(accountAddress || '')}>
-                    {WalletCopyIcon}
-                  </ChainHeaderCopyIcon>
-
-                  <ChainBlockDropdownIcon onClick={() => toggleChainBlock(chainId)}>
-                    {hideChainList.includes(chainId) ? WalletDropdownDownIcon : WalletDropdownUpIcon}
-                  </ChainBlockDropdownIcon>
-                </ChainBlockHeader>
-              )}
-
-              {!hideChainList.includes(chainId) && (
-                <ChainBlockList>
-                  {chainAsset.assets.map((asset) => {
-                    return (
-                      <ListItem>
-                        <ListItemIconWrapper>
-                          <RoundedImage url={asset.logoURI} size={32} title={asset.name} noMarginRight />
-                        </ListItemIconWrapper>
-                        <ListItemDetails>
-                          <ListItemLine>
-                            <Text size={14} color="#191726" medium>{`${asset.symbol}・$${
-                              asset.assetPriceUsd?.toFixed(2) || 0
-                            }`}</Text>
-                            <Text size={14} color="#191726" medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</Text>
-                          </ListItemLine>
-
-                          <ListItemLine>
-                            <Text size={12} color="#191726" regular>{`on ${chainAsset.title}`}</Text>
-                            <Text size={12} color="#191726" regular>{`${
-                              formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
-                            } ${asset.symbol}`}</Text>
-                          </ListItemLine>
-                        </ListItemDetails>
-                      </ListItem>
-                    );
-                  })}
-                </ChainBlockList>
-              )}
-            </ChainBlock>
-          );
-        })}
-
-      {!showAllChains && displayAssets?.length > 0 && (
-        <ChainBlock>
-          <ChainBlockList>
-            {displayAssets?.map((asset) => {
-              const chain = supportedChains.find((item) => item.chainId === asset.chainId);
-              if (!chain) return;
-
-              return (
-                <ListItem>
-                  <ListItemIconWrapper>
-                    <RoundedImage url={asset.logoURI} size={32} title={asset.name} noMarginRight />
-                    <AssetChainIcon src={chain.iconUrl} title={chain.title} />
-                  </ListItemIconWrapper>
-                  <ListItemDetails>
-                    <ListItemLine>
-                      <Text size={14} color="#191726" medium>{`${asset.symbol}・$${
-                        asset.assetPriceUsd?.toFixed(2) || 0
-                      }`}</Text>
-                      <Text size={14} color="#191726" medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</Text>
-                    </ListItemLine>
-
-                    <ListItemLine>
-                      <Text size={12} color="#191726" regular>{`on ${chain.title}`}</Text>
-                      <Text size={12} color="#191726" regular>{`${
-                        formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
-                      } ${asset.symbol}`}</Text>
-                    </ListItemLine>
-                  </ListItemDetails>
-                </ListItem>
-              );
-            })}
-          </ChainBlockList>
-        </ChainBlock>
-      )}
+      <WalletNftsList
+        accountAddress={accountAddress}
+        tab={tab}
+        showAllChains={showAllChains}
+        selectedChains={selectedChains}
+        hideChainList={hideChainList}
+        chainNfts={chainNfts}
+        displayNfts={displayNfts}
+        onCopy={onCopy}
+        toggleChainBlock={toggleChainBlock}
+      />
     </>
   );
 };
@@ -602,98 +633,6 @@ const ChainDropdownIcon = styled.div`
   }
 `;
 
-// Chains
-const ChainBlock = styled.div<{ show?: boolean }>`
-  flex: 1;
-  border-radius: 8px;
-  background-color: #fff;
-  padding: 0 0 10px;
-  margin-bottom: 12px;
-`;
-
-const ChainBlockHeader = styled.div<{ show?: boolean }>`
-  flex: 1;
-  align-items: center;
-  padding: 10px 16px 0;
-  position: relative;
-
-  ${({ show }) => show && `padding-bottom: 10px; border-bottom: 1px solid #ffeee6;`};
-`;
-
-const ChainBlockHeaderText = styled(Text)`
-  font-size: 14px;
-  color: #6e6b6a;
-`;
-
-const ChainBlockDropdownIcon = styled.div`
-  position: absolute;
-  top: -3px;
-  right: 0;
-  padding: 14px;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  &:hover {
-    opacity: 0.5;
-  }
-`;
-
-const ChainHeaderCopyIcon = styled.span`
-  margin-left: 4px;
-
-  &:hover {
-    opacity: 0.5;
-  }
-`;
-
-// Chain Assets
-const ChainBlockList = styled.div<{ show?: boolean }>`
-  padding: 1px 12px;
-  max-height: 320px;
-  overflow-y: scroll;
-`;
-
-const ListItem = styled.div`
-  margin-top: 12px;
-  display: flex;
-  flex: 1;
-  flex-direction: row;
-  align-items: center;
-`;
-
-const ListItemDetails = styled.div`
-  margin-left: 10px;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-`;
-
-const ListItemLine = styled.div`
-  display: flex;
-  flex: 1;
-  justify-content: space-between;
-  align-item: center;
-`;
-
-const ListItemIconWrapper = styled.span`
-  position: relative;
-  margin-right: 10px;
-`;
-
-const AssetChainIcon = styled.img`
-  position: absolute;
-  top: 0;
-  right: 0;
-
-  background-color: #fff;
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  border: 1px solid #fff;
-`;
-
 // Search
 const SearchWrapper = styled.div`
   display: flex;
@@ -735,3 +674,110 @@ const SearchClose = styled.span`
     opacity: 0.5;
   }
 `;
+
+const tempNfts1: NftCollection[] = [
+  {
+    contractName: 'Test NFT',
+    contractSymbol: null,
+    contractAddress: '0x7c4c429503fe26044febd836350d9bd51402b3d9',
+    tokenType: 'Erc721',
+    nftVersion: null,
+    nftDescription: '',
+    balance: 1,
+    items: [
+      {
+        tokenId: '3',
+        name: 'Test NFT #1',
+        amount: 1,
+        image: 'https://pbs.twimg.com/profile_images/949787136030539782/LnRrYf6e_400x400.jpg',
+        ipfsGateway: null,
+      },
+    ],
+  },
+  {
+    contractName: 'Test NFT dwawadwad  dw wad wad dwawa',
+    contractSymbol: null,
+    contractAddress: '0x7c4c429503fe26044febd836350d9bd51402b3d9',
+    tokenType: 'Erc721',
+    nftVersion: null,
+    nftDescription: '',
+    balance: 1,
+    items: [
+      {
+        tokenId: '3',
+        name: 'Test NFT #2 dwadwadwa dwadwadwa wdwadwa',
+        amount: 1,
+        image:
+          'https://bestlifeonline.com/wp-content/uploads/sites/3/2019/04/weird-dog-lizard-hybrid.jpg?quality=82&strip=1&resize=640%2C360',
+        ipfsGateway: null,
+      },
+    ],
+  },
+  {
+    contractName: 'Test NFT',
+    contractSymbol: null,
+    contractAddress: '0x7c4c429503fe26044febd836350d9bd51402b3d9',
+    tokenType: 'Erc721',
+    nftVersion: null,
+    nftDescription: '',
+    balance: 1,
+    items: [
+      {
+        tokenId: '3',
+        name: 'Test NFT #3',
+        amount: 1,
+        image:
+          'http://static.demilked.com/wp-content/uploads/2018/03/5aaa1cc36581b-funny-weird-wtf-stock-photos-7-5a391ad5a43f9__700.jpg',
+        ipfsGateway: null,
+      },
+    ],
+  },
+];
+
+const tempNfts2: NftCollection[] = [
+  {
+    contractName: 'Test NFT',
+    contractSymbol: null,
+    contractAddress: '0x7c4c429503fe26044febd836350d9bd51402b3d9',
+    tokenType: 'Erc721',
+    nftVersion: null,
+    nftDescription: '',
+    balance: 1,
+    items: [
+      {
+        tokenId: '3',
+        name: 'Test NFT #4',
+        amount: 1,
+        image: 'https://techcrunch.com/wp-content/uploads/2022/06/Weird-Stock-Photography-Haje-Kamps-websize.jpeg',
+        ipfsGateway: null,
+      },
+    ],
+  },
+  {
+    contractName: 'Test NFT',
+    contractSymbol: null,
+    contractAddress: '0x7c4c429503fe26044febd836350d9bd51402b3d9',
+    tokenType: 'Erc721',
+    nftVersion: null,
+    nftDescription: '',
+    balance: 1,
+    items: [
+      {
+        tokenId: '3',
+        name: 'Test NFT #5',
+        amount: 1,
+        image:
+          'https://madelinetodd.files.wordpress.com/2018/09/4056303_stock-photo-grandpa-protecting-his-savings.jpg?w=840',
+        ipfsGateway: null,
+      },
+      {
+        tokenId: '3',
+        name: 'Test NFT #6',
+        amount: 1,
+        image:
+          'https://madelinetodd.files.wordpress.com/2018/09/depositphotos_3247683-stock-photo-just-a-big-kid-at.jpg?w=627&h=627',
+        ipfsGateway: null,
+      },
+    ],
+  },
+];
