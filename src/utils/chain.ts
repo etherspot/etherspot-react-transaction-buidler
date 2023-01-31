@@ -15,7 +15,6 @@ export const CHAIN_ID = {
   FANTOM: 250,
   CELO: 42220,
   MOONBEAM: 1284,
-  GNOSIS: 100,
 };
 
 export interface Chain {
@@ -199,7 +198,7 @@ export const klimaAsset: IAssetWithBalance = {
 
 export const plrDaoAsset: IAssetWithBalance = {
   address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
-  chainId: 137,
+  chainId: CHAIN_ID.POLYGON,
   name: "Pillar",
   symbol: "PLR", 
   decimals: 18,
@@ -211,7 +210,7 @@ export const plrDaoAsset: IAssetWithBalance = {
 
 export const plrDaoMemberNFT = {
   address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
-  chainId: 137,
+  chainId: CHAIN_ID.POLYGON,
   name: "Pillar DAO Member NFT",
   symbol: "PLR DAO NFT",
   decimals: 18,

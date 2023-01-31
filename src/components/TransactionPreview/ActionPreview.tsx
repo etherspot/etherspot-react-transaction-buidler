@@ -891,7 +891,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {hasEnoughPLR && (
+        {hasEnoughPLR ? (
           <>
             <DoubleTransactionActionsInSingleRow>
               <TransactionAction>
@@ -947,8 +947,7 @@ const ActionPreview = ({
               </TransactionAction>
             )}
           </>
-        )}
-        {!hasEnoughPLR && (
+        ) : (
           <>
             {previewList.map((preview) => {
               if (!preview) return null;

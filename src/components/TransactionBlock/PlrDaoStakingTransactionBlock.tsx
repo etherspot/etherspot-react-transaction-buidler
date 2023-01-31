@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { AccountTypes, ExchangeOffer, NftList } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
@@ -25,24 +25,25 @@ import { formatAmountDisplay, formatMaxAmount } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
 import { Chain, supportedChains, plrDaoAsset, plrDaoMemberNFT } from '../../utils/chain';
 import { swapServiceIdToDetails } from '../../utils/swap';
+import { Theme } from '../../utils/theme';
 
 //constants
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 export interface IPlrDaoTransactionBlockValues {
-  hasEnoughPLR: boolean;
-  fromChainId?: number;
-  fromAssetAddress?: string;
-  fromAssetIconUrl?: string;
+  accountType: AccountTypes;
   fromAsset?: IAssetWithBalance;
   selectedAsset?: IAssetWithBalance | null;
+  offer?: ExchangeOffer;
   toAsset?: TokenListToken;
+  fromChainId?: number;
   fromAssetDecimals?: number;
+  fromAssetAddress?: string;
+  fromAssetIconUrl?: string;
   fromAssetSymbol?: string;
   amount?: string;
-  accountType: AccountTypes;
   receiverAddress?: string;
-  offer?: ExchangeOffer;
+  hasEnoughPLR: boolean;
 }
 
 const Title = styled.h3`
@@ -94,9 +95,7 @@ const HorizontalLine = styled.div`
   margin: 9px 0;
   width: 100%;
   height: 2px;
-  ${({ theme }) => theme.color.text.tokenTotal}
-  background: ${({ theme }) =>
-    `linear-gradient(90deg, ${theme.color.background.horizontalLineFromColor} , ${theme.color.background.horizontalLineToColor})`};
+  background: ${({ theme }) => theme.color.background.horizontalLine};
 `;
 
 const Bold = styled.p`
@@ -152,6 +151,8 @@ const PlrDaoStakingTransactionBlock = ({
 
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
+
+  const theme: Theme = useTheme();
 
   const fixed = multiCallData?.fixed ?? false;
   const defaultCustomReceiverAddress =
@@ -444,14 +445,22 @@ const PlrDaoStakingTransactionBlock = ({
           <Text size={12}>
             {<Block></Block>}
             {keyBasedWallet > 0 && (
-              <Block color={chainName === 'Polygon' && keyBasedWallet < MAX_PLR_TOKEN_LIMIT ? '#ff0065' : ''}>
+              <Block
+                color={
+                  chainName === 'Polygon' && keyBasedWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                }
+              >
                 {`\u25CF`}
                 <Bold>{formatAmountDisplay(keyBasedWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
                 <Bold> Keybased Wallet</Bold>
               </Block>
             )}
             {smartWallet > 0 && (
-              <Block color={chainName === 'Polygon' && smartWallet < MAX_PLR_TOKEN_LIMIT ? '#ff0065' : ''}>
+              <Block
+                color={
+                  chainName === 'Polygon' && smartWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                }
+              >
                 {`\u25CF`}
                 <Bold>{formatAmountDisplay(smartWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
                 <Bold> Smart Wallet</Bold>

@@ -3,6 +3,7 @@ import {
   BridgingQuote,
   CrossChainServiceProvider,
   ExchangeOffer,
+  ExchangeProviders,
   GatewayTransactionStates,
   LiFiStatus,
   NotificationTypes,
@@ -11,6 +12,7 @@ import {
   WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
+import { Route } from '@lifi/sdk';
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
@@ -49,6 +51,7 @@ const fetchBestRoute = async (
   toAddress: string
 ) => {
   try {
+    const createTimestamp = +new Date();
     const routes = await sdk.getAdvanceRoutesLiFi({
       fromChainId,
       toChainId, //Polygon
@@ -57,16 +60,75 @@ const fetchBestRoute = async (
       toTokenAddress,
       toAddress,
     });
-    const bestRoute = routes.items.reduce((best: any, route) => {
-      if (!best || BigNumber.from(best['toAmount']).lt(route.toAmount)) return route;
+    const bestRoute = routes.items.reduce((best: Route, route) => {
+      if (!best?.toAmount || BigNumber.from(best.toAmount).lt(route.toAmount)) return route;
       return best;
-    }, null);
+    });
+
     if (!bestRoute) {
-      return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
+      return { errorMessage: 'Failed to get bridge route' };
     }
-    return bestRoute;
+    const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
+
+    let destinationTxns: ICrossChainActionTransaction[] = [];
+    let transactions: ICrossChainActionTransaction[] = [];
+
+    if (bestRoute.containsSwitchChain) {
+      advancedRouteSteps.forEach((step) => {
+        if (step.chainId === plrDaoAsset.chainId) {
+          return destinationTxns.push({
+            to: step.to as string,
+            value: step.value,
+            data: step.data,
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          });
+        }
+        return transactions.push({
+          to: step.to as string,
+          value: step.value,
+          data: step.data,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        });
+      });
+    } else {
+      transactions = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
+        to: to as string,
+        value,
+        data,
+        chainId: chainId ?? fromChainId,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      }));
+    }
+
+    if (
+      ethers.utils.isAddress(bestRoute.fromToken.address) &&
+      !addressesEqual(bestRoute.fromToken.address, nativeAssetPerChainId[fromChainId].address) &&
+      transactions.length === 1 &&
+      bestRoute.fromAmount
+    ) {
+      const abi = getContractAbi(ContractNames.ERC20Token);
+      const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, bestRoute.fromToken.address);
+      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, bestRoute.fromAmount);
+      if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+        return { errorMessage: 'Failed build bridge approval transaction!' };
+      }
+
+      const approvalTransaction = {
+        to: approvalTransactionRequest.to,
+        data: approvalTransactionRequest.data,
+        value: 0,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      };
+
+      transactions = [approvalTransaction, ...transactions];
+    }
+    return { bestRoute, transactions, destinationTxns };
   } catch (err) {
-    return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
+    return { errorMessage: 'Failed to get bridge route' };
   }
 };
 
@@ -632,152 +694,89 @@ export const buildCrossChainAction = async (
         } = transactionBlock;
 
         const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
-        try {
-          const bestRoute = await fetchBestRoute(
-            sdk,
-            fromChainId,
-            plrDaoAsset.chainId,
-            amountBN,
-            fromAssetAddress,
-            plrDaoAsset.address,
-            sdk.state.accountAddress
-          );
+        const routeData = await fetchBestRoute(
+          sdk,
+          fromChainId,
+          plrDaoAsset.chainId,
+          amountBN,
+          fromAssetAddress,
+          plrDaoAsset.address,
+          sdk.state.accountAddress
+        );
 
-          const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
+        if (routeData.errorMessage) return { errorMessage: routeData.errorMessage };
+        if (!routeData.bestRoute) return { errorMessage: 'Failed build bridge approval transaction!' };
 
-          let destinationTxns: ICrossChainActionTransaction[] = [];
-          let transactions: ICrossChainActionTransaction[] = [];
+        let destinationTxns: ICrossChainActionTransaction[] = routeData.destinationTxns || [];
 
-          if (bestRoute.containsSwitchChain) {
-            advancedRouteSteps.forEach((step) => {
-              if (step.chainId === plrDaoAsset.chainId) {
-                return destinationTxns.push({
-                  to: step.to as string,
-                  value: step.value,
-                  data: step.data,
-                  createTimestamp,
-                  status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-                });
-              }
-              return transactions.push({
-                to: step.to as string,
-                value: step.value,
-                data: step.data,
-                createTimestamp,
-                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-              });
-            });
-          } else {
-            transactions = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
-              to: to as string,
-              value,
-              data,
-              chainId: chainId ?? fromChainId,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            }));
-          }
+        const result = await plrDaoStaking(
+          offer,
+          BigNumber.from(routeData?.bestRoute?.toAmount).toString(),
+          sdk.state.walletAddress,
+          sdk
+        );
+        if (result.errorMessage) return { errorMessage: result.errorMessage };
 
-          if (
-            ethers.utils.isAddress(bestRoute.fromToken.address) &&
-            !addressesEqual(bestRoute.fromToken.address, nativeAssetPerChainId[fromChainId].address) &&
-            transactions.length === 1 &&
-            bestRoute.fromAmount
-          ) {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>(
-              'erc20Contract',
-              abi,
-              bestRoute.fromToken.address
-            );
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, bestRoute.fromAmount);
-            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-              return { errorMessage: 'Failed build bridge approval transaction!' };
-            }
+        result.result?.transactions.map((element) => {
+          destinationTxns.push(element);
+        });
 
-            const approvalTransaction = {
-              to: approvalTransactionRequest.to,
-              data: approvalTransactionRequest.data,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
+        const preview = {
+          fromChainId,
+          hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,
+          fromAsset: {
+            address: fromAssetAddress,
+            decimals: fromAssetDecimals,
+            symbol: fromAssetSymbol,
+            amount: amountBN.toString(),
+            iconUrl: fromAssetIconUrl,
+          },
+          amount: BigNumber.from(routeData?.bestRoute?.toAmount),
+          toAsset: {
+            address: plrDaoAsset.address,
+            decimals: 9,
+            symbol: 'PillarDAO',
+            amount: result.result?.returnAmount.toString() ?? '0',
+            iconUrl: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
+          },
+          receiverAddress: transactionBlock?.values?.receiverAddress,
+          providerName: result.result?.provider
+            ? swapServiceIdToDetails[result.result.provider].title
+            : 'Unknown provider',
+          providerIconUrl: result.result?.provider ? swapServiceIdToDetails[result.result.provider].iconUrl : '',
+        };
 
-            transactions = [approvalTransaction, ...transactions];
-          }
-
-          const result = await plrDaoStaking(
-            offer,
-            BigNumber.from(bestRoute.toAmount).toString(),
-            sdk.state.walletAddress,
-            sdk
-          );
-
-          if (result.errorMessage) return { errorMessage: result.errorMessage };
-
-          result.result?.transactions.map((element) => {
-            destinationTxns.push(element);
-          });
-
-          const preview = {
-            fromChainId,
-            hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,
-            fromAsset: {
-              address: fromAssetAddress,
-              decimals: fromAssetDecimals,
-              symbol: fromAssetSymbol,
-              amount: amountBN.toString(),
-              iconUrl: fromAssetIconUrl,
+        const crossChainAction: ICrossChainAction = {
+          id: crossChainActionId,
+          relatedTransactionBlockId: transactionBlock.id,
+          chainId: fromChainId,
+          type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
+          preview,
+          transactions: routeData.transactions || [],
+          isEstimating: false,
+          estimated: null,
+          containsSwitchChain: routeData?.bestRoute?.containsSwitchChain,
+          bridgeUsed: routeData?.bestRoute?.steps[0].tool,
+          receiveAmount: routeData?.bestRoute?.toAmount,
+          useWeb3Provider: accountType === AccountTypes.Key,
+          destinationCrossChainAction: [
+            {
+              id: uniqueId(`${createTimestamp}-`),
+              relatedTransactionBlockId: transactionBlock.id,
+              chainId: plrDaoAsset.chainId,
+              type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
+              preview,
+              transactions: destinationTxns,
+              isEstimating: false,
+              estimated: null,
+              useWeb3Provider: false,
+              destinationCrossChainAction: [],
+              gasTokenAddress: plrDaoAsset.address,
             },
-            amount: BigNumber.from(bestRoute.toAmount),
-            toAsset: {
-              address: plrDaoAsset.address,
-              decimals: 9,
-              symbol: 'PillarDAO',
-              amount: result.result?.returnAmount.toString() ?? '0',
-              iconUrl: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
-            },
-            receiverAddress: transactionBlock?.values?.receiverAddress,
-            providerName: result.result?.provider
-              ? swapServiceIdToDetails[result.result.provider].title
-              : 'Unknown provider',
-            providerIconUrl: result.result?.provider ? swapServiceIdToDetails[result.result.provider].iconUrl : '',
-          };
+          ],
+        };
 
-          const crossChainAction: ICrossChainAction = {
-            id: crossChainActionId,
-            relatedTransactionBlockId: transactionBlock.id,
-            chainId: fromChainId,
-            type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
-            preview,
-            transactions,
-            isEstimating: false,
-            estimated: null,
-            containsSwitchChain: bestRoute.containsSwitchChain,
-            bridgeUsed: bestRoute.steps[0].tool,
-            receiveAmount: bestRoute.toAmount,
-            useWeb3Provider: accountType === AccountTypes.Key,
-            destinationCrossChainAction: [
-              {
-                id: uniqueId(`${createTimestamp}-`),
-                relatedTransactionBlockId: transactionBlock.id,
-                chainId: plrDaoAsset.chainId,
-                type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
-                preview,
-                transactions: destinationTxns,
-                isEstimating: false,
-                estimated: null,
-                useWeb3Provider: false,
-                destinationCrossChainAction: [],
-                gasTokenAddress: plrDaoAsset.address,
-              },
-            ],
-          };
-
-          return { crossChainAction };
-        } catch (e) {
-          return { errorMessage: 'Failed to get bridge route!' };
-        }
+        return { crossChainAction };
       } catch (e) {
         return { errorMessage: 'Failed to get PLR Dao staking transaction!' };
       }
