@@ -51,7 +51,7 @@ const WalletNftsList = ({
     <>
       {tab === 'nfts' &&
         showAllChains &&
-        chainNfts?.map((chainNft) => {
+        chainNfts?.map((chainNft, i) => {
           // Check if asset exists
           if (!chainNft || !chainNft.nfts?.length) return null;
 
@@ -60,7 +60,7 @@ const WalletNftsList = ({
           if (!showAllChains && !selectedChains.includes(chainId)) return null;
 
           return (
-            <ChainBlock>
+            <ChainBlock key={`nft-chain-${i}`}>
               {(showAllChains || selectedChains.length > 1) && (
                 <ChainBlockHeader show={!hideChainList.includes(chainId)}>
                   <RoundedImage title={chainNft.chain.title} url={chainNft.chain.iconUrl} size={20} />
@@ -79,9 +79,9 @@ const WalletNftsList = ({
 
               {!hideChainList.includes(chainId) && (
                 <ChainBlockNftList>
-                  {chainNft.nfts.map((nft) => {
+                  {chainNft.nfts.map((nft, i) => {
                     return (
-                      <NftWrapper>
+                      <NftWrapper key={`nft-${chainId}-${i}`}>
                         <NftImage src={nft.image} />
                         <NftText marginTop={12} medium>{`${nft.contractName}`}</NftText>
                         <NftText size={14} medium>{`${nft.name}`}</NftText>
@@ -98,12 +98,12 @@ const WalletNftsList = ({
       {tab === 'nfts' && !showAllChains && displayNfts?.length > 0 && (
         <ChainBlock>
           <ChainBlockNftList>
-            {displayNfts.map((nft) => {
+            {displayNfts.map((nft, i) => {
               const chain = supportedChains.find((item) => item.chainId === nft?.chain?.chainId);
               if (!chain) return;
 
               return (
-                <NftWrapper>
+                <NftWrapper key={`all-nft-${nft?.chain?.chainId || 0}-${i}`}>
                   {nft?.chain?.iconUrl && <NftChainIcon src={nft.chain.iconUrl} />}
                   <NftImage src={nft.image} />
                   <NftText marginTop={12} medium>{`${nft.contractName}`}</NftText>

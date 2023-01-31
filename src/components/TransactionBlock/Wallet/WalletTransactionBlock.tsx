@@ -412,7 +412,7 @@ const WalletTransactionBlock = ({
               if (i > 5) return null;
 
               return (
-                <ChainDropdownButton selected={selectedChains.includes(chain.chainId)}>
+                <ChainDropdownButton key={`chain-dropdown-${i}`} selected={selectedChains.includes(chain.chainId)}>
                   <RoundedImage url={chain.iconUrl} title={chain.title} size={34} marginRight={0} />
                 </ChainDropdownButton>
               );
@@ -424,9 +424,10 @@ const WalletTransactionBlock = ({
           {showChainDropdown && (
             <ChainDropdownModal>
               <ChainDropdownList>
-                {supportedChains?.map((chain) => {
+                {supportedChains?.map((chain, i) => {
                   return (
                     <ChainDropdownButton
+                      key={`chain-dropdown-button-${i}`}
                       onClick={() => toggleChainDropdownOption(chain.chainId)}
                       selected={selectedChains.includes(chain.chainId)}
                     >

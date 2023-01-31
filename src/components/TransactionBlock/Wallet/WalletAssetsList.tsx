@@ -46,7 +46,7 @@ const WalletNftAssetsList = ({
     <>
       {tab === 'tokens' &&
         showAllChains &&
-        chainAssets?.map((chainAsset) => {
+        chainAssets?.map((chainAsset, i) => {
           // Check if asset exists
           if (!chainAsset || !chainAsset.assets?.length) return null;
 
@@ -57,7 +57,7 @@ const WalletNftAssetsList = ({
           if (!showAllChains && !selectedChains.includes(chainId)) return null;
 
           return (
-            <ChainBlock>
+            <ChainBlock key={`asset-chain-${i}`}>
               {(showAllChains || selectedChains.length > 1) && (
                 <ChainBlockHeader show={!hideChainList.includes(chainId)}>
                   <RoundedImage title={chainAsset.chain.title} url={chainAsset.chain.iconUrl} size={20} />
@@ -76,9 +76,9 @@ const WalletNftAssetsList = ({
 
               {!hideChainList.includes(chainId) && (
                 <ChainBlockList>
-                  {chainAsset.assets.map((asset) => {
+                  {chainAsset.assets.map((asset, i) => {
                     return (
-                      <ListItem>
+                      <ListItem key={`asset-${chainId}-${i}`}>
                         <ListItemIconWrapper>
                           <RoundedImage url={asset.logoURI} size={32} title={asset.name} noMarginRight />
                         </ListItemIconWrapper>
@@ -109,12 +109,12 @@ const WalletNftAssetsList = ({
       {tab === 'tokens' && !showAllChains && displayAssets?.length > 0 && (
         <ChainBlock>
           <ChainBlockList>
-            {displayAssets?.map((asset) => {
+            {displayAssets?.map((asset, i) => {
               const chain = supportedChains.find((item) => item.chainId === asset.chainId);
               if (!chain) return;
 
               return (
-                <ListItem>
+                <ListItem key={`all-assets-${asset?.chainId || 0}-${i}`}>
                   <ListItemIconWrapper>
                     <RoundedImage url={asset.logoURI} size={32} title={asset.name} noMarginRight />
                     <AssetChainIcon src={chain.iconUrl} title={chain.title} />
