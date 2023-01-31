@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { ethers } from 'ethers';
-import { Nft, NftCollection } from 'etherspot';
 
 import { useEtherspot, useTransactionBuilder } from '../../../hooks';
-import { formatAmountDisplay } from '../../../utils/common';
 import { CHAIN_ID, Chain, supportedChains } from '../../../utils/chain';
 import { IAssetWithBalance } from '../../../providers/EtherspotContextProvider';
-import { CombinedRoundedImages, RoundedImage } from '../../Image';
+import { RoundedImage } from '../../Image';
 import { Theme } from '../../../utils/theme';
 import { ITransactionBlock } from '../../../types/transactionBlock';
 import {
@@ -19,7 +16,6 @@ import {
   WalletWithdrawIcon,
   WalletDropdownUpIcon,
   WalletDropdownDownIcon,
-  WalletCopyIcon,
   WalletCloseSearchIcon,
 } from '../Icons';
 import { Text } from '../../Text';
@@ -61,8 +57,6 @@ const WalletTransactionBlock = ({
 }: IWalletTransactionBlock) => {
   const theme: Theme = useTheme();
 
-  const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
-
   const {
     providerAddress,
     accountAddress,
@@ -76,10 +70,10 @@ const WalletTransactionBlock = ({
   const [tab, setTab] = useState<ITabs>('tokens');
   const [fetchingAssets, setFetchingAssets] = useState(false);
   const [fetchingNfts, setFetchingNfts] = useState(false);
-  const [showAllChains, setShowAllChains] = useState(true);
+  const [showAllChains, setShowAllChains] = useState(false);
 
   const [showChainDropdown, setShowChainDropdown] = useState(false);
-  const [selectedChains, setSelectedChains] = useState<number[]>([supportedChains[1].chainId]);
+  const [selectedChains, setSelectedChains] = useState<number[]>(supportedChains.map((chain) => chain.chainId));
   const [hideChainList, setHideChainList] = useState<number[]>([]);
 
   const [walletTotal, setWalletTotal] = useState(0);
@@ -230,7 +224,7 @@ const WalletTransactionBlock = ({
 
     setDisplayAssets(assets);
     setDisplayNfts(nfts);
-  }, [chainAssets, chainNfts, selectedChains, showAllChains, searchValue]);
+  }, [chainAssets?.length, chainNfts, selectedChains, showAllChains, searchValue]);
 
   const findTransactionBlock = (blockType: TRANSACTION_BLOCK_TYPE_KEY) => {
     return availableTransactionBlocks.find((item) => item?.type === blockType) || null;
@@ -248,6 +242,7 @@ const WalletTransactionBlock = ({
       isBridgeTransactionBlockAndDisabled || false,
       isKlimaBlockIncluded || false
     );
+    hideWalletBlock();
   };
 
   const handleActionButton = (blockType: TRANSACTION_BLOCK_TYPE_KEY) => {
@@ -261,13 +256,14 @@ const WalletTransactionBlock = ({
 
     if (!providerAddress || !accountAddress) return;
 
+    let newBlock = { ...block };
     let values: ISendAssetTransactionBlockValues = {};
     values.fromAddress = providerAddress;
     values.receiverAddress = accountAddress;
     values.isFromEtherspotWallet = false;
 
-    block.values = values;
-    handleAddTransaction(block);
+    newBlock.values = values;
+    handleAddTransaction(newBlock);
   };
 
   const handleSendButton = () => {
@@ -276,12 +272,13 @@ const WalletTransactionBlock = ({
 
     if (!providerAddress || !accountAddress) return;
 
+    let newBlock = { ...block };
     let values: ISendAssetTransactionBlockValues = {};
     values.fromAddress = accountAddress;
     values.isFromEtherspotWallet = true;
 
-    block.values = values;
-    handleAddTransaction(block);
+    newBlock.values = values;
+    handleAddTransaction(newBlock);
   };
 
   const handleWithdrawButton = () => {
@@ -290,13 +287,14 @@ const WalletTransactionBlock = ({
 
     if (!providerAddress || !accountAddress) return;
 
+    let newBlock = { ...block };
     let values: ISendAssetTransactionBlockValues = {};
     values.fromAddress = accountAddress;
     values.receiverAddress = providerAddress;
     values.isFromEtherspotWallet = true;
 
-    block.values = values;
-    handleAddTransaction(block);
+    newBlock.values = values;
+    handleAddTransaction(newBlock);
   };
 
   const onDropdownClick = () => setShowChainDropdown(true);
@@ -382,10 +380,19 @@ const WalletTransactionBlock = ({
       />
 
       <ButtonRow>
-        <ChainButton onClick={() => setShowSearch(!showSearch)} remove_margin>
-          {WalletAssetSearchIcon}
-          <ChainButtonText marginLeft={1}>Search</ChainButtonText>
-        </ChainButton>
+        <SearchWrapper>
+          {showAllChains && (
+            <>
+              {WalletAssetSearchIcon}
+              <SearchInput
+                placeholder="Search"
+                value={searchValue}
+                onChange={({ target }) => setSearchValue(target.value)}
+              />
+              {searchValue && <SearchClose onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchClose>}
+            </>
+          )}
+        </SearchWrapper>
 
         <ChainButtonRow>
           <ChainButton selected={!showAllChains} onClick={() => toggleShowAllChains(false)}>
@@ -397,14 +404,6 @@ const WalletTransactionBlock = ({
           </ChainButton>
         </ChainButtonRow>
       </ButtonRow>
-
-      {showSearch && (
-        <SearchWrapper>
-          {WalletAssetSearchIcon}
-          <SearchInput value={searchValue} onChange={({ target }) => setSearchValue(target.value)} />
-          <SearchClose onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchClose>
-        </SearchWrapper>
-      )}
 
       {!showAllChains && (
         <ChainDropdownWrapper>
@@ -498,11 +497,11 @@ const ActionButtonWrapper = styled.div<{ disabled?: boolean }>`
   flex-direction: column;
   cursor: pointer;
 
-  ${({ disabled }) =>
+  ${({ theme, disabled }) =>
     !disabled
       ? `&:hover {
     span {
-      color: #ff7733;
+      color: ${theme.color.text.searchInput};
     }
     div {
       opacity: 0.5;
@@ -519,12 +518,12 @@ const ActionButton = styled.div<{ disabled?: boolean }>`
   height: 56px;
   border-radius: 50%;
   box-shadow: 0 1px 3px 0 rgba(95, 0, 1, 0.13);
-  background-image: linear-gradient(to bottom, #fd9250, #ff5548);
+  background-image: ${({ theme }) => theme.color.background.main};
 `;
 
 const ActionButtonText = styled(Text)`
   font-size: 14px;
-  color: #191726;
+  color: ${({ theme }) => theme.color.text.button};
   margin-top: 10px;
 `;
 
@@ -543,7 +542,8 @@ const ChainButton = styled.div<{
   ${({ remove_margin }) => (remove_margin ? `padding: 2px 0;` : `margin: 0 0 0 2px; padding: 2px 6px;`)};
 
   border-radius: 6px;
-  ${({ selected }) => (selected ? `background-color: #ff7733;` : `background-color: rgba(0,0,0,0);`)};
+  ${({ theme, selected }) =>
+    selected ? `background-color: ${theme.color.text.searchInput};` : `background-color: rgba(0,0,0,0);`};
 
   cursor: pointer;
   &:hover {
@@ -551,7 +551,8 @@ const ChainButton = styled.div<{
   }
 
   span {
-    ${({ selected }) => (selected ? `color: #fff;` : `color: #ff7733;`)};
+    ${({ theme, selected }) =>
+      selected ? `color: ${theme.color.text.main};` : `color: ${theme.color.text.searchInput};`};
   }
 `;
 
@@ -575,7 +576,7 @@ const ChainDropdownSelect = styled.div`
   border-radius: 8px;
   margin-bottom: 18px;
   padding: 0px 48px 4px 4px;
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.color.background.selectInput};
 
   &:hover {
     opacity: 0.5;
@@ -597,7 +598,7 @@ const ChainDropdownList = styled.div`
   border-radius: 8px;
   margin: 0 0 18px;
   padding: 0px 48px 4px 4px;
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.color.background.selectInput};
 
   box-shadow: 0 2px 4px 0 rgba(255, 210, 187, 0.4), 0 2px 8px 0 rgba(201, 201, 200, 0.55);
 `;
@@ -610,7 +611,8 @@ const ChainDropdownButton = styled.div<{ selected?: boolean }>`
   width: 48px;
   margin-top: 4px;
   border-radius: 8px;
-  background-color: ${({ selected }) => (selected ? '#ffeee6' : '#fff')};
+  background-color: ${({ theme, selected }) =>
+    selected ? theme.color.background.card : theme.color.background.selectInput};
 `;
 
 const ChainDropdownIcon = styled.div`
@@ -636,13 +638,12 @@ const SearchWrapper = styled.div`
   flex: 1;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
 `;
 
 const SearchInput = styled.input`
   flex: 1;
-  font-size: 16px;
-  color: #ff7f40;
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.text.searchInput};
   width: 100%;
   font-family: 'PTRootUIWebMedium', sans-serif;
   border: none;
@@ -651,7 +652,8 @@ const SearchInput = styled.input`
   box-sizing: border-box !important;
 
   &::placeholder {
-    color: ${({ theme }) => theme.color.text.textInputSecondary};
+    font-size: 14px;
+    color: ${({ theme }) => theme.color.text.searchInput};
   }
 
   &:focus {

@@ -14,3 +14,4 @@ export { default as WalletDropdownUpIcon } from './WalletIcons/WalletDropdownUpI
 export { default as WalletDropdownDownIcon } from './WalletIcons/WalletDropdownDownIcon';
 export { default as WalletCopyIcon } from './WalletIcons/WalletCopyIcon';
 export { default as WalletCloseSearchIcon } from './WalletIcons/WalletCloseSearchIcon';
+export { default as WalletIcon } from './WalletIcons/WalletIcon';

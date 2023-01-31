@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { HiCheck, HiClipboardCopy, HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
 import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
@@ -48,11 +48,13 @@ import {
   BridgeActionIcon,
   ChainIcon,
   WalletCopyIcon,
+  WalletIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
+import useInterval from '../hooks/useInterval';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -320,14 +322,24 @@ const TransactionBuilderContextProvider = ({
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
   const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false);
   let multiCallList: string[] = [];
+
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
   const [showWalletBlock, setShowWalletBlock] = useState(true);
 
   const theme: Theme = useTheme();
 
+  // Change copy icon back
+  useInterval(() => {
+    setCopiedAddress(false);
+    setCopiedAddressInterval(null);
+  }, copiedAddressInterval);
+
   const onCopy = async (valueToCopy: string) => {
     try {
+      setCopiedAddress(true);
+      if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
       await navigator.clipboard.writeText(valueToCopy);
-      alert('Copied!');
     } catch (e) {
       alert('Unable to copy!');
     }
@@ -813,31 +825,24 @@ const TransactionBuilderContextProvider = ({
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
         <WalletAddressesWrapper onClick={hideMenu}>
-          {providerAddress && !smartWalletOnly && (
-            <WalletAddress selected={showWalletBlock}>
-              <Text onClick={() => setShowWalletBlock(true)} marginRight={2}>
-                Wallet: {humanizeHexString(providerAddress)}
-              </Text>
-              <Text onClick={() => onCopy(providerAddress)}>{WalletCopyIcon}</Text>
-            </WalletAddress>
-          )}
-          {!providerAddress && !smartWalletOnly && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
-          {accountAddress && (
-            <WalletAddress onClick={() => onCopy(accountAddress)}>
-              Account: {humanizeHexString(accountAddress)}
-            </WalletAddress>
-          )}
+          <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
+            <Text marginRight={2}>{WalletIcon}</Text>
+            {accountAddress ? (
+              <>
+                <Text onClick={() => setShowWalletBlock(true)} marginRight={8}>
+                  Wallet
+                </Text>
+                <Text onClick={() => onCopy(accountAddress)}>
+                  {copiedAddress ? <HiCheck color={theme.color?.background?.statusIconSuccess} /> : WalletCopyIcon}
+                </Text>
+              </>
+            ) : (
+              <Text onClick={connect}>Wallet: Connect</Text>
+            )}
+          </WalletAddress>
           {accountAddress && (
             <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
               {deployingAccount ? 'Deploying...' : 'Buy'}
-            </WalletAddress>
-          )}
-          {!accountAddress && (
-            <WalletAddress disabled>
-              Account:{' '}
-              <ConnectButton onClick={connect} disabled={isConnecting}>
-                Connect
-              </ConnectButton>
             </WalletAddress>
           )}
         </WalletAddressesWrapper>
@@ -845,7 +850,7 @@ const TransactionBuilderContextProvider = ({
       </TopNavigation>
       <div onClick={hideMenu}>
         {/* Wallet */}
-        {showWalletBlock && (
+        {showWalletBlock && accountAddress && (
           <TransactionBlocksWrapper>
             <Card onCloseButtonClick={() => setShowWalletBlock(false)} showCloseButton>
               <WalletTransactionBlock

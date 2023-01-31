@@ -125,7 +125,7 @@ export default WalletNftsList;
 const ChainBlock = styled.div`
   flex: 1;
   border-radius: 8px;
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.color.background.selectInput};
   padding: 0 0 10px;
   margin-bottom: 12px;
 `;
@@ -136,12 +136,12 @@ const ChainBlockHeader = styled.div<{ show?: boolean }>`
   padding: 10px 16px 0;
   position: relative;
 
-  ${({ show }) => show && `padding-bottom: 10px; border-bottom: 1px solid #ffeee6;`};
+  ${({ theme, show }) => show && `padding-bottom: 10px; border-bottom: 1px solid ${theme.color.background.card};`};
 `;
 
 const ChainBlockHeaderText = styled(Text)`
   font-size: 14px;
-  color: #6e6b6a;
+  color: ${({ theme }) => theme.color.text.innerLabel};
 `;
 
 const ChainBlockDropdownIcon = styled.div`
@@ -209,7 +209,7 @@ const NftText = styled(Text)<{ marginTop?: number; size?: number }>`
   margin-top: 6px;
   max-width: 85px;
 
-  color: #191726;
+  color: ${({ theme }) => theme.color.text.button};
   ${({ marginTop }) => `margin-top: ${marginTop || 4}px;`}
   ${({ size }) => `font-size: ${size || 12}px;`}
 

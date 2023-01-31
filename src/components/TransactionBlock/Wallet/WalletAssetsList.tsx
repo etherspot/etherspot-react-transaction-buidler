@@ -84,17 +84,17 @@ const WalletNftAssetsList = ({
                         </ListItemIconWrapper>
                         <ListItemDetails>
                           <ListItemLine>
-                            <Text size={14} color="#191726" medium>{`${asset.symbol}・$${
+                            <ListItemText size={14} medium>{`${asset.symbol}・$${
                               asset.assetPriceUsd?.toFixed(2) || 0
-                            }`}</Text>
-                            <Text size={14} color="#191726" medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</Text>
+                            }`}</ListItemText>
+                            <ListItemText size={14} medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</ListItemText>
                           </ListItemLine>
 
                           <ListItemLine>
-                            <Text size={12} color="#191726" regular>{`On ${chainAsset.title}`}</Text>
-                            <Text size={12} color="#191726" regular>{`${
+                            <ListItemText regular>{`On ${chainAsset.title}`}</ListItemText>
+                            <ListItemText regular>{`${
                               formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
-                            } ${asset.symbol}`}</Text>
+                            } ${asset.symbol}`}</ListItemText>
                           </ListItemLine>
                         </ListItemDetails>
                       </ListItem>
@@ -121,17 +121,17 @@ const WalletNftAssetsList = ({
                   </ListItemIconWrapper>
                   <ListItemDetails>
                     <ListItemLine>
-                      <Text size={14} color="#191726" medium>{`${asset.symbol}・$${
+                      <ListItemText size={14} medium>{`${asset.symbol}・$${
                         asset.assetPriceUsd?.toFixed(2) || 0
-                      }`}</Text>
-                      <Text size={14} color="#191726" medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</Text>
+                      }`}</ListItemText>
+                      <ListItemText size={14} medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</ListItemText>
                     </ListItemLine>
 
                     <ListItemLine>
-                      <Text size={12} color="#191726" regular>{`On ${chain.title}`}</Text>
-                      <Text size={12} color="#191726" regular>{`${
+                      <ListItemText regular>{`On ${chain.title}`}</ListItemText>
+                      <ListItemText regular>{`${
                         formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
-                      } ${asset.symbol}`}</Text>
+                      } ${asset.symbol}`}</ListItemText>
                     </ListItemLine>
                   </ListItemDetails>
                 </ListItem>
@@ -150,7 +150,7 @@ export default WalletNftAssetsList;
 const ChainBlock = styled.div`
   flex: 1;
   border-radius: 8px;
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.color.background.selectInput};
   padding: 0 0 10px;
   margin-bottom: 12px;
 `;
@@ -161,12 +161,12 @@ const ChainBlockHeader = styled.div<{ show?: boolean }>`
   padding: 10px 16px 0;
   position: relative;
 
-  ${({ show }) => show && `padding-bottom: 10px; border-bottom: 1px solid #ffeee6;`};
+  ${({ theme, show }) => show && `padding-bottom: 10px; border-bottom: 1px solid ${theme.color.background.card};`};
 `;
 
 const ChainBlockHeaderText = styled(Text)`
   font-size: 14px;
-  color: #6e6b6a;
+  color: ${({ theme }) => theme.color.text.innerLabel};
 `;
 
 const ChainBlockDropdownIcon = styled.div`
@@ -236,4 +236,9 @@ const AssetChainIcon = styled.img`
   width: 16px;
   border-radius: 50%;
   border: 1px solid #fff;
+`;
+
+const ListItemText = styled(Text)<{ size?: number }>`
+  color: ${({ theme }) => theme.color.text.button};
+  ${({ size }) => `font-size: ${size || 12}px;`}
 `;
