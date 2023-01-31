@@ -381,17 +381,13 @@ const WalletTransactionBlock = ({
 
       <ButtonRow>
         <SearchWrapper>
-          {showAllChains && (
-            <>
-              {WalletAssetSearchIcon}
-              <SearchInput
-                placeholder="Search"
-                value={searchValue}
-                onChange={({ target }) => setSearchValue(target.value)}
-              />
-              {searchValue && <SearchClose onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchClose>}
-            </>
-          )}
+          {WalletAssetSearchIcon}
+          <SearchInput
+            placeholder="Search"
+            value={searchValue}
+            onChange={({ target }) => setSearchValue(target.value)}
+          />
+          {searchValue && <SearchClose onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchClose>}
         </SearchWrapper>
 
         <ChainButtonRow>
