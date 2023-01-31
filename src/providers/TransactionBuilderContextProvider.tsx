@@ -650,117 +650,7 @@ const TransactionBuilderContextProvider = ({
       setTransactionBlocks([]);
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
-
-    }
-    else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
-      let crossChainAction = crossChainActions[0];
-
-      if (!crossChainAction.receiveAmount) {
-        showAlertModal('Failed to get receiveAmount');
-        setIsSubmitting(false);
-        return;
-      }
-
-      let result: {
-        transactionHash?: string;
-        errorMessage?: string;
-      };
-
-      result = crossChainAction.useWeb3Provider
-        ? await submitWeb3ProviderTransactions(
-          getSdkForChainId(crossChainAction.chainId) as Sdk,
-          web3Provider,
-          crossChainAction.transactions,
-          crossChainAction.chainId,
-          providerAddress,
-        )
-        : await submitEtherspotAndWaitForTransactionHash(
-          getSdkForChainId(crossChainAction.chainId) as Sdk,
-          crossChainAction.transactions,
-          crossChainAction.gasTokenAddress ?? undefined,
-        );
-      if (
-        result?.errorMessage ||
-        (!result?.transactionHash?.length)
-      ) {
-        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
-        setIsSubmitting(false);
-        return;
-      }
-
-      let flag = 1, errorOnLiFi;
-      while (flag) {
-        try {
-          const status = await getCrossChainStatusByHash(getSdkForChainId(plrDaoAsset.chainId) as Sdk, crossChainAction.chainId, plrDaoAsset.chainId, result.transactionHash, crossChainAction.bridgeUsed)
-          if (status?.status == "DONE" && status.subStatus == "COMPLETED") {
-            flag = 0;
-          } else if (status?.status === "FAILED") {
-            errorOnLiFi = 'Transaction Failed on LiFi'
-            flag = 0
-          }
-          await sleep(30);
-        } catch (err) {
-          errorOnLiFi = 'Transaction Failed on LiFi'
-          flag = 0;
-        }
-      }
-
-      if (errorOnLiFi) {
-        showAlertModal(errorOnLiFi);
-        setIsSubmitting(false);
-        return;
-      }
-
-      const estimateGas = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
-        web3Provider,
-        crossChainAction.destinationCrossChainAction[0],
-        providerAddress,
-        accountAddress,
-      );
-
-      const stakingTxns = await plrDaoStaking(null, BigNumber.from(crossChainAction.receiveAmount).sub(utils.parseUnits('0.02', 6)).sub(estimateGas.feeAmount ?? '0').toString(), transactionBlocks[0].type === "PLR_DAO_STAKE" ? transactionBlocks[0].values?.receiverAddress : '', getSdkForChainId(plrDaoAsset.chainId))
-      if (stakingTxns.errorMessage) {
-        showAlertModal(stakingTxns.errorMessage);
-        setIsSubmitting(false);
-        return;
-      }
-
-      const estimated = await estimateCrossChainAction(
-        getSdkForChainId(plrDaoAsset.chainId),
-        web3Provider,
-        crossChainAction.destinationCrossChainAction[0],
-        providerAddress,
-        accountAddress,
-      );
-
-      crossChainAction = {
-        ...crossChainAction,
-        estimated,
-        transactions: stakingTxns.result?.transactions ?? [],
-        chainId: plrDaoAsset.chainId,
-      }
-
-      result = await submitEtherspotAndWaitForTransactionHash(
-        getSdkForChainId(plrDaoAsset.chainId) as Sdk,
-        crossChainAction.transactions,
-        plrDaoAsset.address,
-      );
-
-      if (
-        result?.errorMessage ||
-        (!result?.transactionHash?.length)
-      ) {
-        setIsSubmitting(false);
-        return;
-      }
-      setCrossChainActions([]);
-      setTransactionBlocks([]);
-      showAlertModal('Transaction sent');
-      setIsSubmitting(false);
-
-    }
-    else {
+    } else {
       setCrossChainActions([]);
       setTransactionBlocks([]);
       dispatchCrossChainActions(crossChainActionsToDispatch);
@@ -832,10 +722,6 @@ const TransactionBuilderContextProvider = ({
 
   const hasKlimaBlockAdded = transactionBlocks.some(
     (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
-  );
-
-  const hasPlrDaoBlockAdded = transactionBlocks.some(
-    (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
   );
 
   const crossChainActionsInProcessing = useMemo(() => {
@@ -1314,7 +1200,6 @@ const TransactionBuilderContextProvider = ({
                       ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
                       : availableTransactionBlock.title;
                     const isKlimaBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
-                    const isPlrDaoBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE;
                     return (
                       <TransactionBlockListItemWrapper
                         key={availableTransactionBlock.title}
@@ -1325,18 +1210,10 @@ const TransactionBuilderContextProvider = ({
                             );
                             return;
                           }
-                          if (isPlrDaoBlockIncluded && transactionBlocks.length > 0) {
-                            showAlertModal('Cannot add PLR Dao staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed');
-                            return;
-                          }
                           if (hasKlimaBlockAdded) {
                             showAlertModal(
                               'Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed'
                             );
-                            return;
-                          }
-                          if (hasPlrDaoBlockAdded) {
-                            showAlertModal('Cannot add another transaction block with transaction batch. Please remove PLR Dao transaction or continue after the PLR Dao transaction is executed');
                             return;
                           }
                           if (
@@ -1351,7 +1228,7 @@ const TransactionBuilderContextProvider = ({
                           setTransactionBlocks((current) => current.concat(transactionBlock));
                           setShowTransactionBlockSelect(false);
                         }}
-                        disabled={isDisabled || hasKlimaBlockAdded || hasPlrDaoBlockAdded}
+                        disabled={isDisabled || hasKlimaBlockAdded}
                       >
                         &bull; {availableTransactionBlockTitle}
                       </TransactionBlockListItemWrapper>
@@ -1459,7 +1336,7 @@ const TransactionBuilderContextProvider = ({
                     }
                     showEditButton={!disableEdit}
                     showStatus={!!crossChainActionsInProcessing?.length}
-                    isSubmitTrue={isSubmitting}
+                    isSubmitted={isSubmitting}
                     setIsTransactionDone={setIsTransactionDone}
                     showGasAssetSelect
                   />

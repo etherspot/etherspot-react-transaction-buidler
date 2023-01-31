@@ -43,13 +43,13 @@ interface KlimaStakingActionPreview {
 }
 
 interface PlrStakingActionPreview {
-	fromChainId: number;
+  fromChainId: number;
   hasEnoughPLR: boolean;
-	fromAsset: AssetTransfer;
-	toAsset: AssetTransfer;
-	providerName: string;
-	providerIconUrl: string | undefined;
-	receiverAddress?: string;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  providerName: string;
+  providerIconUrl: string | undefined;
+  receiverAddress?: string;
 }
 
 export interface AssetSwapActionPreview {
@@ -108,7 +108,6 @@ export interface ICrossChainActionEstimation {
 	usdPrice?: number | null;
 	errorMessage?: string;
 	feeAmount?: BigNumber | null;
-  timeStamp?: number | null;
 }
 
 export type ICrossChainAction = {

@@ -15,7 +15,7 @@ export const CHAIN_ID = {
   FANTOM: 250,
   CELO: 42220,
   MOONBEAM: 1284,
-  GNOSIS:100
+  GNOSIS: 100,
 };
 
 export interface Chain {

@@ -180,7 +180,7 @@ const PrepareTransactionWrapper = styled.div`
   width: 100%;
 `
 const ColoredText = styled.div`
-  color: ${(props) => props.color && props.color}; 
+  color: ${({ theme }) => theme.color.text.reviewLabel};
   padding: 14px;
   word-break: initial;
 `
@@ -192,7 +192,7 @@ interface TransactionPreviewInterface {
   signButtonDisabled?: boolean;
   editButtonDisabled?: boolean;
   showEditButton?: boolean;
-  isSubmitTrue?: boolean;
+  isSubmitted?: boolean;
   showSignButton?: boolean;
   setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
@@ -458,34 +458,26 @@ const ActionPreview = ({
   editButtonDisabled = false,
   showSignButton = false,
   showEditButton = false,
-  isSubmitTrue = false,
+  isSubmitted = false,
   setIsTransactionDone,
   showStatus = true,
   showGasAssetSelect = false,
 }: TransactionPreviewInterface) => {
-  const [minutes, setMinutes] = useState(0);
-  const [seconds, setSeconds] = useState(30);
-	const { accountAddress, providerAddress } = useEtherspot();
-	const theme: Theme = useTheme();
+  const [timer, setTimer] = useState(0);
+  const { accountAddress, providerAddress } = useEtherspot();
 
-	const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
+  const theme: Theme = useTheme();
+
+  const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
 
   useEffect(() => {
-    if(!isSubmitTrue){
-      setSeconds(0);
-      setMinutes(0);
+    if (isSubmitted) {
+      let interval = setInterval(() => {
+        setTimer(timer + 1);
+      }, 1000);
+      return () => clearInterval(interval);
     }
-    const interval = setInterval(() => {
-        setSeconds(seconds => (seconds + 1) % 60);
-        setMinutes(minutes => {
-            if (seconds === 0) {
-                return minutes + 1;
-            }
-            return minutes;
-        });
-    }, 1000);
-    return () => clearInterval(interval);
-}, [isSubmitTrue]);
+  }, [isSubmitted, timer]);
 
   const onCopy = (valueToCopy: string) => {
       navigator.clipboard.writeText(valueToCopy).then((res) => {
@@ -814,7 +806,7 @@ const ActionPreview = ({
     );
   }
 
-  const previewSwap = (preview: AssetSwapActionPreview | null, network: Chain | undefined, chainTitle: string) => {
+  const previewSwap = (preview: AssetSwapActionPreview | null, network: Chain | undefined, chainTitle: string, fromPlrDao: string | null) => {
     if (!preview) return null;
 
     const { fromAsset, toAsset } = preview;
@@ -828,7 +820,7 @@ const ActionPreview = ({
     return (
       <DoubleTransactionActionsInSingleRow>
         <TransactionAction>
-          <Label>You send</Label>
+          {fromPlrDao ? <ColoredText>You send</ColoredText> : <Label>You send</Label>}
           <ValueWrapper>
             <CombinedRoundedImages
               title={fromAsset.symbol}
@@ -845,7 +837,7 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         <TransactionAction>
-          <Label>You receive</Label>
+        {fromPlrDao ? <ColoredText>You receive</ColoredText> : <Label>You receive</Label>}
           <ValueWrapper>
             <CombinedRoundedImages
               title={toAsset.symbol}
@@ -866,106 +858,109 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
-		const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress ,hasEnoughPLR} = preview;
+    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, hasEnoughPLR } = preview;
 
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
-          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP || (!!action.multiCallData && action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
+          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
+          (!!action.multiCallData && action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
             ? action.preview
             : null
         )
       : [crossChainAction.preview];
-      
-		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
-		const toNetwork = supportedChains[1];
+    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
-		const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[CHAIN_ID.POLYGON].toUpperCase();
+    const toNetwork = supportedChains[1];
 
-		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[CHAIN_ID.POLYGON].toUpperCase();
 
-		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
+    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
-		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
 
-		return (
-			<Card
-				title='PLR Dao Staking'
-				marginBottom={20}
-				onCloseButtonClick={onRemove}
-				showCloseButton={showCloseButton}
-				additionalTopButtons={additionalTopButtons}
-			>
-				{hasEnoughPLR && <><DoubleTransactionActionsInSingleRow>
-					<TransactionAction>
-						<ColoredText>You send</ColoredText>
-						<ValueWrapper>
-							<CombinedRoundedImages
-								title={fromAsset.symbol}
-								url={fromAsset.iconUrl}
-								smallImageTitle={fromChainTitle}
-								smallImageUrl={fromNetwork?.iconUrl}
-							/>
-							<div>
-								<Text size={16} marginBottom={1} medium block>
-									{fromAmount} {fromAsset.symbol}
-								</Text>
-								<Text size={12}>On {fromChainTitle}</Text>
-							</div>
-						</ValueWrapper>
-					</TransactionAction>
-					<TransactionAction>
-						<ColoredText>You receive</ColoredText>
-						<ValueWrapper>
-							<CombinedRoundedImages
-								title={toAsset.symbol}
-								url={toAsset.iconUrl}
-								smallImageTitle={toChainTitle}
-								smallImageUrl={toNetwork?.iconUrl}
-							/>
-							<div>
-								<Text size={16} marginBottom={3} medium block>
-									{toAmount} {toAsset.symbol}
-								</Text>
-								<Text size={12}>On {toChainTitle}</Text>
-							</div>
-						</ValueWrapper>
-					</TransactionAction>
-				</DoubleTransactionActionsInSingleRow>
-				{!!senderAddress && !!receiverAddress && (
-					<TransactionAction>
-						<Text size={16} medium>
-							<>
-								From &nbsp;
-								<ClickableText onClick={() => onCopy(senderAddress)}>
-									{humanizeHexString(senderAddress)}
-								</ClickableText>
-								&nbsp;
-							</>
-							to &nbsp;
-							<ClickableText onClick={() => onCopy(receiverAddress)}>
-								{humanizeHexString(receiverAddress)}
-							</ClickableText>
-						</Text>
-					</TransactionAction>
-				)}</>}
-        {!hasEnoughPLR && <>
-          {previewList.map(preview => {
-          if (!preview) return null;
-          if ('toAsset' in preview) {
-            return previewSwap(preview as AssetSwapActionPreview, fromNetwork, fromChainTitle);
-          }
-        })}
-        </>}
-				 <TransactionAction>
-        {/* TODO:Pass prop color = 5fc9e0 in dark mode. */}
+    const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+
+    return (
+      <Card
+        title="PLR Dao Staking"
+        marginBottom={20}
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
+        {hasEnoughPLR && (
+          <>
+            <DoubleTransactionActionsInSingleRow>
+              <TransactionAction>
+                <ColoredText>You send</ColoredText>
+                <ValueWrapper>
+                  <CombinedRoundedImages
+                    title={fromAsset.symbol}
+                    url={fromAsset.iconUrl}
+                    smallImageTitle={fromChainTitle}
+                    smallImageUrl={fromNetwork?.iconUrl}
+                  />
+                  <div>
+                    <Text size={16} marginBottom={1} medium block>
+                      {fromAmount} {fromAsset.symbol}
+                    </Text>
+                    <Text size={12}>On {fromChainTitle}</Text>
+                  </div>
+                </ValueWrapper>
+              </TransactionAction>
+              <TransactionAction>
+                <ColoredText>You receive</ColoredText>
+                <ValueWrapper>
+                  <CombinedRoundedImages
+                    title={toAsset.symbol}
+                    url={toAsset.iconUrl}
+                    smallImageTitle={toChainTitle}
+                    smallImageUrl={toNetwork?.iconUrl}
+                  />
+                  <div>
+                    <Text size={16} marginBottom={3} medium block>
+                      {toAmount} {toAsset.symbol}
+                    </Text>
+                    <Text size={12}>On {toChainTitle}</Text>
+                  </div>
+                </ValueWrapper>
+              </TransactionAction>
+            </DoubleTransactionActionsInSingleRow>
+            {!!senderAddress && !!receiverAddress && (
+              <TransactionAction>
+                <Text size={16} medium>
+                  <>
+                    From &nbsp;
+                    <ClickableText onClick={() => onCopy(senderAddress)}>
+                      {humanizeHexString(senderAddress)}
+                    </ClickableText>
+                    &nbsp;
+                  </>
+                  to &nbsp;
+                  <ClickableText onClick={() => onCopy(receiverAddress)}>
+                    {humanizeHexString(receiverAddress)}
+                  </ClickableText>
+                </Text>
+              </TransactionAction>
+            )}
+          </>
+        )}
+        {!hasEnoughPLR && (
+          <>
+            {previewList.map((preview) => {
+              if (!preview) return null;
+              if ('toAsset' in preview) {
+                return previewSwap(preview as AssetSwapActionPreview, fromNetwork, fromChainTitle, 'PLR_DAO');
+              }
+            })}
+          </>
+        )}
+        <TransactionAction>
           <ColoredText>Route</ColoredText>
           <ValueWrapper>
-            <RoundedImage
-              title={providerName ?? 'Unknown'}
-              url={providerIconUrl}
-            />
+            <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
             <ValueBlock>
               <Text size={12} marginBottom={2} medium block>
                 {providerName}
@@ -982,57 +977,47 @@ const ActionPreview = ({
                 {cost}
               </>
             )}
-            {estimated?.timeStamp && (
+            {crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp && (
               <>
                 <ColoredText>Time</ColoredText>
-                {moment(estimated?.timeStamp).format("m [min], s [sec]")}
+                {moment(crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp).format(
+                  'm [min], s [sec]'
+                )}
               </>
             )}
           </ValueWrapper>
-          {!hasEnoughPLR &&  <RouteWrapper>
-            {previewList.map((preview) => {
-              if (!preview) return null;
-              if (!('toAsset' in preview)) return null;
-              const { fromAsset, toAsset, providerName, providerIconUrl } =
-                preview;
+          {!hasEnoughPLR && (
+            <RouteWrapper>
+              {previewList.map((preview) => {
+                if (!preview) return null;
+                if (!('toAsset' in preview)) return null;
+                const { fromAsset, toAsset, providerName, providerIconUrl } = preview;
 
-              const fromAmount = formatAmountDisplay(
-                ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
-              );
-              const toAmount = formatAmountDisplay(
-                ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
-              );
-              return (
-                <Row>
-                  <RoundedImage
-                    style={{ marginTop: 2 }}
-                    title={providerName}
-                    url={providerIconUrl}
-                    size={10}
-                  />
-                  <ValueBlock>
-                    <Text size={12} marginBottom={2} regular block>
-                      {`Swap on ${fromChainTitle} via ${providerName}`}
-                    </Text>
-                    <Text size={12} regular block>
-                      {`${fromAmount} ${fromAsset.symbol} → ${toAmount} ${toAsset.symbol}`}
-                    </Text>
-                  </ValueBlock>
-                </Row>
-              );
-            })}
-          </RouteWrapper>}
+                const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+                const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+                return (
+                  <Row>
+                    <RoundedImage style={{ marginTop: 2 }} title={providerName} url={providerIconUrl} size={10} />
+                    <ValueBlock>
+                      <Text size={12} marginBottom={2} regular block>
+                        {`Swap on ${fromChainTitle} via ${providerName}`}
+                      </Text>
+                      <Text size={12} regular block>
+                        {`${fromAmount} ${fromAsset.symbol} → ${toAmount} ${toAsset.symbol}`}
+                      </Text>
+                    </ValueBlock>
+                  </Row>
+                );
+              })}
+            </RouteWrapper>
+          )}
         </TransactionAction>
-        {isSubmitTrue && (
+        {isSubmitted && (
           <PrepareTransaction>
-            <ColoredText>
-              {minutes}:{`${seconds < 10 ? '0' : ''}${seconds}`}
-            </ColoredText>
+            <ColoredText>{moment.utc(timer * 1000).format('mm:ss')}</ColoredText>
             <PrepareTransactionWrapper>
               <ValueWrapper>
-                <StatusIconWrapper
-                  color={theme?.color?.background?.statusIconPending}
-                >
+                <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
                   <CgSandClock size={14} />
                 </StatusIconWrapper>
                 <Text size={16} medium>
@@ -1043,13 +1028,13 @@ const ActionPreview = ({
           </PrepareTransaction>
         )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
-				<TransactionStatus
+        <TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
         />
-			</Card>
-		);
-	}
+      </Card>
+    );
+  }
   
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
     const previewList = crossChainAction?.batchTransactions?.length
@@ -1115,7 +1100,7 @@ const ActionPreview = ({
         {previewList.map(preview => {
           if (!preview) return null;
           if ('toAsset' in preview) {
-            return previewSwap(preview as AssetSwapActionPreview, network, chainTitle);
+            return previewSwap(preview as AssetSwapActionPreview, network, chainTitle, null);
           }
           if ('asset' in preview) {
             return previewSend(preview as SendAssetActionPreview, network, chainTitle);
