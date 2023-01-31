@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import styled, { useTheme } from "styled-components";
 import { ethers } from "ethers";
 import { HiOutlinePencilAlt } from "react-icons/hi";
-import { BsClockHistory, BiCheck, IoClose, FaSignature , CgSandClock} from "react-icons/all";
+import { BsClockHistory, BiCheck, IoClose, FaSignature } from 'react-icons/all';
+import { CgSandClock } from 'react-icons/cg';
 import { CHAIN_ID_TO_NETWORK_NAME } from "etherspot/dist/sdk/network/constants";
 
 // Components
