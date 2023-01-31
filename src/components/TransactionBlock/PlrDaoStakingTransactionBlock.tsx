@@ -298,19 +298,20 @@ const PlrDaoStakingTransactionBlock = ({
 
   useEffect(() => {
     // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
-
-    if (accountAddress && providerAddress) {
-      sdk
-        ?.getNftList({
-          account: accountAddress || providerAddress,
-        })
-        .then((output: NftList) => {
-          let hasNFTContractAddress = output?.items.filter((nft) => nft.contractAddress === plrDaoMemberNFT.address);
-          if (hasNFTContractAddress?.length) {
-            setIsNFTMember(true);
-          }
-        });
-    }
+    try {
+      if (accountAddress && providerAddress) {
+        sdk
+          ?.getNftList({
+            account: accountAddress || providerAddress,
+          })
+          .then((output: NftList) => {
+            let hasNFTContractAddress = output?.items?.filter((nft) => nft.contractAddress === plrDaoMemberNFT.address);
+            if (hasNFTContractAddress?.length) {
+              setIsNFTMember(true);
+            }
+          });
+      }
+    } catch (error) {}
   }, [sdk, accountAddress, providerAddress]);
 
   useEffect(() => {
