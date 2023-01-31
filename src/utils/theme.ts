@@ -63,6 +63,7 @@ export interface Theme {
       listItemQuickButtonPrimary?: string,
       transactionStatusLink?: string,
       pasteIcon?: string,
+      settingsIcon?: string,
     },
   }
 }
@@ -132,6 +133,7 @@ export const defaultTheme: Theme = {
       listItemQuickButtonPrimary: '#fff',
       transactionStatusLink: '#ff7733',
       pasteIcon: '#ff884d',
+      settingsIcon: '#ee6723',
     },
   }
 };

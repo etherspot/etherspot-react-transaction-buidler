@@ -2,6 +2,9 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import styled, { useTheme } from 'styled-components';
 import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
+import { MdOutlineDashboardCustomize } from 'react-icons/md';
+import { IoIosLogOut } from 'react-icons/io';
+import { BsClockHistory } from "react-icons/all";
 import { AccountStates, GatewayTransactionStates, NotificationTypes, Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
 import { map } from 'rxjs/operators';
@@ -19,6 +22,8 @@ import {
 import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
 
 import { PrimaryButton, SecondaryButton } from '../components/Button';
+import  etherspotLogo  from '../components/Image/etherspotLogo.svg';
+import favicon from '../components/Image/favicon.png';
 import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
 import TransactionBlock from '../components/TransactionBlock';
 import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
@@ -152,8 +157,14 @@ const MenuItem = styled.div`
     text-decoration: none;
   }
 
+  a:hover {
+    color: ${({ theme }) => theme.color.text.settingsIcon};
+    text-decoration: none;
+  }
+
   &:hover {
-    text-decoration: underline;
+    color: ${({ theme }) => theme.color.text.settingsIcon};
+    text-decoration: none;
   }
 
   &:last-child {
@@ -1363,6 +1374,7 @@ const TransactionBuilderContextProvider = ({
       {showMenu && (
         <MenuWrapper>
           <MenuItem>
+            <MdOutlineDashboardCustomize size={18} style={{ paddingRight: '12px' }} />
             <a href="https://dashboard.etherspot.io" title="Dashboard" target="_blank">
               Dashboard
             </a>
@@ -1373,14 +1385,21 @@ const TransactionBuilderContextProvider = ({
               showModal(<History />);
             }}
           >
+            <BsClockHistory size={18} style={{ paddingRight: '12px' }} />
             History
           </MenuItem>
           <MenuItem>
+            <img src={favicon} alt = 'etherspot' style={{ width: '10px', height: '10px' }} />
             <a href="https://etherspot.io/" title="About Etherspot" target="_blank">
               About Etherspot
             </a>
           </MenuItem>
-          {showMenuLogout && <MenuItem onClick={logout}>Logout</MenuItem>}
+          {showMenuLogout && (
+            <MenuItem onClick={logout}>
+              <IoIosLogOut size={18} style={{ paddingRight: '12px' }} />
+              Logout
+            </MenuItem>
+          )}
         </MenuWrapper>
       )}
     </TransactionBuilderContext.Provider>
