@@ -1,8 +1,5 @@
 {
   "prettier.printWidth": 120,
-  "editor.wordWrapColumn": 120,
-  "editor.wordWrap": "off",
-  "diffEditor.wordWrap": "on",
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
