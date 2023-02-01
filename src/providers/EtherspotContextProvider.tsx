@@ -491,7 +491,7 @@ const EtherspotContextProvider = ({
     }
 
     return gasAssets;
-  }, [getSdkForChainId, getSupportedAssetsWithBalancesForChainId]);
+  }, [getSdkForChainId, getSupportedAssetsWithBalancesForChainId, sdk]);
 
   const logout = useCallback(() => {
     sdkPerChain = {};
