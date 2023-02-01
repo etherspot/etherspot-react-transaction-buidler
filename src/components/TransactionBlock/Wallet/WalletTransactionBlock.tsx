@@ -22,6 +22,7 @@ import { Text } from '../../Text';
 import SwitchInput from '../../SwitchInput/SwitchInput';
 import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../../constants/transactionBuilderConstants';
 import { ISendAssetTransactionBlockValues } from '../SendAssetTransactionBlock';
+import { formatAmountDisplay } from '../../../utils/common';
 
 // Local
 import WalletNftsList, { IChainNfts, INft } from './WalletNftsList';
@@ -55,6 +56,10 @@ const WalletTransactionBlock = ({
   addTransactionBlock,
   hideWalletBlock,
 }: IWalletTransactionBlock) => {
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  const forceUpdate = () => setRefreshCount(refreshCount + 1);
+
   const theme: Theme = useTheme();
 
   const {
@@ -62,7 +67,6 @@ const WalletTransactionBlock = ({
     accountAddress,
     getSupportedAssetsWithBalancesForChainId,
     getNftsForChainId,
-    smartWalletOnly,
     smartWalletBalanceByChain,
     sdk,
   } = useEtherspot();
@@ -82,7 +86,6 @@ const WalletTransactionBlock = ({
   const [displayAssets, setDisplayAssets] = useState<IAssetWithBalance[]>([]);
   const [displayNfts, setDisplayNfts] = useState<INft[]>([]);
 
-  const [showSearch, setShowSearch] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
   // Fetch assets
@@ -106,6 +109,7 @@ const WalletTransactionBlock = ({
           });
 
           setChainAssets(allAssets);
+          forceUpdate();
         }
       } catch (e) {
         //
@@ -164,7 +168,7 @@ const WalletTransactionBlock = ({
 
   // Initial fetch
   useEffect(() => {
-    if (!accountAddress || !sdk || !!chainAssets) return;
+    if (!accountAddress || !sdk) return;
 
     if (smartWalletBalanceByChain?.length) {
       const sum = 0;
@@ -172,6 +176,7 @@ const WalletTransactionBlock = ({
         return acc + curr.total;
       }, sum);
       setWalletTotal(total);
+      forceUpdate();
     }
 
     getAssets();
@@ -224,6 +229,7 @@ const WalletTransactionBlock = ({
 
     setDisplayAssets(assets);
     setDisplayNfts(nfts);
+    forceUpdate();
   }, [chainAssets?.length, chainNfts, selectedChains, showAllChains, searchValue]);
 
   const findTransactionBlock = (blockType: TRANSACTION_BLOCK_TYPE_KEY) => {
@@ -302,7 +308,6 @@ const WalletTransactionBlock = ({
   const hideDropdown = () => setShowChainDropdown(false);
 
   const hideSearchBar = () => {
-    setShowSearch(false);
     setSearchValue('');
   };
 
@@ -342,7 +347,7 @@ const WalletTransactionBlock = ({
 
   return (
     <>
-      <Title>{`$${walletTotal.toFixed(2)}`}</Title>
+      <Title>{`$${formatAmountDisplay(walletTotal)}`}</Title>
       <ButtonRow>
         <ActionButtonWrapper onClick={handleDepositButton}>
           <ActionButton>{WalletDepositIcon}</ActionButton>
@@ -440,12 +445,12 @@ const WalletTransactionBlock = ({
       )}
 
       <WalletAssetsList
+        updateCount={refreshCount}
         accountAddress={accountAddress}
         tab={tab}
         showAllChains={showAllChains}
         selectedChains={selectedChains}
         hideChainList={hideChainList}
-        chainAssets={chainAssets}
         displayAssets={displayAssets}
         smartWalletBalanceByChain={smartWalletBalanceByChain}
         onCopy={onCopy}
@@ -458,7 +463,6 @@ const WalletTransactionBlock = ({
         showAllChains={showAllChains}
         selectedChains={selectedChains}
         hideChainList={hideChainList}
-        chainNfts={chainNfts}
         displayNfts={displayNfts}
         onCopy={onCopy}
         toggleChainBlock={toggleChainBlock}

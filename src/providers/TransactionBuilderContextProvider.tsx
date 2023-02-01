@@ -111,7 +111,9 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
   padding: 2px 4px;
   border-radius: 6px;
   ${({ theme, selected }) =>
-    !!selected && `color: ${theme.color.text.searchInput}; background-color: ${theme.color.background.topMenu};`}
+    !!selected &&
+    `color: ${theme.color.text.searchInput};
+    background-color: ${theme.color.background.topMenu};`}
 
   display: flex;
   justify-content: center;

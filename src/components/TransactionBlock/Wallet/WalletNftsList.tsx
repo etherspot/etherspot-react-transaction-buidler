@@ -29,9 +29,7 @@ interface IWalletNftsList {
   showAllChains: boolean;
   selectedChains: number[];
   hideChainList: number[];
-  chainNfts: IChainNfts[] | null;
   displayNfts: INft[];
-
   onCopy: (text: string) => void;
   toggleChainBlock: (id: number) => void;
 }
@@ -42,7 +40,6 @@ const WalletNftsList = ({
   showAllChains,
   selectedChains,
   hideChainList,
-  chainNfts,
   displayNfts,
   onCopy,
   toggleChainBlock,
@@ -51,11 +48,12 @@ const WalletNftsList = ({
     <>
       {tab === 'nfts' &&
         showAllChains &&
-        chainNfts?.map((chainNft, i) => {
+        supportedChains?.map((chain, i) => {
           // Check if asset exists
-          if (!chainNft || !chainNft.nfts?.length) return null;
+          const nfts = displayNfts.filter((nft) => nft?.chain?.chainId === chain.chainId);
+          if (!nfts || !nfts.length) return null;
 
-          const chainId = chainNft?.chain?.chainId || 0;
+          const chainId = chain.chainId || 0;
 
           if (!showAllChains && !selectedChains.includes(chainId)) return null;
 
@@ -63,9 +61,9 @@ const WalletNftsList = ({
             <ChainBlock key={`nft-chain-${i}`}>
               {(showAllChains || selectedChains.length > 1) && (
                 <ChainBlockHeader show={!hideChainList.includes(chainId)}>
-                  <RoundedImage title={chainNft.chain.title} url={chainNft.chain.iconUrl} size={20} />
+                  <RoundedImage title={chain.title} url={chain.iconUrl} size={20} />
 
-                  <ChainBlockHeaderText>{chainNft.title}</ChainBlockHeaderText>
+                  <ChainBlockHeaderText>{chain.title}</ChainBlockHeaderText>
 
                   <ChainHeaderCopyIcon onClick={() => onCopy(accountAddress || '')}>
                     {WalletCopyIcon}
@@ -79,7 +77,7 @@ const WalletNftsList = ({
 
               {!hideChainList.includes(chainId) && (
                 <ChainBlockNftList>
-                  {chainNft.nfts.map((nft, i) => {
+                  {nfts.map((nft, i) => {
                     return (
                       <NftWrapper key={`nft-${chainId}-${i}`}>
                         <NftImage src={nft.image} />

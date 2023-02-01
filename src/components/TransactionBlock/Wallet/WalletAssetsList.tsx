@@ -16,29 +16,27 @@ export interface IChainAssets {
 }
 
 interface IWalletAssetsList {
+  updateCount: number;
   accountAddress: string | null;
   tab: 'tokens' | 'nfts';
   showAllChains: boolean;
   selectedChains: number[];
   hideChainList: number[];
-  chainAssets: IChainAssets[] | null;
   displayAssets: IAssetWithBalance[];
   smartWalletBalanceByChain: IBalanceByChain[] | null;
-
   onCopy: (text: string) => void;
   toggleChainBlock: (id: number) => void;
 }
 
-const WalletNftAssetsList = ({
+const WalletAssetsList = ({
+  updateCount, // refreshes display when assets update
   accountAddress,
   tab,
   showAllChains,
   selectedChains,
   hideChainList,
-  chainAssets,
   displayAssets,
   smartWalletBalanceByChain,
-
   onCopy,
   toggleChainBlock,
 }: IWalletAssetsList) => {
@@ -46,13 +44,13 @@ const WalletNftAssetsList = ({
     <>
       {tab === 'tokens' &&
         showAllChains &&
-        chainAssets?.map((chainAsset, i) => {
+        supportedChains?.map((chain, i) => {
           // Check if asset exists
-          if (!chainAsset || !chainAsset.assets?.length) return null;
+          const assets = displayAssets.filter((asset) => asset?.chainId === chain.chainId);
+          if (!assets || !assets?.length) return null;
 
-          const chainId = chainAsset?.chain?.chainId || 0;
-          const chainTotal =
-            smartWalletBalanceByChain?.find((bl) => bl.chain === chainAsset?.chain?.chainId)?.total || 0;
+          const chainId = chain.chainId;
+          const chainTotal = smartWalletBalanceByChain?.find((bl) => bl.chain === chain.chainId)?.total || 0;
 
           if (!showAllChains && !selectedChains.includes(chainId)) return null;
 
@@ -60,9 +58,9 @@ const WalletNftAssetsList = ({
             <ChainBlock key={`asset-chain-${i}`}>
               {(showAllChains || selectedChains.length > 1) && (
                 <ChainBlockHeader show={!hideChainList.includes(chainId)}>
-                  <RoundedImage title={chainAsset.chain.title} url={chainAsset.chain.iconUrl} size={20} />
+                  <RoundedImage title={chain.title} url={chain.iconUrl} size={20} />
 
-                  <ChainBlockHeaderText>{`${chainAsset.title}・$${chainTotal.toFixed(2)}`}</ChainBlockHeaderText>
+                  <ChainBlockHeaderText>{`${chain.title}・$${formatAmountDisplay(chainTotal)}`}</ChainBlockHeaderText>
 
                   <ChainHeaderCopyIcon onClick={() => onCopy(accountAddress || '')}>
                     {WalletCopyIcon}
@@ -76,7 +74,7 @@ const WalletNftAssetsList = ({
 
               {!hideChainList.includes(chainId) && (
                 <ChainBlockList>
-                  {chainAsset.assets.map((asset, i) => {
+                  {assets.map((asset, i) => {
                     return (
                       <ListItem key={`asset-${chainId}-${i}`}>
                         <ListItemIconWrapper>
@@ -84,14 +82,16 @@ const WalletNftAssetsList = ({
                         </ListItemIconWrapper>
                         <ListItemDetails>
                           <ListItemLine>
-                            <ListItemText size={14} medium>{`${asset.symbol}・$${
-                              asset.assetPriceUsd?.toFixed(2) || 0
-                            }`}</ListItemText>
-                            <ListItemText size={14} medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</ListItemText>
+                            <ListItemText size={14} medium>{`${asset.symbol}・$${formatAmountDisplay(
+                              asset.assetPriceUsd || 0
+                            )}`}</ListItemText>
+                            <ListItemText size={14} medium>{`$${formatAmountDisplay(
+                              asset.balanceWorthUsd || 0
+                            )}`}</ListItemText>
                           </ListItemLine>
 
                           <ListItemLine>
-                            <ListItemText regular>{`On ${chainAsset.title}`}</ListItemText>
+                            <ListItemText regular>{`On ${chain.title}`}</ListItemText>
                             <ListItemText regular>{`${
                               formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
                             } ${asset.symbol}`}</ListItemText>
@@ -121,10 +121,12 @@ const WalletNftAssetsList = ({
                   </ListItemIconWrapper>
                   <ListItemDetails>
                     <ListItemLine>
-                      <ListItemText size={14} medium>{`${asset.symbol}・$${
-                        asset.assetPriceUsd?.toFixed(2) || 0
-                      }`}</ListItemText>
-                      <ListItemText size={14} medium>{`$${asset.balanceWorthUsd?.toFixed(2) || 0}`}</ListItemText>
+                      <ListItemText size={14} medium>{`${asset.symbol}・$${formatAmountDisplay(
+                        asset.assetPriceUsd || 0
+                      )}`}</ListItemText>
+                      <ListItemText size={14} medium>{`$${formatAmountDisplay(
+                        asset.balanceWorthUsd || 0
+                      )}`}</ListItemText>
                     </ListItemLine>
 
                     <ListItemLine>
@@ -144,7 +146,7 @@ const WalletNftAssetsList = ({
   );
 };
 
-export default WalletNftAssetsList;
+export default WalletAssetsList;
 
 // Chains
 const ChainBlock = styled.div`
