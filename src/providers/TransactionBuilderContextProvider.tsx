@@ -27,7 +27,6 @@ import {
   estimateCrossChainAction,
   getCrossChainStatusByHash,
   klimaDaoStaking,
-  plrDaoStaking,
   submitEtherspotTransactionsBatch,
   submitWeb3ProviderTransaction,
   submitWeb3ProviderTransactions,
@@ -41,7 +40,7 @@ import { ActionPreview } from '../components/TransactionPreview';
 import { buildUrlOptions, getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
-import { CHAIN_ID, Chain, plrDaoAsset } from '../utils/chain';
+import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { SendActionIcon, SwapActionIcon, BridgeActionIcon, ChainIcon } from '../components/TransactionBlock/Icons';

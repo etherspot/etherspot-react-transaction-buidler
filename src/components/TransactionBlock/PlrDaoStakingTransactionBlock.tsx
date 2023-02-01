@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, ExchangeOffer, NftList } from 'etherspot';
+import { AccountTypes, ExchangeOffer } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
 
-// Types
+// types
 import { IPlrDaoStakingMembershipBlock } from '../../types/transactionBlock';
 
-// Components
+// components
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import Text from '../Text/Text';
 import AccountSwitchInput from '../AccountSwitchInput';
@@ -23,7 +23,8 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 // utils
 import { formatAmountDisplay, formatMaxAmount } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
-import { Chain, supportedChains, plrDaoAsset, plrDaoMemberNFT } from '../../utils/chain';
+import { Chain, supportedChains, plrDaoMemberNFT } from '../../utils/chain';
+import { plrDaoAsset } from '../../utils/asset';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
 
@@ -32,19 +33,25 @@ import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 export interface IPlrDaoTransactionBlockValues {
   accountType: AccountTypes;
-  fromAsset?: IAssetWithBalance;
+  fromAsset: IAssetWithBalance;
   selectedAsset?: IAssetWithBalance | null;
-  offer?: ExchangeOffer;
-  toAsset?: TokenListToken;
-  fromChainId?: number;
+  offer: ExchangeOffer;
+  toAsset: TokenListToken;
+  fromChainId: number;
   fromAssetDecimals?: number;
   fromAssetAddress?: string;
   fromAssetIconUrl?: string;
   fromAssetSymbol?: string;
-  amount?: string;
+  amount: string;
   receiverAddress?: string;
   hasEnoughPLR: boolean;
 }
+
+ interface AccountBalance {
+   chainName: string;
+   keyBasedWallet: number;
+   smartWallet: number;
+ }
 
 const Title = styled.h3`
   margin: 0 0 18px;
@@ -190,57 +197,50 @@ const PlrDaoStakingTransactionBlock = ({
   }, [selectedFromNetwork]);
 
   const getWalletBalance = async (chainId: number, name: string) => {
-    return Promise.allSettled(
-      [accountAddress, providerAddress].map(async (address) => {
-        return await getSupportedAssetsWithBalancesForChainId(chainId, true, address);
-      })
-    )
-      .then((response: any[]) => {
-        const accountWalletBalance = response.map(
-          (accountBalance) => accountBalance?.status == 'fulfilled' && accountBalance?.value
-        );
-
-        let smartWalletBalance = 0;
-        let keyBasedBalance = 0;
-
-        accountWalletBalance[0]?.forEach(({ symbol, decimals, balance }) => {
-          if (symbol == plrDaoAsset.symbol) {
-            smartWalletBalance += +ethers.utils.formatUnits(balance, decimals);
-          }
-        });
-        accountWalletBalance[1]?.forEach(({ symbol, decimals, balance }) => {
-          if (symbol == plrDaoAsset.symbol) {
-            keyBasedBalance += +ethers.utils.formatUnits(balance, decimals);
-          }
-        });
-
-        return {
-          chainName: name,
-          keyBasedWallet: keyBasedBalance,
-          smartWallet: smartWalletBalance,
-        };
-      })
-      .catch((error) => {
-        return {
-          chainName: name,
-          keyBasedWallet: 0,
-          smartWallet: 0,
-        };
+    try {
+      const accountsBalances = await Promise.all(
+        [accountAddress, providerAddress].map(async (address) => {
+          return await getSupportedAssetsWithBalancesForChainId(chainId, true, address);
+        })
+      );
+      let smartWalletBalance = 0;
+      let keyBasedBalance = 0;
+      accountsBalances[0]?.forEach(({ symbol, decimals, balance }) => {
+        if (symbol == plrDaoAsset.symbol) {
+          smartWalletBalance += +ethers.utils.formatUnits(balance, decimals);
+        }
       });
+      accountsBalances[1]?.forEach(({ symbol, decimals, balance }) => {
+        if (symbol == plrDaoAsset.symbol) {
+          keyBasedBalance += +ethers.utils.formatUnits(balance, decimals);
+        }
+      });
+      return {
+        chainName: name,
+        keyBasedWallet: keyBasedBalance,
+        smartWallet: smartWalletBalance,
+      };
+    } catch (err) {
+      return {
+        chainName: name,
+        keyBasedWallet: 0,
+        smartWallet: 0,
+      };
+    }
   };
 
   const getBalanceForAllChains = async () => {
-    const chainPromise: any[] = [];
+    const chainPromise: AccountBalance[] = [];
     supportedChains.forEach(async (chain) => {
-      chainPromise.push(getWalletBalance(chain.chainId, chain.title));
+      chainPromise.push(await getWalletBalance(chain.chainId, chain.title));
     });
     return Promise.allSettled(chainPromise).catch((e) => {
       return [];
     });
   };
 
-  const getTotal = (accountBalanceWithSupportedChains: any[], key: any) => {
-    const total = accountBalanceWithSupportedChains?.reduce((accumulator, object) => {
+  const getTotal = (accountBalanceWithSupportedChains: AccountBalance[], key: 'keyBasedWallet' | 'smartWallet') => {
+    const total = accountBalanceWithSupportedChains?.reduce((accumulator, object: AccountBalance) => {
       return accumulator + object[key];
     }, 0);
     return total;
@@ -249,17 +249,21 @@ const PlrDaoStakingTransactionBlock = ({
   const fetchAllAccountBalances = async () => {
     try {
       let data = await getBalanceForAllChains();
-      let accountBalanceWithSupportedChains = data.map((d) => d.status === 'fulfilled' && d.value);
-      accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
-        (data: any) => data.keyBasedWallet > 0 || data.smartWallet
+      let accountBalanceWithSupportedChains: AccountBalance[] = data.map((d) =>
+        d.status === 'fulfilled' ? d.value : { chainName: '', keyBasedWallet: 0, smartWallet: 0 }
       );
-      const totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains, 'keyBasedWallet');
-      const totalSmartWalletPLRTokens = getTotal(accountBalanceWithSupportedChains, 'smartWallet');
+      accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
+        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet
+      );
+      const totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
+      const totalSmartWalletPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'smartWallet');
 
       setTotalKeyBasedPLRTokens(totalKeyBasedPLRTokens);
       setTotalSmartWalletPLRTokens(totalSmartWalletPLRTokens);
       setAccounts(accountBalanceWithSupportedChains);
-    } catch (e) {}
+    } catch (e) {
+      //
+    }
   };
 
   useEffect(() => {
@@ -297,23 +301,25 @@ const PlrDaoStakingTransactionBlock = ({
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType]
   );
 
+  const getNftList = async () => {
+    try {
+      if (!accountAddress || !providerAddress || !sdk) return;
+      const output = await sdk.getNftList({
+        account: accountAddress || providerAddress,
+      });
+      let hasNFTContractAddress = output?.items?.filter((nft) => nft.contractAddress === plrDaoMemberNFT.address);
+      if (hasNFTContractAddress?.length) {
+        setIsNFTMember(true);
+      }
+    } catch (error) {
+      //
+    }
+  };
+
   useEffect(() => {
     // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
-    try {
-      if (accountAddress && providerAddress) {
-        sdk
-          ?.getNftList({
-            account: accountAddress || providerAddress,
-          })
-          .then((output: NftList) => {
-            let hasNFTContractAddress = output?.items?.filter((nft) => nft.contractAddress === plrDaoMemberNFT.address);
-            if (hasNFTContractAddress?.length) {
-              setIsNFTMember(true);
-            }
-          });
-      }
-    } catch (error) {}
-  }, [sdk, accountAddress, providerAddress]);
+    getNftList();
+  }, [getNftList]);
 
   useEffect(() => {
     // this will ensure that the old data won't replace the new one
@@ -321,14 +327,15 @@ const PlrDaoStakingTransactionBlock = ({
     const update = async () => {
       try {
         const offers = await updateAvailableOffers();
-        if (active && offers) {
-          setAvailableOffers(offers);
-          setIsLoadingAvailableOffers(false);
-          if (!offers.length) return;
-          const bestOffer: any = offers?.find((offer) => offer.provider === swapServiceIdToDetails['Lifi'].title);
-          const selectedOffer = bestOffer?.provider ? bestOffer : offers[0];
-          setSelectedOffer(mapOfferToOption(selectedOffer));
-        }
+        if (!active || !offers) return;
+        setAvailableOffers(offers);
+        setIsLoadingAvailableOffers(false);
+        if (!offers.length) return;
+        const bestOffer: ExchangeOffer | undefined = offers?.find(
+          (offer) => offer.provider === swapServiceIdToDetails['Lifi'].title
+        );
+        const selectedOffer = bestOffer?.provider ? bestOffer : offers[0];
+        setSelectedOffer(mapOfferToOption(selectedOffer));
       } catch (e) {}
     };
     update();

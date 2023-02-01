@@ -472,11 +472,14 @@ const ActionPreview = ({
   const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
 
   useEffect(() => {
+    let interval: string | number | NodeJS.Timeout | undefined;
     if (isSubmitted) {
-      let interval = setInterval(() => {
+      setInterval(() => {
         setTimer(timer + 1);
       }, 1000);
-      return () => clearInterval(interval);
+    }
+    if (interval) {
+      clearInterval(interval);
     }
   }, [isSubmitted, timer]);
 
@@ -807,7 +810,7 @@ const ActionPreview = ({
     );
   }
 
-  const previewSwap = (preview: AssetSwapActionPreview | null, network: Chain | undefined, chainTitle: string, fromPlrDao: string | null) => {
+  const previewSwap = (preview: AssetSwapActionPreview | null, network: Chain | undefined, chainTitle: string) => {
     if (!preview) return null;
 
     const { fromAsset, toAsset } = preview;
@@ -821,7 +824,7 @@ const ActionPreview = ({
     return (
       <DoubleTransactionActionsInSingleRow>
         <TransactionAction>
-          {fromPlrDao ? <ColoredText>You send</ColoredText> : <Label>You send</Label>}
+          <Label>You send</Label>
           <ValueWrapper>
             <CombinedRoundedImages
               title={fromAsset.symbol}
@@ -838,7 +841,7 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         <TransactionAction>
-        {fromPlrDao ? <ColoredText>You receive</ColoredText> : <Label>You receive</Label>}
+          <Label>You receive</Label>
           <ValueWrapper>
             <CombinedRoundedImages
               title={toAsset.symbol}
@@ -863,10 +866,7 @@ const ActionPreview = ({
 
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
-          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
-          (!!action.multiCallData && action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
-            ? action.preview
-            : null
+          action.type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE ? action.preview : null
         )
       : [crossChainAction.preview];
 
@@ -882,6 +882,7 @@ const ActionPreview = ({
     const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    const timeStamp = crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp;
 
     return (
       <Card
@@ -952,7 +953,44 @@ const ActionPreview = ({
             {previewList.map((preview) => {
               if (!preview) return null;
               if ('toAsset' in preview) {
-                return previewSwap(preview as AssetSwapActionPreview, fromNetwork, fromChainTitle, 'PLR_DAO');
+                return (
+                  <DoubleTransactionActionsInSingleRow>
+                    <TransactionAction>
+                      <ColoredText>You send</ColoredText>
+                      <ValueWrapper>
+                        <CombinedRoundedImages
+                          title={fromAsset.symbol}
+                          url={fromAsset.iconUrl}
+                          smallImageTitle={fromChainTitle}
+                          smallImageUrl={fromNetwork?.iconUrl}
+                        />
+                        <div>
+                          <Text size={16} marginBottom={1} medium block>
+                            {fromAmount} {fromAsset.symbol}
+                          </Text>
+                          <Text size={12}>On {fromChainTitle}</Text>
+                        </div>
+                      </ValueWrapper>
+                    </TransactionAction>
+                    <TransactionAction>
+                      <ColoredText>You receive</ColoredText>
+                      <ValueWrapper>
+                        <CombinedRoundedImages
+                          title={toAsset.symbol}
+                          url={toAsset.iconUrl}
+                          smallImageTitle={toChainTitle}
+                          smallImageUrl={toNetwork?.iconUrl}
+                        />
+                        <div>
+                          <Text size={16} marginBottom={3} medium block>
+                            {toAmount} {toAsset.symbol}
+                          </Text>
+                          <Text size={12}>On {toChainTitle}</Text>
+                        </div>
+                      </ValueWrapper>
+                    </TransactionAction>
+                  </DoubleTransactionActionsInSingleRow>
+                );
               }
             })}
           </>
@@ -977,12 +1015,10 @@ const ActionPreview = ({
                 {cost}
               </>
             )}
-            {crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp && (
+            {timeStamp && (
               <>
                 <ColoredText>Time</ColoredText>
-                {moment(crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp).format(
-                  'm [min], s [sec]'
-                )}
+                {moment(timeStamp).format('m [min], s [sec]')}
               </>
             )}
           </ValueWrapper>
@@ -1100,7 +1136,7 @@ const ActionPreview = ({
         {previewList.map(preview => {
           if (!preview) return null;
           if ('toAsset' in preview) {
-            return previewSwap(preview as AssetSwapActionPreview, network, chainTitle, null);
+            return previewSwap(preview as AssetSwapActionPreview, network, chainTitle);
           }
           if ('asset' in preview) {
             return previewSend(preview as SendAssetActionPreview, network, chainTitle);
