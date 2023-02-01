@@ -14,7 +14,6 @@ import {
   SessionStorage,
   WalletProviderLike,
   Web3WalletProvider,
-  RateData,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import {
@@ -235,6 +234,7 @@ const EtherspotContextProvider = ({
     supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset
       ? assets
       : [nativeAsset, ...assets]
+
     return supportedAssetsPerChainId[assetsChainId];
   }, [sdk]);
 
@@ -260,12 +260,14 @@ const EtherspotContextProvider = ({
     const assetAddressesWithoutZero = assets
       .filter((asset) => !isZeroAddress(asset.address))
       .map((asset) => asset.address);
+
     try {
       const { items: balances } = await sdk.getAccountBalances({
         account: balancesForAddress ?? computedAccount,
         tokens: assetAddressesWithoutZero,
         chainId: assetsChainId,
       });
+
       return balances.filter((assetBalance) => {
         const { balance, token: balanceAssetAddress } = assetBalance;
 
@@ -376,55 +378,23 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
-  const getRatesByTokenAddresses = useCallback(async (chainId: number, tokenAddresses: string[]) => {
-    let tokens  = tokenAddresses.filter((address) => address !== null)
-    if(!sdk || !tokens.length) return null
-    try {
-      const rates: RateData = await sdk.fetchExchangeRates({tokens, chainId});
-      if(!rates.errored && rates.items.length > 0) {
-        let addressByChain : Record<string, number> = {}
-        rates.items.forEach((rate) => {
-          addressByChain[rate.address] = rate.usd
-        })
-        return addressByChain
-      }
-    } catch (error) {
-      console.log("rateserror",error)
-    }
-
-  }, [sdk])
-
-  const getRatesByNativeChainId = useCallback(async (chainId: number) => {
-    if(!sdk) return null
-    try {
-      const rates: RateData = await sdk.fetchExchangeRates({tokens: ['0x0000000000000000000000000000000000000000'], chainId});
-      if(!rates.errored && rates.items.length > 0) {
-        return rates.items[0].usd
-      }
-    } catch (error) {
-      console.log("rateserror",error)
-    }
-    return null
-
-  }, [sdk])
-
   const getSupportedAssetsWithBalancesForChainId = useCallback(async (
     assetsChainId: number,
     positiveBalancesOnly: boolean = false,
     balancesForAddress: string | null = accountAddress,
     recompute: boolean = true,
-  ): Promise<IAssetWithBalance[]> => {    
+  ): Promise<IAssetWithBalance[]> => {
     const supportedAssets = await getSupportedAssetsForChainId(assetsChainId);
     const fromAssetsBalances = await getAssetsBalancesForChainId(supportedAssets, assetsChainId, balancesForAddress, recompute);
 
-    // get rates by token
-    const assetsPrices = await getRatesByTokenAddresses(assetsChainId, fromAssetsBalances.map((asset) => asset.token))
-    const nativePrice = await getRatesByNativeChainId(assetsChainId)
+    // only get prices for assets with balances
+    const assetsPrices = await getAssetsPrices(assetsChainId, fromAssetsBalances.map((asset) => asset.token));
 
     const assetsWithBalances = await Promise.all(supportedAssets.map(async (asset) => {
       let balance = ethers.BigNumber.from(0);
       let assetPriceUsd = null;
       let balanceWorthUsd = null;
+
       try {
         const assetBalance = fromAssetsBalances.find((fromAssetBalance) => {
           if (isNativeAssetAddress(asset.address, assetsChainId) && fromAssetBalance.token === null) return true;
@@ -434,8 +404,8 @@ const EtherspotContextProvider = ({
 
         if (!balance.isZero()) {
           assetPriceUsd = isNativeAssetAddress(asset.address, assetsChainId)
-            ? nativePrice
-            : assetsPrices?.[asset.address] ?? null;
+            ? await getNativeAssetPriceInUsd(assetsChainId)
+            : assetsPrices?.[getAssetPriceKeyByAddress(asset.address)] ?? null;
         }
 
         balanceWorthUsd = assetPriceUsd
@@ -457,7 +427,7 @@ const EtherspotContextProvider = ({
     return positiveBalancesOnly
       ? assetsWithBalances.filter((asset) => !asset.balance.isZero())
       : assetsWithBalances;
-  }, [getSupportedAssetsForChainId, accountAddress, getAssetsBalancesForChainId, sdk]);
+  }, [getSupportedAssetsForChainId, accountAddress, getAssetsBalancesForChainId]);
 
   const getGasAssetsForChainId = useCallback(async (assetsChainId: number, senderAddress?: string): Promise<IAssetWithBalance[]> => {
     const sdkForChainId = getSdkForChainId(assetsChainId);
