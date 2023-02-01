@@ -14,6 +14,7 @@ import {
   SessionStorage,
   WalletProviderLike,
   Web3WalletProvider,
+  RateData,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import {
@@ -378,6 +379,38 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
+  const getRatesByTokenAddresses = useCallback(async (chainId: number, tokenAddresses: string[]) => {
+    let tokens  = tokenAddresses.filter((address) => address !== null)
+    if(!sdk || !tokens.length) return null
+    try {
+      const rates: RateData = await sdk.fetchExchangeRates({tokens, chainId});
+      if(!rates.errored && rates.items.length > 0) {
+        let addressByChain : Record<string, number> = {}
+        rates.items.forEach((rate) => {
+          addressByChain[rate.address] = rate.usd
+        })
+        return addressByChain
+      }
+    } catch (error) {
+      console.log("rateserror",error)
+    }
+
+  }, [sdk])
+
+  const getRatesByNativeChainId = useCallback(async (chainId: number) => {
+    if(!sdk) return null
+    try {
+      const rates: RateData = await sdk.fetchExchangeRates({tokens: ['0x0000000000000000000000000000000000000000'], chainId});
+      if(!rates.errored && rates.items.length > 0) {
+        return rates.items[0].usd
+      }
+    } catch (error) {
+      console.log("rateserror",error)
+    }
+    return null
+
+  }, [sdk])
+
   const getSupportedAssetsWithBalancesForChainId = useCallback(async (
     assetsChainId: number,
     positiveBalancesOnly: boolean = false,
@@ -388,7 +421,7 @@ const EtherspotContextProvider = ({
     const fromAssetsBalances = await getAssetsBalancesForChainId(supportedAssets, assetsChainId, balancesForAddress, recompute);
 
     // only get prices for assets with balances
-    const assetsPrices = await getAssetsPrices(assetsChainId, fromAssetsBalances.map((asset) => asset.token));
+    const assetsPrices = await getRatesByTokenAddresses(assetsChainId, fromAssetsBalances.map((asset) => asset.token))
 
     const assetsWithBalances = await Promise.all(supportedAssets.map(async (asset) => {
       let balance = ethers.BigNumber.from(0);
@@ -404,8 +437,8 @@ const EtherspotContextProvider = ({
 
         if (!balance.isZero()) {
           assetPriceUsd = isNativeAssetAddress(asset.address, assetsChainId)
-            ? await getNativeAssetPriceInUsd(assetsChainId)
-            : assetsPrices?.[getAssetPriceKeyByAddress(asset.address)] ?? null;
+            ? await getRatesByNativeChainId(assetsChainId)
+            : assetsPrices?.[asset.address] ?? null;
         }
 
         balanceWorthUsd = assetPriceUsd
