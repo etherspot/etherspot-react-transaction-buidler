@@ -18,7 +18,6 @@ import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../util
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
-import { getAssetPriceKeyByAddress, getAssetsPrices, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { sumAssetsBalanceWorth } from '../utils/common';
 
 export type IAsset = TokenListToken;
