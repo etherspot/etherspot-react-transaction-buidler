@@ -1,10 +1,9 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { HiCheck, HiClipboardCopy, HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { AccountStates, GatewayTransactionStates, NotificationTypes, Sdk, sleep, TokenListToken } from 'etherspot';
+import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
-import { map } from 'rxjs/operators';
 
 // Types
 import {
@@ -32,21 +31,30 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
-  deployAccount,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { buildUrlOptions, getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
+import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import History from '../components/History';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
+import { Text } from '../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import { SendActionIcon, SwapActionIcon, BridgeActionIcon, ChainIcon } from '../components/TransactionBlock/Icons';
+import {
+  SendActionIcon,
+  SwapActionIcon,
+  BridgeActionIcon,
+  ChainIcon,
+  WalletCopyIcon,
+  WalletIcon,
+} from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
+import useInterval from '../hooks/useInterval';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -98,8 +106,15 @@ const WalletAddressesWrapper = styled.div`
   align-items: center;
 `;
 
-const WalletAddress = styled.span<{ disabled?: boolean }>`
-  margin-right: 20px;
+const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
+  margin-right: 16px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  ${({ theme, selected }) =>
+    !!selected &&
+    `color: ${theme.color.text.searchInput};
+    background-color: ${theme.color.background.topMenu};`}
+
   display: flex;
   justify-content: center;
   align-items: center;
@@ -294,14 +309,12 @@ const TransactionBuilderContextProvider = ({
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
-  if (context !== null) {
-    throw new Error('<EtherspotContextProvider /> has already been declared.');
-  }
+  if (context !== null) throw new Error('<EtherspotContextProvider /> has already been declared.');
 
   const mappedDefaultTransactionBlocks = defaultTransactionBlocks
     ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
     : [];
-  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>(mappedDefaultTransactionBlocks);
+  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>([]);
 
   type IValidationErrors = {
     [id: string]: ErrorMessages;
@@ -317,12 +330,23 @@ const TransactionBuilderContextProvider = ({
   const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false);
   let multiCallList: string[] = [];
 
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
+  const [showWalletBlock, setShowWalletBlock] = useState(true);
+
   const theme: Theme = useTheme();
+
+  // Change copy icon back
+  useInterval(() => {
+    setCopiedAddress(false);
+    setCopiedAddressInterval(null);
+  }, copiedAddressInterval);
 
   const onCopy = async (valueToCopy: string) => {
     try {
+      setCopiedAddress(true);
+      if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
       await navigator.clipboard.writeText(valueToCopy);
-      alert('Copied!');
     } catch (e) {
       alert('Unable to copy!');
     }
@@ -363,7 +387,10 @@ const TransactionBuilderContextProvider = ({
     transactionBlocks.forEach((transactionBlock) => {
       const transactionBlockErrors = validateTransactionBlockValues(transactionBlock);
       if (!transactionBlockErrors || Object.keys(transactionBlockErrors).length === 0) return;
-      validationErrors = { ...validationErrors, [transactionBlock.id]: transactionBlockErrors };
+      validationErrors = {
+        ...validationErrors,
+        [transactionBlock.id]: transactionBlockErrors,
+      };
     });
     setTransactionBlockValidationErrors(validationErrors);
 
@@ -427,7 +454,10 @@ const TransactionBuilderContextProvider = ({
             newCrossChainActions[foundChainIndex] = chainTx;
           } else if (!!allActionList.length) {
             // Create new CrossChainAction with multicalls batched
-            let chainTx: ICrossChainAction = { ...allActionList[0], batchTransactions: allActionList };
+            let chainTx: ICrossChainAction = {
+              ...allActionList[0],
+              batchTransactions: allActionList,
+            };
             newCrossChainActions = [...newCrossChainActions, chainTx];
           }
         } else if (
@@ -698,7 +728,10 @@ const TransactionBuilderContextProvider = ({
   const setTransactionBlockFieldValidationError = (transactionBlockId: string, field: string, errorMessage: string) => {
     setTransactionBlockValidationErrors((current) => ({
       ...current,
-      [transactionBlockId]: { ...current?.[transactionBlockId], [field]: errorMessage },
+      [transactionBlockId]: {
+        ...current?.[transactionBlockId],
+        [field]: errorMessage,
+      },
     }));
   };
 
@@ -737,6 +770,35 @@ const TransactionBuilderContextProvider = ({
 
   const [showMulticallOptions, setShowMulticallOptions] = useState<string | null>(null);
 
+  const addTransactionBlock = (
+    availableTransactionBlock: ITransactionBlock,
+    isBridgeTransactionBlockAndDisabled = false,
+    isKlimaBlockIncluded = false
+  ) => {
+    if (!availableTransactionBlock) return;
+
+    if (isKlimaBlockIncluded && transactionBlocks.length > 0) {
+      showAlertModal(
+        'Cannot add klima staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed'
+      );
+      return;
+    }
+    if (hasKlimaBlockAdded) {
+      showAlertModal(
+        'Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed'
+      );
+      return;
+    }
+    if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled)
+      return;
+    const transactionBlock: ITransactionBlock = {
+      ...availableTransactionBlock,
+      id: getTimeBasedUniqueId(),
+    };
+    setTransactionBlocks((current) => current.concat(transactionBlock));
+    setShowTransactionBlockSelect(false);
+  };
+
   // Mt Pelerin
   const [deployingAccount, setDeployingAccount] = useState(false);
 
@@ -770,34 +832,44 @@ const TransactionBuilderContextProvider = ({
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
         <WalletAddressesWrapper onClick={hideMenu}>
-          {providerAddress && !smartWalletOnly && (
-            <WalletAddress onClick={() => onCopy(providerAddress)}>
-              Wallet: {humanizeHexString(providerAddress)}
-            </WalletAddress>
-          )}
-          {!providerAddress && !smartWalletOnly && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
-          {accountAddress && (
-            <WalletAddress onClick={() => onCopy(accountAddress)}>
-              Account: {humanizeHexString(accountAddress)}
-            </WalletAddress>
-          )}
+          <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
+            <Text marginRight={2}>{WalletIcon}</Text>
+            {accountAddress ? (
+              <>
+                <Text onClick={() => setShowWalletBlock(true)} marginRight={8}>
+                  Wallet
+                </Text>
+                <Text onClick={() => onCopy(accountAddress)}>
+                  {copiedAddress ? <HiCheck color={theme.color?.background?.statusIconSuccess} /> : WalletCopyIcon}
+                </Text>
+              </>
+            ) : (
+              <Text onClick={connect}>Wallet: Connect</Text>
+            )}
+          </WalletAddress>
           {accountAddress && (
             <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
               {deployingAccount ? 'Deploying...' : 'Buy'}
-            </WalletAddress>
-          )}
-          {!accountAddress && (
-            <WalletAddress disabled>
-              Account:{' '}
-              <ConnectButton onClick={connect} disabled={isConnecting}>
-                Connect
-              </ConnectButton>
             </WalletAddress>
           )}
         </WalletAddressesWrapper>
         <MenuButton size={22} onClick={() => setShowMenu(!showMenu)} color={theme?.color?.background?.topMenuButton} />
       </TopNavigation>
       <div onClick={hideMenu}>
+        {/* Wallet */}
+        {showWalletBlock && accountAddress && (
+          <TransactionBlocksWrapper>
+            <Card onCloseButtonClick={() => setShowWalletBlock(false)} showCloseButton>
+              <WalletTransactionBlock
+                availableTransactionBlocks={availableTransactionBlocks}
+                hasTransactionBlockAdded={hasTransactionBlockAdded}
+                addTransactionBlock={addTransactionBlock}
+                hideWalletBlock={() => setShowWalletBlock(false)}
+              />
+            </Card>
+          </TransactionBlocksWrapper>
+        )}
+
         {!!crossChainActionsInProcessing?.length && (
           <>
             {crossChainActionsInProcessing.map((crossChainActionInProcessing) => (
@@ -1202,31 +1274,13 @@ const TransactionBuilderContextProvider = ({
                     return (
                       <TransactionBlockListItemWrapper
                         key={availableTransactionBlock.title}
-                        onClick={() => {
-                          if (isKlimaBlockIncluded && transactionBlocks.length > 0) {
-                            showAlertModal(
-                              'Cannot add klima staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed'
-                            );
-                            return;
-                          }
-                          if (hasKlimaBlockAdded) {
-                            showAlertModal(
-                              'Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed'
-                            );
-                            return;
-                          }
-                          if (
-                            availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED ||
-                            isBridgeTransactionBlockAndDisabled
+                        onClick={() =>
+                          addTransactionBlock(
+                            availableTransactionBlock,
+                            isBridgeTransactionBlockAndDisabled,
+                            isKlimaBlockIncluded
                           )
-                            return;
-                          const transactionBlock: ITransactionBlock = {
-                            ...availableTransactionBlock,
-                            id: getTimeBasedUniqueId(),
-                          };
-                          setTransactionBlocks((current) => current.concat(transactionBlock));
-                          setShowTransactionBlockSelect(false);
-                        }}
+                        }
                         disabled={isDisabled || hasKlimaBlockAdded}
                       >
                         &bull; {availableTransactionBlockTitle}
