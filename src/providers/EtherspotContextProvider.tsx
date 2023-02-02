@@ -371,15 +371,13 @@ const EtherspotContextProvider = ({
       try {
         const rates: RateData = await sdk.fetchExchangeRates({ tokens, chainId });
         if (!rates.errored && rates.items.length) {
-          let addressByChain: Record<string, number> = {};
+          let rateByAddress: Record<string, number> = {};
           rates.items.forEach((rate) => {
-            addressByChain[rate.address] = rate.usd;
+            rateByAddress[rate.address] = rate.usd;
           });
-          return addressByChain;
+          return rateByAddress;
         }
-      } catch (error) {
-        console.log('rateserror', error);
-      }
+      } catch (error) {}
     },
     [sdk]
   );
@@ -395,9 +393,7 @@ const EtherspotContextProvider = ({
         if (!rates.errored && rates.items.length) {
           return rates.items[0].usd;
         }
-      } catch (error) {
-        console.log('rateserror', error);
-      }
+      } catch (error) {}
       return null;
     },
     [sdk]
