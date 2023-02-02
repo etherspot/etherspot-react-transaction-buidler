@@ -379,37 +379,44 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
-  const getRatesByTokenAddresses = useCallback(async (chainId: number, tokenAddresses: string[]) => {
-    let tokens  = tokenAddresses.filter((address) => address !== null)
-    if(!sdk || !tokens.length) return null
-    try {
-      const rates: RateData = await sdk.fetchExchangeRates({tokens, chainId});
-      if(!rates.errored && rates.items.length > 0) {
-        let addressByChain : Record<string, number> = {}
-        rates.items.forEach((rate) => {
-          addressByChain[rate.address] = rate.usd
-        })
-        return addressByChain
+  const getRatesByTokenAddresses = useCallback(
+    async (chainId: number, tokenAddresses: string[]) => {
+      let tokens = tokenAddresses.filter((address) => address !== null);
+      if (!sdk || !tokens.length) return null;
+      try {
+        const rates: RateData = await sdk.fetchExchangeRates({ tokens, chainId });
+        if (!rates.errored && rates.items.length) {
+          let addressByChain: Record<string, number> = {};
+          rates.items.forEach((rate) => {
+            addressByChain[rate.address] = rate.usd;
+          });
+          return addressByChain;
+        }
+      } catch (error) {
+        console.log('rateserror', error);
       }
-    } catch (error) {
-      console.log("rateserror",error)
-    }
+    },
+    [sdk]
+  );
 
-  }, [sdk])
-
-  const getRatesByNativeChainId = useCallback(async (chainId: number) => {
-    if(!sdk) return null
-    try {
-      const rates: RateData = await sdk.fetchExchangeRates({tokens: ['0x0000000000000000000000000000000000000000'], chainId});
-      if(!rates.errored && rates.items.length > 0) {
-        return rates.items[0].usd
+  const getRatesByNativeChainId = useCallback(
+    async (chainId: number) => {
+      if (!sdk) return null;
+      try {
+        const rates: RateData = await sdk.fetchExchangeRates({
+          tokens: ['0x0000000000000000000000000000000000000000'],
+          chainId,
+        });
+        if (!rates.errored && rates.items.length) {
+          return rates.items[0].usd;
+        }
+      } catch (error) {
+        console.log('rateserror', error);
       }
-    } catch (error) {
-      console.log("rateserror",error)
-    }
-    return null
-
-  }, [sdk])
+      return null;
+    },
+    [sdk]
+  );
 
   const getSupportedAssetsWithBalancesForChainId = useCallback(async (
     assetsChainId: number,
