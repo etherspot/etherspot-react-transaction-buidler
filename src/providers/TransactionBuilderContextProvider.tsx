@@ -162,6 +162,9 @@ const MenuWrapper = styled.div`
 `;
 
 const MenuItem = styled.div`
+  display: flex;
+  justify-content: left;
+  align-items: center;
   margin-bottom: 10px;
   cursor: pointer;
 
