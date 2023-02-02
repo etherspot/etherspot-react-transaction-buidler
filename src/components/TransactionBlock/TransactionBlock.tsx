@@ -8,10 +8,14 @@ import KlimaStakingTransactionBlock from './KlimaStakingTransactionBlock';
 import { ITransactionBlock } from '../../types/transactionBlock';
 
 const TransactionBlock = (props: ITransactionBlock) => {
-  if (props.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) return <SendAssetTransactionBlock {...props} />;
-  if (props.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) return <AssetBridgeTransactionBlock {...props} />;
-  if (props.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) return <AssetSwapTransactionBlock {...props} />;
-  if (props.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) return <KlimaStakingTransactionBlock {...props} />;
+  if (props.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
+    return <SendAssetTransactionBlock {...props} />;
+  if (props.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE)
+    return <AssetBridgeTransactionBlock {...props} />;
+  if (props.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP)
+    return <AssetSwapTransactionBlock {...props} />;
+  if (props.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE)
+    return <KlimaStakingTransactionBlock {...props} />;
   return null;
 };
 
