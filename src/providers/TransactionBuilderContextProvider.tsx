@@ -1,11 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { HiCheck, HiClipboardCopy, HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { HiCheck } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { MdOutlineDashboardCustomize } from 'react-icons/md';
-import { FaEthereum } from 'react-icons/fa';
-import { IoIosLogOut } from 'react-icons/io';
-import { BsClockHistory } from 'react-icons/all';
 import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
 
@@ -40,7 +36,6 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
-import History from '../components/History';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
@@ -139,55 +134,6 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
       opacity: 0.5;
     }
   `}
-`;
-
-const MenuButton = styled(HiOutlineDotsHorizontal)`
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.5;
-  }
-`;
-
-const MenuWrapper = styled.div`
-  position: absolute;
-  top: 40px;
-  right: 15px;
-  background: ${({ theme }) => theme.color.background.topMenu};
-  color: ${({ theme }) => theme.color.text.topMenu};
-  border-radius: 5px;
-  padding: 15px 20px;
-  font-size: 14px;
-  text-align: left;
-  box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
-`;
-
-const MenuItem = styled.div`
-  display: flex;
-  justify-content: left;
-  align-items: center;
-  margin-bottom: 10px;
-  cursor: pointer;
-
-  a,
-  a:visited {
-    color: ${({ theme }) => theme.color.text.topMenu};
-    text-decoration: none;
-  }
-
-  a:hover {
-    color: ${({ theme }) => theme.color.text.settingsIcon};
-    text-decoration: none;
-  }
-
-  &:hover {
-    color: ${({ theme }) => theme.color.text.settingsIcon};
-    text-decoration: none;
-  }
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 `;
 
 const ConnectButton = styled(SecondaryButton)`
