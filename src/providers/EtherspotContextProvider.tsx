@@ -364,40 +364,34 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
-  const getRatesByTokenAddresses = useCallback(
-    async (chainId: number, tokenAddresses: string[]) => {
-      let tokens = tokenAddresses.filter((address) => address !== null);
-      if (!sdk || !tokens.length) return null;
-      try {
-        const rates: RateData = await sdk.fetchExchangeRates({ tokens, chainId });
-        if (!rates.errored && rates.items.length) {
-          let rateByAddress: Record<string, number> = {};
-          rates.items.forEach((rate) => {
-            rateByAddress[rate.address] = rate.usd;
-          });
-          return rateByAddress;
-        }
-      } catch (error) {}
-    },
-    [sdk]
-  );
+  const getRatesByTokenAddresses = async (chainId: number, tokenAddresses: string[]) => {
+    const tokens = tokenAddresses.filter((address) => address !== null && !isZeroAddress(address));
+    if (!sdk || !tokens.length) return null;
+    try {
+      const rates: RateData = await sdk.fetchExchangeRates({ tokens, chainId });
+      if (rates.errored || !rates?.items?.length) return null;
 
-  const getRatesByNativeChainId = useCallback(
-    async (chainId: number) => {
-      if (!sdk) return null;
-      try {
-        const rates: RateData = await sdk.fetchExchangeRates({
-          tokens: ['0x0000000000000000000000000000000000000000'],
-          chainId,
-        });
-        if (!rates.errored && rates.items.length) {
-          return rates.items[0].usd;
-        }
-      } catch (error) {}
-      return null;
-    },
-    [sdk]
-  );
+      let rateByAddress: Record<string, number> = {};
+      rates.items.forEach((rate) => {
+        rateByAddress[rate.address] = rate.usd;
+      });
+      return rateByAddress;
+    } catch (error) {}
+  };
+
+  const getRatesByNativeChainId = async (chainId: number) => {
+    if (!sdk) return null;
+    try {
+      const rates: RateData = await sdk.fetchExchangeRates({
+        tokens: [ethers.constants.AddressZero],
+        chainId,
+      });
+      if (!rates.errored && rates.items.length) {
+        return rates.items[0].usd;
+      }
+    } catch (error) {}
+    return null;
+  };
 
   const getSupportedAssetsWithBalancesForChainId = useCallback(
     async (
