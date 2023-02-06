@@ -42,6 +42,16 @@ interface KlimaStakingActionPreview {
 	receiverAddress?: string;
 }
 
+interface PlrStakingActionPreview {
+  fromChainId: number;
+  hasEnoughPLR: boolean;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  providerName: string;
+  providerIconUrl: string | undefined;
+  receiverAddress?: string;
+}
+
 export interface AssetSwapActionPreview {
   chainId: number;
   fromAsset: AssetTransfer;
@@ -76,6 +86,15 @@ interface KlimaStakingAction {
   gasCost?: string;
 }
 
+interface PlrStakingAction {
+	type: typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE;
+	preview: PlrStakingActionPreview;
+	destinationCrossChainAction: ICrossChainAction[];
+	containsSwitchChain?: boolean;
+	receiveAmount?: string;
+	bridgeUsed?: string;
+}
+
 export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {
   status?: string;
   transactionHash?: string;
@@ -105,4 +124,4 @@ export type ICrossChainAction = {
   batchTransactions?: ICrossChainAction[];
   batchHash?: string;
   multiCallData?: IMultiCallData | null;
-} & (AssetBridgeAction | SendAssetAction | AssetSwapAction | KlimaStakingAction);
+} & (AssetBridgeAction | SendAssetAction | AssetSwapAction | KlimaStakingAction | PlrStakingAction);

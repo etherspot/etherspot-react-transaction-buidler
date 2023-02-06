@@ -26,9 +26,7 @@ const AccountSwitchInput = ({
   hideKeyBased = false,
   showTotals = false,
 }: AccountSwitchInputProps) => {
-  let walletOptions = [
-    { title: 'Smart Wallet', value: DestinationWalletEnum.Contract},
-  ];
+  let walletOptions = [{ title: 'Smart Wallet', value: DestinationWalletEnum.Contract }];
 
   if (!hideKeyBased) {
     walletOptions = [{ title: 'Key based', value: DestinationWalletEnum.Key }, ...walletOptions];
