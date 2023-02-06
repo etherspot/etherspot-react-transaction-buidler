@@ -1,9 +1,13 @@
 import { useEffect } from 'react';
 
-const useOutsideAlerter = (ref: any, outsideClickCallback: Function) => {
+export interface UseRefObj {
+  current: null | HTMLDivElement;
+}
+
+const useOnClickOutside = (ref: UseRefObj, outsideClickCallback: Function) => {
   useEffect(() => {
     function handleClickOutside(event: Event) {
-      if (ref.current && !ref.current.contains(event.target)) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         outsideClickCallback();
       }
     }
@@ -18,4 +22,4 @@ const useOutsideAlerter = (ref: any, outsideClickCallback: Function) => {
   }, [ref]);
 };
 
-export default useOutsideAlerter;
+export default useOnClickOutside;

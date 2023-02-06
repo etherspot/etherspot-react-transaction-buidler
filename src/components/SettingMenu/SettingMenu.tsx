@@ -6,9 +6,11 @@ import { IoIosLogOut } from 'react-icons/io';
 import { MdOutlineDashboardCustomize } from 'react-icons/md';
 import styled, { useTheme } from 'styled-components';
 import { useTransactionBuilderModal } from '../../hooks';
-import useOutsideAlerter from '../../hooks/useOutsideClick';
+import useOnClickOutside from '../../hooks/useOnClickOutside';
 import { Theme } from '../../utils/theme';
 import History from '../History';
+import MenuItemAnchor from '../Menu/MenuItemAnchor';
+import MenuItem from '../Menu/MenuItem';
 
 const MenuWrapper = styled.div`
   z-index: 10;
@@ -22,35 +24,6 @@ const MenuWrapper = styled.div`
   font-size: 14px;
   text-align: left;
   box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
-`;
-
-const MenuItem = styled.div`
-  display: flex;
-  justify-content: left;
-  align-items: center;
-  margin-bottom: 10px;
-  margin-right: 12px;
-  cursor: pointer;
-
-  a,
-  a:visited {
-    color: ${({ theme }) => theme.color.text.topMenu};
-    text-decoration: none;
-  }
-
-  a:hover {
-    color: ${({ theme }) => theme.color.text.settingsIcon};
-    text-decoration: none;
-  }
-
-  &:hover {
-    color: ${({ theme }) => theme.color.text.settingsIcon};
-    text-decoration: none;
-  }
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 `;
 
 const MenuButton = styled(HiOutlineDotsHorizontal)`
@@ -69,12 +42,12 @@ export interface SettingMenuProps {
 const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
-  const wrapperRef = useRef(null);
+  const menuRef = useRef<null | HTMLDivElement>(null);
   const theme: Theme = useTheme();
   const { showModal } = useTransactionBuilderModal();
 
   const hideMenu = () => setShowMenu(false);
-  useOutsideAlerter(wrapperRef, hideMenu);
+  useOnClickOutside(menuRef, hideMenu);
 
   return (
     <>
@@ -85,37 +58,33 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
         onClick={() => setShowMenu(!showMenu)}
       />
       {showMenu && (
-        <MenuWrapper ref={wrapperRef}>
-          <MenuItem>
-            <MdOutlineDashboardCustomize size={18} style={{ marginRight: '12px' }} />
-            <a href="https://dashboard.etherspot.io" title="Dashboard" target="_blank">
-              Dashboard
-            </a>
-          </MenuItem>
+        <MenuWrapper ref={menuRef}>
+          <MenuItemAnchor
+            title="Dashboard"
+            link="https://dashboard.etherspot.io"
+            icon={<MdOutlineDashboardCustomize size={18} style={{ marginRight: '12px' }} />}
+          />
           <MenuItem
+            icon={<BsClockHistory size={18} style={{ marginRight: '12px' }} />}
+            title="History"
             onClick={() => {
               hideMenu();
               showModal(<History />);
             }}
-          >
-            <BsClockHistory size={18} style={{ marginRight: '12px' }} />
-            History
-          </MenuItem>
-          <MenuItem>
-            <FaEthereum size={18} style={{ marginRight: '12px' }} />
-            <a href="https://etherspot.io/" title="About Etherspot" target="_blank">
-              Etherspot
-            </a>
-          </MenuItem>
+          />
+          <MenuItemAnchor
+            title="About Etherspot"
+            link="https://etherspot.io/"
+            icon={<FaEthereum size={18} style={{ marginRight: '12px' }} />}
+          />
           {showLogout && (
             <MenuItem
+              icon={<IoIosLogOut size={18} style={{ marginRight: '12px' }} />}
               onClick={() => {
                 logout();
               }}
-            >
-              <IoIosLogOut size={18} style={{ marginRight: '12px' }} />
-              Logout
-            </MenuItem>
+              title={'Logout'}
+            />
           )}
         </MenuWrapper>
       )}
