@@ -36,6 +36,8 @@ export interface Theme {
       walletButton?: string;
       walletChainDropdown?: string;
       walletChainButtonActive?: string;
+      tokenBalanceContainer?: string;
+      horizontalLine?: string;
     };
     text?: {
       main?: string;
@@ -67,6 +69,10 @@ export interface Theme {
       transactionStatusLink?: string;
       pasteIcon?: string;
       walletDropdownIcon?: string;
+      tokenBalance?: string;
+      tokenValue?: string;
+      tokenTotal?: string;
+      reviewLabel?: string;
     };
   };
 }
@@ -76,6 +82,8 @@ export const defaultTheme: Theme = {
     background: {
       main: 'linear-gradient(to right, #f43b40, #f8793f)',
       card: '#fff7f2',
+      tokenBalanceContainer: '#21002e',
+      horizontalLine: 'linear-gradient(90deg, #23a9c9, #cd34a2)',
       topMenu: '#fff',
       topMenuButton: '#fff',
       selectInput: '#fff',
@@ -117,8 +125,12 @@ export const defaultTheme: Theme = {
       cardTitle: '#191726',
       card: '#000',
       cardDisabled: '#ddd',
+      tokenBalance: '#fefefe',
+      tokenValue: '#57c2d6',
+      tokenTotal: '#ff0065',
       innerLabel: '#6e6b6a',
       outerLabel: '#6e6b6a',
+      reviewLabel: '#5fc9e0',
       selectInput: '#000',
       selectInputOption: '#191726',
       selectInputOptionSecondary: '#191726',

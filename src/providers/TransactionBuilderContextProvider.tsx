@@ -252,6 +252,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
+    title: 'PLR Staking',
+    type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
+  },
+  {
+    id: getTimeBasedUniqueId(),
     title: 'LI.FI staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
@@ -1388,6 +1393,7 @@ const TransactionBuilderContextProvider = ({
                     }
                     showEditButton={!disableEdit}
                     showStatus={!!crossChainActionsInProcessing?.length}
+                    isSubmitted={isSubmitting}
                     setIsTransactionDone={setIsTransactionDone}
                     showGasAssetSelect
                   />
