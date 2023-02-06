@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
+import { HiChevronDown } from 'react-icons/hi';
 
 import { useEtherspot, useTransactionBuilder } from '../../../hooks';
 import { CHAIN_ID, Chain, supportedChains } from '../../../utils/chain';
@@ -77,7 +78,7 @@ const WalletTransactionBlock = ({
   const [showAllChains, setShowAllChains] = useState(false);
 
   const [showChainDropdown, setShowChainDropdown] = useState(false);
-  const [selectedChains, setSelectedChains] = useState<number[]>(supportedChains.map((chain) => chain.chainId));
+  const [selectedChains, setSelectedChains] = useState<number[]>([]);
   const [hideChainList, setHideChainList] = useState<number[]>([]);
 
   const [walletTotal, setWalletTotal] = useState(0);
@@ -195,7 +196,9 @@ const WalletTransactionBlock = ({
 
     if (chainAssets) {
       chainAssets.map((chainAsset) => {
-        if (!chainAsset.assets || !selectedChains.includes(chainAsset?.chain?.chainId)) return;
+        if (!chainAsset.assets) return;
+
+        if (selectedChains.length && !selectedChains.includes(chainAsset?.chain?.chainId)) return;
 
         chainAsset.assets.map((asset) => {
           if (
@@ -386,7 +389,7 @@ const WalletTransactionBlock = ({
 
       <ButtonRow>
         <SearchWrapper>
-          {WalletAssetSearchIcon}
+          <SearchIcon>{WalletAssetSearchIcon}</SearchIcon>
           <SearchInput
             placeholder="Search"
             value={searchValue}
@@ -419,7 +422,9 @@ const WalletTransactionBlock = ({
               );
             })}
 
-            <ChainDropdownIcon>{WalletDropdownDownIcon}</ChainDropdownIcon>
+            <ChainDropdownIcon>
+              <HiChevronDown size={18} color={theme.color?.text?.walletDropdownIcon} />
+            </ChainDropdownIcon>
           </ChainDropdownSelect>
 
           {showChainDropdown && (
@@ -437,7 +442,9 @@ const WalletTransactionBlock = ({
                   );
                 })}
 
-                <ChainDropdownIcon onClick={hideDropdown}>{WalletDropdownUpIcon}</ChainDropdownIcon>
+                <ChainDropdownIcon onClick={hideDropdown}>
+                  <HiChevronDown size={18} color={theme.color?.text?.walletDropdownIcon} />
+                </ChainDropdownIcon>
               </ChainDropdownList>
             </ChainDropdownModal>
           )}
@@ -519,7 +526,7 @@ const ActionButton = styled.div<{ disabled?: boolean }>`
   height: 56px;
   border-radius: 50%;
   box-shadow: 0 1px 3px 0 rgba(95, 0, 1, 0.13);
-  background-image: ${({ theme }) => theme.color.background.main};
+  background-image: ${({ theme }) => theme.color.background.walletButton};
 `;
 
 const ActionButtonText = styled(Text)`
@@ -572,12 +579,13 @@ const ChainDropdownWrapper = styled.div`
 const ChainDropdownSelect = styled.div`
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
 
   width: 100%;
   border-radius: 8px;
   margin-bottom: 18px;
-  padding: 0px 48px 4px 4px;
-  background-color: ${({ theme }) => theme.color.background.selectInput};
+  padding: 4px 48px 4px 4px;
+  background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
 
   &:hover {
     opacity: 0.5;
@@ -595,11 +603,12 @@ const ChainDropdownModal = styled.div`
 const ChainDropdownList = styled.div`
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
 
   border-radius: 8px;
   margin: 0 0 18px;
-  padding: 0px 48px 4px 4px;
-  background-color: ${({ theme }) => theme.color.background.selectInput};
+  padding: 4px 48px 4px 4px;
+  background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
 
   box-shadow: 0 2px 4px 0 rgba(255, 210, 187, 0.4), 0 2px 8px 0 rgba(201, 201, 200, 0.55);
 `;
@@ -610,15 +619,14 @@ const ChainDropdownButton = styled.div<{ selected?: boolean }>`
   align-items: center;
   height: 48px;
   width: 48px;
-  margin-top: 4px;
   border-radius: 8px;
   background-color: ${({ theme, selected }) =>
-    selected ? theme.color.background.card : theme.color.background.selectInput};
+    selected ? theme.color.background.walletChainButtonActive : 'transparent'};
 `;
 
 const ChainDropdownIcon = styled.div`
   position: absolute;
-  top: 0;
+  top: 4px;
   right: 0;
 
   display: flex;
@@ -639,6 +647,10 @@ const SearchWrapper = styled.div`
   flex: 1;
   align-items: center;
   justify-content: space-between;
+`;
+
+const SearchIcon = styled.div`
+  margin-top -3px;
 `;
 
 const SearchInput = styled.input`

@@ -210,6 +210,8 @@ const NftText = styled(Text)<{ marginTop?: number; size?: number }>`
   color: ${({ theme }) => theme.color.text.button};
   ${({ marginTop }) => `margin-top: ${marginTop || 4}px;`}
   ${({ size }) => `font-size: ${size || 12}px;`}
+  ${({ regular }) => !!regular && `font-family: "PTRootUIWebRegular", sans-serif;`}
+  ${({ medium }) => !!medium && `font-family: "PTRootUIWebMedium", sans-serif;`}
 
   text-overflow: ellipsis;
   overflow: hidden;

@@ -90,7 +90,7 @@ const WalletAssetsList = ({
                             )}`}</ListItemText>
                           </ListItemLine>
 
-                          <ListItemLine>
+                          <ListItemLine margin_top={5}>
                             <ListItemText regular>{`On ${chain.title}`}</ListItemText>
                             <ListItemText regular>{`${
                               formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
@@ -129,7 +129,7 @@ const WalletAssetsList = ({
                       )}`}</ListItemText>
                     </ListItemLine>
 
-                    <ListItemLine>
+                    <ListItemLine margin_top={5}>
                       <ListItemText regular>{`On ${chain.title}`}</ListItemText>
                       <ListItemText regular>{`${
                         formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
@@ -216,11 +216,12 @@ const ListItemDetails = styled.div`
   flex-direction: column;
 `;
 
-const ListItemLine = styled.div`
+const ListItemLine = styled.div<{ margin_top?: number }>`
   display: flex;
   flex: 1;
   justify-content: space-between;
   align-item: center;
+  ${({ margin_top }) => margin_top && `margin-top: ${margin_top}px;`}
 `;
 
 const ListItemIconWrapper = styled.span`
@@ -233,14 +234,16 @@ const AssetChainIcon = styled.img`
   top: 0;
   right: 0;
 
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.color.background.selectInput};
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  border: 1px solid #fff;
+  border: 1px solid ${({ theme }) => theme.color.background.selectInput};
 `;
 
-const ListItemText = styled(Text)<{ size?: number }>`
+const ListItemText = styled(Text)<{ size?: number; regular?: boolean; medium?: boolean }>`
   color: ${({ theme }) => theme.color.text.button};
   ${({ size }) => `font-size: ${size || 12}px;`}
+  ${({ regular }) => !!regular && `font-family: "PTRootUIWebRegular", sans-serif;`}
+  ${({ medium }) => !!medium && `font-family: "PTRootUIWebMedium", sans-serif;`}
 `;

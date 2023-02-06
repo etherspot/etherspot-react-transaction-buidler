@@ -1,70 +1,74 @@
 export interface Theme {
   color?: {
     background?: {
-      main?: string,
-      topMenu?: string,
-      topMenuButton?: string,
-      card?: string,
-      selectInput?: string,
-      selectInputExpanded?: string,
-      selectInputScrollbar?: string,
-      selectInputScrollbarHover?: string,
-      selectInputScrollbarActive?: string,
-      selectInputImagePlaceholder?: string,
-      selectInputToggleButton?: string,
-      textInput?: string,
-      switchInput?: string,
-      switchInputActiveTab?: string,
-      switchInputInactiveTab?: string,
-      button?: string,
-      closeButton?: string,
-      pill?: string,
-      roundedImageFallback?: string,
-      listItemQuickButtonSecondary?: string,
-      listItemQuickButtonPrimary?: string,
-      statusIconSuccess?: string,
-      statusIconFailed?: string,
-      statusIconPending?: string,
-      checkboxInputActive?: string,
-      checkboxInputInactive?: string,
-      dropdownHoverColor?: string,
-      selectInputExpandedHover?: string,
-      toDropdownColor?: string,
-      secondary?: string,
-      selectInputRadioOn?: string,
-      selectInputRadioOff?: string,
-    },
+      main?: string;
+      topMenu?: string;
+      topMenuButton?: string;
+      card?: string;
+      selectInput?: string;
+      selectInputExpanded?: string;
+      selectInputScrollbar?: string;
+      selectInputScrollbarHover?: string;
+      selectInputScrollbarActive?: string;
+      selectInputImagePlaceholder?: string;
+      selectInputToggleButton?: string;
+      textInput?: string;
+      switchInput?: string;
+      switchInputActiveTab?: string;
+      switchInputInactiveTab?: string;
+      button?: string;
+      closeButton?: string;
+      pill?: string;
+      roundedImageFallback?: string;
+      listItemQuickButtonSecondary?: string;
+      listItemQuickButtonPrimary?: string;
+      statusIconSuccess?: string;
+      statusIconFailed?: string;
+      statusIconPending?: string;
+      checkboxInputActive?: string;
+      checkboxInputInactive?: string;
+      dropdownHoverColor?: string;
+      selectInputExpandedHover?: string;
+      toDropdownColor?: string;
+      secondary?: string;
+      selectInputRadioOn?: string;
+      selectInputRadioOff?: string;
+      walletButton?: string;
+      walletChainDropdown?: string;
+      walletChainButtonActive?: string;
+    };
     text?: {
-      main?: string,
-      topBar?: string,
-      topMenu?: string,
-      card?: string,
-      cardDisabled?: string,
-      cardTitle?: string,
-      innerLabel?: string,
-      outerLabel?: string,
-      selectInput?: string,
-      selectInputOption?: string,
-      selectInputOptionSecondary?: string,
-      selectInputImagePlaceholder?: string,
-      textInput?: string,
-      textInputSecondary?: string,
-      switchInputActiveTab?: string,
-      switchInputInactiveTab?: string,
-      button?: string,
-      buttonSecondary?: string,
-      errorMessage?: string,
-      searchInput?: string,
-      searchInputSecondary?: string,
-      pill?: string,
-      pillValue?: string,
-      roundedImageFallback?: string,
-      listItemQuickButtonSecondary?: string,
-      listItemQuickButtonPrimary?: string,
-      transactionStatusLink?: string,
-      pasteIcon?: string,
-    },
-  }
+      main?: string;
+      topBar?: string;
+      topMenu?: string;
+      card?: string;
+      cardDisabled?: string;
+      cardTitle?: string;
+      innerLabel?: string;
+      outerLabel?: string;
+      selectInput?: string;
+      selectInputOption?: string;
+      selectInputOptionSecondary?: string;
+      selectInputImagePlaceholder?: string;
+      textInput?: string;
+      textInputSecondary?: string;
+      switchInputActiveTab?: string;
+      switchInputInactiveTab?: string;
+      button?: string;
+      buttonSecondary?: string;
+      errorMessage?: string;
+      searchInput?: string;
+      searchInputSecondary?: string;
+      pill?: string;
+      pillValue?: string;
+      roundedImageFallback?: string;
+      listItemQuickButtonSecondary?: string;
+      listItemQuickButtonPrimary?: string;
+      transactionStatusLink?: string;
+      pasteIcon?: string;
+      walletDropdownIcon?: string;
+    };
+  };
 }
 
 export const defaultTheme: Theme = {
@@ -96,12 +100,15 @@ export const defaultTheme: Theme = {
       statusIconFailed: '#ff0000',
       checkboxInputActive: '#ff884d',
       checkboxInputInactive: '#7f7a99',
-      dropdownHoverColor: "#F8EFEA",
-      selectInputExpandedHover: "#F8EFEA",
+      dropdownHoverColor: '#F8EFEA',
+      selectInputExpandedHover: '#F8EFEA',
       toDropdownColor: '#F8EFEA',
       secondary: '#9889e4',
       selectInputRadioOn: '#ff7733',
       selectInputRadioOff: '#F8EFEA',
+      walletButton: 'linear-gradient(to bottom, #fd9250, #ff5548)',
+      walletChainDropdown: `#fff`,
+      walletChainButtonActive: '#ffeee6',
     },
     text: {
       main: '#fff',
@@ -132,6 +139,7 @@ export const defaultTheme: Theme = {
       listItemQuickButtonPrimary: '#fff',
       transactionStatusLink: '#ff7733',
       pasteIcon: '#ff884d',
+      walletDropdownIcon: '#221f33',
     },
-  }
+  },
 };

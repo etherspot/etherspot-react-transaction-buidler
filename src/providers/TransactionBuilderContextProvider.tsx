@@ -136,6 +136,10 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
   `}
 `;
 
+const CheckmarkIcon = styled(HiCheck)`
+  margin-top: -3px;
+`;
+
 const MenuButton = styled(HiOutlineDotsHorizontal)`
   cursor: pointer;
 
@@ -835,7 +839,7 @@ const TransactionBuilderContextProvider = ({
                   Wallet
                 </Text>
                 <Text onClick={() => onCopy(accountAddress)}>
-                  {copiedAddress ? <HiCheck color={theme.color?.background?.statusIconSuccess} /> : WalletCopyIcon}
+                  {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
                 </Text>
               </>
             ) : (
