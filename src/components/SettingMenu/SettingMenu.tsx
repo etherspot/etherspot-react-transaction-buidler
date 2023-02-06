@@ -62,10 +62,10 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           <MenuItemAnchor
             title="Dashboard"
             link="https://dashboard.etherspot.io"
-            icon={<MdOutlineDashboardCustomize size={18} style={{ marginRight: '12px' }} />}
+            icon={<MdOutlineDashboardCustomize size={16} style={{ marginRight: '12px' }} />}
           />
           <MenuItem
-            icon={<BsClockHistory size={18} style={{ marginRight: '12px' }} />}
+            icon={<BsClockHistory size={16} style={{ marginRight: '12px' }} />}
             title="History"
             onClick={() => {
               hideMenu();
@@ -75,11 +75,11 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           <MenuItemAnchor
             title="About Etherspot"
             link="https://etherspot.io/"
-            icon={<FaEthereum size={18} style={{ marginRight: '12px' }} />}
+            icon={<FaEthereum size={16} style={{ marginRight: '12px' }} />}
           />
           {showLogout && (
             <MenuItem
-              icon={<IoIosLogOut size={18} style={{ marginRight: '12px' }} />}
+              icon={<IoIosLogOut size={16} style={{ marginRight: '12px' }} />}
               onClick={() => {
                 logout();
               }}
