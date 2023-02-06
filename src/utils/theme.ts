@@ -115,7 +115,7 @@ export const defaultTheme: Theme = {
       selectInputRadioOn: '#ff7733',
       selectInputRadioOff: '#F8EFEA',
       walletButton: 'linear-gradient(to bottom, #fd9250, #ff5548)',
-      walletChainDropdown: `#fff`,
+      walletChainDropdown: '#fff',
       walletChainButtonActive: '#ffeee6',
     },
     text: {

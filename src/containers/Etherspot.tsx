@@ -73,9 +73,9 @@ const Etherspot = ({
       smartWalletOnly={smartWalletOnly}
     >
       <style>
-        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css'); @import
-        url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css'); @import
-        url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
+        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
+        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
+        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
       </style>
       <ComponentWrapper>
         <TransactionBuilderModalContextProvider>

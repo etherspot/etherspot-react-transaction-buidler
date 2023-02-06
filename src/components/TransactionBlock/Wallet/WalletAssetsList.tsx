@@ -90,7 +90,7 @@ const WalletAssetsList = ({
                             )}`}</ListItemText>
                           </ListItemLine>
 
-                          <ListItemLine margin_top={5}>
+                          <ListItemLine marginTop={5}>
                             <ListItemText regular>{`On ${chain.title}`}</ListItemText>
                             <ListItemText regular>{`${
                               formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
@@ -129,7 +129,7 @@ const WalletAssetsList = ({
                       )}`}</ListItemText>
                     </ListItemLine>
 
-                    <ListItemLine margin_top={5}>
+                    <ListItemLine marginTop={5}>
                       <ListItemText regular>{`On ${chain.title}`}</ListItemText>
                       <ListItemText regular>{`${
                         formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
@@ -216,12 +216,12 @@ const ListItemDetails = styled.div`
   flex-direction: column;
 `;
 
-const ListItemLine = styled.div<{ margin_top?: number }>`
+const ListItemLine = styled.div<{ marginTop?: number }>`
   display: flex;
   flex: 1;
   justify-content: space-between;
   align-item: center;
-  ${({ margin_top }) => margin_top && `margin-top: ${margin_top}px;`}
+  ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`}
 `;
 
 const ListItemIconWrapper = styled.span`
