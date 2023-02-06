@@ -29,6 +29,12 @@ const MenuItem = styled.div`
   &:hover {
     color: ${({ theme }) => theme.color.text.settingsIcon};
     text-decoration: none;
+    #etherspot-logo {
+      fill: ${({ theme }) => theme.color.text.settingsIcon};
+      path {
+        fill: ${({ theme }) => theme.color.text.settingsIcon};
+      }
+    }
   }
 
   &:last-child {

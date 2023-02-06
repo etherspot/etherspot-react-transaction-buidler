@@ -1,9 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { BsClockHistory } from 'react-icons/bs';
-import { FaEthereum } from 'react-icons/fa';
-import { HiOutlineDotsHorizontal } from 'react-icons/hi';
 import { IoIosLogOut } from 'react-icons/io';
-import { MdOutlineDashboardCustomize } from 'react-icons/md';
+import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
 import styled, { useTheme } from 'styled-components';
 import { useTransactionBuilderModal } from '../../hooks';
 import useOnClickOutside from '../../hooks/useOnClickOutside';
@@ -11,6 +9,7 @@ import { Theme } from '../../utils/theme';
 import History from '../History';
 import MenuItemAnchor from '../Menu/MenuItemAnchor';
 import MenuItem from '../Menu/MenuItem';
+import EtherspotLogo from '../Image/EtherspotLogo';
 
 const MenuWrapper = styled.div`
   z-index: 10;
@@ -26,7 +25,7 @@ const MenuWrapper = styled.div`
   box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
 `;
 
-const MenuButton = styled(HiOutlineDotsHorizontal)`
+const MenuButton = styled(MdOutlineSettings)`
   cursor: pointer;
 
   &:hover {
@@ -54,7 +53,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
       <MenuButton
         data-testid="builder-setting-menu"
         color={theme?.color?.background?.topMenuButton}
-        size={22}
+        size={18}
         onClick={() => setShowMenu(!showMenu)}
       />
       {showMenu && (
@@ -75,7 +74,14 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           <MenuItemAnchor
             title="About Etherspot"
             link="https://etherspot.io/"
-            icon={<FaEthereum size={16} style={{ marginRight: '12px' }} />}
+            icon={
+              <EtherspotLogo
+                width={16}
+                height={16}
+                color={theme?.color?.text?.topMenu}
+                style={{ marginRight: '12px' }}
+              />
+            }
           />
           {showLogout && (
             <MenuItem
