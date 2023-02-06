@@ -44,6 +44,7 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.fromAssetDecimals) errors.fromAssetDecimals = 'Invalid source asset selected!';
     if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
+    if (!transactionBlockValues?.routeToKlima) errors.route = 'No Offer selected';
   }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {

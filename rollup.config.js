@@ -41,6 +41,7 @@ export default [
       }),
       commonjs(),
       typescript({
+        sourceMap: !isProduction,
         tsconfig: './tsconfig.json',
         exclude: ['./example/**', './src/test/**']
       }),

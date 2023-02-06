@@ -1,7 +1,7 @@
 import {
   AccountTypes,
-  ExchangeOffer,
-  ExchangeProviders,
+  BridgingQuote,
+  CrossChainServiceProvider,
   GatewayTransactionStates,
   LiFiStatus,
   NotificationTypes,
@@ -10,11 +10,7 @@ import {
   WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
-import {
-  BigNumber,
-  BigNumberish,
-  ethers,
-} from 'ethers';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
@@ -43,43 +39,60 @@ import { ITransactionBlock } from '../types/transactionBlock';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export const klimaDaoStaking = async (
-  amount: string,
+  routeToKlima?: BridgingQuote | null,
   receiverAddress?: string,
   sdk?: EtherspotSdk | null,
-): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[], returnAmount: BigNumber, provider?: ExchangeProviders } }> => {
+  flag?: Boolean,
+  amount?: string
+): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[]; provider?: string } }> => {
   if (!sdk) return { errorMessage: 'No sdk found' };
+
+  if (!routeToKlima) {
+    const quotes = await sdk.getCrossChainQuotes({
+      fromChainId: CHAIN_ID.POLYGON,
+      toChainId: CHAIN_ID.POLYGON,
+      fromAmount: BigNumber.from(amount).sub('250000'),
+      fromTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS,
+      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
+      toAddress: receiverAddress ?? undefined,
+      serviceProvider: CrossChainServiceProvider.LiFi,
+    });
+    if (quotes.items.length > 0) routeToKlima = quotes.items[0];
+    else return { errorMessage: 'No routes found for staking. Please try again' };
+  }
 
   try {
     const fromAssetAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
     const createTimestamp = +new Date();
-    const offers = await sdk.getExchangeOffers({
-      fromChainId: CHAIN_ID.POLYGON,
-      fromAmount: amount,
-      fromTokenAddress: fromAssetAddress, //USDC on Polygon
-      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815', // KLIMA on Polygon
-    });
 
-    const bestOffer = offers.reduce((best: ExchangeOffer | null, offer) => {
-      if (!best || best.receiveAmount.lt(offer.receiveAmount)) return offer;
-      return best;
-    }, null);
+    const bestRoute = routeToKlima;
 
-    if (!bestOffer) {
-      return { errorMessage: 'Failed build KLIMA swap transaction!' };
+    let transactions = [
+      {
+        to: bestRoute.transaction.to,
+        value: bestRoute.transaction.value as string,
+        data: bestRoute.transaction.data as string,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      },
+    ];
+
+    if (flag) {
+      return { result: { transactions, provider: 'LiFi' } };
     }
 
-    let transactions: ICrossChainActionTransaction[] = bestOffer.transactions.map((transaction) => ({
-      ...transaction,
-      chainId: CHAIN_ID.POLYGON,
-      createTimestamp,
-      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-    }));
-
     // not native asset and no erc20 approval transaction included
-    if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.POLYGON].address) && transactions.length === 1) {
+    if (
+      !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.POLYGON].address) &&
+      transactions.length === 1 &&
+      bestRoute.approvalData
+    ) {
       const abi = getContractAbi(ContractNames.ERC20Token);
       const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, amount);
+      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+        bestRoute.approvalData.approvalAddress,
+        bestRoute.approvalData.amount
+      );
       if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
         return { errorMessage: 'Failed build bridge approval transaction!' };
       }
@@ -88,7 +101,7 @@ export const klimaDaoStaking = async (
         to: approvalTransactionRequest.to,
         data: approvalTransactionRequest.data,
         chainId: CHAIN_ID.POLYGON,
-        value: 0,
+        value: '0',
         createTimestamp,
         status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
       };
@@ -97,8 +110,15 @@ export const klimaDaoStaking = async (
     }
 
     const abi = getContractAbi(ContractNames.ERC20Token);
-    const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, '0x4e78011ce80ee02d2c3e649fb657e45898257815'); // Klima ojn Polygon
-    const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.('0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227', bestOffer.receiveAmount); // Klima staking
+    const erc20Contract = sdk.registerContract<ERC20TokenContract>(
+      'erc20Contract',
+      abi,
+      '0x4e78011ce80ee02d2c3e649fb657e45898257815'
+    ); // Klima on Polygon
+    const klimaApprovalTransactionRequest = erc20Contract?.encodeApprove?.(
+      '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227',
+      bestRoute.estimate.toAmount
+    ); // Klima staking
     if (!klimaApprovalTransactionRequest || !klimaApprovalTransactionRequest.to) {
       return { errorMessage: 'Failed build bridge approval transaction!' };
     }
@@ -107,16 +127,18 @@ export const klimaDaoStaking = async (
       to: klimaApprovalTransactionRequest.to,
       data: klimaApprovalTransactionRequest.data,
       chainId: CHAIN_ID.POLYGON,
-      value: 0,
+      value: '0',
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    const klimaStakingAbi = [
-      "function stake(uint256 value)",
-    ];
-    const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>('klimaStakingContract', klimaStakingAbi, '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'); // Klima ojn Polygon
-    const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestOffer.receiveAmount); // Klima staking
+    const klimaStakingAbi = ['function stake(uint256 value)'];
+    const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>(
+      'klimaStakingContract',
+      klimaStakingAbi,
+      '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'
+    ); // Klima ojn Polygon
+    const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestRoute.estimate.toAmount); // Klima staking
     if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
       return { errorMessage: 'Failed build bridge approval transaction!' };
     }
@@ -125,56 +147,38 @@ export const klimaDaoStaking = async (
       to: klimaStakeTransactionRequest.to,
       data: klimaStakeTransactionRequest.data,
       chainId: CHAIN_ID.POLYGON,
-      value: 0,
+      value: '0',
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
     transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
 
-    if (receiverAddress && receiverAddress != sdk.state.accountAddress) {
-      const sKlimaTokenAbi = [
-        "function transfer(address to, uint256 value)",
-      ]
-      const sKlimaContract = sdk.registerContract<{ encodeTransfer(to: string, value: BigNumberish): TransactionRequest }>('erc20Contract', sKlimaTokenAbi, '0xb0C22d8D350C67420f06F48936654f567C73E8C8');
-      const sKlimaSendTransactionRequest = sKlimaContract.encodeTransfer?.(receiverAddress, bestOffer.receiveAmount);
-      if (!sKlimaSendTransactionRequest || !sKlimaSendTransactionRequest.to) {
-        return { errorMessage: 'Failed build sKlima send transaction!' };
-      }
-
-      const sKlimaSendTransaction = {
-        to: sKlimaSendTransactionRequest.to,
-        data: sKlimaSendTransactionRequest.data,
-        chainId: CHAIN_ID.POLYGON,
-        value: 0,
-        createTimestamp,
-        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-      };
-
-      transactions = [...transactions, sKlimaSendTransaction];
-    }
-
-    return { result: { transactions, returnAmount: bestOffer.receiveAmount, provider: bestOffer.provider } };
+    return { result: { transactions, provider: 'LiFi' } };
   } catch (e) {
-    return { errorMessage: 'Failed to get staking exchange transaction' }
+    return { errorMessage: 'Failed to get staking exchange transaction' };
   }
-
-}
+};
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
-  transactionBlock: ITransactionBlock,
+  transactionBlock: ITransactionBlock
 ): Promise<{ errorMessage?: string; crossChainAction?: ICrossChainAction }> => {
   const createTimestamp = +new Date();
   const crossChainActionId = uniqueId(`${createTimestamp}-`);
 
-  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
-    && !!transactionBlock?.values?.fromChainId
-    && !!transactionBlock?.values?.fromAssetAddress
-    && !!transactionBlock?.values?.fromAssetDecimals
-    && !!transactionBlock?.values?.fromAssetSymbol
-    && !!transactionBlock?.values?.amount
-    && !!transactionBlock?.values?.receiverAddress) {
+  if (
+    transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE &&
+    !!transactionBlock?.values?.fromChainId &&
+    !!transactionBlock?.values?.fromAssetAddress &&
+    !!transactionBlock?.values?.fromAssetDecimals &&
+    !!transactionBlock?.values?.fromAssetSymbol &&
+    !!transactionBlock?.values?.amount &&
+    !!transactionBlock?.values?.receiverAddress &&
+    !!transactionBlock?.values?.routeToKlima &&
+    !!transactionBlock?.values?.routeToUSDC &&
+    !!transactionBlock?.values?.receiveAmount
+  ) {
     try {
       const {
         values: {
@@ -185,6 +189,11 @@ export const buildCrossChainAction = async (
           fromAssetIconUrl,
           amount,
           accountType,
+          routeToKlima,
+          routeToUSDC,
+          receiveAmount,
+          receiverAddress,
+          toolUsed,
         },
       } = transactionBlock;
 
@@ -192,70 +201,30 @@ export const buildCrossChainAction = async (
 
       if (fromChainId !== CHAIN_ID.POLYGON) {
         try {
-          const routes = await sdk.getAdvanceRoutesLiFi({
-            fromChainId,
-            toChainId: CHAIN_ID.POLYGON, //Polygon
-            fromAmount: amountBN,
-            fromTokenAddress: fromAssetAddress,
-            toTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS, // USDC on Polygon
-            toAddress: sdk.state.accountAddress,
-          });
-          const bestRoute = routes.items.reduce((best: any, route) => {
-            if (!best || BigNumber.from(best['toAmount']).lt(route.toAmount)) return route;
-            return best;
-          }, null);
-
-          if (!bestRoute) {
-            return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
-          }
-
-          const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
-
           let destinationTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
 
-          if (bestRoute.containsSwitchChain) {
-            advancedRouteSteps.forEach(step => {
-              if (step.chainId === CHAIN_ID.POLYGON) {
-                return destinationTxns.push({
-                  to: step.to as string,
-                  value: step.value,
-                  data: step.data,
-                  createTimestamp,
-                  status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-                })
-              }
-              return transactions.push({
-                to: step.to as string,
-                value: step.value,
-                data: step.data,
-                createTimestamp,
-                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-              })
-            })
-          } else {
-            transactions = advancedRouteSteps.map(({
-              to,
-              value,
-              data,
-              chainId,
-            }) => ({
-              to: to as string,
-              value,
-              data,
-              chainId: chainId ?? fromChainId,
+          transactions = [
+            {
+              to: routeToUSDC.transaction.to,
+              value: routeToUSDC.transaction.value as string,
+              data: routeToUSDC.transaction.data as string,
               createTimestamp,
               status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            }));
-          }
+            },
+          ];
 
-          if (ethers.utils.isAddress(bestRoute.fromToken.address)
-            && !addressesEqual(bestRoute.fromToken.address, nativeAssetPerChainId[fromChainId].address)
-            && transactions.length === 1
-            && bestRoute.fromAmount) {
+          if (
+            ethers.utils.isAddress(fromAssetAddress) &&
+            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address) &&
+            routeToUSDC.approvalData?.approvalAddress
+          ) {
             const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, bestRoute.fromToken.address);
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, bestRoute.fromAmount);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+              routeToUSDC.approvalData.approvalAddress,
+              routeToUSDC.approvalData.amount
+            );
             if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
               return { errorMessage: 'Failed build bridge approval transaction!' };
             }
@@ -263,7 +232,7 @@ export const buildCrossChainAction = async (
             const approvalTransaction = {
               to: approvalTransactionRequest.to,
               data: approvalTransactionRequest.data,
-              value: 0,
+              value: '0',
               createTimestamp,
               status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
             };
@@ -271,13 +240,15 @@ export const buildCrossChainAction = async (
             transactions = [approvalTransaction, ...transactions];
           }
 
-          const result = await klimaDaoStaking(BigNumber.from(bestRoute.toAmount).sub('250000').toString(), sdk.state.walletAddress, sdk);
+          const result = await klimaDaoStaking(routeToKlima, receiverAddress, sdk, true, '0');
 
           if (result.errorMessage) return { errorMessage: result.errorMessage };
 
-          result.result?.transactions.map((element) => {
-            destinationTxns.push(element);
-          });
+          if (result.result?.transactions?.length) {
+            result.result?.transactions.map((element) => {
+              destinationTxns.push(element);
+            });
+          }
 
           const preview = {
             fromChainId,
@@ -288,17 +259,17 @@ export const buildCrossChainAction = async (
               amount: amountBN.toString(),
               iconUrl: fromAssetIconUrl,
             },
-            amount: BigNumber.from(bestRoute.toAmount),
+            amount: ethers.utils.parseUnits(receiveAmount ?? '0', 9),
             toAsset: {
               address: '0x4e78011ce80ee02d2c3e649fb657e45898257815',
               decimals: 9,
               symbol: 'sKlima',
-              amount: result.result?.returnAmount.toString() ?? '0',
+              amount: ethers.utils.parseUnits(receiveAmount ?? '0', 9).toString(),
               iconUrl: 'https://polygonscan.com/token/images/klimadao_32.png',
             },
             receiverAddress: transactionBlock?.values?.receiverAddress,
-            providerName: result.result?.provider ? swapServiceIdToDetails[result.result.provider].title : 'Unknown provider',
-            providerIconUrl: result.result?.provider ? swapServiceIdToDetails[result.result.provider].iconUrl : '',
+            providerName: result.result?.provider ?? 'Unknown provider',
+            providerIconUrl: result.result?.provider ?? '',
           };
 
           const crossChainAction: ICrossChainAction = {
@@ -310,32 +281,33 @@ export const buildCrossChainAction = async (
             transactions,
             isEstimating: false,
             estimated: null,
-            containsSwitchChain: bestRoute.containsSwitchChain,
-            bridgeUsed: bestRoute.steps[0].tool,
-            receiveAmount: bestRoute.toAmount,
+            containsSwitchChain: false,
+            bridgeUsed: toolUsed,
+            receiveAmount: ethers.utils.parseUnits(routeToUSDC.estimate.toAmount ?? '0', 6).toString(),
             useWeb3Provider: accountType === AccountTypes.Key,
-            destinationCrossChainAction: [{
-              id: uniqueId(`${createTimestamp}-`),
-              relatedTransactionBlockId: transactionBlock.id,
-              chainId: CHAIN_ID.POLYGON,
-              type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
-              preview,
-              transactions: destinationTxns,
-              isEstimating: false,
-              estimated: null,
-              useWeb3Provider: false,
-              destinationCrossChainAction: [],
-              gasTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS
-            }],
+            gasCost: routeToUSDC.estimate.gasCosts.amountUSD,
+            destinationCrossChainAction: [
+              {
+                id: uniqueId(`${createTimestamp}-`),
+                relatedTransactionBlockId: transactionBlock.id,
+                chainId: CHAIN_ID.POLYGON,
+                type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
+                preview,
+                transactions: destinationTxns,
+                isEstimating: false,
+                estimated: null,
+                useWeb3Provider: false,
+                destinationCrossChainAction: [],
+              },
+            ],
           };
 
           return { crossChainAction };
         } catch (e) {
           return { errorMessage: 'Failed to get bridge route!' };
         }
-
       } else {
-        return { errorMessage: 'Failed to fetch any offers for this asset to USDC' }
+        return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
       }
     } catch (e) {
       return { errorMessage: 'Failed to get KLIMA staking transaction!' };
@@ -392,16 +364,14 @@ export const buildCrossChainAction = async (
 
       const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });
 
-      let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(
-        ({ to, value, data, chainId }) => ({
-          to: to as string,
-          value,
-          data,
-          chainId: chainId ?? fromChainId,
-          createTimestamp,
-          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-        }),
-      );
+      let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
+        to: to as string,
+        value,
+        data,
+        chainId: chainId ?? fromChainId,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      }));
 
       if (
         ethers.utils.isAddress(route.fromToken.address) &&
@@ -410,11 +380,7 @@ export const buildCrossChainAction = async (
         route.fromAmount
       ) {
         const abi = getContractAbi(ContractNames.ERC20Token);
-        const erc20Contract = sdk.registerContract<ERC20TokenContract>(
-          'erc20Contract',
-          abi,
-          route.fromToken.address,
-        );
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, route.fromToken.address);
         const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, route.fromAmount);
         if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
           return { errorMessage: 'Failed build bridge approval transaction!' };
@@ -629,10 +595,7 @@ export const buildCrossChainAction = async (
       if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-        const transferTransactionRequest = erc20Contract?.encodeTransfer?.(
-          receiverAddress,
-          offer.receiveAmount,
-        );
+        const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, offer.receiveAmount);
         if (!transferTransactionRequest || !transferTransactionRequest.to) {
           return { errorMessage: 'Failed build transfer transaction!' };
         }
@@ -673,7 +636,7 @@ export const buildCrossChainAction = async (
 export const submitEtherspotTransactionsBatch = async (
   sdk: EtherspotSdk,
   transactions: ExecuteAccountTransactionDto[],
-  feeTokenAddress?: string,
+  feeTokenAddress?: string
 ): Promise<{
   batchHash?: string;
   errorMessage?: string;
@@ -711,7 +674,7 @@ export const submitEtherspotTransactionsBatch = async (
 export const submitEtherspotAndWaitForTransactionHash = async (
   sdk: EtherspotSdk,
   transactions: ExecuteAccountTransactionDto[],
-  feeTokenAddress?: string,
+  feeTokenAddress?: string
 ): Promise<{
   transactionHash?: string;
   errorMessage?: string;
@@ -765,7 +728,7 @@ export const submitEtherspotAndWaitForTransactionHash = async (
                 finishSubscription();
               }
             }
-          }),
+          })
         )
         .subscribe();
     });
@@ -776,20 +739,25 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     }
     return { errorMessage };
   }
-}
+};
 
 export const getCrossChainStatusByHash = async (
   sdk: EtherspotSdk,
   fromChainId: number,
   toChainId: number,
   hash: string,
-  bridge?: string,
+  bridge?: string
 ): Promise<LiFiStatus | null> => {
   if (!sdk) return null;
   try {
     const options = { method: 'GET', headers: { accept: 'application/json' } };
 
-    const result = await (await fetch(`https://li.quest/v1/status?bridge=${bridge}&fromChain=${fromChainId}&toChain=${toChainId}&txHash=${hash}`, options)).json();
+    const result = await (
+      await fetch(
+        `https://li.quest/v1/status?bridge=${bridge}&fromChain=${fromChainId}&toChain=${toChainId}&txHash=${hash}`,
+        options
+      )
+    ).json();
     return {
       receivingTxnHash: result.receiving?.txHash,
       sendingTxnHash: result.sending?.txHash,
@@ -797,18 +765,18 @@ export const getCrossChainStatusByHash = async (
       status: result.status,
       subStatus: result.substatus,
       subStatusMsg: result.substatusMessage,
-    }
+    };
   } catch (err) {
     return null;
   }
-}
+};
 
 export const submitWeb3ProviderTransactions = async (
   sdk: EtherspotSdk,
   web3Provider: WalletProviderLike | Web3WalletProvider | null,
   transactions: ExecuteAccountTransactionDto[],
   chainId: number,
-  providerAddress: string | null,
+  providerAddress: string | null
 ): Promise<{
   transactionHash?: string;
   errorMessage?: string;
@@ -820,11 +788,9 @@ export const submitWeb3ProviderTransactions = async (
     return { errorMessage: 'Unable to find connected Web3 provider!' };
   }
 
-  // TODO: check against current
-  if (chainId !== 1) {
-    const changed = await changeToChain(chainId);
-    if (!changed) return { errorMessage: 'Unable to change to selected network!' };
-  }
+  // Even if its on same chain it returns correctly so that we dont have to check against current chainId
+  const changed = await changeToChain(chainId);
+  if (!changed) return { errorMessage: 'Unable to change to selected network!' };
 
   try {
     for (const transaction of transactions) {
@@ -845,13 +811,13 @@ export const submitWeb3ProviderTransactions = async (
   }
 
   return { transactionHash, errorMessage };
-}
+};
 
 export const submitWeb3ProviderTransaction = async (
   web3Provider: WalletProviderLike | Web3WalletProvider | null,
   transaction: ExecuteAccountTransactionDto,
   chainId: number,
-  providerAddress: string | null,
+  providerAddress: string | null
 ): Promise<{
   transactionHash?: string;
   errorMessage?: string;
@@ -892,9 +858,7 @@ const prepareValueForRpcCall = (rawValue: any): string | undefined => {
   let value;
 
   try {
-    const valueBN = ethers.BigNumber.isBigNumber(rawValue)
-      ? rawValue
-      : ethers.BigNumber.from(rawValue);
+    const valueBN = ethers.BigNumber.isBigNumber(rawValue) ? rawValue : ethers.BigNumber.from(rawValue);
     if (!valueBN.isZero()) value = valueBN.toHexString();
   } catch (e) {
     //
@@ -908,7 +872,7 @@ export const estimateCrossChainAction = async (
   web3Provider: WalletProviderLike | Web3WalletProvider | null,
   crossChainAction: ICrossChainAction,
   providerAddress?: string | null,
-  accountAddress?: string | null,
+  accountAddress?: string | null
 ): Promise<ICrossChainActionEstimation> => {
   let gasCost = null;
   let usdPrice = null;
@@ -922,20 +886,22 @@ export const estimateCrossChainAction = async (
   let feeAssetBalanceBN = ethers.BigNumber.from(0);
   try {
     const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
-    const getAccountBalancesTokens = !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction?.gasTokenAddress)
-      ? undefined
-      : [crossChainAction.gasTokenAddress];
+    const getAccountBalancesTokens =
+      !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction?.gasTokenAddress)
+        ? undefined
+        : [crossChainAction.gasTokenAddress];
     const { items: balances } = await sdk.getAccountBalances({
       account: balancesForAddress as string,
       tokens: getAccountBalancesTokens,
       chainId: crossChainAction.chainId,
     });
 
-    const feeAssetBalance = balances.find((
-      balance,
-    ) => (!isZeroAddress(crossChainAction.gasTokenAddress)
-        && addressesEqual(balance.token, crossChainAction.gasTokenAddress))
-      || (isZeroAddress(crossChainAction.gasTokenAddress) && balance.token === null));
+    const feeAssetBalance = balances.find(
+      (balance) =>
+        (!isZeroAddress(crossChainAction.gasTokenAddress) &&
+          addressesEqual(balance.token, crossChainAction.gasTokenAddress)) ||
+        (isZeroAddress(crossChainAction.gasTokenAddress) && balance.token === null)
+    );
 
     if (feeAssetBalance) feeAssetBalanceBN = feeAssetBalance.balance;
 
@@ -949,9 +915,10 @@ export const estimateCrossChainAction = async (
         return;
       }
 
-      const outgoingAsset = crossChainAction.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
-        ? crossChainAction.preview.asset
-        : crossChainAction.preview.fromAsset;
+      const outgoingAsset =
+        crossChainAction.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
+          ? crossChainAction.preview.asset
+          : crossChainAction.preview.fromAsset;
 
       // sub outgoing erc20 only if it matches gas token address
       if (outgoingAsset.address && !addressesEqual(crossChainAction.gasTokenAddress, outgoingAsset.address)) return;
@@ -998,9 +965,10 @@ export const estimateCrossChainAction = async (
         await sdk.batchExecuteAccountTransaction({ to, value, data });
       }
 
-      const feeToken = !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction.gasTokenAddress)
-        ? undefined
-        : crossChainAction.gasTokenAddress;
+      const feeToken =
+        !crossChainAction.gasTokenAddress || isZeroAddress(crossChainAction.gasTokenAddress)
+          ? undefined
+          : crossChainAction.gasTokenAddress;
 
       const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
       gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
@@ -1013,16 +981,19 @@ export const estimateCrossChainAction = async (
     }
   }
 
-  if (feeAssetBalanceBN.isZero()
-    || (!feeAmount && gasCost && feeAssetBalanceBN.lt(gasCost))
-    || (feeAmount && feeAssetBalanceBN.lt(feeAmount))) {
+  if (
+    feeAssetBalanceBN.isZero() ||
+    (!feeAmount && gasCost && feeAssetBalanceBN.lt(gasCost)) ||
+    (feeAmount && feeAssetBalanceBN.lt(feeAmount))
+  ) {
     return { errorMessage: 'Not enough gas!' };
   }
 
   try {
-    usdPrice = feeAmount && crossChainAction.gasTokenAddress
-      ? await getAssetPriceInUsd(crossChainAction.chainId, crossChainAction.gasTokenAddress)
-      : await getNativeAssetPriceInUsd(crossChainAction.chainId);
+    usdPrice =
+      feeAmount && crossChainAction.gasTokenAddress
+        ? await getAssetPriceInUsd(crossChainAction.chainId, crossChainAction.gasTokenAddress)
+        : await getNativeAssetPriceInUsd(crossChainAction.chainId);
   } catch (e) {
     //
   }
@@ -1036,9 +1007,9 @@ export const getTransactionStatus = async (sdk: EtherspotSdk, hash: string): Pro
   const result = await sdk.getTransaction({ hash });
 
   if (result.status === TransactionStatuses.Completed) {
-    return CROSS_CHAIN_ACTION_STATUS.CONFIRMED
+    return CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
   } else if (result.status === TransactionStatuses.Reverted) {
-    return CROSS_CHAIN_ACTION_STATUS.FAILED
+    return CROSS_CHAIN_ACTION_STATUS.FAILED;
   }
 
   return CROSS_CHAIN_ACTION_STATUS.PENDING;
@@ -1060,34 +1031,33 @@ export const isERC20ApprovalTransactionData = (data: string | undefined): boolea
 
 export const getFirstCrossChainActionByStatus = (
   crossChainActions: ICrossChainAction[],
-  status: string,
+  status: string
 ): ICrossChainAction | undefined =>
   crossChainActions.find(({ transactions }) => transactions.find((transaction) => transaction.status === status));
 
 export const filterCrossChainActionsByStatus = (
   crossChainActions: ICrossChainAction[],
-  status: string,
+  status: string
 ): ICrossChainAction[] =>
   crossChainActions.filter(({ transactions }) => transactions.find((transaction) => transaction.status === status));
 
 export const getCrossChainActionTransactionsByStatus = (
   crossChainActionTransactions: ICrossChainActionTransaction[],
-  status: string,
+  status: string
 ): ICrossChainActionTransaction[] =>
   crossChainActionTransactions.filter((transaction) => transaction.status === status);
 
 export const updateCrossChainActionsTransactionsStatus = (
   crossChainActions: ICrossChainAction[],
-  status: string,
+  status: string
 ): ICrossChainAction[] =>
-  crossChainActions.map((crossChainActionToDispatch) => updateCrossChainActionTransactionsStatus(
-    crossChainActionToDispatch,
-    status,
-  ));
+  crossChainActions.map((crossChainActionToDispatch) =>
+    updateCrossChainActionTransactionsStatus(crossChainActionToDispatch, status)
+  );
 
 export const updateCrossChainActionTransactionsStatus = (
   crossChainAction: ICrossChainAction,
-  status: string,
+  status: string
 ): ICrossChainAction => ({
   ...crossChainAction,
   transactions: crossChainAction.transactions.map((transaction) => ({
@@ -1097,7 +1067,7 @@ export const updateCrossChainActionTransactionsStatus = (
 });
 
 export const rejectUnsentCrossChainActionsTransactions = (
-  crossChainActions: ICrossChainAction[],
+  crossChainActions: ICrossChainAction[]
 ): ICrossChainAction[] =>
   crossChainActions.map((crossChainActionToDispatch) => ({
     ...crossChainActionToDispatch,
@@ -1106,3 +1076,11 @@ export const rejectUnsentCrossChainActionsTransactions = (
       return { ...transaction, status: CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER };
     }),
   }));
+
+export const deployAccount = async (sdk: EtherspotSdk | null) => {
+  if (!sdk) return;
+  sdk.clearGatewayBatch();
+  await sdk.batchDeployAccount();
+  await sdk.estimateGatewayBatch();
+  return sdk.submitGatewayBatch();
+};
