@@ -514,7 +514,6 @@ const PlrDaoStakingTransactionBlock = ({
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
           showPositiveBalanceAssets
           showQuickInputButtons
-          accountType={DestinationWalletEnum.Contract}
         />
         <NetworkAssetSelectInput
           label="To"
@@ -522,7 +521,6 @@ const PlrDaoStakingTransactionBlock = ({
           selectedAsset={hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset}
           disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-          accountType={DestinationWalletEnum.Contract}
         />
         <WalletReceiveWrapper>
           <AccountSwitchInput
