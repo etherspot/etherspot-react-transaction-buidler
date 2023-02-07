@@ -591,10 +591,6 @@ const ChainDropdownSelect = styled.div`
   margin-bottom: 18px;
   padding: 4px 48px 4px 4px;
   background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
-
-  // &:hover {
-  //   opacity: 0.5;
-  // }
 `;
 
 const ChainDropdownModal = styled.div`
@@ -618,7 +614,7 @@ const ChainDropdownList = styled.div`
   box-shadow: 0 2px 4px 0 rgba(255, 210, 187, 0.4), 0 2px 8px 0 rgba(201, 201, 200, 0.55);
 `;
 
-const ChainDropdownButton = styled.div<{ selected?: boolean; hover?: boolean }>`
+const ChainDropdownButton = styled.div<{ selected?: boolean }>`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -685,7 +681,7 @@ const SearchInput = styled.input`
 
 const SearchIcon = styled.span`
   margin-top -3px;
-  
+
   ${({ onClick }) =>
     !!onClick &&
     `cursor: pointer;
