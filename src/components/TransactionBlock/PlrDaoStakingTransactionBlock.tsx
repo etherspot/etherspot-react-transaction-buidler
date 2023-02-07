@@ -47,11 +47,11 @@ export interface IPlrDaoTransactionBlockValues {
   hasEnoughPLR: boolean;
 }
 
- interface AccountBalance {
-   chainName: string;
-   keyBasedWallet: number;
-   smartWallet: number;
- }
+interface AccountBalance {
+  chainName: string;
+  keyBasedWallet: number;
+  smartWallet: number;
+}
 
 const Title = styled.h3`
   margin: 0 0 18px;
@@ -153,7 +153,7 @@ const PlrDaoStakingTransactionBlock = ({
   const [totalKeyBasedPLRTokens, setTotalKeyBasedPLRTokens] = useState<number>(0);
   const [totalSmartWalletPLRTokens, setTotalSmartWalletPLRTokens] = useState<number>(0);
 
-  const [accounts, setAccounts] = useState<{}[]>([]);
+  const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
 
   const hasEnoughPLR =
@@ -514,6 +514,7 @@ const PlrDaoStakingTransactionBlock = ({
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
           showPositiveBalanceAssets
           showQuickInputButtons
+          accountType={DestinationWalletEnum.Contract}
         />
         <NetworkAssetSelectInput
           label="To"
@@ -521,6 +522,7 @@ const PlrDaoStakingTransactionBlock = ({
           selectedAsset={hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset}
           disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+          accountType={DestinationWalletEnum.Contract}
         />
         <WalletReceiveWrapper>
           <AccountSwitchInput

@@ -718,6 +718,8 @@ export const buildCrossChainAction = async (
     }
     // Swap
     try {
+      if (!transactionBlock?.values) return { errorMessage: 'Failed to build swap transaction!' };
+
       const {
         values: {
           amount,
