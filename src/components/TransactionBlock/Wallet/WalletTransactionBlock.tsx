@@ -306,7 +306,7 @@ const WalletTransactionBlock = ({
     handleAddTransaction(newBlock);
   };
 
-  const onDropdownClick = () => setShowChainDropdown(true);
+  const onDropdownClick = () => setShowChainDropdown(!showChainDropdown);
 
   const hideDropdown = () => setShowChainDropdown(false);
 
@@ -395,7 +395,7 @@ const WalletTransactionBlock = ({
             value={searchValue}
             onChange={({ target }) => setSearchValue(target.value)}
           />
-          {searchValue && <SearchClose onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchClose>}
+          {searchValue && <SearchIcon onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchIcon>}
         </SearchWrapper>
 
         <ChainButtonRow>
@@ -411,18 +411,22 @@ const WalletTransactionBlock = ({
 
       {!showAllChains && (
         <ChainDropdownWrapper>
-          <ChainDropdownSelect onClick={onDropdownClick}>
+          <ChainDropdownSelect>
             {supportedChains?.map((chain, i) => {
               if (i > 5) return null;
 
               return (
-                <ChainDropdownButton key={`chain-dropdown-${i}`} selected={selectedChains.includes(chain.chainId)}>
+                <ChainDropdownButton
+                  key={`chain-dropdown-${i}`}
+                  onClick={() => toggleChainDropdownOption(chain.chainId)}
+                  selected={selectedChains.includes(chain.chainId)}
+                >
                   <RoundedImage url={chain.iconUrl} title={chain.title} size={34} marginRight={0} />
                 </ChainDropdownButton>
               );
             })}
 
-            <ChainDropdownIcon>
+            <ChainDropdownIcon onClick={onDropdownClick}>
               <HiChevronDown size={18} color={theme.color?.text?.walletDropdownIcon} />
             </ChainDropdownIcon>
           </ChainDropdownSelect>
@@ -537,6 +541,7 @@ const ActionButtonText = styled(Text)`
 
 const ChainButtonRow = styled.div`
   display: flex;
+  flex: 1;
   flex-direction: row;
   justify-content: flex-end;
 `;
@@ -586,10 +591,6 @@ const ChainDropdownSelect = styled.div`
   margin-bottom: 18px;
   padding: 4px 48px 4px 4px;
   background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
-
-  &:hover {
-    opacity: 0.5;
-  }
 `;
 
 const ChainDropdownModal = styled.div`
@@ -627,7 +628,7 @@ const ChainDropdownButton = styled.div<{ selected?: boolean }>`
 const ChainDropdownIcon = styled.div`
   position: absolute;
   top: 4px;
-  right: 0;
+  right: 4px;
 
   display: flex;
   justify-content: center;
@@ -635,9 +636,10 @@ const ChainDropdownIcon = styled.div`
 
   width: 48px;
   height: 48px;
+  border-radius: 8px;
 
   &:hover {
-    opacity: 0.5;
+    background: ${({ theme }) => theme.color.background.walletChainButtonActive};
   }
 `;
 
@@ -647,10 +649,7 @@ const SearchWrapper = styled.div`
   flex: 1;
   align-items: center;
   justify-content: space-between;
-`;
-
-const SearchIcon = styled.div`
-  margin-top -3px;
+  padding: 2px 0;
 `;
 
 const SearchInput = styled.input`
@@ -680,9 +679,14 @@ const SearchInput = styled.input`
   `}
 `;
 
-const SearchClose = styled.span`
-  cursor: pointer;
-  &:hover {
-    opacity: 0.5;
-  }
+const SearchIcon = styled.span`
+  margin-top -3px;
+
+  ${({ onClick }) =>
+    !!onClick &&
+    `cursor: pointer;
+    &:hover {
+      opacity: 0.5;
+    }
+  `};
 `;
