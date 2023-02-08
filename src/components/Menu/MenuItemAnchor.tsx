@@ -42,17 +42,13 @@ const MenuItem = styled.div`
   }
 `;
 
-const MenuItemAnchor = ({ link, title, icon }: MenuItemAnchorProps) => {
-  return (
-    <>
-      <MenuItem>
-        {icon ? <>{icon}</> : null}
-        <a href={link} title={title} target="_blank">
-          {title}
-        </a>
-      </MenuItem>
-    </>
-  );
-};
+const MenuItemAnchor = ({ link, title, icon }: MenuItemAnchorProps) => (
+  <MenuItem>
+    {!!icon && icon}
+    <a href={link} title={title} target="_blank">
+      {title}
+    </a>
+  </MenuItem>
+);
 
 export default MenuItemAnchor;

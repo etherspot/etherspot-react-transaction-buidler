@@ -6,11 +6,11 @@ export interface UseRefObj {
 
 const useOnClickOutside = (ref: UseRefObj, outsideClickCallback: Function) => {
   useEffect(() => {
-    function handleClickOutside(event: Event) {
+    const handleClickOutside = (event: Event) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         outsideClickCallback();
       }
-    }
+    };
 
     // Bind the event listener
     document.addEventListener('mousedown', handleClickOutside);

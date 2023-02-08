@@ -25,15 +25,11 @@ const MenuItemStyled = styled.div`
   }
 `;
 
-const MenuItem = ({ title, icon, onClick }: MenuItemProps) => {
-  return (
-    <>
-      <MenuItemStyled onClick={(event) => onClick(event)}>
-        {icon ? <>{icon}</> : null}
-        <span>{title}</span>
-      </MenuItemStyled>
-    </>
-  );
-};
+const MenuItem = ({ title, icon, onClick }: MenuItemProps) => (
+  <MenuItemStyled onClick={(event) => onClick(event)}>
+    {!!icon && icon}
+    <span>{title}</span>
+  </MenuItemStyled>
+);
 
 export default MenuItem;
