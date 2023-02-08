@@ -49,7 +49,6 @@ const WalletAssetsList = ({
 
           const chainId = chain.chainId;
           const chainTotal = sumAssetsBalanceWorth(assets);
-          // const chainTotal = smartWalletBalanceByChain?.find((bl) => bl.chain === chain.chainId)?.total || 0;
 
           if (!showAllChains && !selectedChains.includes(chainId)) return null;
 
