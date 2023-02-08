@@ -179,12 +179,14 @@ const PrepareTransactionWrapper = styled.div`
   padding: 8px 14px;
   word-break: break-all;
   width: 100%;
-`
+`;
+
 const ColoredText = styled.div`
   color: ${({ theme }) => theme.color.text.reviewLabel};
   padding: 14px;
   word-break: initial;
-`
+`;
+
 interface TransactionPreviewInterface {
   crossChainAction: ICrossChainAction;
   onRemove?: () => void;

@@ -230,13 +230,11 @@ const PlrDaoStakingTransactionBlock = ({
   };
 
   const getBalanceForAllChains = async () => {
-    const chainPromise: AccountBalance[] = [];
-    supportedChains.forEach(async (chain) => {
-      chainPromise.push(await getWalletBalance(chain.chainId, chain.title));
-    });
-    return Promise.allSettled(chainPromise).catch((e) => {
+    try {
+      return Promise.allSettled(supportedChains.map(async (chain) => getWalletBalance(chain.chainId, chain.title)));
+    } catch (error) {
       return [];
-    });
+    }
   };
 
   const getTotal = (accountBalanceWithSupportedChains: AccountBalance[], key: 'keyBasedWallet' | 'smartWallet') => {
