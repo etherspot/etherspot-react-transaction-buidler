@@ -7,7 +7,7 @@ import { Chain, supportedChains } from '../../../utils/chain';
 import { Text } from '../../Text';
 import RoundedImage from '../../Image/RoundedImage';
 import { WalletCopyIcon, WalletDropdownDownIcon, WalletDropdownUpIcon } from '../Icons';
-import { formatAmountDisplay } from '../../../utils/common';
+import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../../utils/common';
 
 export interface IChainAssets {
   title: string;
@@ -23,7 +23,6 @@ interface IWalletAssetsList {
   selectedChains: number[];
   hideChainList: number[];
   displayAssets: IAssetWithBalance[];
-  smartWalletBalanceByChain: IBalanceByChain[] | null;
   onCopy: (text: string) => void;
   toggleChainBlock: (id: number) => void;
 }
@@ -36,7 +35,6 @@ const WalletAssetsList = ({
   selectedChains,
   hideChainList,
   displayAssets,
-  smartWalletBalanceByChain,
   onCopy,
   toggleChainBlock,
 }: IWalletAssetsList) => {
@@ -50,7 +48,8 @@ const WalletAssetsList = ({
           if (!assets || !assets?.length) return null;
 
           const chainId = chain.chainId;
-          const chainTotal = smartWalletBalanceByChain?.find((bl) => bl.chain === chain.chainId)?.total || 0;
+          const chainTotal = sumAssetsBalanceWorth(assets);
+          // const chainTotal = smartWalletBalanceByChain?.find((bl) => bl.chain === chain.chainId)?.total || 0;
 
           if (!showAllChains && !selectedChains.includes(chainId)) return null;
 
