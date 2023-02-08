@@ -126,6 +126,7 @@ const WalletTransactionBlock = ({
   const getNfts = async () => {
     if (fetchingNfts) return;
     setFetchingNfts(true);
+    console.log('getting nfts');
 
     let allNfts: IChainNfts[] = [];
     supportedChains.map(async (chain, i) => {
@@ -134,6 +135,7 @@ const WalletTransactionBlock = ({
         if (chain.chainId === CHAIN_ID.AVALANCHE) return;
 
         let collections = await getNftsForChainId(chain.chainId);
+        console.log(chain.title, collections);
 
         if (collections?.length) {
           const nfts: INft[] = [];
@@ -157,6 +159,8 @@ const WalletTransactionBlock = ({
             title: chain.title,
             nfts,
           });
+
+          console.log('allNfts', allNfts);
 
           setChainNfts(allNfts);
         }
@@ -219,7 +223,9 @@ const WalletTransactionBlock = ({
 
     if (chainNfts) {
       chainNfts.map((chainNft) => {
-        if (!chainNft?.nfts || !selectedChains.includes(chainNft?.chain?.chainId)) return;
+        if (!chainNfts?.length) return;
+
+        if (selectedChains.length && !selectedChains.includes(chainNft?.chain?.chainId)) return;
 
         chainNft.nfts.map((nft) => {
           if (
@@ -240,7 +246,7 @@ const WalletTransactionBlock = ({
     setDisplayNfts(nfts);
     calcWalletTotal();
     forceUpdate();
-  }, [chainAssets?.length, chainNfts, selectedChains, showAllChains, searchValue]);
+  }, [chainAssets?.length, chainNfts?.length, selectedChains, showAllChains, searchValue]);
 
   const findTransactionBlock = (blockType: TRANSACTION_BLOCK_TYPE_KEY) => {
     return availableTransactionBlocks.find((item) => item?.type === blockType) || null;
