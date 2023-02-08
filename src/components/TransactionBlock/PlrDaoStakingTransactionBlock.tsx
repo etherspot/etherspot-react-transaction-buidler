@@ -242,7 +242,7 @@ const PlrDaoStakingTransactionBlock = ({
         supportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title)),
       );
       accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
-        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet,
+        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet > 0,
       );
 
       let totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
