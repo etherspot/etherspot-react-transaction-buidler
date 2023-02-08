@@ -139,7 +139,7 @@ const PlrDaoStakingTransactionBlock = ({
 
   const [amount, setAmount] = useState<string>('');
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
-    values?.offer ? mapOfferToOption(values?.offer) : null
+    values?.offer ? mapOfferToOption(values?.offer) : null,
   );
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(values?.offer ? [values.offer] : null);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
@@ -180,7 +180,7 @@ const PlrDaoStakingTransactionBlock = ({
       : AccountTypes.Contract;
 
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
-    defaultSelectedReceiveAccountType
+    defaultSelectedReceiveAccountType,
   );
 
   const {
@@ -201,7 +201,7 @@ const PlrDaoStakingTransactionBlock = ({
       const accountsBalances = await Promise.all(
         [accountAddress, providerAddress].map(async (address) => {
           return await getSupportedAssetsWithBalancesForChainId(chainId, true, address);
-        })
+        }),
       );
       let smartWalletBalance = 0;
       let keyBasedBalance = 0;
@@ -229,14 +229,6 @@ const PlrDaoStakingTransactionBlock = ({
     }
   };
 
-  const getBalanceForAllChains = async () => {
-    try {
-      return Promise.allSettled(supportedChains.map(async (chain) => getWalletBalance(chain.chainId, chain.title)));
-    } catch (error) {
-      return [];
-    }
-  };
-
   const getTotal = (accountBalanceWithSupportedChains: AccountBalance[], key: 'keyBasedWallet' | 'smartWallet') => {
     const total = accountBalanceWithSupportedChains?.reduce((accumulator, object: AccountBalance) => {
       return accumulator + object[key];
@@ -246,15 +238,15 @@ const PlrDaoStakingTransactionBlock = ({
 
   const fetchAllAccountBalances = async () => {
     try {
-      let data = await getBalanceForAllChains();
-      let accountBalanceWithSupportedChains: AccountBalance[] = data.map((d) =>
-        d.status === 'fulfilled' ? d.value : { chainName: '', keyBasedWallet: 0, smartWallet: 0 }
+      let accountBalanceWithSupportedChains: AccountBalance[] = await Promise.all(
+        supportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title)),
       );
       accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
-        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet
+        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet,
       );
-      const totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
-      const totalSmartWalletPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'smartWallet');
+
+      let totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
+      let totalSmartWalletPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'smartWallet');
 
       setTotalKeyBasedPLRTokens(totalKeyBasedPLRTokens);
       setTotalSmartWalletPLRTokens(totalSmartWalletPLRTokens);
@@ -296,7 +288,7 @@ const PlrDaoStakingTransactionBlock = ({
         setTransactionBlockFieldValidationError(transactionBlockId, 'offer', 'Cannot fetch offers');
       }
     }, 200),
-    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType]
+    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType],
   );
 
   const getNftList = async () => {
@@ -330,7 +322,7 @@ const PlrDaoStakingTransactionBlock = ({
         setIsLoadingAvailableOffers(false);
         if (!offers.length) return;
         const bestOffer: ExchangeOffer | undefined = offers?.find(
-          (offer) => offer.provider === swapServiceIdToDetails['Lifi'].title
+          (offer) => offer.provider === swapServiceIdToDetails['Lifi'].title,
         );
         const selectedOffer = bestOffer?.provider ? bestOffer : offers[0];
         setSelectedOffer(mapOfferToOption(selectedOffer));
