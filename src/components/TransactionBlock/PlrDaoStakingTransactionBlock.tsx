@@ -10,18 +10,18 @@ import { IPlrDaoStakingMembershipBlock } from '../../types/transactionBlock';
 
 // components
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import Text from '../Text/Text';
+import { Pill, Text } from '../Text';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
-import { RoundedImage } from '../Image';
+import { CombinedRoundedImages, RoundedImage } from '../Image';
 
 // providers
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
-import { formatAmountDisplay, formatMaxAmount } from '../../utils/common';
+import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
 import { Chain, supportedChains, plrDaoMemberNFT } from '../../utils/chain';
 import { plrDaoAsset } from '../../utils/asset';
@@ -245,8 +245,8 @@ const PlrDaoStakingTransactionBlock = ({
         (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet > 0,
       );
 
-      let totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
-      let totalSmartWalletPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'smartWallet');
+      const totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
+      const totalSmartWalletPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'smartWallet');
 
       setTotalKeyBasedPLRTokens(totalKeyBasedPLRTokens);
       setTotalSmartWalletPLRTokens(totalSmartWalletPLRTokens);
@@ -348,6 +348,16 @@ const PlrDaoStakingTransactionBlock = ({
     accountAddress,
   ]);
 
+  const onAmountChange = useCallback(
+    (newAmount: string) => {
+      resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+      const decimals = selectedFromAsset?.decimals ?? 18;
+      const updatedAmount = formatAssetAmountInput(newAmount, decimals);
+      setAmount(updatedAmount);
+    },
+    [selectedFromAsset]
+  );
+
   useEffect(() => {
     // update transaction block with best offer (LiFi)
     const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
@@ -376,6 +386,18 @@ const PlrDaoStakingTransactionBlock = ({
     selectedAccountType,
     receiverAddress,
   ]);
+
+  const remainingSelectedFromAssetBalance = useMemo(() => {
+    const multiCallCarryOver = multiCallData?.value || 0;
+    if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
+    if (!amount)
+      return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver;
+    const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
+    return (
+      +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals) +
+      multiCallCarryOver
+    );
+  }, [amount, selectedFromAsset]);
 
   const RenderOption = (option: SelectOption) => {
     const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
@@ -512,6 +534,36 @@ const PlrDaoStakingTransactionBlock = ({
           disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         />
+        {(!!selectedFromAsset && !hasEnoughPLR) && (
+          <TextInput
+            label="You swap"
+            onValueChange={onAmountChange}
+            value={amount}
+            placeholder="0"
+            inputBottomText={
+              selectedFromAsset?.assetPriceUsd && amount
+                ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}`
+                : undefined
+            }
+            inputLeftComponent={
+              <CombinedRoundedImages
+                url={selectedFromAsset.logoURI}
+                smallImageUrl={selectedFromNetwork?.iconUrl}
+                title={selectedFromAsset.symbol}
+                smallImageTitle={selectedFromNetwork?.title}
+              />
+            }
+            inputTopRightComponent={
+              <Pill
+                label="Remaining"
+                value={`${formatAmountDisplay(remainingSelectedFromAssetBalance ?? 0)} ${selectedFromAsset.symbol}`}
+                valueColor={(remainingSelectedFromAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined}
+              />
+            }
+            errorMessage={errorMessages?.amount}
+            disabled={!!fixed}
+          />
+        )}
         <WalletReceiveWrapper>
           <AccountSwitchInput
             label="You will receive on"
