@@ -3,20 +3,10 @@ import TransactionBlockIcon from '../Icon';
 
 export default (
   <TransactionBlockIcon size={17}>
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 17 17"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="17" height="17" viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
       <g fill="none" fill-rule="evenodd">
         <path d="M0 0h16.32v16.32H0z" />
-        <g
-          transform="translate(2.04 2.04)"
-          stroke="#F73"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+        <g transform="translate(2.04 2.04)" stroke="#F73" stroke-linecap="round" stroke-linejoin="round">
           <circle stroke-width="1.5" cx="4.76" cy="4.76" r="4.76" />
           <path stroke-width=".833" d="M12.24 12.24 8.16 8.16" />
         </g>

@@ -7,7 +7,7 @@ import { Chain, supportedChains } from '../../../utils/chain';
 import { Text } from '../../Text';
 import RoundedImage from '../../Image/RoundedImage';
 import { WalletCopyIcon, WalletDropdownDownIcon, WalletDropdownUpIcon } from '../Icons';
-import { formatAmountDisplay } from '../../../utils/common';
+import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../../utils/common';
 
 export interface IChainAssets {
   title: string;
@@ -23,7 +23,6 @@ interface IWalletAssetsList {
   selectedChains: number[];
   hideChainList: number[];
   displayAssets: IAssetWithBalance[];
-  smartWalletBalanceByChain: IBalanceByChain[] | null;
   onCopy: (text: string) => void;
   toggleChainBlock: (id: number) => void;
 }
@@ -36,7 +35,6 @@ const WalletAssetsList = ({
   selectedChains,
   hideChainList,
   displayAssets,
-  smartWalletBalanceByChain,
   onCopy,
   toggleChainBlock,
 }: IWalletAssetsList) => {
@@ -50,7 +48,7 @@ const WalletAssetsList = ({
           if (!assets || !assets?.length) return null;
 
           const chainId = chain.chainId;
-          const chainTotal = smartWalletBalanceByChain?.find((bl) => bl.chain === chain.chainId)?.total || 0;
+          const chainTotal = sumAssetsBalanceWorth(assets);
 
           if (!showAllChains && !selectedChains.includes(chainId)) return null;
 
@@ -90,7 +88,7 @@ const WalletAssetsList = ({
                             )}`}</ListItemText>
                           </ListItemLine>
 
-                          <ListItemLine>
+                          <ListItemLine marginTop={5}>
                             <ListItemText regular>{`On ${chain.title}`}</ListItemText>
                             <ListItemText regular>{`${
                               formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
@@ -129,7 +127,7 @@ const WalletAssetsList = ({
                       )}`}</ListItemText>
                     </ListItemLine>
 
-                    <ListItemLine>
+                    <ListItemLine marginTop={5}>
                       <ListItemText regular>{`On ${chain.title}`}</ListItemText>
                       <ListItemText regular>{`${
                         formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals)) || 0
@@ -216,11 +214,12 @@ const ListItemDetails = styled.div`
   flex-direction: column;
 `;
 
-const ListItemLine = styled.div`
+const ListItemLine = styled.div<{ marginTop?: number }>`
   display: flex;
   flex: 1;
   justify-content: space-between;
   align-item: center;
+  ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`}
 `;
 
 const ListItemIconWrapper = styled.span`
@@ -233,14 +232,16 @@ const AssetChainIcon = styled.img`
   top: 0;
   right: 0;
 
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.color.background.selectInput};
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  border: 1px solid #fff;
+  border: 1px solid ${({ theme }) => theme.color.background.selectInput};
 `;
 
-const ListItemText = styled(Text)<{ size?: number }>`
+const ListItemText = styled(Text)<{ size?: number; regular?: boolean; medium?: boolean }>`
   color: ${({ theme }) => theme.color.text.button};
   ${({ size }) => `font-size: ${size || 12}px;`}
+  ${({ regular }) => !!regular && `font-family: "PTRootUIWebRegular", sans-serif;`}
+  ${({ medium }) => !!medium && `font-family: "PTRootUIWebMedium", sans-serif;`}
 `;

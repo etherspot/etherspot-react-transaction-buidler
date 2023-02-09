@@ -1,9 +1,6 @@
 import React from 'react';
 import styled, { ThemeProvider } from 'styled-components';
-import {
-  SessionStorage,
-  WalletProviderLike,
-} from 'etherspot';
+import { SessionStorage, WalletProviderLike } from 'etherspot';
 import { merge } from 'lodash';
 
 import {
@@ -13,11 +10,8 @@ import {
   TransactionsDispatcherContextProvider,
 } from '../providers';
 
-import { defaultTheme, Theme } from '../utils/theme';
-import {
-  IDefaultTransactionBlock,
-  ITransactionBlockType,
-} from '../types/transactionBlock';
+import { darkTheme, defaultTheme, Theme } from '../utils/theme';
+import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
 
 interface EtherspotProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -41,14 +35,15 @@ const ComponentWrapper = styled.div`
   text-align: center;
   position: relative;
   min-height: 400px;
-  font-family: "PTRootUIWebRegular", sans-serif;
+  font-family: 'PTRootUIWebRegular', sans-serif;
   box-sizing: content-box;
 
   @media (max-width: 500px) {
     width: calc(100% - 40px);
   }
 
-  img, svg {
+  img,
+  svg {
     vertical-align: middle;
   }
 
@@ -69,7 +64,7 @@ const Etherspot = ({
   smartWalletOnly,
   onLogout,
 }: EtherspotProps) => (
-  <ThemeProvider theme={merge({}, defaultTheme, themeOverride)}>
+  <ThemeProvider theme={merge({}, darkTheme, themeOverride)}>
     <EtherspotContextProvider
       provider={provider}
       chainId={chainId}

@@ -80,7 +80,7 @@ const WalletNftsList = ({
                   {nfts.map((nft, i) => {
                     return (
                       <NftWrapper key={`nft-${chainId}-${i}`}>
-                        <NftImage src={nft.image} />
+                        {!!nft?.image ? <NftImage src={nft.image} /> : <NftMissingImage />}
                         <NftText marginTop={12} medium>{`${nft.contractName}`}</NftText>
                         <NftText size={14} medium>{`${nft.name}`}</NftText>
                         <NftText size={12} regular>{`On ${nft.chain.title}`}</NftText>
@@ -103,7 +103,7 @@ const WalletNftsList = ({
               return (
                 <NftWrapper key={`all-nft-${nft?.chain?.chainId || 0}-${i}`}>
                   {nft?.chain?.iconUrl && <NftChainIcon src={nft.chain.iconUrl} />}
-                  <NftImage src={nft.image} />
+                  {!!nft?.image ? <NftImage src={nft.image} /> : <NftMissingImage />}
                   <NftText marginTop={12} medium>{`${nft.contractName}`}</NftText>
                   <NftText size={14} medium>{`${nft.name}`}</NftText>
                   <NftText size={12} regular>{`On ${nft.chain.title}`}</NftText>
@@ -191,6 +191,14 @@ const NftImage = styled.img`
   border-radius: 8px;
 `;
 
+const NftMissingImage = styled.div`
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 8px;
+  background-color: ${({ theme }) => theme?.color?.text?.pill};
+`;
+
 const NftChainIcon = styled.img`
   position: absolute;
   top: 4px;
@@ -203,13 +211,15 @@ const NftChainIcon = styled.img`
   border: 1px solid #fff;
 `;
 
-const NftText = styled(Text)<{ marginTop?: number; size?: number }>`
+const NftText = styled(Text)<{ marginTop?: number; size?: number; regular?: boolean; medium?: boolean }>`
   margin-top: 6px;
   max-width: 85px;
 
   color: ${({ theme }) => theme.color.text.button};
   ${({ marginTop }) => `margin-top: ${marginTop || 4}px;`}
   ${({ size }) => `font-size: ${size || 12}px;`}
+  ${({ regular }) => !!regular && `font-family: "PTRootUIWebRegular", sans-serif;`}
+  ${({ medium }) => !!medium && `font-family: "PTRootUIWebMedium", sans-serif;`}
 
   text-overflow: ellipsis;
   overflow: hidden;

@@ -136,6 +136,10 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
   `}
 `;
 
+const CheckmarkIcon = styled(HiCheck)`
+  margin-top: -3px;
+`;
+
 const ConnectButton = styled(SecondaryButton)`
   font-size: 14px;
   margin-left: 5px;
@@ -205,6 +209,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
     id: getTimeBasedUniqueId(),
     title: 'Klima Staking',
     type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
+  },
+  {
+    id: getTimeBasedUniqueId(),
+    title: 'PLR Staking',
+    type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
   },
   {
     id: getTimeBasedUniqueId(),
@@ -788,11 +797,11 @@ const TransactionBuilderContextProvider = ({
             <Text marginRight={2}>{WalletIcon}</Text>
             {accountAddress ? (
               <>
-                <Text onClick={() => setShowWalletBlock(true)} marginRight={8}>
+                <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
                   Wallet
                 </Text>
                 <Text onClick={() => onCopy(accountAddress)}>
-                  {copiedAddress ? <HiCheck color={theme.color?.background?.statusIconSuccess} /> : WalletCopyIcon}
+                  {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
                 </Text>
               </>
             ) : (
@@ -1341,6 +1350,7 @@ const TransactionBuilderContextProvider = ({
                     }
                     showEditButton={!disableEdit}
                     showStatus={!!crossChainActionsInProcessing?.length}
+                    isSubmitted={isSubmitting}
                     setIsTransactionDone={setIsTransactionDone}
                     showGasAssetSelect
                   />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
+import { HiChevronDown } from 'react-icons/hi';
 
 import { useEtherspot, useTransactionBuilder } from '../../../hooks';
 import { CHAIN_ID, Chain, supportedChains } from '../../../utils/chain';
@@ -22,7 +23,8 @@ import { Text } from '../../Text';
 import SwitchInput from '../../SwitchInput/SwitchInput';
 import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../../constants/transactionBuilderConstants';
 import { ISendAssetTransactionBlockValues } from '../SendAssetTransactionBlock';
-import { formatAmountDisplay } from '../../../utils/common';
+import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../../utils/common';
+import { sortAssetsByValue } from '../../../utils/sort';
 
 // Local
 import WalletNftsList, { IChainNfts, INft } from './WalletNftsList';
@@ -77,7 +79,7 @@ const WalletTransactionBlock = ({
   const [showAllChains, setShowAllChains] = useState(false);
 
   const [showChainDropdown, setShowChainDropdown] = useState(false);
-  const [selectedChains, setSelectedChains] = useState<number[]>(supportedChains.map((chain) => chain.chainId));
+  const [selectedChains, setSelectedChains] = useState<number[]>([]);
   const [hideChainList, setHideChainList] = useState<number[]>([]);
 
   const [walletTotal, setWalletTotal] = useState(0);
@@ -109,6 +111,7 @@ const WalletTransactionBlock = ({
           });
 
           setChainAssets(allAssets);
+          calcWalletTotal();
           forceUpdate();
         }
       } catch (e) {
@@ -123,6 +126,7 @@ const WalletTransactionBlock = ({
   const getNfts = async () => {
     if (fetchingNfts) return;
     setFetchingNfts(true);
+    console.log('getting nfts');
 
     let allNfts: IChainNfts[] = [];
     supportedChains.map(async (chain, i) => {
@@ -131,6 +135,7 @@ const WalletTransactionBlock = ({
         if (chain.chainId === CHAIN_ID.AVALANCHE) return;
 
         let collections = await getNftsForChainId(chain.chainId);
+        console.log(chain.title, collections);
 
         if (collections?.length) {
           const nfts: INft[] = [];
@@ -166,18 +171,20 @@ const WalletTransactionBlock = ({
     });
   };
 
+  const calcWalletTotal = () => {
+    if (!chainAssets?.length) return;
+
+    let total = 0;
+    chainAssets.map((chain) => {
+      if (chain?.assets) total += sumAssetsBalanceWorth(chain.assets);
+    });
+
+    setWalletTotal(total);
+  };
+
   // Initial fetch
   useEffect(() => {
     if (!accountAddress || !sdk) return;
-
-    if (smartWalletBalanceByChain?.length) {
-      const sum = 0;
-      let total = smartWalletBalanceByChain.reduce((acc, curr) => {
-        return acc + curr.total;
-      }, sum);
-      setWalletTotal(total);
-      forceUpdate();
-    }
 
     getAssets();
   }, [accountAddress, smartWalletBalanceByChain]);
@@ -195,7 +202,9 @@ const WalletTransactionBlock = ({
 
     if (chainAssets) {
       chainAssets.map((chainAsset) => {
-        if (!chainAsset.assets || !selectedChains.includes(chainAsset?.chain?.chainId)) return;
+        if (!chainAsset.assets) return;
+
+        if (selectedChains.length && !selectedChains.includes(chainAsset?.chain?.chainId)) return;
 
         chainAsset.assets.map((asset) => {
           if (
@@ -212,7 +221,9 @@ const WalletTransactionBlock = ({
 
     if (chainNfts) {
       chainNfts.map((chainNft) => {
-        if (!chainNft?.nfts || !selectedChains.includes(chainNft?.chain?.chainId)) return;
+        if (!chainNfts?.length) return;
+
+        if (selectedChains.length && !selectedChains.includes(chainNft?.chain?.chainId)) return;
 
         chainNft.nfts.map((nft) => {
           if (
@@ -227,10 +238,13 @@ const WalletTransactionBlock = ({
       });
     }
 
+    assets = assets.sort(sortAssetsByValue);
+
     setDisplayAssets(assets);
     setDisplayNfts(nfts);
+    calcWalletTotal();
     forceUpdate();
-  }, [chainAssets?.length, chainNfts, selectedChains, showAllChains, searchValue]);
+  }, [chainAssets?.length, chainNfts?.length, selectedChains, showAllChains, searchValue]);
 
   const findTransactionBlock = (blockType: TRANSACTION_BLOCK_TYPE_KEY) => {
     return availableTransactionBlocks.find((item) => item?.type === blockType) || null;
@@ -303,7 +317,7 @@ const WalletTransactionBlock = ({
     handleAddTransaction(newBlock);
   };
 
-  const onDropdownClick = () => setShowChainDropdown(true);
+  const onDropdownClick = () => setShowChainDropdown(!showChainDropdown);
 
   const hideDropdown = () => setShowChainDropdown(false);
 
@@ -386,13 +400,13 @@ const WalletTransactionBlock = ({
 
       <ButtonRow>
         <SearchWrapper>
-          {WalletAssetSearchIcon}
+          <SearchIcon>{WalletAssetSearchIcon}</SearchIcon>
           <SearchInput
             placeholder="Search"
             value={searchValue}
             onChange={({ target }) => setSearchValue(target.value)}
           />
-          {searchValue && <SearchClose onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchClose>}
+          {searchValue && <SearchIcon onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchIcon>}
         </SearchWrapper>
 
         <ChainButtonRow>
@@ -408,18 +422,24 @@ const WalletTransactionBlock = ({
 
       {!showAllChains && (
         <ChainDropdownWrapper>
-          <ChainDropdownSelect onClick={onDropdownClick}>
+          <ChainDropdownSelect>
             {supportedChains?.map((chain, i) => {
               if (i > 5) return null;
 
               return (
-                <ChainDropdownButton key={`chain-dropdown-${i}`} selected={selectedChains.includes(chain.chainId)}>
+                <ChainDropdownButton
+                  key={`chain-dropdown-${i}`}
+                  onClick={() => toggleChainDropdownOption(chain.chainId)}
+                  selected={selectedChains.includes(chain.chainId)}
+                >
                   <RoundedImage url={chain.iconUrl} title={chain.title} size={34} marginRight={0} />
                 </ChainDropdownButton>
               );
             })}
 
-            <ChainDropdownIcon>{WalletDropdownDownIcon}</ChainDropdownIcon>
+            <ChainDropdownIcon onClick={onDropdownClick}>
+              <HiChevronDown size={18} color={theme.color?.text?.walletDropdownIcon} />
+            </ChainDropdownIcon>
           </ChainDropdownSelect>
 
           {showChainDropdown && (
@@ -437,7 +457,9 @@ const WalletTransactionBlock = ({
                   );
                 })}
 
-                <ChainDropdownIcon onClick={hideDropdown}>{WalletDropdownUpIcon}</ChainDropdownIcon>
+                <ChainDropdownIcon onClick={hideDropdown}>
+                  <HiChevronDown size={18} color={theme.color?.text?.walletDropdownIcon} />
+                </ChainDropdownIcon>
               </ChainDropdownList>
             </ChainDropdownModal>
           )}
@@ -452,7 +474,6 @@ const WalletTransactionBlock = ({
         selectedChains={selectedChains}
         hideChainList={hideChainList}
         displayAssets={displayAssets}
-        smartWalletBalanceByChain={smartWalletBalanceByChain}
         onCopy={onCopy}
         toggleChainBlock={toggleChainBlock}
       />
@@ -519,7 +540,7 @@ const ActionButton = styled.div<{ disabled?: boolean }>`
   height: 56px;
   border-radius: 50%;
   box-shadow: 0 1px 3px 0 rgba(95, 0, 1, 0.13);
-  background-image: ${({ theme }) => theme.color.background.main};
+  background-image: ${({ theme }) => theme.color.background.walletButton};
 `;
 
 const ActionButtonText = styled(Text)`
@@ -530,6 +551,7 @@ const ActionButtonText = styled(Text)`
 
 const ChainButtonRow = styled.div`
   display: flex;
+  flex: 1;
   flex-direction: row;
   justify-content: flex-end;
 `;
@@ -572,16 +594,13 @@ const ChainDropdownWrapper = styled.div`
 const ChainDropdownSelect = styled.div`
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
 
   width: 100%;
   border-radius: 8px;
   margin-bottom: 18px;
-  padding: 0px 48px 4px 4px;
-  background-color: ${({ theme }) => theme.color.background.selectInput};
-
-  &:hover {
-    opacity: 0.5;
-  }
+  padding: 4px 48px 4px 4px;
+  background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
 `;
 
 const ChainDropdownModal = styled.div`
@@ -595,11 +614,12 @@ const ChainDropdownModal = styled.div`
 const ChainDropdownList = styled.div`
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
 
   border-radius: 8px;
   margin: 0 0 18px;
-  padding: 0px 48px 4px 4px;
-  background-color: ${({ theme }) => theme.color.background.selectInput};
+  padding: 4px 48px 4px 4px;
+  background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
 
   box-shadow: 0 2px 4px 0 rgba(255, 210, 187, 0.4), 0 2px 8px 0 rgba(201, 201, 200, 0.55);
 `;
@@ -610,16 +630,15 @@ const ChainDropdownButton = styled.div<{ selected?: boolean }>`
   align-items: center;
   height: 48px;
   width: 48px;
-  margin-top: 4px;
   border-radius: 8px;
   background-color: ${({ theme, selected }) =>
-    selected ? theme.color.background.card : theme.color.background.selectInput};
+    selected ? theme.color.background.walletChainButtonActive : 'transparent'};
 `;
 
 const ChainDropdownIcon = styled.div`
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 4px;
+  right: 4px;
 
   display: flex;
   justify-content: center;
@@ -627,9 +646,10 @@ const ChainDropdownIcon = styled.div`
 
   width: 48px;
   height: 48px;
+  border-radius: 8px;
 
   &:hover {
-    opacity: 0.5;
+    background: ${({ theme }) => theme.color.background.walletChainButtonActive};
   }
 `;
 
@@ -639,6 +659,7 @@ const SearchWrapper = styled.div`
   flex: 1;
   align-items: center;
   justify-content: space-between;
+  padding: 2px 0;
 `;
 
 const SearchInput = styled.input`
@@ -668,9 +689,14 @@ const SearchInput = styled.input`
   `}
 `;
 
-const SearchClose = styled.span`
-  cursor: pointer;
-  &:hover {
-    opacity: 0.5;
-  }
+const SearchIcon = styled.span`
+  margin-top -3px;
+
+  ${({ onClick }) =>
+    !!onClick &&
+    `cursor: pointer;
+    &:hover {
+      opacity: 0.5;
+    }
+  `};
 `;

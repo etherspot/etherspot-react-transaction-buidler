@@ -7,6 +7,7 @@ import {
   SessionStorage,
   WalletProviderLike,
   Web3WalletProvider,
+  RateData,
   NftCollection,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
@@ -17,7 +18,6 @@ import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../util
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
-import { getAssetPriceKeyByAddress, getAssetsPrices, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { sumAssetsBalanceWorth } from '../utils/common';
 
 export type IAsset = TokenListToken;
@@ -364,6 +364,42 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
+  const getRatesByTokenAddresses = async (chainId: number, tokenAddresses: string[]) => {
+    const tokens = tokenAddresses.filter((address) => address !== null && !isZeroAddress(address));
+    if (!sdk || !tokens.length) return null;
+
+    try {
+      const rates: RateData = await sdk.fetchExchangeRates({ tokens, chainId });
+      if (rates.errored || !rates?.items?.length) return null;
+      return rates.items.reduce<Record<string, number>>(
+        (currentRates, rate) => ({
+          ...currentRates,
+          [rate.address]: rate.usd,
+        }),
+        {}
+      );
+    } catch (error) {
+      //
+    }
+  };
+
+  const getRatesByNativeChainId = async (chainId: number) => {
+    if (!sdk) return null;
+    try {
+      const rates: RateData = await sdk.fetchExchangeRates({
+        tokens: [ethers.constants.AddressZero],
+        chainId,
+      });
+      if (!rates.errored && rates.items.length) {
+        return rates.items[0].usd;
+      }
+    } catch (error) {
+      //
+    }
+
+    return null;
+  };
+
   const getSupportedAssetsWithBalancesForChainId = useCallback(
     async (
       assetsChainId: number,
@@ -380,7 +416,7 @@ const EtherspotContextProvider = ({
       );
 
       // only get prices for assets with balances
-      const assetsPrices = await getAssetsPrices(
+      const assetsPrices = await getRatesByTokenAddresses(
         assetsChainId,
         fromAssetsBalances.map((asset) => asset.token)
       );
@@ -400,8 +436,8 @@ const EtherspotContextProvider = ({
 
             if (!balance.isZero()) {
               assetPriceUsd = isNativeAssetAddress(asset.address, assetsChainId)
-                ? await getNativeAssetPriceInUsd(assetsChainId)
-                : assetsPrices?.[getAssetPriceKeyByAddress(asset.address)] ?? null;
+                ? await getRatesByNativeChainId(assetsChainId)
+                : assetsPrices?.[asset.address] ?? null;
             }
 
             balanceWorthUsd = assetPriceUsd
