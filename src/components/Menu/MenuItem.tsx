@@ -15,20 +15,15 @@ const MenuItemStyled = styled.div`
   margin-right: 12px;
   cursor: pointer;
 
-  &:hover {
+  :hover {
     color: ${({ theme }) => theme.color.text.settingsIcon};
-    text-decoration: none;
-  }
-
-  &:last-child {
-    margin-bottom: 0;
   }
 `;
 
 const MenuItem = ({ title, icon, onClick }: MenuItemProps) => (
   <MenuItemStyled onClick={(event) => onClick(event)}>
     {!!icon && icon}
-    <span>{title}</span>
+    {title}
   </MenuItemStyled>
 );
 

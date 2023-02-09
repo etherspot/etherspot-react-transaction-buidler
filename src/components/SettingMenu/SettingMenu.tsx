@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { BsClockHistory } from 'react-icons/bs';
-import { IoIosLogOut } from 'react-icons/io';
+import { IoMdLogOut } from 'react-icons/io';
 import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
 import styled, { useTheme } from 'styled-components';
 import { useTransactionBuilderModal } from '../../hooks';
@@ -74,18 +74,11 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           <MenuItemAnchor
             title="About Etherspot"
             link="https://etherspot.io/"
-            icon={
-              <EtherspotLogo
-                width={16}
-                height={16}
-                color={theme?.color?.text?.topMenu}
-                style={{ marginRight: '12px' }}
-              />
-            }
+            icon={<EtherspotLogo width={16} height={16} style={{ marginRight: '12px' }} />}
           />
           {showLogout && (
             <MenuItem
-              icon={<IoIosLogOut size={16} style={{ marginRight: '12px' }} />}
+              icon={<IoMdLogOut size={16} style={{ marginRight: '12px' }} />}
               onClick={() => {
                 logout();
               }}
