@@ -160,8 +160,6 @@ const WalletTransactionBlock = ({
             nfts,
           });
 
-          console.log('allNfts', allNfts);
-
           setChainNfts(allNfts);
         }
       } catch (e) {
