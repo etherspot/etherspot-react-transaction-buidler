@@ -23,7 +23,8 @@ import { Text } from '../../Text';
 import SwitchInput from '../../SwitchInput/SwitchInput';
 import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../../constants/transactionBuilderConstants';
 import { ISendAssetTransactionBlockValues } from '../SendAssetTransactionBlock';
-import { formatAmountDisplay } from '../../../utils/common';
+import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../../utils/common';
+import { sortAssetsByValue } from '../../../utils/sort';
 
 // Local
 import WalletNftsList, { IChainNfts, INft } from './WalletNftsList';
@@ -110,6 +111,7 @@ const WalletTransactionBlock = ({
           });
 
           setChainAssets(allAssets);
+          calcWalletTotal();
           forceUpdate();
         }
       } catch (e) {
@@ -124,6 +126,7 @@ const WalletTransactionBlock = ({
   const getNfts = async () => {
     if (fetchingNfts) return;
     setFetchingNfts(true);
+    console.log('getting nfts');
 
     let allNfts: IChainNfts[] = [];
     supportedChains.map(async (chain, i) => {
@@ -132,6 +135,7 @@ const WalletTransactionBlock = ({
         if (chain.chainId === CHAIN_ID.AVALANCHE) return;
 
         let collections = await getNftsForChainId(chain.chainId);
+        console.log(chain.title, collections);
 
         if (collections?.length) {
           const nfts: INft[] = [];
@@ -167,18 +171,20 @@ const WalletTransactionBlock = ({
     });
   };
 
+  const calcWalletTotal = () => {
+    if (!chainAssets?.length) return;
+
+    let total = 0;
+    chainAssets.map((chain) => {
+      if (chain?.assets) total += sumAssetsBalanceWorth(chain.assets);
+    });
+
+    setWalletTotal(total);
+  };
+
   // Initial fetch
   useEffect(() => {
     if (!accountAddress || !sdk) return;
-
-    if (smartWalletBalanceByChain?.length) {
-      const sum = 0;
-      let total = smartWalletBalanceByChain.reduce((acc, curr) => {
-        return acc + curr.total;
-      }, sum);
-      setWalletTotal(total);
-      forceUpdate();
-    }
 
     getAssets();
   }, [accountAddress, smartWalletBalanceByChain]);
@@ -215,7 +221,9 @@ const WalletTransactionBlock = ({
 
     if (chainNfts) {
       chainNfts.map((chainNft) => {
-        if (!chainNft?.nfts || !selectedChains.includes(chainNft?.chain?.chainId)) return;
+        if (!chainNfts?.length) return;
+
+        if (selectedChains.length && !selectedChains.includes(chainNft?.chain?.chainId)) return;
 
         chainNft.nfts.map((nft) => {
           if (
@@ -230,10 +238,13 @@ const WalletTransactionBlock = ({
       });
     }
 
+    assets = assets.sort(sortAssetsByValue);
+
     setDisplayAssets(assets);
     setDisplayNfts(nfts);
+    calcWalletTotal();
     forceUpdate();
-  }, [chainAssets?.length, chainNfts, selectedChains, showAllChains, searchValue]);
+  }, [chainAssets?.length, chainNfts?.length, selectedChains, showAllChains, searchValue]);
 
   const findTransactionBlock = (blockType: TRANSACTION_BLOCK_TYPE_KEY) => {
     return availableTransactionBlocks.find((item) => item?.type === blockType) || null;
@@ -463,7 +474,6 @@ const WalletTransactionBlock = ({
         selectedChains={selectedChains}
         hideChainList={hideChainList}
         displayAssets={displayAssets}
-        smartWalletBalanceByChain={smartWalletBalanceByChain}
         onCopy={onCopy}
         toggleChainBlock={toggleChainBlock}
       />

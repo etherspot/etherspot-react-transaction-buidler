@@ -840,7 +840,7 @@ const TransactionBuilderContextProvider = ({
             <Text marginRight={2}>{WalletIcon}</Text>
             {accountAddress ? (
               <>
-                <Text onClick={() => setShowWalletBlock(true)} marginRight={8}>
+                <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
                   Wallet
                 </Text>
                 <Text onClick={() => onCopy(accountAddress)}>

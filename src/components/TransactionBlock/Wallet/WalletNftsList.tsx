@@ -80,7 +80,7 @@ const WalletNftsList = ({
                   {nfts.map((nft, i) => {
                     return (
                       <NftWrapper key={`nft-${chainId}-${i}`}>
-                        <NftImage src={nft.image} />
+                        {!!nft?.image ? <NftImage src={nft.image} /> : <NftMissingImage />}
                         <NftText marginTop={12} medium>{`${nft.contractName}`}</NftText>
                         <NftText size={14} medium>{`${nft.name}`}</NftText>
                         <NftText size={12} regular>{`On ${nft.chain.title}`}</NftText>
@@ -196,7 +196,7 @@ const NftMissingImage = styled.div`
   aspect-ratio: 1/1;
   object-fit: cover;
   border-radius: 8px;
-  background-color: ${({ theme }) => theme?.colors?.text?.pill};
+  background-color: ${({ theme }) => theme?.color?.text?.pill};
 `;
 
 const NftChainIcon = styled.img`
