@@ -446,7 +446,7 @@ const PlrDaoStakingTransactionBlock = ({
       : totalKeyBasedPLRTokens > 0
       ? 'Key Based'
       : 'Smart Wallet';
-  const unSupportedChains = supportedChains
+  const unsupportedChains = supportedChains
     .filter((chain) => !filteredSupportedChains.includes(chain))
     .map((chain) => chain.chainId);
 
@@ -522,7 +522,7 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
             setSelectedFromNetwork(network);
           }}
-          hideChainIds={unSupportedChains}
+          hideChainIds={unsupportedChains}
           selectedNetwork={selectedFromNetwork}
           selectedAsset={selectedFromAsset}
           errorMessage={
