@@ -23,7 +23,7 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 // utils
 import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
-import { Chain, supportedChains, plrDaoMemberNFT } from '../../utils/chain';
+import { Chain, supportedChains, plrDaoMemberNFT, CHAIN_ID } from '../../utils/chain';
 import { plrDaoAsset } from '../../utils/asset';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
@@ -159,6 +159,10 @@ const PlrDaoStakingTransactionBlock = ({
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
 
+  const filteredSupportedChains = supportedChains.filter((chain) =>
+    [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.POLYGON, CHAIN_ID.XDAI, CHAIN_ID.BINANCE].includes(chain.chainId)
+  );
+
   const theme: Theme = useTheme();
 
   const fixed = multiCallData?.fixed ?? false;
@@ -239,7 +243,7 @@ const PlrDaoStakingTransactionBlock = ({
   const fetchAllAccountBalances = async () => {
     try {
       let accountBalanceWithSupportedChains: AccountBalance[] = await Promise.all(
-        supportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title)),
+        filteredSupportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title)),
       );
       accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
         (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet > 0,
@@ -442,6 +446,9 @@ const PlrDaoStakingTransactionBlock = ({
       : totalKeyBasedPLRTokens > 0
       ? 'Key Based'
       : 'Smart Wallet';
+  const unSupportedChains = supportedChains
+    .filter((chain) => !filteredSupportedChains.includes(chain))
+    .map((chain) => chain.chainId);
 
   return (
     <>
@@ -515,6 +522,7 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
             setSelectedFromNetwork(network);
           }}
+          hideChainIds={unSupportedChains}
           selectedNetwork={selectedFromNetwork}
           selectedAsset={selectedFromAsset}
           errorMessage={
@@ -529,12 +537,12 @@ const PlrDaoStakingTransactionBlock = ({
         />
         <NetworkAssetSelectInput
           label="To"
-          selectedNetwork={supportedChains[1]}
+          selectedNetwork={filteredSupportedChains[1]}
           selectedAsset={hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset}
           disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         />
-        {(!!selectedFromAsset && !hasEnoughPLR) && (
+        {(!!selectedFromAsset && !!selectedFromNetwork && !hasEnoughPLR) && (
           <TextInput
             label="You swap"
             onValueChange={onAmountChange}
@@ -548,9 +556,9 @@ const PlrDaoStakingTransactionBlock = ({
             inputLeftComponent={
               <CombinedRoundedImages
                 url={selectedFromAsset.logoURI}
-                smallImageUrl={selectedFromNetwork?.iconUrl}
+                smallImageUrl={selectedFromNetwork.iconUrl}
                 title={selectedFromAsset.symbol}
-                smallImageTitle={selectedFromNetwork?.title}
+                smallImageTitle={selectedFromNetwork.title}
               />
             }
             inputTopRightComponent={
