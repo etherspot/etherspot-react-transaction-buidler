@@ -394,13 +394,14 @@ const PlrDaoStakingTransactionBlock = ({
   const remainingSelectedFromAssetBalance = useMemo(() => {
     const multiCallCarryOver = multiCallData?.value || 0;
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
-    if (!amount)
-      return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver;
+    const balance = ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals);
+    if (!amount) return +balance + multiCallCarryOver;
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
-    return (
-      +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals) +
-      multiCallCarryOver
+    const balanceWithAssetAmount = ethers.utils.formatUnits(
+      selectedFromAsset.balance.sub(assetAmountBN),
+      selectedFromAsset.decimals
     );
+    return +balanceWithAssetAmount + multiCallCarryOver;
   }, [amount, selectedFromAsset]);
 
   const RenderOption = (option: SelectOption) => {
@@ -449,6 +450,7 @@ const PlrDaoStakingTransactionBlock = ({
   const unsupportedChains = supportedChains
     .filter((chain) => !filteredSupportedChains.includes(chain))
     .map((chain) => chain.chainId);
+  const selectedToChain = filteredSupportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
 
   return (
     <>
@@ -537,7 +539,7 @@ const PlrDaoStakingTransactionBlock = ({
         />
         <NetworkAssetSelectInput
           label="To"
-          selectedNetwork={filteredSupportedChains[1]}
+          selectedNetwork={selectedToChain}
           selectedAsset={hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset}
           disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
@@ -550,7 +552,7 @@ const PlrDaoStakingTransactionBlock = ({
             placeholder="0"
             inputBottomText={
               selectedFromAsset?.assetPriceUsd && amount
-                ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}`
+                ? formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')
                 : undefined
             }
             inputLeftComponent={
