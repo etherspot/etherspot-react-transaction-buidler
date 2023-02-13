@@ -197,7 +197,7 @@ export const klimaAsset: IAssetWithBalance = {
 }
 
 export const plrDaoMemberNFT = {
-  address: '0x5029aC4dCdb864bB8f57b53A1a69d0541335dc7A',
+  address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
   chainId: CHAIN_ID.POLYGON,
   name: "Pillar DAO Member NFT",
   symbol: "PLR DAO NFT",

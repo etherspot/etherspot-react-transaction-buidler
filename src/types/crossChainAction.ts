@@ -87,12 +87,12 @@ interface KlimaStakingAction {
 }
 
 interface PlrStakingAction {
-  type: typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE;
-  preview: PlrStakingActionPreview;
-  destinationCrossChainAction: ICrossChainAction[];
-  containsSwitchChain?: boolean;
-  receiveAmount?: string;
-  bridgeUsed?: string;
+	type: typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE;
+	preview: PlrStakingActionPreview;
+	destinationCrossChainAction: ICrossChainAction[];
+	containsSwitchChain?: boolean;
+	receiveAmount?: string;
+	bridgeUsed?: string;
 }
 
 export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {
