@@ -8,6 +8,8 @@ import { terser } from 'rollup-plugin-terser';
 import dotenv from 'dotenv';
 import autoprefixer from 'autoprefixer';
 import postcss from 'rollup-plugin-postcss';
+import image from '@rollup/plugin-image';
+import json from '@rollup/plugin-json';
 
 dotenv.config();
 
@@ -23,11 +25,13 @@ export default [
         file: packageJson.main,
         format: 'cjs',
         sourcemap: !isProduction,
+        inlineDynamicImports: true,
       },
       {
         file: packageJson.module,
         format: 'esm',
         sourcemap: !isProduction,
+        inlineDynamicImports: true,
       },
     ],
     watch: {
@@ -43,7 +47,7 @@ export default [
       typescript({
         sourceMap: !isProduction,
         tsconfig: './tsconfig.json',
-        exclude: ['./example/**', './src/test/**']
+        exclude: ['./example/**', './src/test/**'],
       }),
       replace({
         __ETHERSPOT_PROJECT_KEY__: process.env.ETHERSPOT_PROJECT_KEY ?? '',
@@ -53,12 +57,14 @@ export default [
         plugins: [autoprefixer()],
         sourceMap: true,
         extract: true,
-        minimize: true
+        minimize: true,
       }),
       process.env.NODE_ENV === 'production' && terser(),
+      image(),
+      json(),
     ],
     external: ['react', 'react-dom', 'styled-components', 'etherspot'],
-    context: 'window'
+    context: 'window',
   },
   {
     input: 'dist/esm/types/index.d.ts',

@@ -40,13 +40,25 @@
     "test": "jest",
     "prepare": "npm run rollup:build",
     "postinstall": "rm -rf node_modules/react node_modules/react-dom",
-    "rollup:build": "NODE_OPTIONS=--max-old-space-size=8192 rollup -c",
+    "rollup:build": "NODE_OPTIONS=--max-old-space-size=8192 tsc --outDir dist/lib --declarationDir dist/types --declaration true && rollup -c",
     "rollup:watch": "rollup -c -w"
   },
   "keywords": [],
   "author": "Etherspot",
   "license": "MIT",
   "dependencies": {
+    "@rollup/plugin-image": "^3.0.2",
+    "@rollup/plugin-json": "^6.0.0",
+    "@walletconnect/qrcode-modal": "^1.8.0",
+    "@web3auth/base": "^4.6.0",
+    "@web3auth/coinbase-adapter": "^4.6.0",
+    "@web3auth/core": "^4.6.0",
+    "@web3auth/metamask-adapter": "^4.6.0",
+    "@web3auth/modal": "^4.6.0",
+    "@web3auth/openlogin-adapter": "^4.6.0",
+    "@web3auth/torus-evm-adapter": "^4.6.0",
+    "@web3auth/ui": "^4.6.0",
+    "@web3auth/wallet-connect-v1-adapter": "^4.6.0",
     "autoprefixer": "^10.4.13",
     "axios": "^0.27.2",
     "debounce-promise": "^3.1.2",
@@ -60,7 +72,9 @@
     "reflect-metadata": "^0.1.13",
     "rollup-plugin-postcss": "^4.0.2",
     "rxjs": "^6.6.7",
-    "styled-components": "^5.3.5"
+    "styled-components": "^5.3.5",
+    "wagmi": "^0.11.4",
+    "web3": "^1.8.1"
   },
   "peerDependencies": {
     "react": ">=16.8.6"
