@@ -4,7 +4,7 @@ import styled from 'styled-components';
 interface MenuItemProps {
   title: string;
   icon: ReactElement;
-  onClick: Function;
+  onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 const MenuItemStyled = styled.div`
@@ -21,7 +21,7 @@ const MenuItemStyled = styled.div`
 `;
 
 const MenuItem = ({ title, icon, onClick }: MenuItemProps) => (
-  <MenuItemStyled onClick={(event) => onClick(event)}>
+  <MenuItemStyled onClick={onClick}>
     {!!icon && icon}
     {title}
   </MenuItemStyled>
