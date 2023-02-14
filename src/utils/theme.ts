@@ -73,9 +73,10 @@ export interface Theme {
       tokenValue?: string;
       tokenTotal?: string;
       reviewLabel?: string;
+      settingsIcon?: string;
     };
   };
-}
+};
 
 export const defaultTheme: Theme = {
   color: {
@@ -151,6 +152,7 @@ export const defaultTheme: Theme = {
       listItemQuickButtonPrimary: '#fff',
       transactionStatusLink: '#ff7733',
       pasteIcon: '#ff884d',
+      settingsIcon: '#ee6723',
       walletDropdownIcon: '#221f33',
     },
   },

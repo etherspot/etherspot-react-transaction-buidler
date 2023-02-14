@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { HiCheck, HiClipboardCopy, HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { HiCheck } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
 import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
@@ -36,7 +36,6 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
-import History from '../components/History';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
@@ -55,6 +54,7 @@ import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
+import SettingMenu from '../components/SettingMenu/SettingMenu';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -138,46 +138,6 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
 
 const CheckmarkIcon = styled(HiCheck)`
   margin-top: -3px;
-`;
-
-const MenuButton = styled(HiOutlineDotsHorizontal)`
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.5;
-  }
-`;
-
-const MenuWrapper = styled.div`
-  position: absolute;
-  top: 40px;
-  right: 15px;
-  background: ${({ theme }) => theme.color.background.topMenu};
-  color: ${({ theme }) => theme.color.text.topMenu};
-  border-radius: 5px;
-  padding: 15px 20px;
-  font-size: 14px;
-  text-align: left;
-  box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
-`;
-
-const MenuItem = styled.div`
-  margin-bottom: 10px;
-  cursor: pointer;
-
-  a,
-  a:visited {
-    color: ${({ theme }) => theme.color.text.topMenu};
-    text-decoration: none;
-  }
-
-  &:hover {
-    text-decoration: underline;
-  }
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 `;
 
 const ConnectButton = styled(SecondaryButton)`
@@ -328,7 +288,6 @@ const TransactionBuilderContextProvider = ({
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
-  const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
   const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false);
@@ -750,8 +709,6 @@ const TransactionBuilderContextProvider = ({
     []
   );
 
-  const hideMenu = () => setShowMenu(false);
-
   const hasTransactionBlockAdded = transactionBlocks.some(
     (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE
   );
@@ -835,7 +792,7 @@ const TransactionBuilderContextProvider = ({
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
-        <WalletAddressesWrapper onClick={hideMenu}>
+        <WalletAddressesWrapper>
           <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
             <Text marginRight={2}>{WalletIcon}</Text>
             {accountAddress ? (
@@ -857,9 +814,9 @@ const TransactionBuilderContextProvider = ({
             </WalletAddress>
           )}
         </WalletAddressesWrapper>
-        <MenuButton size={22} onClick={() => setShowMenu(!showMenu)} color={theme?.color?.background?.topMenuButton} />
+        <SettingMenu showLogout={showMenuLogout} logout={logout} />
       </TopNavigation>
-      <div onClick={hideMenu}>
+      <div>
         {/* Wallet */}
         {showWalletBlock && accountAddress && (
           <TransactionBlocksWrapper>
@@ -1424,29 +1381,6 @@ const TransactionBuilderContextProvider = ({
           </>
         )}
       </div>
-      {showMenu && (
-        <MenuWrapper>
-          <MenuItem>
-            <a href="https://dashboard.etherspot.io" title="Dashboard" target="_blank">
-              Dashboard
-            </a>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              hideMenu();
-              showModal(<History />);
-            }}
-          >
-            History
-          </MenuItem>
-          <MenuItem>
-            <a href="https://etherspot.io/" title="About Etherspot" target="_blank">
-              About Etherspot
-            </a>
-          </MenuItem>
-          {showMenuLogout && <MenuItem onClick={logout}>Logout</MenuItem>}
-        </MenuWrapper>
-      )}
     </TransactionBuilderContext.Provider>
   );
 };
