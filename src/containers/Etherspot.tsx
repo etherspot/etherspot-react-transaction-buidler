@@ -132,9 +132,7 @@ const Etherspot = ({
               setConnectedProvider(isWagmi ? web3.currentProvider.provider : web3.currentProvider);
             }}
             onWeb3AuthInstanceSet={setWeb3AuthInstance}
-            setWagmiLogout={(func) => {
-              setWagmiLogout(() => func);
-            }}
+            setWagmiLogout={setWagmiLogout}
           />
         )}
         {!!connectedProvider && (
