@@ -27,8 +27,8 @@ const Wrapper = styled.div`
   max-width: 100%;
   padding: 14px 20px 26px;
   border-radius: 24px;
-  border: solid 1px #f53f40;
-  background-image: linear-gradient(166deg, #ff8932 9%, #f44c3c 97%);
+  border: solid 1px ${({ theme }) => theme.color.background.signInBackgroundBorder};
+  background: ${({ theme }) => theme.color.background.signInBackground};
   font-family: 'PTRootUIWebRegular', sans-serif;
   color: #fff;
   text-align: center;
@@ -36,7 +36,7 @@ const Wrapper = styled.div`
 `;
 
 const WrapperTitle = styled.h1`
-  color: #ffeee6;
+  color: ${({ theme }) => theme.color.text.signInTitle};
   font-size: 20px;
   margin-bottom: 30px;
 `;
@@ -71,7 +71,7 @@ const ErrorMessage = styled.p`
 
 const WrapperTextClickable = styled(WrapperText)`
   cursor: pointer;
-
+  color: ${({ theme }) => theme.color.text.showMoreOrLessOption};
   &:hover {
     opacity: 0.7;
   }
@@ -80,7 +80,7 @@ const WrapperTextClickable = styled(WrapperText)`
 const SwitchWrapper = styled.div`
   padding: 2px;
   border-radius: 8px;
-  background: #fb9267;
+  background: ${({ theme }) => theme.color.background.signInOptionWrapper};
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -90,21 +90,21 @@ const SwitchWrapper = styled.div`
 
 const SwitchOption = styled.div<{ isActive?: boolean }>`
   font-size: 14px;
-  color: #fff;
   width: 50%;
   text-align: center;
   min-height: 28px;
   line-height: 28px;
   cursor: pointer;
-
-  ${({ isActive }) =>
+  color: ${({ theme }) => theme.color.text.signInOptionTabInactive};
+  ${({ isActive, theme }) =>
     isActive &&
     `
+    color: ${theme.color.text.signInOptionTabActive};
     font-weight: bold;
     border-radius: 8px;
     box-shadow: 0 2px 4px 0 rgba(95, 0, 1, 0.13);
-    border: solid 1px #f43f40;
-    background: linear-gradient(to bottom, #f76b3f, #f43f40);
+    border: solid 1px ${theme.color.background.signInOptionTabActiveBorder};
+    background: ${theme.color.background.signInOptionTabActive};
   `}
 `;
 
@@ -139,8 +139,8 @@ const SignInOption = styled.div<{ disabled?: boolean }>`
   font-size: 16px;
   padding: 28px 34px;
   border-radius: 24px;
-  border: solid 1.5px #ff966b;
-  background-color: rgba(255, 255, 255, 0.25);
+  border: solid 1.5px ${({ theme }) => theme.color.background.signInOptionBorder};
+  background-color: ${({ theme }) => theme.color.background.signInOption};
   margin-bottom: 14px;
   cursor: pointer;
 

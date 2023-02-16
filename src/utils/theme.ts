@@ -38,6 +38,14 @@ export interface Theme {
       walletChainButtonActive?: string;
       tokenBalanceContainer?: string;
       horizontalLine?: string;
+      signInBackground?: string;
+      signInBackgroundBorder?: string;
+      signInOption?: string;
+      signInOptionBorder?: string;
+      signInSocialLoginBorder?: string;
+      signInOptionTabActive?: string;
+      signInOptionTabActiveBorder?: string;
+      signInOptionWrapper?: string;
     };
     text?: {
       main?: string;
@@ -74,9 +82,13 @@ export interface Theme {
       tokenTotal?: string;
       reviewLabel?: string;
       settingsIcon?: string;
+      showMoreOrLessOption?: string;
+      signInTitle?: string;
+      signInOptionTabInactive?: string;
+      signInOptionTabActive?: string;
     };
   };
-};
+}
 
 export const defaultTheme: Theme = {
   color: {
@@ -118,6 +130,14 @@ export const defaultTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #fd9250, #ff5548)',
       walletChainDropdown: '#fff',
       walletChainButtonActive: '#ffeee6',
+      signInBackground: 'linear-gradient(166deg, #ff8932 9%, #f44c3c 97%)',
+      signInBackgroundBorder: '#f53f40',
+      signInOption: 'rgba(255, 255, 255, 0.25)',
+      signInOptionBorder: '#ff966b',
+      signInSocialLoginBorder: '#ff966b',
+      signInOptionTabActive: 'linear-gradient(to bottom, #f76b3f, #f43f40)',
+      signInOptionTabActiveBorder: '#f43f40',
+      signInOptionWrapper: '#fb9267',
     },
     text: {
       main: '#fff',
@@ -154,6 +174,10 @@ export const defaultTheme: Theme = {
       pasteIcon: '#ff884d',
       settingsIcon: '#ee6723',
       walletDropdownIcon: '#221f33',
+      showMoreOrLessOption: '#fff',
+      signInTitle: '#fff',
+      signInOptionTabInactive: '#fff',
+      signInOptionTabActive: '#fff',
     },
   },
 };
@@ -183,6 +207,15 @@ export const darkTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
+      signInBackground: 'linear-gradient(166deg, #3e3869 9%, #241938 97%)',
+      signInBackgroundBorder: '#3d366d',
+      signInOption: 'rgba(71, 64, 120, 0.4)',
+      signInOptionBorder: '#49437d',
+      signInSocialLoginBorder: '#49437d',
+      signInOptionTabActive:
+        'linear-gradient(to bottom, #734fb3, #422d66), linear-gradient(to bottom, #3d265c, #222130)',
+      signInOptionTabActiveBorder: 'linear-gradient(to bottom, #3d265c, #222130)',
+      signInOptionWrapper: '#241938',
     },
     text: {
       selectInput: '#ffeee6',
@@ -209,6 +242,10 @@ export const darkTheme: Theme = {
       pill: '#bbb8cc',
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
+      showMoreOrLessOption: '#fbae49',
+      signInTitle: '#cab3f5',
+      signInOptionTabInactive: '#9466e6',
+      signInOptionTabActive: '#fff',
     },
   },
 };

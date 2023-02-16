@@ -43,7 +43,10 @@ export default [
       resolve({
         browser: true,
       }),
-      commonjs(),
+      commonjs({
+        include: /node_modules/,
+        requireReturnsDefault: 'auto',
+      }),
       typescript({
         sourceMap: !isProduction,
         tsconfig: './tsconfig.json',
