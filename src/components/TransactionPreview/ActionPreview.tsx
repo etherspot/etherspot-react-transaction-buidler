@@ -864,7 +864,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
-    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, hasEnoughPLR } = preview;
+    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, isPolygonAccountWithEnoughPLR, enableAssetSwap} = preview;
 
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
@@ -894,7 +894,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {hasEnoughPLR ? (
+        {isPolygonAccountWithEnoughPLR ? (
           <>
             <DoubleTransactionActionsInSingleRow>
               <TransactionAction>
@@ -1024,7 +1024,7 @@ const ActionPreview = ({
               </>
             )}
           </ValueWrapper>
-          {!hasEnoughPLR && (
+          {enableAssetSwap && (
             <RouteWrapper>
               {previewList.map((preview) => {
                 if (!preview) return null;
