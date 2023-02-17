@@ -67,7 +67,6 @@ const fetchBestRoute = async (
     });
 
     if (!bestRoute) {
-      console.log('in no route')
       return { errorMessage: 'Failed to get bridge route' };
     }
     const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
