@@ -178,13 +178,14 @@ const PlrDaoStakingTransactionBlock = ({
 
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
-  const enoughPolygonPLR = accounts.some((account) =>
-    account.chainName === 'Polygon' && selectedAccountType === 'Contract'
-      ? account.smartWallet >= MAX_PLR_TOKEN_LIMIT
-      : account.keyBasedWallet >= MAX_PLR_TOKEN_LIMIT
+  const isPolygonAccountWithEnoughPLR = accounts.some(
+    (account) =>
+      account.chainName === 'Polygon' &&
+      selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
+      selectedFromAsset?.symbol === 'PLR' &&
+      ((selectedAccountType === 'Contract' && account.smartWallet >= MAX_PLR_TOKEN_LIMIT) ||
+        (selectedAccountType === 'Key' && account.keyBasedWallet >= MAX_PLR_TOKEN_LIMIT))
   );
-  const isPolygonAccountWithEnoughPLR =
-    selectedFromNetwork?.chainId === CHAIN_ID.POLYGON && selectedFromAsset?.symbol === 'PLR' && enoughPolygonPLR;
   const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === 'PLR';
   const enableAssetSwap = selectedFromAsset?.symbol !== 'PLR';
 
@@ -444,7 +445,7 @@ const PlrDaoStakingTransactionBlock = ({
       enableAssetSwap,
       isPolygonAccountWithEnoughPLR,
       fromChainId: selectedFromNetwork?.chainId ?? undefined,
-      toAsset: enoughPolygonPLR ? plrDaoMemberNFT : plrDaoAsset,
+      toAsset: isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT : plrDaoAsset,
       fromAsset: selectedFromAsset ?? undefined,
       amount,
       offer,
@@ -500,7 +501,7 @@ const PlrDaoStakingTransactionBlock = ({
     );
   };
 
-  const renderRoutes = (option: SelectOption) => (
+  const renderRoute = (option: SelectOption) => (
     <RouteOption
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
@@ -529,6 +530,7 @@ const PlrDaoStakingTransactionBlock = ({
       ? 'Key Based'
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
+  const stakingBalance = isPolygonAccountWithEnoughPLR && `${MAX_PLR_TOKEN_LIMIT}`;
 
   return (
     <>
@@ -596,9 +598,9 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
-            setAmount(
-              enoughPolygonPLR ? `${MAX_PLR_TOKEN_LIMIT}` : amountBN ? formatMaxAmount(amountBN, asset.decimals) : ''
-            );
+            if (amountBN) {
+              setAmount(stakingBalance || formatMaxAmount(amountBN, asset.decimals));
+            }
           }}
           onNetworkSelect={(network) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
@@ -716,8 +718,8 @@ const PlrDaoStakingTransactionBlock = ({
                 setSelectedRoute(option);
               }}
               placeholder="Select route"
-              renderOptionListItemContent={renderRoutes}
-              renderSelectedOptionContent={renderRoutes}
+              renderOptionListItemContent={renderRoute}
+              renderSelectedOptionContent={renderRoute}
               errorMessage={errorMessages?.route}
               disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
               noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
