@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import React from 'react';
 
-const ModalOverlay = styled.div<{ noBackground?: boolean }>`
+const ModalOverlay = styled.div<{ noBackground?: boolean, zIndex?: boolean}>`
   position: absolute;
   top: 0;
   left: 0;
@@ -10,6 +10,7 @@ const ModalOverlay = styled.div<{ noBackground?: boolean }>`
   padding: 15px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 12px;
+  z-index: ${({ zIndex }) => zIndex && '1'};
 `;
 
 const ModalContentWrapper = styled.div<{ noBackground?: boolean }>`
@@ -32,14 +33,15 @@ const ModalContentWrapper = styled.div<{ noBackground?: boolean }>`
   }
 `;
 
-const Modal = ({ children, noBackground }: {
+const Modal = ({ children, noBackground, zIndex }: {
   children: React.ReactNode;
   noBackground?: boolean;
+  zIndex?: boolean;
 }) => {
   if (!children) return null;
 
   return (
-    <ModalOverlay>
+    <ModalOverlay zIndex>
       <ModalContentWrapper noBackground={noBackground}>
         {children}
       </ModalContentWrapper>

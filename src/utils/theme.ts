@@ -38,6 +38,7 @@ export interface Theme {
       walletChainButtonActive?: string;
       tokenBalanceContainer?: string;
       horizontalLine?: string;
+      deployButton?: string;
     };
     text?: {
       main?: string;
@@ -118,6 +119,7 @@ export const defaultTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #fd9250, #ff5548)',
       walletChainDropdown: '#fff',
       walletChainButtonActive: '#ffeee6',
+      deployButton: '#ff884d'
     },
     text: {
       main: '#fff',
@@ -183,6 +185,7 @@ export const darkTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
+      deployButton: '#ff884d'
     },
     text: {
       selectInput: '#ffeee6',
