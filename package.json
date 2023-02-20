@@ -55,6 +55,7 @@
     "@rollup/plugin-image": "^3.0.2",
     "@rollup/plugin-json": "^6.0.0",
     "@walletconnect/qrcode-modal": "^1.8.0",
+    "@walletconnect/types": "^1.8.0",
     "@web3auth/base": "^4.6.0",
     "@web3auth/coinbase-adapter": "^4.6.0",
     "@web3auth/core": "^4.6.0",
