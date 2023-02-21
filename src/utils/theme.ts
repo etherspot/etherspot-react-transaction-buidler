@@ -185,7 +185,7 @@ export const darkTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
-      deployButton: '#ff884d'
+      deployButton: '#ff884d',
     },
     text: {
       selectInput: '#ffeee6',
@@ -212,6 +212,7 @@ export const darkTheme: Theme = {
       pill: '#bbb8cc',
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
+      settingsIcon: '#ee6723',
     },
   },
 };

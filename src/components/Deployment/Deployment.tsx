@@ -91,11 +91,11 @@ const Deployment = () => {
   const theme: Theme = useTheme();
 
   const fetchDeploymentData = async (chainId: number) => {
-    const maticSdk = getSdkForChainId(chainId);
-    if (accountAddress && maticSdk) {
+    const sdk = getSdkForChainId(chainId);
+    if (accountAddress && sdk) {
       try {
-        await maticSdk.computeContractAccount();
-        let account = await maticSdk.getAccount();
+        await sdk.computeContractAccount();
+        let account = await sdk.getAccount();
         return account;
       } catch (err) {
         //
@@ -104,18 +104,21 @@ const Deployment = () => {
   };
 
   const getDeployementStatus = async () => {
-    if (!supportedChains) return;
-    const result = await Promise.all(
-      supportedChains.map(async ({ chainId, title, iconUrl }) => {
-        const account = await fetchDeploymentData(chainId);
-        if (!account) return;
-        return { ...account, chainId, title, iconUrl };
-      })
-    );
-    const accounts = result.filter((acc) => acc);
-    return Promise.allSettled(accounts).catch((e) => {
+    try {
+      const result = await Promise.all(
+        supportedChains.map(async ({ chainId, title, iconUrl }) => {
+          const account = await fetchDeploymentData(chainId);
+          if (!account) return;
+          return { ...account, chainId, title, iconUrl };
+        })
+      );
+      const accounts = result.filter((acc) => acc);
+      return Promise.allSettled(accounts).catch(() => {
+        return [];
+      });
+    } catch (err) {
       return [];
-    });
+    }
   };
 
   const hideModal = () => {
@@ -142,10 +145,10 @@ const Deployment = () => {
 
   const deploy = async () => {
     if (!selectedChain || !accountAddress) return;
-    const maticSdk = getSdkForChainId(selectedChain);
-    if (!maticSdk) return;
+    const sdk = getSdkForChainId(selectedChain);
+    if (!sdk) return;
     try {
-      await deployAccount(maticSdk);
+      await deployAccount(sdk);
     } catch (err) {
       setErrorMessage('Failed to proceed with selected actions!');
       hideModal();
