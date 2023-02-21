@@ -803,7 +803,9 @@ export const buildCrossChainAction = async (
           receiverAddress: transactionBlock?.values?.receiverAddress,
           route,
         };
+
         const result = await bridgeAssetToPlr(fromChainId, route, sdk);
+        
         if (result?.errorMessage) return { errorMessage: result.errorMessage };
         const crossChainAction: ICrossChainAction = {
           id: crossChainActionId,

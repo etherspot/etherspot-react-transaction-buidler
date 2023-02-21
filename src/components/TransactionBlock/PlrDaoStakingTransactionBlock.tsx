@@ -157,7 +157,7 @@ const PlrDaoStakingTransactionBlock = ({
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
     values?.offer ? mapOfferToOption(values?.offer) : null,
   );
-  const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(values?.offer ? [values.offer] : null);
+  const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[]>(values?.offer ? [values.offer] : []);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
 
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.selectedAsset ?? null);
@@ -170,7 +170,7 @@ const PlrDaoStakingTransactionBlock = ({
   const [totalSmartWalletPLRTokens, setTotalSmartWalletPLRTokens] = useState<number>(0);
 
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
-  const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(null);
+  const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
 
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
@@ -183,8 +183,8 @@ const PlrDaoStakingTransactionBlock = ({
       account.chainName === 'Polygon' &&
       selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
       selectedFromAsset?.symbol === 'PLR' &&
-      ((selectedAccountType === 'Contract' && account.smartWallet >= MAX_PLR_TOKEN_LIMIT) ||
-        (selectedAccountType === 'Key' && account.keyBasedWallet >= MAX_PLR_TOKEN_LIMIT))
+      ((selectedAccountType === DestinationWalletEnum.Contract && account.smartWallet >= MAX_PLR_TOKEN_LIMIT) ||
+        (selectedAccountType === DestinationWalletEnum.Key && account.keyBasedWallet >= MAX_PLR_TOKEN_LIMIT))
   );
   const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === 'PLR';
   const enableAssetSwap = selectedFromAsset?.symbol !== 'PLR';
@@ -251,7 +251,7 @@ const PlrDaoStakingTransactionBlock = ({
         setAvailableRoutes(routes);
         if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
       } catch (e) {
-        //
+        setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Cannot fetch routes');
       }
 
       setIsLoadingAvailableRoutes(false);
@@ -430,8 +430,8 @@ const PlrDaoStakingTransactionBlock = ({
 
   useEffect(() => {
     // update transaction block with best offer (LiFi)
-    const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
-    const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
+    const offer = availableOffers.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
+    const route = availableRoutes.find((availableRoute) => availableRoute.id === selectedRoute?.value);
 
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
@@ -583,7 +583,7 @@ const PlrDaoStakingTransactionBlock = ({
           selectedAccountType={selectedAccountType}
           onChange={(accountType) => {
             setSelectedAccountType(accountType);
-            setAvailableOffers(null);
+            setAvailableOffers([]);
             setSelectedOffer(null);
           }}
           hideKeyBased={smartWalletOnly}
@@ -600,6 +600,8 @@ const PlrDaoStakingTransactionBlock = ({
             setSelectedFromAsset(asset);
             if (amountBN) {
               setAmount(stakingBalance || formatMaxAmount(amountBN, asset.decimals));
+            } else {
+              setAmount(stakingBalance || '');
             }
           }}
           onNetworkSelect={(network) => {
