@@ -14,5 +14,6 @@ export const PLR_ADDRESS_PER_CHAIN = {
   [CHAIN_ID.XDAI]: PLR_ADDRESS_GNOSIS_CHAIN,
 };
 
-export const PLR_STAKING_ADDRESS_ETHEREUM_MAINNET = '0xe3818504c1b32bf1557b16c238b2e01fd3149c17';
+// TODO: to be added once available, contract said to be deployed once QA passes UI
+export const PLR_STAKING_ADDRESS_ETHEREUM_MAINNET = '0x';
 

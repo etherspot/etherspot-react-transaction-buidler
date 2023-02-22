@@ -40,7 +40,8 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { PlrV2StakingContract } from '../types/etherspotContracts';
 
 const fetchBestRoute = async (
   sdk: EtherspotSdk,
@@ -1184,6 +1185,16 @@ export const buildCrossChainAction = async (
 
         transactions = routeData.destinationTxns ?? [];
         toAssetAmount = BigNumber.from(routeData.bestRoute.toAmount);
+      } else if (addressesEqual(toAssetAddress, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET)) {
+        const plrV2StakingContract = sdk.registerContract<PlrV2StakingContract>(
+          'plrV2StakingContract',
+          ['function stake(uint256)'],
+          PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
+        );
+        const stakeTransactionRequest = plrV2StakingContract?.encodeStake?.(toAssetAmount);
+        if (!stakeTransactionRequest || !stakeTransactionRequest.to) {
+          return { errorMessage: 'Failed build stake transaction!' };
+        }
       }
 
       let preview = {
