@@ -127,7 +127,7 @@ const mapRouteToOption = (route: Route) => {
 
 interface IPlrBalancePerChain { [chainId: string]: BigNumber | undefined }
 
-const MIN_PLR_STAKE_AMOUNT = '1';
+const MIN_PLR_STAKE_AMOUNT = '10000';
 
 const chainIdsWithPlrTokens = [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.BINANCE, CHAIN_ID.XDAI, CHAIN_ID.POLYGON];
 
@@ -166,6 +166,21 @@ const PlrStakingV2TransactionBlock = ({
     if (!address || !addressPlrBalancePerChain?.[address]?.[CHAIN_ID.ETHEREUM_MAINNET]) return false;
     return isEnoughPlrBalanceToStake(addressPlrBalancePerChain[address][CHAIN_ID.ETHEREUM_MAINNET]);
   }), [providerAddress, accountAddress, addressPlrBalancePerChain]);
+
+  const hasEnoughPlrCrossChainToStake = useMemo(() => {
+    const plrBalanceCrossChain = [providerAddress, accountAddress].reduce((total, address) => {
+      if (!address) return total;
+
+      const totalPerChains = supportedChains.reduce((chainsTotal, chain) => {
+        if (!addressPlrBalancePerChain?.[address]?.[chain.chainId]) return chainsTotal;
+        return chainsTotal.add(addressPlrBalancePerChain[address][chain.chainId] as BigNumber);
+      }, BigNumber.from(0));
+
+      return total.add(totalPerChains);
+    }, BigNumber.from(0));
+
+    return isEnoughPlrBalanceToStake(plrBalanceCrossChain);
+  }, [providerAddress, accountAddress, addressPlrBalancePerChain]);
 
   useEffect(() => {
     const setPlrAsDefault = (selectedAccountType === AccountTypes.Key
@@ -551,29 +566,66 @@ const PlrStakingV2TransactionBlock = ({
           <HorizontalLine />
           {plrTokensSum > 0 && (
             <>
-              <Text size={14}>You have {formatAmountDisplay(plrTokensSum)} PLR tokens:</Text>
+              <Text size={14}>
+                You have
+                <Highlighted
+                  color={
+                    hasEnoughPlrCrossChainToStake
+                      ? theme.color?.text?.blockParagraphHighlightSecondary
+                      : theme.color?.text?.errorMessage
+                  }
+                >
+                  &nbsp;{formatAmountDisplay(plrTokensSum)} PLR
+                </Highlighted>
+                &nbsp;tokens:
+              </Text>
               {supportedChains
                 .filter((chain) => chainIdsWithPlrTokens.includes(chain.chainId))
                 .map((chain) => {
                   const [
-                    plrAmountOnKeyBased,
-                    plrAmountOnSmartWallet,
+                    plrOnKeyBased,
+                    plrOnSmartWallet,
                   ] = [providerAddress, accountAddress].map((address) => {
                     if (!address || !addressPlrBalancePerChain?.[address]?.[chain.chainId]) return;
 
                     const plrBalance = addressPlrBalancePerChain[address][chain.chainId] ;
                     if (!plrBalance) return;
 
-                    return formatAmountDisplay(ethers.utils.formatUnits(plrBalance, 18));
+                    // color only for ethereum mainnet lines
+                    let textColor;
+                    if (chain.chainId === CHAIN_ID.ETHEREUM_MAINNET) {
+                      textColor = isEnoughPlrBalanceToStake(plrBalance)
+                        ? theme.color?.text?.blockParagraphHighlightSecondary
+                        : theme.color?.text?.errorMessage;
+                    }
+
+                    return {
+                      textColor,
+                      amount: formatAmountDisplay(ethers.utils.formatUnits(plrBalance, 18)),
+                    };
                   });
 
                   return (
                     <>
-                      {plrAmountOnKeyBased && (
-                        <Text size={12} marginTop={4} block>• {plrAmountOnKeyBased} PLR on {chain.title} on Key Based</Text>
+                      {plrOnKeyBased && (
+                        <Text
+                          size={12}
+                          marginTop={4}
+                          color={plrOnKeyBased.textColor}
+                          block
+                        >
+                          • {plrOnKeyBased.amount} PLR on {chain.title} on Key Based
+                        </Text>
                       )}
-                      {plrAmountOnSmartWallet && (
-                        <Text size={12} marginTop={4} block>• {plrAmountOnKeyBased} PLR on {chain.title} on Smart Wallet</Text>
+                      {plrOnSmartWallet && (
+                        <Text
+                          size={12}
+                          marginTop={4}
+                          color={plrOnSmartWallet.textColor}
+                          block
+                        >
+                          • {plrOnSmartWallet.amount} PLR on {chain.title} on Smart Wallet
+                        </Text>
                       )}
                     </>
                   );

@@ -76,6 +76,7 @@ export interface Theme {
       reviewLabel?: string;
       settingsIcon?: string;
       blockParagraphHighlight?: string;
+      blockParagraphHighlightSecondary?: string;
     };
   };
 }
@@ -158,6 +159,7 @@ export const defaultTheme: Theme = {
       settingsIcon: '#ee6723',
       walletDropdownIcon: '#221f33',
       blockParagraphHighlight: '#e333e8',
+      blockParagraphHighlightSecondary: '#77e7f6',
     },
   },
 };
@@ -215,6 +217,7 @@ export const darkTheme: Theme = {
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
       blockParagraphHighlight: '#e333e8',
+      blockParagraphHighlightSecondary: '#77e7f6',
     },
   },
 };
