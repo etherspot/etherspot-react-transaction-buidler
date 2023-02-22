@@ -10,7 +10,7 @@ import {
   TransactionsDispatcherContextProvider,
 } from '../providers';
 
-import { darkTheme, defaultTheme, Theme } from '../utils/theme';
+import { darkTheme, Theme } from '../utils/theme';
 import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
 
 interface EtherspotProps {
@@ -24,6 +24,7 @@ interface EtherspotProps {
   onLogout?: () => void;
   showMenuLogout?: boolean;
   smartWalletOnly?: boolean;
+  hideWalletBlock?: boolean;
 }
 
 const ComponentWrapper = styled.div`
@@ -63,6 +64,7 @@ const Etherspot = ({
   showMenuLogout,
   smartWalletOnly,
   onLogout,
+  hideWalletBlock,
 }: EtherspotProps) => (
   <ThemeProvider theme={merge({}, darkTheme, themeOverride)}>
     <EtherspotContextProvider
@@ -85,6 +87,7 @@ const Etherspot = ({
               hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
               hideAddTransactionButton={hideAddTransactionButton}
               showMenuLogout={showMenuLogout}
+              hideWalletBlock={hideWalletBlock}
             />
           </TransactionsDispatcherContextProvider>
         </TransactionBuilderModalContextProvider>
