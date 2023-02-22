@@ -99,10 +99,10 @@ export const validateTransactionBlockValues = (
     if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
     if (!transactionBlockValues?.fromAsset) errors.fromAsset = 'Invalid source asset selected!';
     if (!transactionBlockValues?.toAsset) errors.toAsset = 'Invalid destination asset selected!';
-    if (transactionBlockValues?.swap?.type === 'CROSS_CHAIN_SWAP' && transactionBlockValues?.swap?.route) {
+    if (transactionBlockValues?.swap?.type === 'CROSS_CHAIN_SWAP' && !transactionBlockValues?.swap?.route) {
       errors.route = 'No route selected!';
     }
-    if (transactionBlockValues?.swap?.type === 'SAME_CHAIN_SWAP' && transactionBlockValues?.swap?.offer) {
+    if (transactionBlockValues?.swap?.type === 'SAME_CHAIN_SWAP' && !transactionBlockValues?.swap?.offer) {
       errors.route = 'No offer selected!';
     }
     if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) {
