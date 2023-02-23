@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled, { useTheme } from 'styled-components';
+import { AccountStates } from 'etherspot';
 
-//icons
+// icons
 import { IoMdCheckmark } from 'react-icons/io';
 import { CgSandClock } from 'react-icons/cg';
 
-//components
+// components
 import Card from '../Card/Card';
 import { RoundedImage } from '../Image';
 import { useEtherspot } from '../../hooks';
@@ -14,7 +15,7 @@ import { Paragraph } from '../Text';
 import { PrimaryButton, SecondaryButton } from '../Button';
 import ErrorMessage from '../Error/ErrorMessage';
 
-//utils
+// utils
 import { supportedChains } from '../../utils/chain';
 import { deployAccount } from '../../utils/transaction';
 import { Theme } from '../../utils/theme';
@@ -68,21 +69,18 @@ const DeployButton = styled.button`
   width: 80px;
 `;
 
-interface Account {
-  status: string;
-  value?: any;
-  title?: string;
-  address?: string;
-  createdAt?: Date;
-  state?: string;
-  store?: string;
+interface DeployChain {
+  chainId: number;
+  status?: string;
+  title: string;
+  iconUrl?: string;
   type?: string;
-  updatedAt?: Date;
+  state: AccountStates;
 }
 
 const Deployment = () => {
-  const [deployedChains, setDeployedChains] = useState<Account[]>([]);
-  const [undeployedChains, setUndeployedChains] = useState<Account[]>([]);
+  const [deployedChains, setDeployedChains] = useState<DeployChain[]>([]);
+  const [undeployedChains, setUndeployedChains] = useState<DeployChain[]>([]);
   const [confirmModal, setConfirmModal] = useState<boolean>(false);
   const [selectedChain, setSelectedChain] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -95,27 +93,23 @@ const Deployment = () => {
     if (accountAddress && sdk) {
       try {
         await sdk.computeContractAccount();
-        let account = await sdk.getAccount();
-        return account;
+        return await sdk.getAccount();
       } catch (err) {
         //
       }
     }
   };
 
-  const getDeployementStatus = async () => {
+  const getDeploymentStatus = async () => {
     try {
-      const result = await Promise.all(
-        supportedChains.map(async ({ chainId, title, iconUrl }) => {
-          const account = await fetchDeploymentData(chainId);
-          if (!account) return;
-          return { ...account, chainId, title, iconUrl };
-        })
-      );
-      const accounts = result.filter((acc) => acc);
-      return Promise.allSettled(accounts).catch(() => {
-        return [];
-      });
+      const result = [];
+      for (const { chainId, title, iconUrl } of supportedChains) {
+        const account = await fetchDeploymentData(chainId);
+        if (account) {
+          result.push({ ...account, chainId, title, iconUrl });
+        }
+      }
+      return result;
     } catch (err) {
       return [];
     }
@@ -126,11 +120,11 @@ const Deployment = () => {
   };
 
   const deploymentData = async () => {
-    const data: Account[] | undefined = await getDeployementStatus();
+    const data: DeployChain[] = await getDeploymentStatus();
     if (!data) return;
     const [unDeployed, deployed] = data.reduce(
-      (acc: Account[][], curr: Account) => {
-        if (curr?.value?.state === 'UnDeployed') {
+      (acc: DeployChain[][], curr: DeployChain) => {
+        if (curr.state ===  AccountStates.UnDeployed) {
           acc[0].push(curr);
         } else {
           acc[1].push(curr);
@@ -146,7 +140,10 @@ const Deployment = () => {
   const deploy = async () => {
     if (!selectedChain || !accountAddress) return;
     const sdk = getSdkForChainId(selectedChain);
-    if (!sdk) return;
+    if (!sdk) {
+      setErrorMessage('Failed to proceed with selected actions!');
+      return;
+    }
     try {
       await deployAccount(sdk);
     } catch (err) {
@@ -167,8 +164,8 @@ const Deployment = () => {
     <Card title="Deployments" marginBottom={20}>
       {errorMessage && <ErrorMessage errorMessage={errorMessage} onClose={handleClose} />}
       {!!confirmModal && (
-        <Modal zIndex>
-          <Paragraph>Deploy your wallet on Etherium to sign messages</Paragraph>
+        <Modal isComponentOnTop>
+          <Paragraph>Deploy your wallet on Ethereum to sign messages</Paragraph>
           <PrimaryButton
             background={theme?.color?.background?.selectInputScrollbar}
             color={theme?.color?.text?.listItemQuickButtonPrimary}
@@ -190,11 +187,11 @@ const Deployment = () => {
           <Label>Deployed</Label>
         </Header>
         <Body>
-          {deployedChains.map(({ value }) => {
+          {deployedChains.map(({ iconUrl, title }) => {
             return (
               <Section>
-                <RoundedImage url={value.iconUrl} title={value.title} size={24} />
-                {value.title}
+                <RoundedImage url={iconUrl} title={title} size={24} />
+                {title}
                 <AuthLabel>Auth Chain</AuthLabel>
               </Section>
             );
@@ -207,15 +204,15 @@ const Deployment = () => {
           <Label>Not Deployed</Label>
         </Header>
         <Body>
-          {undeployedChains.map(({ value }) => {
+          {undeployedChains.map(({ chainId, iconUrl, title }) => {
             return (
               <Section>
-                <RoundedImage url={value.iconUrl} title={value.title} size={24} />
-                {value.title}
+                <RoundedImage url={iconUrl} title={title} size={24} />
+                {title}
                 <DeployButton
                   onClick={() => {
                     setConfirmModal(true);
-                    setSelectedChain(value.chainId);
+                    setSelectedChain(chainId);
                   }}
                 >
                   Deploy

@@ -10,14 +10,14 @@ interface Props {
 const ErrorMessage: React.FC<Props> = ({ errorMessage, onClose }) => {
   return (
     <ErrorBanner>
-      <Error>{errorMessage ?? errorMessage}</Error>
+      <Error>{errorMessage}</Error>
       <CloseButton onClick={onClose} top={0} right={0} />
     </ErrorBanner>
   );
 };
 
 const ErrorBanner = styled.div`
-  position: fixed;
+  position: relative;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -25,7 +25,6 @@ const ErrorBanner = styled.div`
   background: ${({ theme }) => theme.color.background.topMenu};
   color: ${({ theme }) => theme.color.text.card};
   text-align: center;
-  position: relative;
   border-radius: 12px;
 `;
 

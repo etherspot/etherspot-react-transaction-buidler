@@ -15,7 +15,7 @@ const SecondaryButton = styled.button<{
   padding: 0;
   ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px`};
   ${({ margin }) => margin && `margin: ${margin}`};
-  ${({ display }) => display && `display:${display}`};
+  ${({ display }) => display && `display: ${display}`};
   color: ${({ color, theme }) => color || theme.color.text.buttonSecondary};
   cursor: pointer;
 
