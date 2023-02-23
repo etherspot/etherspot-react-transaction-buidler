@@ -204,7 +204,11 @@ const fetchSwapAssetTransaction = async (
   }
 };
 
-const bridgeAssetToPlr = async (chainId: number, route: Route | null, sdk?: EtherspotSdk | null) => {
+const buildBridgeAssetToPlrTransactions = async (
+  chainId: number,
+  route: Route | null,
+  sdk?: EtherspotSdk | null
+): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[] } }> => {
   try {
     const createTimestamp = +new Date();
     if (!sdk) return { errorMessage: 'No sdk found' };
@@ -804,7 +808,7 @@ export const buildCrossChainAction = async (
           route,
         };
 
-        const result = await bridgeAssetToPlr(fromChainId, route, sdk);
+        const result = await buildBridgeAssetToPlrTransactions(fromChainId, route, sdk);
         
         if (result?.errorMessage) return { errorMessage: result.errorMessage };
         const crossChainAction: ICrossChainAction = {
@@ -823,12 +827,12 @@ export const buildCrossChainAction = async (
 
         return { crossChainAction };
       } catch (e) {
-        return { errorMessage: 'Failed to build Asset Bridge transaction!' };
+        return { errorMessage: 'Failed to build PLR DAO stake transaction!' };
       }
     }
     // Swap
     try {
-      if (!transactionBlock?.values) return { errorMessage: 'Failed to build swap transaction!' };
+      if (!transactionBlock?.values) return { errorMessage: 'Failed to build PLR DAO swap transaction!' };
 
       const {
         values: {
@@ -907,7 +911,7 @@ export const buildCrossChainAction = async (
 
       return { crossChainAction };
     } catch (e) {
-      return { errorMessage: 'Failed to build swap transaction!' };
+      return { errorMessage: 'Failed to build PLR DAO swap transaction!' };
     }
   }
 

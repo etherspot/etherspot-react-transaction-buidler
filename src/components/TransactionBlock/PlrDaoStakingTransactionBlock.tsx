@@ -54,6 +54,7 @@ export interface IPlrDaoTransactionBlockValues {
 }
 
 interface AccountBalance {
+  chainId: number;
   chainName: string;
   keyBasedWallet: number;
   smartWallet: number;
@@ -180,7 +181,7 @@ const PlrDaoStakingTransactionBlock = ({
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
   const isPolygonAccountWithEnoughPLR = accounts.some(
     (account) =>
-      account.chainName === 'Polygon' &&
+      account.chainId === CHAIN_ID.POLYGON &&
       selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
       selectedFromAsset?.symbol === 'PLR' &&
       ((selectedAccountType === DestinationWalletEnum.Contract && account.smartWallet >= MAX_PLR_TOKEN_LIMIT) ||
@@ -283,12 +284,14 @@ const PlrDaoStakingTransactionBlock = ({
         }
       });
       return {
+        chainId,
         chainName: name,
         keyBasedWallet: keyBasedBalance,
         smartWallet: smartWalletBalance,
       };
     } catch (err) {
       return {
+        chainId,
         chainName: name,
         keyBasedWallet: 0,
         smartWallet: 0,
@@ -530,7 +533,8 @@ const PlrDaoStakingTransactionBlock = ({
       ? 'Key Based'
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
-  const stakingBalance = isPolygonAccountWithEnoughPLR && `${MAX_PLR_TOKEN_LIMIT}`;
+  const stakingBalance = isPolygonAccountWithEnoughPLR ? `${MAX_PLR_TOKEN_LIMIT}` : '';
+  const newStakingBalance = stakingBalance; 
 
   return (
     <>
@@ -549,13 +553,13 @@ const PlrDaoStakingTransactionBlock = ({
           </Text>
         }
         {'\n'}
-        {tokenArray.map(({ chainName, keyBasedWallet, smartWallet }) => (
+        {tokenArray.map(({ chainId, chainName, keyBasedWallet, smartWallet }) => (
           <Text size={12}>
             {<Block></Block>}
             {keyBasedWallet > 0 && (
               <Block
                 color={
-                  chainName === 'Polygon' && keyBasedWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                  chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
                 }
               >
                 {`\u25CF`}
@@ -566,7 +570,7 @@ const PlrDaoStakingTransactionBlock = ({
             {smartWallet > 0 && (
               <Block
                 color={
-                  chainName === 'Polygon' && smartWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                  chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
                 }
               >
                 {`\u25CF`}
@@ -598,11 +602,7 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
-            if (amountBN) {
-              setAmount(stakingBalance || formatMaxAmount(amountBN, asset.decimals));
-            } else {
-              setAmount(stakingBalance || '');
-            }
+            setAmount(amountBN && !newStakingBalance ? formatMaxAmount(amountBN, asset.decimals) : newStakingBalance);
           }}
           onNetworkSelect={(network) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
