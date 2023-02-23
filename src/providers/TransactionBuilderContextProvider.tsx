@@ -80,14 +80,6 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
   &:last-child {
     margin-bottom: 0;
   }
-
-  ${({ disabled }) =>
-    !disabled &&
-    `
-    &:hover {
-      text-decoration: underline;
-    }
-  `}
 `;
 
 const TopNavigation = styled.div`
