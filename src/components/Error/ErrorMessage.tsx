@@ -2,12 +2,12 @@ import React from 'react';
 import styled from 'styled-components';
 import CloseButton from '../Button/CloseButton';
 
-interface Props {
+interface ErrorMessageProps {
   errorMessage: string;
   onClose?: () => void;
 }
 
-const ErrorMessage: React.FC<Props> = ({ errorMessage, onClose }) => {
+const ErrorMessage: React.FC<ErrorMessageProps> = ({ errorMessage, onClose }) => {
   return (
     <ErrorBanner>
       <Error>{errorMessage}</Error>
@@ -17,15 +17,17 @@ const ErrorMessage: React.FC<Props> = ({ errorMessage, onClose }) => {
 };
 
 const ErrorBanner = styled.div`
-  position: relative;
-  top: 50%;
+  position: absolute;
+  top: 12%;
   left: 50%;
   transform: translate(-50%, -50%);
-  padding: 32px;
+  padding: 30px;
   background: ${({ theme }) => theme.color.background.topMenu};
   color: ${({ theme }) => theme.color.text.card};
   text-align: center;
   border-radius: 12px;
+  width: 100%;
+  max-width: 350px;
 `;
 
 const Error = styled.div`

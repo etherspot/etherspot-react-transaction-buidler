@@ -1,17 +1,16 @@
 import axios from 'axios';
 
 const getAccount = async () => {
-  const response = await axios.get('https://etherspot.pillarproject.io/', {
+  return await axios.get('https://etherspot.pillarproject.io/', {
     data: {
       account: '0xA8235A816d468C71b5C004a6515CEE89A8C5ccF0',
       chainId: 137,
     },
   });
-  return response;
 };
 
 const deployAccount = async () => {
-  const response = await axios.get('https://etherspot.pillarproject.io/', {
+  return await axios.get('https://etherspot.pillarproject.io/', {
     data: {
       account: '0xA8235A816d468C71b5C004a6515CEE89A8C5ccF0',
       chainId: 137,
@@ -21,7 +20,6 @@ const deployAccount = async () => {
       to: ['0x7EB3A038F25B9F32f8e19A7F0De83D4916030eFa'],
     },
   });
-  return response;
 };
 
 jest.mock('axios');
