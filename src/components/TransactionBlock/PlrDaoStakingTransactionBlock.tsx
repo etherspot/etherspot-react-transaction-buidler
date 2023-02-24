@@ -353,7 +353,7 @@ const PlrDaoStakingTransactionBlock = ({
         const offers = await sdk.getExchangeOffers({
           fromChainId: selectedFromAsset.chainId,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-          toTokenAddress: hasEnoughPLR ? plrDaoMemberNFT.address : plrDaoAsset.address,
+          toTokenAddress: isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT.address : plrDaoAsset.address,
           fromTokenAddress: selectedFromAsset.address,
         });
         return offers;
@@ -534,7 +534,6 @@ const PlrDaoStakingTransactionBlock = ({
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
   const stakingBalance = isPolygonAccountWithEnoughPLR ? `${MAX_PLR_TOKEN_LIMIT}` : '';
-  const newStakingBalance = stakingBalance; 
 
   return (
     <>
@@ -559,7 +558,9 @@ const PlrDaoStakingTransactionBlock = ({
             {keyBasedWallet > 0 && (
               <Block
                 color={
-                  chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                  chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
+                    ? theme?.color?.text?.tokenTotal
+                    : ''
                 }
               >
                 {`\u25CF`}
@@ -570,7 +571,9 @@ const PlrDaoStakingTransactionBlock = ({
             {smartWallet > 0 && (
               <Block
                 color={
-                  chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                  chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
+                    ? theme?.color?.text?.tokenTotal
+                    : ''
                 }
               >
                 {`\u25CF`}
@@ -602,7 +605,7 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
-            setAmount(amountBN && !newStakingBalance ? formatMaxAmount(amountBN, asset.decimals) : newStakingBalance);
+            setAmount(amountBN && !stakingBalance ? formatMaxAmount(amountBN, asset.decimals) : stakingBalance);
           }}
           onNetworkSelect={(network) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
