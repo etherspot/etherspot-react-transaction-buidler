@@ -51,6 +51,9 @@ import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain'
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
+// hooks
+import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
+
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
   fromAssetAddress?: string;
@@ -110,6 +113,7 @@ const KlimaStakingTransactionBlock = ({
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [toolUsed, setToolUsed] = useState<string>('');
+  const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
 
   const defaultCustomReceiverAddress = values?.receiverAddress
     && !addressesEqual(providerAddress, values?.receiverAddress)
@@ -320,6 +324,7 @@ const KlimaStakingTransactionBlock = ({
         {!!receiveAmount && (
           <Text size={16} medium>
             {receiveAmount} {klimaAsset.symbol}
+            {targetAssetPriceUsd && ` · ${formatAmountDisplay(+receiveAmount * targetAssetPriceUsd, '$')}`}
           </Text>
         )}
       </div>

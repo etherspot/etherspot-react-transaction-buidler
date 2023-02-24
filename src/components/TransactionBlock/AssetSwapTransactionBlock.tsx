@@ -20,6 +20,7 @@ import AccountSwitchInput from '../AccountSwitchInput';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import Text from '../Text/Text';
 import { IAssetSwapTransactionBlock, IMultiCallData } from '../../types/transactionBlock';
+import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 
 export interface ISwapAssetTransactionBlockValues {
   chain?: Chain;
@@ -79,10 +80,10 @@ const AssetSwapTransactionBlock = ({
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
   const [showReceiverInput] = useState<boolean>(!!values?.receiverAddress);
   const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(
-    values?.accountType ?? AccountTypes.Contract,
-  );
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
   const fixed = multiCallData?.fixed ?? false;
+
+  const targetAssetPriceUsd = useAssetPriceUsd(selectedNetwork?.chainId, selectedToAsset?.address);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
   const {
@@ -249,9 +250,13 @@ const AssetSwapTransactionBlock = ({
     const toAsset = availableToAssets?.find((availableAsset) =>
       addressesEqual(availableAsset.address, selectedToAsset?.address),
     );
-    const valueToReceive =
-      availableOffer &&
-      formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals));
+
+    const valueToReceiveRaw = availableOffer
+      ? ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals)
+      : undefined;
+
+    const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
+
     return (
       <OfferDetails>
         <RoundedImage title={option.title} url={option.iconUrl} size={24} />
@@ -262,6 +267,7 @@ const AssetSwapTransactionBlock = ({
           {!!valueToReceive && (
             <Text size={16} medium>
               {valueToReceive} {toAsset?.symbol}
+              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$')}`}
             </Text>
           )}
         </div>

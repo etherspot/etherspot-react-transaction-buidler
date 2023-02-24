@@ -104,8 +104,7 @@ export const getAssetsPrices = async (
 };
 
 export const getAssetPriceInUsd = async (chainId: number, assetAddress: string): Promise<number | null> => {
-  const coinId = chainToCoinGeckoNativeCoinId[chainId];
-  if (!coinId) return null;
+  if (isZeroAddress(assetAddress)) return getNativeAssetPriceInUsd(chainId);
 
   try {
     const prices = await getAssetsPrices(chainId, [assetAddress]);
