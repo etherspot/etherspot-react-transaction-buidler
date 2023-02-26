@@ -52,8 +52,14 @@ const SendAssetTransactionBlock = ({
   const theme: Theme = useTheme();
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { providerAddress, accountAddress, chainId, getSupportedAssetsWithBalancesForChainId, smartWalletOnly } =
-    useEtherspot();
+  const {
+    providerAddress,
+    accountAddress,
+    chainId,
+    getSupportedAssetsWithBalancesForChainId,
+    smartWalletOnly,
+    handleGetBalances,
+  } = useEtherspot();
 
   const onAmountChange = useCallback(
     (newAmount: string) => {
@@ -68,6 +74,10 @@ const SendAssetTransactionBlock = ({
   const onReceiverAddressChange = useCallback((newReceiverAddress: string) => {
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
     setReceiverAddress(newReceiverAddress);
+  }, []);
+
+  useEffect(() => {
+    handleGetBalances();
   }, []);
 
   useEffect(() => {

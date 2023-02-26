@@ -72,6 +72,7 @@ const AssetBridgeTransactionBlock = ({
     accountAddress,
     getSupportedAssetsWithBalancesForChainId,
     smartWalletOnly,
+    handleGetBalances
   } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
@@ -107,6 +108,10 @@ const AssetBridgeTransactionBlock = ({
   } = useTransactionBuilder();
 
   const theme: Theme = useTheme()
+
+  useEffect(() => {
+    handleGetBalances();
+  }, []);
 
   useEffect(() => {
     const preselectAsset = async (multiCallData: IMultiCallData) => {

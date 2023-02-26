@@ -92,6 +92,7 @@ const AssetSwapTransactionBlock = ({
     accountAddress,
     providerAddress,
     smartWalletOnly,
+    handleGetBalances
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -149,6 +150,10 @@ const AssetSwapTransactionBlock = ({
     }, 200),
     [sdk, selectedFromAsset, selectedToAsset, amount, selectedNetwork, accountAddress],
   );
+
+  useEffect(() => {
+    handleGetBalances();
+  }, []);
 
   useEffect(() => {
     // this will ensure that the old data won't replace the new one

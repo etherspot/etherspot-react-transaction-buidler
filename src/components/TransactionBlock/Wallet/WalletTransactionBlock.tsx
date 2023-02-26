@@ -64,14 +64,8 @@ const WalletTransactionBlock = ({
 
   const theme: Theme = useTheme();
 
-  const {
-    providerAddress,
-    accountAddress,
-    getSupportedAssetsWithBalancesForChainId,
-    getNftsForChainId,
-    smartWalletBalanceByChain,
-    sdk,
-  } = useEtherspot();
+  const { providerAddress, accountAddress, getSupportedAssetsWithBalancesForChainId, getNftsForChainId, sdk } =
+    useEtherspot();
 
   const [tab, setTab] = useState<ITabs>('tokens');
   const [fetchingAssets, setFetchingAssets] = useState(false);
@@ -126,7 +120,6 @@ const WalletTransactionBlock = ({
   const getNfts = async () => {
     if (fetchingNfts) return;
     setFetchingNfts(true);
-    console.log('getting nfts');
 
     let allNfts: IChainNfts[] = [];
     supportedChains.map(async (chain, i) => {
@@ -187,7 +180,7 @@ const WalletTransactionBlock = ({
     if (!accountAddress || !sdk) return;
 
     getAssets();
-  }, [accountAddress, smartWalletBalanceByChain]);
+  }, [accountAddress]);
 
   useEffect(() => {
     if (tab !== 'nfts' || !!chainNfts) return;
