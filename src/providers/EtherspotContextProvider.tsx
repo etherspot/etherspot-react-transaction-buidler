@@ -533,7 +533,7 @@ const EtherspotContextProvider = ({
     if (onLogout) onLogout();
   }, [setProvider, setProviderAddress, setAccountAddress, onLogout]);
 
-  const handleGetBalances = useCallback(
+  const updateWalletBalances = useCallback(
     async (force?: boolean) => {
       if (!sdk || !accountAddress) return;
 
@@ -574,7 +574,7 @@ const EtherspotContextProvider = ({
       setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
-      handleGetBalances,
+      updateWalletBalances,
     }),
     [
       connect,
@@ -601,7 +601,7 @@ const EtherspotContextProvider = ({
       setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
-      handleGetBalances,
+      updateWalletBalances,
     ]
   );
 

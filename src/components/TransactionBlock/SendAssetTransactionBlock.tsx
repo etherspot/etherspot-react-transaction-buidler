@@ -58,7 +58,7 @@ const SendAssetTransactionBlock = ({
     chainId,
     getSupportedAssetsWithBalancesForChainId,
     smartWalletOnly,
-    handleGetBalances,
+    updateWalletBalances,
   } = useEtherspot();
 
   const onAmountChange = useCallback(
@@ -77,7 +77,7 @@ const SendAssetTransactionBlock = ({
   }, []);
 
   useEffect(() => {
-    handleGetBalances();
+    updateWalletBalances();
   }, []);
 
   useEffect(() => {
