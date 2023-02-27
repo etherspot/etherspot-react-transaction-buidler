@@ -61,6 +61,7 @@ export interface TransactionBuilderContextProps {
   hiddenTransactionBlockTypes?: ITransactionBlockType[];
   hideAddTransactionButton?: boolean;
   showMenuLogout?: boolean;
+  hideWalletBlock?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -270,6 +271,7 @@ const TransactionBuilderContextProvider = ({
   hiddenTransactionBlockTypes,
   hideAddTransactionButton,
   showMenuLogout,
+  hideWalletBlock,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -295,7 +297,9 @@ const TransactionBuilderContextProvider = ({
 
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
-  const [showWalletBlock, setShowWalletBlock] = useState(!mappedDefaultTransactionBlocks?.length);
+
+  const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && (hideWalletBlock ?? true);
+  const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
 
   const theme: Theme = useTheme();
 
