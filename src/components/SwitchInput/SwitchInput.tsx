@@ -14,13 +14,14 @@ const Label = styled.div`
   font-size: 14px;
 `;
 
-const Wrapper = styled.div<{ inline?: boolean; disabled: boolean }>`
+const Wrapper = styled.div<{
+  inline?: boolean;
+  disabled: boolean;
+}>`
   margin-bottom: 18px;
   width: 100%;
 
-  ${({ inline }) =>
-    inline &&
-    `
+  ${({ inline }) => inline && `
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -32,9 +33,8 @@ const Wrapper = styled.div<{ inline?: boolean; disabled: boolean }>`
     }
   `}
 
-  ${({ disabled }) =>
-    disabled &&
-    `
+  
+  ${({ disabled }) => disabled && `
     opacity: 0.3;
   `}
 `;
@@ -60,16 +60,11 @@ const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percenta
   min-height: 34px;
   line-height: 34px;
 
-  ${({ isActive, disabled }) =>
-    !isActive &&
-    !disabled &&
-    `
+  ${({ isActive, disabled }) => !isActive && !disabled && `
     cursor: pointer;
   `}
 
-  ${({ isActive, theme }) =>
-    isActive &&
-    `
+  ${({ isActive, theme }) => isActive && `
     border-radius: 6px;
     box-shadow: 0.5px 0 2px 0 rgba(107, 107, 107, 0.44);
     color: ${theme.color.text.switchInputActiveTab};

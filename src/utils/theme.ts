@@ -181,6 +181,9 @@ export const darkTheme: Theme = {
       checkboxInputInactive: '#665c99',
       dropdownHoverColor: '#443d66',
       selectInputExpandedHover: '#443d66',
+      walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
+      walletChainDropdown: '#1a1726',
+      walletChainButtonActive: '#443d66',
       listItemQuickButtonPrimary: '#eb860b',
       listItemQuickButtonSecondary: '#4f367a',
     },
@@ -208,6 +211,7 @@ export const darkTheme: Theme = {
       cardDisabled: '#605e5e',
       pill: '#bbb8cc',
       pillValue: '#ffeee6',
+      walletDropdownIcon: '#ff884d',
     },
   },
 };
