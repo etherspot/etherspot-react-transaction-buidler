@@ -54,9 +54,10 @@ const mapRouteToOption = (route: Route) => {
   const [fistStep] = route.steps;
   const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? "LiFi",
     value: route.id,
     iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    gasCostUSD: route.gasCostUSD,
   };
 };
 

@@ -91,6 +91,7 @@ const mapRouteToOption = (route: BridgingQuote) => {
     title: bridgeServiceIdToDetails['lifi'].title,
     value: route.estimate.toAmount,
     iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
+    gasCostUSD: route.estimate.gasCosts.amountUSD,
   };
 };
 

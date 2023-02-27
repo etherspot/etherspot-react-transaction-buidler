@@ -119,6 +119,7 @@ const Block = styled.div`
 
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
+  console.log('Offer', offer);
   return {
     title: serviceDetails?.title ?? offer.provider,
     value: offer.provider,
