@@ -18,8 +18,8 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ errorMessage, onClose }) =>
 
 const ErrorBanner = styled.div`
   position: absolute;
-  top: 12%;
-  left: 50%;
+  top: 6%;
+  left: 49%;
   transform: translate(-50%, -50%);
   padding: 30px;
   background: ${({ theme }) => theme.color.background.topMenu};

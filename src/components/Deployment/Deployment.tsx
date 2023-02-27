@@ -102,6 +102,7 @@ const Deployment = () => {
     }
     try {
       await deployAccount(sdk);
+      await getDeploymentData();
     } catch (err) {
       setErrorMessage('Failed to proceed with selected actions!');
       hideModal();
@@ -207,6 +208,30 @@ const Header = styled.div`
 
 const Body = styled.div`
   display: block;
+  overflow-y: scroll;
+  max-height: 150px;
+  background-color: ${({ theme }) => theme.color.background.listItem};
+  scrollbar-width: thin;
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: none;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.color.background.selectInputScrollbar};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarHover};
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarActive};
+  }
 `;
 
 const Label = styled.label`
@@ -218,14 +243,13 @@ const Label = styled.label`
 const DeployButton = styled.button`
   background: ${({ theme }) => theme.color.background.deployButton};
   color: ${({ theme }) => theme.color.text.listItemQuickButtonPrimary};
-  position: absolute;
   font-weight: bold;
-  right: 28px;
   border: none;
   cursor: pointer;
   border-radius: 10px;
   height: 30px;
   width: 80px;
+  margin-left: auto;
 `;
 
 const SecondaryButton = styled.button`
