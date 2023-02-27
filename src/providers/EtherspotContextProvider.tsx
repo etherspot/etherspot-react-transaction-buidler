@@ -9,6 +9,7 @@ import {
   Web3WalletProvider,
   RateData,
   NftCollection,
+  WalletConnectWalletProvider,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { BigNumber, ethers } from 'ethers';
@@ -41,6 +42,10 @@ export interface IBalanceByChain {
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
 let supportedAssetsPerChainId: { [chainId: number]: IAsset[] } = {};
 let gasTokenAddressesPerChainId: { [chainId: number]: string[] } = {};
+
+interface IWalletConnectProvider <T>{
+  isWalletConnect?: boolean;
+}
 
 const EtherspotContextProvider = ({
   children,
@@ -81,6 +86,13 @@ const EtherspotContextProvider = ({
 
     if (isWalletProvider(defaultProvider)) {
       setProvider(defaultProvider);
+      return;
+    }
+
+    if ((defaultProvider as IWalletConnectProvider<Web3WalletProvider>).isWalletConnect) {
+      // @ts-ignore
+      const walletConnectProvider = new WalletConnectWalletProvider(defaultProvider);
+      setProvider(walletConnectProvider);
       return;
     }
 
