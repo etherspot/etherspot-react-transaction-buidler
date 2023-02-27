@@ -53,6 +53,7 @@ const SendAssetTransactionBlock = ({
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
   const {
+    sdk,
     providerAddress,
     accountAddress,
     chainId,
@@ -78,7 +79,7 @@ const SendAssetTransactionBlock = ({
 
   useEffect(() => {
     updateWalletBalances();
-  }, []);
+  }, [sdk, accountAddress]);
 
   useEffect(() => {
     const preselectAsset = async (multiCallData: IMultiCallData) => {

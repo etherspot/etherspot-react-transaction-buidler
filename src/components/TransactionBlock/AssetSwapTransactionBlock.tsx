@@ -154,7 +154,7 @@ const AssetSwapTransactionBlock = ({
 
   useEffect(() => {
     updateWalletBalances();
-  }, []);
+  }, [sdk, accountAddress]);
 
   useEffect(() => {
     // this will ensure that the old data won't replace the new one

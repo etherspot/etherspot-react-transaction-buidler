@@ -278,7 +278,7 @@ const TransactionBuilderContextProvider = ({
   const mappedDefaultTransactionBlocks = defaultTransactionBlocks
     ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
     : [];
-  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>([]);
+  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>([...mappedDefaultTransactionBlocks]);
 
   type IValidationErrors = {
     [id: string]: ErrorMessages;
@@ -295,7 +295,7 @@ const TransactionBuilderContextProvider = ({
 
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
-  const [showWalletBlock, setShowWalletBlock] = useState(true);
+  const [showWalletBlock, setShowWalletBlock] = useState(!mappedDefaultTransactionBlocks?.length);
 
   const theme: Theme = useTheme();
 

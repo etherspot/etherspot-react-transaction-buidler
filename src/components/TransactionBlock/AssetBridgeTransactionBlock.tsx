@@ -113,7 +113,7 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {
     updateWalletBalances();
-  }, []);
+  }, [sdk, accountAddress]);
 
   useEffect(() => {
     const preselectAsset = async (multiCallData: IMultiCallData) => {
