@@ -271,7 +271,7 @@ const TransactionBuilderContextProvider = ({
   hiddenTransactionBlockTypes,
   hideAddTransactionButton,
   showMenuLogout,
-  hideWalletBlock,
+  hideWalletBlock = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -298,7 +298,7 @@ const TransactionBuilderContextProvider = ({
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
 
-  const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && (hideWalletBlock ?? true);
+  const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && !hideWalletBlock;
   const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
 
   const theme: Theme = useTheme();
