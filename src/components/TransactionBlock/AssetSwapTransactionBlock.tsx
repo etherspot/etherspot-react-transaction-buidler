@@ -116,9 +116,8 @@ const AssetSwapTransactionBlock = ({
   const updateAvailableOffers = useCallback<() => Promise<ExchangeOffer[] | undefined>>(
     debounce(async () => {
       // there is a race condition here
-      if (multiCallData && fixed) {
-        return;
-      }
+      if (multiCallData && fixed) return;
+
       setSelectedOffer(null);
       setAvailableOffers([]);
 
