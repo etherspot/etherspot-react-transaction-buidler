@@ -537,13 +537,15 @@ const EtherspotContextProvider = ({
     async (force?: boolean) => {
       if (!sdk || !accountAddress) return;
 
-      if (!!force || !smartWalletBalanceByChain.length)
+      if (!!force || !smartWalletBalanceByChain.length) {
         await getSmartWalletBalancesByChain(accountAddress, supportedChains);
+      }
 
       if (!providerAddress) return;
 
-      if (!!force || !keybasedWalletBalanceByChain.length)
+      if (!!force || !keybasedWalletBalanceByChain.length) {
         await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
+      }
     },
     [sdk, accountAddress, providerAddress, smartWalletBalanceByChain, keybasedWalletBalanceByChain]
   );

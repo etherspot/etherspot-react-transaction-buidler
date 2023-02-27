@@ -159,13 +159,21 @@ const AssetSwapTransactionBlock = ({
   useEffect(() => {
     // this will ensure that the old data won't replace the new one
     let active = true;
-    updateAvailableOffers().then((offers) => {
-      if (active && offers) {
+
+    const updateOffers = async () => {
+      try {
+        const offers = await updateAvailableOffers();
+        if (!active || !offers) return;
+
         setAvailableOffers(offers);
         if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
         setIsLoadingAvailableOffers(false);
+      } catch (e) {
+        //
       }
-    });
+    };
+
+    updateOffers();
 
     // hook's clean-up function
     return () => {

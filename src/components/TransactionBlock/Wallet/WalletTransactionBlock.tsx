@@ -64,8 +64,14 @@ const WalletTransactionBlock = ({
 
   const theme: Theme = useTheme();
 
-  const { providerAddress, accountAddress, getSupportedAssetsWithBalancesForChainId, getNftsForChainId, sdk } =
-    useEtherspot();
+  const {
+    sdk,
+    providerAddress,
+    accountAddress,
+    getAssetsBalancesForChainId,
+    getSupportedAssetsWithBalancesForChainId,
+    getNftsForChainId,
+  } = useEtherspot();
 
   const [tab, setTab] = useState<ITabs>('tokens');
   const [fetchingAssets, setFetchingAssets] = useState(false);
