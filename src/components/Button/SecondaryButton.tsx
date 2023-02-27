@@ -6,7 +6,7 @@ const SecondaryButton = styled.button<{
   marginTop?: number;
   fontSize?: number;
 }>`
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   border: none;
   background: transparent;
   font-size: 16px;
@@ -14,10 +14,6 @@ const SecondaryButton = styled.button<{
   ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px`};
   color: ${({ color, theme }) => color || theme.color.text.buttonSecondary};
   cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
 `;
 
 export default SecondaryButton;
