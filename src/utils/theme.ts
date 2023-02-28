@@ -168,7 +168,7 @@ export const darkTheme: Theme = {
     background: {
       main: 'linear-gradient(169deg, #3e3869 5%, #241938 98%)',
       topMenu: 'rgb(68, 61, 102)',
-      topMenuWallet: "rgba(111, 76, 172, 0.54)",
+      topMenuWallet: 'rgba(111, 76, 172, 0.54)',
       topMenuButton: '#ffffff',
       card: '#262240',
       button: 'linear-gradient(to bottom, #fdb754, #f18214)',
@@ -179,6 +179,9 @@ export const darkTheme: Theme = {
       selectInputImagePlaceholder: '#4f367a',
       textInput: '#1a1726',
       switchInput: '#1a1726',
+      statusIconPending: '#ff6b35',
+      statusIconFailed: '#ff0000',
+      statusIconSuccess: '#1ba23d',
       switchInputActiveTab:
         'linear-gradient(to bottom, #734fb3, #422d66), linear-gradient(to bottom, #3d265c, #222130)',
       switchInputInactiveTab: 'transparent',
@@ -219,6 +222,7 @@ export const darkTheme: Theme = {
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
       settingsIcon: '#ee6723',
+      transactionStatusLink: '#ff7733',
     },
   },
 };

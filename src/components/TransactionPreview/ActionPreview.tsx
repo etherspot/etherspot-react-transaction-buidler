@@ -288,38 +288,30 @@ const TransactionStatus = ({
   return (
     <>
       {statusPreviewTransactions.map((transaction, index) => {
-        const transactionStatus =
-          transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
+        const transactionStatus = transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
-        const showAsApproval = crossChainAction.useWeb3Provider
-          && isERC20ApprovalTransactionData(transaction.data as string)
-          && index === 0; // show first tx approval only, bridge tx that are index > 0 can include approval method too
+        const showAsApproval =
+          crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(transaction.data as string) && index === 0; // show first tx approval only, bridge tx that are index > 0 can include approval method too
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? "Submit transaction" : "Sign message",
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: showAsApproval ? "Transaction approved" : "Transaction completed",
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? 'Submit transaction' : 'Sign message',
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]: 'Waiting for transaction',
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]: 'Transaction failed',
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: 'Rejected by user',
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: showAsApproval ? 'Transaction approved' : 'Transaction completed',
         };
 
         const actionStatusToIconBackgroundColor: {
           [transactionStatus: string]: string | undefined;
         } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]:
-            theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]:
-            theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]:
-            theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]:
-            theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]:
-            theme?.color?.background?.statusIconSuccess,
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]: theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]: theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: theme?.color?.background?.statusIconSuccess,
         };
 
-        const actionStatusIconBackgroundColor =
-          actionStatusToIconBackgroundColor[transactionStatus];
+        const actionStatusIconBackgroundColor = actionStatusToIconBackgroundColor[transactionStatus];
         const actionStatusTitle = actionStatusToTitle[transactionStatus];
 
         if (!actionStatusTitle) return null;
@@ -352,37 +344,31 @@ const TransactionStatus = ({
             timeout = setTimeout(() => {
               setPrevStatus((current) => ({ ...current, [index]: undefined }));
             }, 2000);
-          }else{
+          } else {
             setPrevStatus((current) => ({ ...current, [index]: undefined }));
           }
           if (
             (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED ||
-            transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED ||
-            transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER) &&
+              transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED ||
+              transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER) &&
             setIsTransactionDone
-          ){
-            setIsTransactionDone(true)
+          ) {
+            setIsTransactionDone(true);
           }
-            if (timeout) {
-              //@ts-ignore
-              return () => clearTimeout(timeout);
-            }
+          if (timeout) {
+            //@ts-ignore
+            return () => clearTimeout(timeout);
+          }
         }, [transactionStatus]);
 
         return (
           <TransactionStatusAction
-            key={`tx-status-${
-              transaction.transactionHash ||
-              crossChainAction.batchHash ||
-              'no-hash'
-            }-${index}`}
+            key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}
           >
             {prevStatus[index] ? (
               <TransactionStatusWrapper>
                 <TransactionStatusMessageWrapper>
-                  <StatusIconWrapper
-                    color={theme?.color?.background?.statusIconSuccess}
-                  >
+                  <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
                     <BiCheck size={16} />
                   </StatusIconWrapper>
                   <Text size={16} medium>
@@ -392,57 +378,44 @@ const TransactionStatus = ({
               </TransactionStatusWrapper>
             ) : (
               <>
-                {transaction?.submitTimestamp &&
-                  transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
-                    <TransactionStatusClock>
-                      {!!transaction.finishTimestamp &&
-                        moment(
-                          moment(transaction.finishTimestamp).diff(
-                            moment(transaction.submitTimestamp)
-                          )
-                        ).format('mm:ss')}
-                      {!transaction.finishTimestamp &&
-                        moment(
-                          moment().diff(moment(transaction.submitTimestamp))
-                        ).format('mm:ss')}
-                    </TransactionStatusClock>
-                  )}
-                  <TransactionStatusWrapper>
-                    <TransactionStatusMessageWrapper>
-                      {!!actionStatusIconBackgroundColor && (
-                        <StatusIconWrapper
-                          color={actionStatusIconBackgroundColor}
-                        >
-                          {getStatusComponent}
-                        </StatusIconWrapper>
+                {transaction?.submitTimestamp && transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
+                  <TransactionStatusClock>
+                    {!!transaction.finishTimestamp &&
+                      moment(moment(transaction.finishTimestamp).diff(moment(transaction.submitTimestamp))).format(
+                        'mm:ss'
                       )}
-                      <Text size={16} medium>
-                        {showAsApproval
-                          ? `Aprove: ${actionStatusTitle.toLowerCase()}`
-                          : actionStatusTitle}
-                      </Text>
-                    </TransactionStatusMessageWrapper>
-                    {transaction?.submitTimestamp && (
-                      <ClickableText
-                        disabled={isGettingExplorerLink}
-                        onClick={() => {
-                          if (crossChainAction.useWeb3Provider) {
-                            previewTransaction(transaction.transactionHash, showAsApproval);
-                            return;
-                          }
-                          previewBatchTransaction(showAsApproval);
-                        }}
-                      >
-                        <Text
-                          size={16}
-                          color={theme?.color?.text?.transactionStatusLink}
-                          medium
-                        >
-                          Tx
-                        </Text>
-                      </ClickableText>
+                    {!transaction.finishTimestamp &&
+                      moment(moment().diff(moment(transaction.submitTimestamp))).format('mm:ss')}
+                  </TransactionStatusClock>
+                )}
+                <TransactionStatusWrapper>
+                  <TransactionStatusMessageWrapper>
+                    {!!actionStatusIconBackgroundColor && (
+                      <StatusIconWrapper color={actionStatusIconBackgroundColor}>
+                        {getStatusComponent}
+                      </StatusIconWrapper>
                     )}
-                  </TransactionStatusWrapper>
+                    <Text size={16} medium>
+                      {showAsApproval ? `Aprove: ${actionStatusTitle.toLowerCase()}` : actionStatusTitle}
+                    </Text>
+                  </TransactionStatusMessageWrapper>
+                  {transaction?.submitTimestamp && (
+                    <ClickableText
+                      disabled={isGettingExplorerLink}
+                      onClick={() => {
+                        if (crossChainAction.useWeb3Provider) {
+                          previewTransaction(transaction.transactionHash, showAsApproval);
+                          return;
+                        }
+                        previewBatchTransaction(showAsApproval);
+                      }}
+                    >
+                      <Text size={16} color={theme?.color?.text?.transactionStatusLink} medium>
+                        Tx
+                      </Text>
+                    </ClickableText>
+                  )}
+                </TransactionStatusWrapper>
               </>
             )}
           </TransactionStatusAction>
