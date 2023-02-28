@@ -55,6 +55,7 @@ import WalletTransactionBlock from '../components/TransactionBlock/Wallet/Wallet
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
 import SettingMenu from '../components/SettingMenu/SettingMenu';
+import { TbCopy, TbWallet } from 'react-icons/tb';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -105,8 +106,8 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
   border-radius: 6px;
   ${({ theme, selected }) =>
     !!selected &&
-    `color: ${theme.color.text.searchInput};
-    background-color: ${theme.color.background.topMenu};`}
+  `color: ${theme.color.text.topMenuWallet};
+    background-color: ${theme.color.background.topMenuWallet};`}
 
   display: flex;
   justify-content: center;
@@ -790,14 +791,20 @@ const TransactionBuilderContextProvider = ({
       <TopNavigation>
         <WalletAddressesWrapper>
           <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
-            <Text marginRight={2}>{WalletIcon}</Text>
+            <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
+              <TbWallet size={16} />
+            </Text>
             {accountAddress ? (
               <>
                 <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
                   Wallet
                 </Text>
                 <Text onClick={() => onCopy(accountAddress)}>
-                  {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
+                  {copiedAddress ? (
+                    <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
+                  ) : (
+                    <TbCopy size={16} color={theme.color?.text?.topMenuWallet} />
+                  )}
                 </Text>
               </>
             ) : (

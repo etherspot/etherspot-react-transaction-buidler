@@ -3,6 +3,7 @@ export interface Theme {
     background?: {
       main?: string;
       topMenu?: string;
+      topMenuWallet?: string;
       topMenuButton?: string;
       card?: string;
       selectInput?: string;
@@ -43,6 +44,7 @@ export interface Theme {
       main?: string;
       topBar?: string;
       topMenu?: string;
+      topMenuWallet?: string;
       card?: string;
       cardDisabled?: string;
       cardTitle?: string;
@@ -86,6 +88,7 @@ export const defaultTheme: Theme = {
       tokenBalanceContainer: '#21002e',
       horizontalLine: 'linear-gradient(90deg, #23a9c9, #cd34a2)',
       topMenu: '#fff',
+      topMenuWallet: "rgba(255, 247, 242, 0.24)",
       topMenuButton: '#fff',
       selectInput: '#fff',
       selectInputExpanded: '#fff',
@@ -123,6 +126,7 @@ export const defaultTheme: Theme = {
       main: '#fff',
       topBar: '#fff',
       topMenu: '#191726',
+      topMenuWallet: '#fff',
       cardTitle: '#191726',
       card: '#000',
       cardDisabled: '#ddd',
@@ -163,7 +167,8 @@ export const darkTheme: Theme = {
   color: {
     background: {
       main: 'linear-gradient(169deg, #3e3869 5%, #241938 98%)',
-      topMenu: '#443d66',
+      topMenu: 'rgb(68, 61, 102)',
+      topMenuWallet: "rgba(111, 76, 172, 0.54)",
       topMenuButton: '#ffffff',
       card: '#262240',
       button: 'linear-gradient(to bottom, #fdb754, #f18214)',
@@ -196,6 +201,7 @@ export const darkTheme: Theme = {
       outerLabel: '#998ae6',
       innerLabel: '#998ae6',
       topMenu: '#998ae6',
+      topMenuWallet: '#cab3f5',
       main: '#ffeee6',
       topBar: '#998ae6',
       buttonSecondary: '#fbae49',
