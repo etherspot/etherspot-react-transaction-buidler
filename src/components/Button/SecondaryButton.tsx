@@ -8,7 +8,7 @@ const SecondaryButton = styled.button<{
   margin?: string;
   display?: string;
 }>`
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   border: none;
   background: transparent;
   font-size: 16px;
@@ -18,10 +18,6 @@ const SecondaryButton = styled.button<{
   ${({ display }) => display && `display: ${display}`};
   color: ${({ color, theme }) => color || theme.color.text.buttonSecondary};
   cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
 `;
 
 export default SecondaryButton;

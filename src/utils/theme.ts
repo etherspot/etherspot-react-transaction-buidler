@@ -77,7 +77,7 @@ export interface Theme {
       settingsIcon?: string;
     };
   };
-};
+}
 
 export const defaultTheme: Theme = {
   color: {
@@ -164,22 +164,23 @@ export const darkTheme: Theme = {
   ...defaultTheme,
   color: {
     background: {
-      main: '#221f33',
+      main: 'linear-gradient(169deg, #3e3869 5%, #241938 98%)',
       topMenu: '#443d66',
-      topMenuButton: '#ff884d',
-      card: '#2b2640',
-      button: '#ff884d',
-      closeButton: '#ff884d',
-      selectInputToggleButton: '#ff884d',
-      selectInput: '#443d66',
-      selectInputExpanded: '#1a1726',
+      topMenuButton: '#ffffff',
+      card: '#262240',
+      button: 'linear-gradient(to bottom, #fdb754, #f18214)',
+      closeButton: '#ffffff',
+      selectInputToggleButton: '#998ae6',
+      selectInput: '#474078',
+      selectInputExpanded: '#130c1d',
+      selectInputImagePlaceholder: '#4f367a',
       selectInputScrollbar: '#ff7733',
       selectInputScrollbarHover: 'rgba(255, 119, 51, 0.8)',
       selectInputScrollbarActive: 'rgba(255, 119, 51, 0.5)',
-      selectInputImagePlaceholder: '#443d66',
       textInput: '#1a1726',
       switchInput: '#1a1726',
-      switchInputActiveTab: '#443d66',
+      switchInputActiveTab:
+        'linear-gradient(to bottom, #734fb3, #422d66), linear-gradient(to bottom, #3d265c, #222130)',
       switchInputInactiveTab: 'transparent',
       pill: '#2b2640',
       checkboxInputInactive: '#665c99',
@@ -188,6 +189,8 @@ export const darkTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
+      listItemQuickButtonPrimary: '#eb860b',
+      listItemQuickButtonSecondary: '#4f367a',
       deployButton: '#ff884d',
     },
     text: {
@@ -201,15 +204,15 @@ export const darkTheme: Theme = {
       topMenu: '#998ae6',
       main: '#ffeee6',
       topBar: '#998ae6',
-      buttonSecondary: '#998ae6',
+      buttonSecondary: '#fbae49',
       card: '#ffeee6',
       cardTitle: '#ffeee6',
       button: '#fff',
       errorMessage: '#ff4d6a',
       textInput: '#ffeee6',
-      textInputSecondary: '#ffeee6',
+      textInputSecondary: '#9466e6',
       switchInputActiveTab: '#ffeee6',
-      switchInputInactiveTab: '#bbb8cc',
+      switchInputInactiveTab: '#9466e6',
       selectInputImagePlaceholder: '#ffeee6',
       cardDisabled: '#605e5e',
       pill: '#bbb8cc',

@@ -46,6 +46,7 @@ export interface EtherspotContextData {
     setSmartWalletBalanceByChain: React.Dispatch<React.SetStateAction<IBalanceByChain[]>>;
     setKeybasedWalletBalanceByChain: React.Dispatch<React.SetStateAction<IBalanceByChain[]>>;
     getGasAssetsForChainId: (chainId: number, sender?: string) => Promise<IAssetWithBalance[]>;
+    updateWalletBalances: (force?: boolean) => void;
   };
 }
 
