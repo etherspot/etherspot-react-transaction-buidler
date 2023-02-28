@@ -12,8 +12,7 @@ import { RoundedImage } from '../Image';
 import { useEtherspot } from '../../hooks';
 import Modal from '../Modal/Modal';
 import { Paragraph } from '../Text';
-import { PrimaryButton } from '../Button';
-import ErrorMessage from '../Error/ErrorMessage';
+import { PrimaryButton, CloseButton } from '../Button';
 
 // utils
 import { supportedChains } from '../../utils/chain';
@@ -53,7 +52,7 @@ const Deployment = () => {
     if (!accountAddress || !sdk) return;
     try {
       await sdk.computeContractAccount();
-      return await sdk.getAccount();
+      return sdk.getAccount();
     } catch (err) {
       //
     }
@@ -123,7 +122,12 @@ const Deployment = () => {
 
   return (
     <Card title="Deployments" marginBottom={20}>
-      {errorMessage && <ErrorMessage errorMessage={errorMessage} onClose={handleClose} />}
+      {errorMessage && (
+        <Modal>
+          <CloseButton onClick={handleClose} top={18} right={20} />
+          <AlertWrapper>{errorMessage}</AlertWrapper>
+        </Modal>
+      )}
       {!!confirmModal && (
         <Modal>
           <Paragraph>Deploy your wallet on Ethereum to sign messages</Paragraph>
@@ -148,15 +152,13 @@ const Deployment = () => {
           <Label>Deployed</Label>
         </Header>
         <Body>
-          {deployedChains.map(({ iconUrl, title }) => {
-            return (
-              <Section>
-                <RoundedImage url={iconUrl} title={title} size={24} />
-                {title}
-                <span style={{ marginLeft: 'auto' }}>Auth Chain</span>
-              </Section>
-            );
-          })}
+          {deployedChains.map(({ iconUrl, title }) => (
+            <Section>
+              <RoundedImage url={iconUrl} title={title} size={24} />
+              {title}
+              <span style={{ marginLeft: 'auto' }}>Auth Chain</span>
+            </Section>
+          ))}
         </Body>
       </Wrapper>
       <Wrapper>
@@ -165,22 +167,20 @@ const Deployment = () => {
           <Label>Not Deployed</Label>
         </Header>
         <Body>
-          {undeployedChains.map(({ chainId, iconUrl, title }) => {
-            return (
-              <Section>
-                <RoundedImage url={iconUrl} title={title} size={24} />
-                {title}
-                <DeployButton
-                  onClick={() => {
-                    setConfirmModal(true);
-                    setSelectedChain(chainId);
-                  }}
-                >
-                  Deploy
-                </DeployButton>
-              </Section>
-            );
-          })}
+          {undeployedChains.map(({ chainId, iconUrl, title }) => (
+            <Section>
+              <RoundedImage url={iconUrl} title={title} size={24} />
+              {title}
+              <DeployButton
+                onClick={() => {
+                  setConfirmModal(true);
+                  setSelectedChain(chainId);
+                }}
+              >
+                Deploy
+              </DeployButton>
+            </Section>
+          ))}
         </Body>
       </Wrapper>
     </Card>
@@ -204,12 +204,12 @@ const Section = styled.div`
 
 const Header = styled.div`
   display: block;
+  color: ${({ theme }) => theme.color.text.outerLabel};
 `;
 
 const Body = styled.div`
   display: block;
   overflow-y: scroll;
-  max-height: 150px;
   background-color: ${({ theme }) => theme.color.background.listItem};
   scrollbar-width: thin;
   ::-webkit-scrollbar {
@@ -259,4 +259,8 @@ const SecondaryButton = styled.button`
   background: ${({ theme }) => theme.color.background.switchInputInactiveTab};
   border: none;
   cursor: pointer;
+`;
+
+const AlertWrapper = styled.div`
+  margin: 15px 0;
 `;

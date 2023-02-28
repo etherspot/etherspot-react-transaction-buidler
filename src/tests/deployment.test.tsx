@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const getAccount = async () => {
-  return await axios.get('https://etherspot.pillarproject.io/', {
+  return axios.get('https://etherspot.pillarproject.io/', {
     data: {
       account: '0xA8235A816d468C71b5C004a6515CEE89A8C5ccF0',
       chainId: 137,
@@ -10,7 +10,7 @@ const getAccount = async () => {
 };
 
 const deployAccount = async () => {
-  return await axios.get('https://etherspot.pillarproject.io/', {
+  return axios.get('https://etherspot.pillarproject.io/', {
     data: {
       account: '0xA8235A816d468C71b5C004a6515CEE89A8C5ccF0',
       chainId: 137,

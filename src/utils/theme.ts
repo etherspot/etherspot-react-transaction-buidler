@@ -210,6 +210,8 @@ export const darkTheme: Theme = {
       button: '#fff',
       errorMessage: '#ff4d6a',
       textInput: '#ffeee6',
+      tokenTotal: '#ff0065',
+      tokenValue: '#57c2d6',
       textInputSecondary: '#9466e6',
       switchInputActiveTab: '#ffeee6',
       switchInputInactiveTab: '#9466e6',
