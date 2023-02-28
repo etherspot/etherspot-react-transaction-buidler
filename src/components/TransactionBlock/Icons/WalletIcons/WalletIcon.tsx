@@ -6,7 +6,7 @@ export default (
     <svg width="17" height="17" viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
       <g fill="none" fill-rule="evenodd">
         <path d="M0 0h16.32v16.32H0z" />
-        <g stroke="#998ae6" stroke-linecap="round" stroke-linejoin="round">
+        <g stroke="#F73" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12.166 5.1V2.805a.772.772 0 0 0-.78-.765H3.599c-.86 0-1.558.685-1.558 1.53S2.737 5.1 3.598 5.1h9.347c.43 0 .779.343.779.765V8.16m0 3.616v1.739a.772.772 0 0 1-.78.765H3.599c-.86 0-1.558-.685-1.558-1.53V3.57" />
           <path d="M14.28 8.16v3.338h-2.967c-.82 0-1.484-.747-1.484-1.669s.664-1.669 1.484-1.669h2.967" />
         </g>
