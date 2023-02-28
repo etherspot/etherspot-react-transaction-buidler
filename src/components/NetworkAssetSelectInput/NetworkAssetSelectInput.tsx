@@ -239,7 +239,7 @@ interface SelectInputProps {
   hideChainIds?: number[];
   walletAddress?: string | null;
   showQuickInputButtons?: boolean;
-  accountType: string;
+  accountType?: string;
 }
 
 const NetworkAssetSelectInput = ({

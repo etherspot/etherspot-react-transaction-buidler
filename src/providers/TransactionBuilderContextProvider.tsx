@@ -1,10 +1,9 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { HiOutlineDotsHorizontal } from 'react-icons/hi';
+import { HiCheck } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { AccountStates, GatewayTransactionStates, NotificationTypes, Sdk, sleep, TokenListToken } from 'etherspot';
+import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
-import { map } from 'rxjs/operators';
 
 // Types
 import {
@@ -32,27 +31,38 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
-  deployAccount,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { buildUrlOptions, getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
-import History from '../components/History';
+import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
+import { Text } from '../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import { SendActionIcon, SwapActionIcon, BridgeActionIcon, ChainIcon } from '../components/TransactionBlock/Icons';
+import {
+  SendActionIcon,
+  SwapActionIcon,
+  BridgeActionIcon,
+  ChainIcon,
+  WalletCopyIcon,
+  WalletIcon,
+} from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
 import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
+import useInterval from '../hooks/useInterval';
+import SettingMenu from '../components/SettingMenu/SettingMenu';
+import { TbCopy, TbWallet } from 'react-icons/tb';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
   hiddenTransactionBlockTypes?: ITransactionBlockType[];
   hideAddTransactionButton?: boolean;
   showMenuLogout?: boolean;
+  hideWalletBlock?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -72,14 +82,6 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
   &:last-child {
     margin-bottom: 0;
   }
-
-  ${({ disabled }) =>
-    !disabled &&
-    `
-    &:hover {
-      text-decoration: underline;
-    }
-  `}
 `;
 
 const TopNavigation = styled.div`
@@ -98,8 +100,15 @@ const WalletAddressesWrapper = styled.div`
   align-items: center;
 `;
 
-const WalletAddress = styled.span<{ disabled?: boolean }>`
-  margin-right: 20px;
+const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
+  margin-right: 16px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  ${({ theme, selected }) =>
+    !!selected &&
+  `color: ${theme.color.text.topMenuWallet};
+    background-color: ${theme.color.background.topMenuWallet};`}
+
   display: flex;
   justify-content: center;
   align-items: center;
@@ -121,44 +130,8 @@ const WalletAddress = styled.span<{ disabled?: boolean }>`
   `}
 `;
 
-const MenuButton = styled(HiOutlineDotsHorizontal)`
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.5;
-  }
-`;
-
-const MenuWrapper = styled.div`
-  position: absolute;
-  top: 40px;
-  right: 15px;
-  background: ${({ theme }) => theme.color.background.topMenu};
-  color: ${({ theme }) => theme.color.text.topMenu};
-  border-radius: 5px;
-  padding: 15px 20px;
-  font-size: 14px;
-  text-align: left;
-  box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
-`;
-
-const MenuItem = styled.div`
-  margin-bottom: 10px;
-  cursor: pointer;
-
-  a,
-  a:visited {
-    color: ${({ theme }) => theme.color.text.topMenu};
-    text-decoration: none;
-  }
-
-  &:hover {
-    text-decoration: underline;
-  }
-
-  &:last-child {
-    margin-bottom: 0;
-  }
+const CheckmarkIcon = styled(HiCheck)`
+  margin-top: -3px;
 `;
 
 const ConnectButton = styled(SecondaryButton)`
@@ -233,6 +206,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
+    title: 'PLR Staking',
+    type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
+  },
+  {
+    id: getTimeBasedUniqueId(),
     title: 'LI.FI staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
@@ -286,17 +264,16 @@ const TransactionBuilderContextProvider = ({
   hiddenTransactionBlockTypes,
   hideAddTransactionButton,
   showMenuLogout,
+  hideWalletBlock = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
-  if (context !== null) {
-    throw new Error('<EtherspotContextProvider /> has already been declared.');
-  }
+  if (context !== null) throw new Error('<EtherspotContextProvider /> has already been declared.');
 
   const mappedDefaultTransactionBlocks = defaultTransactionBlocks
     ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
     : [];
-  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>(mappedDefaultTransactionBlocks);
+  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>([...mappedDefaultTransactionBlocks]);
 
   type IValidationErrors = {
     [id: string]: ErrorMessages;
@@ -306,18 +283,30 @@ const TransactionBuilderContextProvider = ({
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
-  const [showMenu, setShowMenu] = useState<boolean>(false);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
   const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false);
   let multiCallList: string[] = [];
 
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
+
+  const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && !hideWalletBlock;
+  const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
+
   const theme: Theme = useTheme();
+
+  // Change copy icon back
+  useInterval(() => {
+    setCopiedAddress(false);
+    setCopiedAddressInterval(null);
+  }, copiedAddressInterval);
 
   const onCopy = async (valueToCopy: string) => {
     try {
+      setCopiedAddress(true);
+      if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
       await navigator.clipboard.writeText(valueToCopy);
-      alert('Copied!');
     } catch (e) {
       alert('Unable to copy!');
     }
@@ -358,7 +347,10 @@ const TransactionBuilderContextProvider = ({
     transactionBlocks.forEach((transactionBlock) => {
       const transactionBlockErrors = validateTransactionBlockValues(transactionBlock);
       if (!transactionBlockErrors || Object.keys(transactionBlockErrors).length === 0) return;
-      validationErrors = { ...validationErrors, [transactionBlock.id]: transactionBlockErrors };
+      validationErrors = {
+        ...validationErrors,
+        [transactionBlock.id]: transactionBlockErrors,
+      };
     });
     setTransactionBlockValidationErrors(validationErrors);
 
@@ -422,7 +414,10 @@ const TransactionBuilderContextProvider = ({
             newCrossChainActions[foundChainIndex] = chainTx;
           } else if (!!allActionList.length) {
             // Create new CrossChainAction with multicalls batched
-            let chainTx: ICrossChainAction = { ...allActionList[0], batchTransactions: allActionList };
+            let chainTx: ICrossChainAction = {
+              ...allActionList[0],
+              batchTransactions: allActionList,
+            };
             newCrossChainActions = [...newCrossChainActions, chainTx];
           }
         } else if (
@@ -553,11 +548,22 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.transactions,
             crossChainAction.gasTokenAddress ?? undefined
           );
+
       if (result?.errorMessage || !result?.transactionHash?.length) {
         // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
+        crossChainAction.transactions.map(transaction => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        })
         return;
       }
+
+      crossChainAction.transactions.map(transaction => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+        transaction.submitTimestamp = Date.now();
+        transaction.transactionHash = result.transactionHash;
+      })
+      crossChainAction.transactionHash = result.transactionHash;
 
       let flag = 1,
         errorOnLiFi;
@@ -572,6 +578,12 @@ const TransactionBuilderContextProvider = ({
           );
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
+            crossChainAction.transactions.map(transaction => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+            })
+            crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+            })
           } else if (status?.status === 'FAILED') {
             errorOnLiFi = 'Transaction Failed on LiFi';
             flag = 0;
@@ -629,6 +641,10 @@ const TransactionBuilderContextProvider = ({
         chainId: CHAIN_ID.POLYGON,
       };
 
+      crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
+      })
+
       result = await submitEtherspotAndWaitForTransactionHash(
         getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
         crossChainAction.transactions,
@@ -637,6 +653,9 @@ const TransactionBuilderContextProvider = ({
 
       if (result?.errorMessage || !result?.transactionHash?.length) {
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        })
         setIsSubmitting(false);
         return;
       }
@@ -693,7 +712,10 @@ const TransactionBuilderContextProvider = ({
   const setTransactionBlockFieldValidationError = (transactionBlockId: string, field: string, errorMessage: string) => {
     setTransactionBlockValidationErrors((current) => ({
       ...current,
-      [transactionBlockId]: { ...current?.[transactionBlockId], [field]: errorMessage },
+      [transactionBlockId]: {
+        ...current?.[transactionBlockId],
+        [field]: errorMessage,
+      },
     }));
   };
 
@@ -707,8 +729,6 @@ const TransactionBuilderContextProvider = ({
     }),
     []
   );
-
-  const hideMenu = () => setShowMenu(false);
 
   const hasTransactionBlockAdded = transactionBlocks.some(
     (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE
@@ -731,6 +751,35 @@ const TransactionBuilderContextProvider = ({
   );
 
   const [showMulticallOptions, setShowMulticallOptions] = useState<string | null>(null);
+
+  const addTransactionBlock = (
+    availableTransactionBlock: ITransactionBlock,
+    isBridgeTransactionBlockAndDisabled = false,
+    isKlimaBlockIncluded = false
+  ) => {
+    if (!availableTransactionBlock) return;
+
+    if (isKlimaBlockIncluded && transactionBlocks.length > 0) {
+      showAlertModal(
+        'Cannot add klima staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed'
+      );
+      return;
+    }
+    if (hasKlimaBlockAdded) {
+      showAlertModal(
+        'Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed'
+      );
+      return;
+    }
+    if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled)
+      return;
+    const transactionBlock: ITransactionBlock = {
+      ...availableTransactionBlock,
+      id: getTimeBasedUniqueId(),
+    };
+    setTransactionBlocks((current) => current.concat(transactionBlock));
+    setShowTransactionBlockSelect(false);
+  };
 
   // Mt Pelerin
   const [deployingAccount, setDeployingAccount] = useState(false);
@@ -764,35 +813,51 @@ const TransactionBuilderContextProvider = ({
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
-        <WalletAddressesWrapper onClick={hideMenu}>
-          {providerAddress && !smartWalletOnly && (
-            <WalletAddress onClick={() => onCopy(providerAddress)}>
-              Wallet: {humanizeHexString(providerAddress)}
-            </WalletAddress>
-          )}
-          {!providerAddress && !smartWalletOnly && <WalletAddress disabled>Wallet: Not connected</WalletAddress>}
-          {accountAddress && (
-            <WalletAddress onClick={() => onCopy(accountAddress)}>
-              Account: {humanizeHexString(accountAddress)}
-            </WalletAddress>
-          )}
+        <WalletAddressesWrapper>
+          <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
+            <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
+              <TbWallet size={16} />
+            </Text>
+            {accountAddress ? (
+              <>
+                <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
+                  Wallet
+                </Text>
+                <Text onClick={() => onCopy(accountAddress)}>
+                  {copiedAddress ? (
+                    <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
+                  ) : (
+                    <TbCopy size={16} color={theme.color?.text?.topMenuWallet} />
+                  )}
+                </Text>
+              </>
+            ) : (
+              <Text onClick={connect}>Wallet: Connect</Text>
+            )}
+          </WalletAddress>
           {accountAddress && (
             <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
               {deployingAccount ? 'Deploying...' : 'Buy'}
             </WalletAddress>
           )}
-          {!accountAddress && (
-            <WalletAddress disabled>
-              Account:{' '}
-              <ConnectButton onClick={connect} disabled={isConnecting}>
-                Connect
-              </ConnectButton>
-            </WalletAddress>
-          )}
         </WalletAddressesWrapper>
-        <MenuButton size={22} onClick={() => setShowMenu(!showMenu)} color={theme?.color?.background?.topMenuButton} />
+        <SettingMenu showLogout={showMenuLogout} logout={logout} />
       </TopNavigation>
-      <div onClick={hideMenu}>
+      <div>
+        {/* Wallet */}
+        {showWalletBlock && accountAddress && (
+          <TransactionBlocksWrapper>
+            <Card onCloseButtonClick={() => setShowWalletBlock(false)} showCloseButton>
+              <WalletTransactionBlock
+                availableTransactionBlocks={availableTransactionBlocks}
+                hasTransactionBlockAdded={hasTransactionBlockAdded}
+                addTransactionBlock={addTransactionBlock}
+                hideWalletBlock={() => setShowWalletBlock(false)}
+              />
+            </Card>
+          </TransactionBlocksWrapper>
+        )}
+
         {!!crossChainActionsInProcessing?.length && (
           <>
             {crossChainActionsInProcessing.map((crossChainActionInProcessing) => (
@@ -1197,31 +1262,13 @@ const TransactionBuilderContextProvider = ({
                     return (
                       <TransactionBlockListItemWrapper
                         key={availableTransactionBlock.title}
-                        onClick={() => {
-                          if (isKlimaBlockIncluded && transactionBlocks.length > 0) {
-                            showAlertModal(
-                              'Cannot add klima staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed'
-                            );
-                            return;
-                          }
-                          if (hasKlimaBlockAdded) {
-                            showAlertModal(
-                              'Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed'
-                            );
-                            return;
-                          }
-                          if (
-                            availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED ||
-                            isBridgeTransactionBlockAndDisabled
+                        onClick={() =>
+                          addTransactionBlock(
+                            availableTransactionBlock,
+                            isBridgeTransactionBlockAndDisabled,
+                            isKlimaBlockIncluded
                           )
-                            return;
-                          const transactionBlock: ITransactionBlock = {
-                            ...availableTransactionBlock,
-                            id: getTimeBasedUniqueId(),
-                          };
-                          setTransactionBlocks((current) => current.concat(transactionBlock));
-                          setShowTransactionBlockSelect(false);
-                        }}
+                        }
                         disabled={isDisabled || hasKlimaBlockAdded}
                       >
                         &bull; {availableTransactionBlockTitle}
@@ -1330,6 +1377,7 @@ const TransactionBuilderContextProvider = ({
                     }
                     showEditButton={!disableEdit}
                     showStatus={!!crossChainActionsInProcessing?.length}
+                    isSubmitted={isSubmitting}
                     setIsTransactionDone={setIsTransactionDone}
                     showGasAssetSelect
                   />
@@ -1360,29 +1408,6 @@ const TransactionBuilderContextProvider = ({
           </>
         )}
       </div>
-      {showMenu && (
-        <MenuWrapper>
-          <MenuItem>
-            <a href="https://dashboard.etherspot.io" title="Dashboard" target="_blank">
-              Dashboard
-            </a>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              hideMenu();
-              showModal(<History />);
-            }}
-          >
-            History
-          </MenuItem>
-          <MenuItem>
-            <a href="https://etherspot.io/" title="About Etherspot" target="_blank">
-              About Etherspot
-            </a>
-          </MenuItem>
-          {showMenuLogout && <MenuItem onClick={logout}>Logout</MenuItem>}
-        </MenuWrapper>
-      )}
     </TransactionBuilderContext.Provider>
   );
 };

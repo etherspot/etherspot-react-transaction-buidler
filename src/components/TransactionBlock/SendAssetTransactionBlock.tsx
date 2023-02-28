@@ -45,7 +45,7 @@ const SendAssetTransactionBlock = ({
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
   const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(values?.isFromEtherspotWallet ?? true);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(
-    values?.isFromEtherspotWallet ?? true ? AccountTypes.Contract : AccountTypes.Key,
+    values?.isFromEtherspotWallet ?? true ? AccountTypes.Contract : AccountTypes.Key
   );
   const fixed = multiCallData?.fixed ?? false;
 
@@ -53,11 +53,13 @@ const SendAssetTransactionBlock = ({
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
   const {
+    sdk,
     providerAddress,
     accountAddress,
     chainId,
     getSupportedAssetsWithBalancesForChainId,
     smartWalletOnly,
+    updateWalletBalances,
   } = useEtherspot();
 
   const onAmountChange = useCallback(
@@ -67,7 +69,7 @@ const SendAssetTransactionBlock = ({
       const updatedAmount = formatAssetAmountInput(newAmount, decimals);
       setAmount(updatedAmount);
     },
-    [selectedAsset],
+    [selectedAsset]
   );
 
   const onReceiverAddressChange = useCallback((newReceiverAddress: string) => {
@@ -76,12 +78,16 @@ const SendAssetTransactionBlock = ({
   }, []);
 
   useEffect(() => {
+    updateWalletBalances();
+  }, [sdk, accountAddress]);
+
+  useEffect(() => {
     const preselectAsset = async (multiCallData: IMultiCallData) => {
       setSelectedNetwork(multiCallData.chain);
       const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
         multiCallData.chain.chainId,
         false,
-        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress,
+        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress
       );
       const asset = supportedAssets.find((search) => search.address === multiCallData.token?.address);
       setSelectedAsset(asset || null);
@@ -102,25 +108,13 @@ const SendAssetTransactionBlock = ({
         receiverAddress,
         isFromEtherspotWallet,
         fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
-        accountType: selectedAccountType
+        accountType: selectedAccountType,
       },
-      multiCallData || undefined,
+      multiCallData || undefined
     );
-  }, [
-    selectedNetwork,
-    selectedAsset,
-    receiverAddress,
-    amount,
-    isFromEtherspotWallet,
-    accountAddress,
-    providerAddress,
-  ]);
+  }, [selectedNetwork, selectedAsset, receiverAddress, amount, isFromEtherspotWallet, accountAddress, providerAddress]);
 
-  const hideChainIds = !isFromEtherspotWallet
-    ? supportedChains
-        .map((supportedChain) => supportedChain.chainId)
-        .filter((supportedChainId) => supportedChainId !== chainId)
-    : undefined;
+  const hideChainIds: number[] = [];
 
   const remainingSelectedAssetBalance = useMemo(() => {
     const multiCallCarryOver = multiCallData?.value || 0;
@@ -129,14 +123,16 @@ const SendAssetTransactionBlock = ({
     if (!amount) return +ethers.utils.formatUnits(selectedAsset.balance, selectedAsset.decimals) + multiCallCarryOver;
 
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedAsset.decimals);
-    return +ethers.utils.formatUnits(selectedAsset.balance.sub(assetAmountBN), selectedAsset.decimals) + multiCallCarryOver;
+    return (
+      +ethers.utils.formatUnits(selectedAsset.balance.sub(assetAmountBN), selectedAsset.decimals) + multiCallCarryOver
+    );
   }, [amount, selectedAsset]);
 
   return (
     <>
       <Title>Send asset</Title>
       <AccountSwitchInput
-        label='From wallet'
+        label="From wallet"
         selectedAccountType={selectedAccountType}
         onChange={(accountType) => {
           if (accountType !== selectedAccountType) {
@@ -153,7 +149,7 @@ const SendAssetTransactionBlock = ({
         showTotals
       />
       <NetworkAssetSelectInput
-        label='From'
+        label="From"
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'selectedAsset');
@@ -176,10 +172,10 @@ const SendAssetTransactionBlock = ({
       />
       {selectedAsset && selectedNetwork && (
         <TextInput
-          label='You send'
+          label="You send"
           onValueChange={onAmountChange}
           value={amount}
-          placeholder='0'
+          placeholder="0"
           inputBottomText={
             selectedAsset?.assetPriceUsd && amount
               ? `${formatAmountDisplay(+amount * selectedAsset.assetPriceUsd, '$')}`
@@ -195,11 +191,9 @@ const SendAssetTransactionBlock = ({
           }
           inputTopRightComponent={
             <Pill
-              label='Remaining'
+              label="Remaining"
               value={`${formatAmountDisplay(remainingSelectedAssetBalance ?? 0)} ${selectedAsset.symbol}`}
-              valueColor={
-                (remainingSelectedAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined
-              }
+              valueColor={(remainingSelectedAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined}
             />
           }
           errorMessage={errorMessages?.amount}

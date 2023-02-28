@@ -196,6 +196,18 @@ export const klimaAsset: IAssetWithBalance = {
   balanceWorthUsd: null,
 }
 
+export const plrDaoMemberNFT = {
+  address: '0x5029aC4dCdb864bB8f57b53A1a69d0541335dc7A',
+  chainId: CHAIN_ID.POLYGON,
+  name: "Pillar DAO Member NFT",
+  symbol: "PLR DAO NFT",
+  decimals: 18,
+  logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
+  balance: BigNumber.from(0),
+  assetPriceUsd: null,
+  balanceWorthUsd: null,
+}
+
 export const changeToChain = async (chainId: number): Promise<boolean> => {
   // @ts-ignore
   if (!window?.ethereum) {

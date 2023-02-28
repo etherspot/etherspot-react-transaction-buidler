@@ -14,7 +14,10 @@ const Label = styled.div`
   font-size: 14px;
 `;
 
-const Wrapper = styled.div<{ inline?: boolean; disabled: boolean; }>`
+const Wrapper = styled.div<{
+  inline?: boolean;
+  disabled: boolean;
+}>`
   margin-bottom: 18px;
   width: 100%;
 
@@ -29,6 +32,7 @@ const Wrapper = styled.div<{ inline?: boolean; disabled: boolean; }>`
       margin-right: 8px;
     }
   `}
+
   
   ${({ disabled }) => disabled && `
     opacity: 0.3;
@@ -47,7 +51,7 @@ const InputWrapper = styled.div`
 `;
 
 const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percentageWidth: number }>`
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
   background: ${({ theme }) => theme.color.background.switchInputInactiveTab};
@@ -58,10 +62,6 @@ const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percenta
 
   ${({ isActive, disabled }) => !isActive && !disabled && `
     cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
   `}
 
   ${({ isActive, theme }) => isActive && `
@@ -97,15 +97,14 @@ const SwitchInput = ({
   onChange,
   inlineLabel = false,
   disabled = false,
-  showTotals = false
+  showTotals = false,
 }: TextInputProps) => {
-  const { smartWalletBalanceByChain, keybasedWalletBalanceByChain } = useEtherspot()
+  const { smartWalletBalanceByChain, keybasedWalletBalanceByChain } = useEtherspot();
 
   const showTotalByWalletType = useCallback(
     (walletType: DestinationWalletEnum) => {
       const sum: number = 0;
-      if (smartWalletBalanceByChain?.length && 
-        keybasedWalletBalanceByChain?.length) {
+      if (smartWalletBalanceByChain?.length && keybasedWalletBalanceByChain?.length) {
         switch (walletType) {
           case DestinationWalletEnum.Contract:
             return ` · $${smartWalletBalanceByChain
@@ -127,7 +126,7 @@ const SwitchInput = ({
     },
     [smartWalletBalanceByChain, keybasedWalletBalanceByChain]
   );
-  
+
   return (
     <Wrapper inline={inlineLabel} disabled={disabled}>
       {!!label && <Label>{label}</Label>}
@@ -146,6 +145,6 @@ const SwitchInput = ({
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
     </Wrapper>
   );
-}
+};
 
 export default SwitchInput;
