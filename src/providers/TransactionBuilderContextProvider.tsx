@@ -551,11 +551,22 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.transactions,
             crossChainAction.gasTokenAddress ?? undefined
           );
+
       if (result?.errorMessage || !result?.transactionHash?.length) {
         // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
+        crossChainAction.transactions.map(transaction => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        })
         return;
       }
+
+      crossChainAction.transactions.map(transaction => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+        transaction.submitTimestamp = Date.now();
+        transaction.transactionHash = result.transactionHash;
+      })
+      crossChainAction.transactionHash = result.transactionHash;
 
       let flag = 1,
         errorOnLiFi;
@@ -570,6 +581,12 @@ const TransactionBuilderContextProvider = ({
           );
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
+            crossChainAction.transactions.map(transaction => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+            })
+            crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+            })
           } else if (status?.status === 'FAILED') {
             errorOnLiFi = 'Transaction Failed on LiFi';
             flag = 0;
@@ -627,6 +644,10 @@ const TransactionBuilderContextProvider = ({
         chainId: CHAIN_ID.POLYGON,
       };
 
+      crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
+      })
+
       result = await submitEtherspotAndWaitForTransactionHash(
         getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
         crossChainAction.transactions,
@@ -635,6 +656,9 @@ const TransactionBuilderContextProvider = ({
 
       if (result?.errorMessage || !result?.transactionHash?.length) {
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        })
         setIsSubmitting(false);
         return;
       }
