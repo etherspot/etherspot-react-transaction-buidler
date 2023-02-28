@@ -86,6 +86,13 @@ const OfferDetails = styled.div`
   font-family: 'PTRootUIWebMedium', sans-serif;
 `;
 
+const OfferGasPriceContainer = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+  align-items: flex-end;
+`;
+
 const mapRouteToOption = (route: BridgingQuote) => {
   return {
     title: bridgeServiceIdToDetails['lifi'].title,
@@ -318,11 +325,21 @@ const KlimaStakingTransactionBlock = ({
         <Text size={12} marginBottom={2} medium block>
           {option.title}
         </Text>
-        {!!receiveAmount && (
-          <Text size={16} medium>
-            {receiveAmount} {klimaAsset.symbol}
-          </Text>
-        )}
+        <OfferGasPriceContainer>
+          <div>
+            <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
+              Gas price:&nbsp;
+            </Text>
+            <Text size={14} marginRight={22} medium inline>
+              {option.gasCostUSD && `$ ${option.gasCostUSD}`}
+            </Text>
+          </div>
+          {!!receiveAmount && (
+            <Text size={16} medium>
+              {receiveAmount} {klimaAsset.symbol}
+            </Text>
+          )}
+        </OfferGasPriceContainer>
       </div>
     </OfferDetails>
   );

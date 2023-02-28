@@ -273,6 +273,7 @@ const AssetBridgeTransactionBlock = ({
     <RouteOption
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
+      cost={option.gasCostUSD && `$ ${option.gasCostUSD}`}
     />
   );
 
