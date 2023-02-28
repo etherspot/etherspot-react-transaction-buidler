@@ -91,7 +91,7 @@ const EtherspotContextProvider = ({
 
     if ((defaultProvider as IWalletConnectProvider<Web3WalletProvider>).isWalletConnect) {
       // @ts-ignore
-      const walletConnectProvider = new WalletConnectWalletProvider(defaultProvider);
+      const walletConnectProvider = WalletConnectWalletProvider.connect(defaultProvider.connector);
       setProvider(walletConnectProvider);
       return;
     }
