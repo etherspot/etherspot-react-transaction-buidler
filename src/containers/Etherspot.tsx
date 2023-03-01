@@ -65,7 +65,6 @@ const Etherspot = ({
   smartWalletOnly,
   hideWalletBlock = false,
   onLogout,
-  hideWalletBlock,
 }: EtherspotProps) => (
   <ThemeProvider theme={merge({}, darkTheme, themeOverride)}>
     <EtherspotContextProvider
