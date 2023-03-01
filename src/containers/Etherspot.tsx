@@ -63,6 +63,7 @@ const Etherspot = ({
   etherspotSessionStorage,
   showMenuLogout,
   smartWalletOnly,
+  hideWalletBlock = false,
   onLogout,
   hideWalletBlock,
 }: EtherspotProps) => (

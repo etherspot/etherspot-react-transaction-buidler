@@ -241,6 +241,12 @@ const TransactionStatus = ({
 
     setIsGettingExplorerLink(true);
 
+    if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && !approvalTransaction) {
+      setIsGettingExplorerLink(false);
+      previewTransaction(crossChainAction.transactionHash, approvalTransaction);
+      return;
+    }
+
     const sdk = getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
       alert("The transaction hash is not yet available. Please try again later.");
@@ -298,6 +304,8 @@ const TransactionStatus = ({
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
           [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? "Submit transaction" : "Sign message",
           [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
+          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]: "Waiting for funds from Bridge",
+          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]: "Estimating second transaction",
           [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
           [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
           [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: showAsApproval ? "Transaction approved" : "Transaction completed",
@@ -312,6 +320,10 @@ const TransactionStatus = ({
             theme?.color?.background?.statusIconPending,
           [CROSS_CHAIN_ACTION_STATUS.FAILED]:
             theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]:
+            theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]:
+            theme?.color?.background?.statusIconPending,
           [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]:
             theme?.color?.background?.statusIconFailed,
           [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]:
@@ -329,6 +341,10 @@ const TransactionStatus = ({
             case CROSS_CHAIN_ACTION_STATUS.CONFIRMED:
               return <BiCheck size={16} />;
             case CROSS_CHAIN_ACTION_STATUS.PENDING:
+              return <BsClockHistory size={14} />;
+            case CROSS_CHAIN_ACTION_STATUS.RECEIVING:
+              return <BsClockHistory size={14} />;
+            case CROSS_CHAIN_ACTION_STATUS.ESTIMATING:
               return <BsClockHistory size={14} />;
             case CROSS_CHAIN_ACTION_STATUS.UNSENT:
               return <BsClockHistory size={14} />;
@@ -393,7 +409,8 @@ const TransactionStatus = ({
             ) : (
               <>
                 {transaction?.submitTimestamp &&
-                  transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
+                  (transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING || 
+                    transactionStatus === CROSS_CHAIN_ACTION_STATUS.RECEIVING) && (
                     <TransactionStatusClock>
                       {!!transaction.finishTimestamp &&
                         moment(
@@ -646,6 +663,7 @@ const ActionPreview = ({
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
         />
+        <TransactionStatus crossChainAction={crossChainAction.destinationCrossChainAction[0]} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />
 			</Card>
 		);
 	}
@@ -864,7 +882,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
-    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, hasEnoughPLR } = preview;
+    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, isPolygonAccountWithEnoughPLR, enableAssetSwap} = preview;
 
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
@@ -894,7 +912,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {hasEnoughPLR ? (
+        {isPolygonAccountWithEnoughPLR ? (
           <>
             <DoubleTransactionActionsInSingleRow>
               <TransactionAction>
@@ -1024,7 +1042,7 @@ const ActionPreview = ({
               </>
             )}
           </ValueWrapper>
-          {!hasEnoughPLR && (
+          {enableAssetSwap && (
             <RouteWrapper>
               {previewList.map((preview) => {
                 if (!preview) return null;

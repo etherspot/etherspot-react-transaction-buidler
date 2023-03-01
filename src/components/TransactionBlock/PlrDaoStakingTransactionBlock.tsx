@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { AccountTypes, ExchangeOffer } from 'etherspot';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
+import { Route } from '@lifi/sdk';
 
 // types
 import { IPlrDaoStakingMembershipBlock } from '../../types/transactionBlock';
@@ -16,6 +16,7 @@ import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
+import RouteOption from '../RouteOption';
 
 // providers
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -27,16 +28,18 @@ import { Chain, supportedChains, plrDaoMemberNFT, CHAIN_ID } from '../../utils/c
 import { plrDaoAsset } from '../../utils/asset';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
+import { bridgeServiceIdToDetails } from '../../utils/bridge';
 
 //constants
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
+import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 
 export interface IPlrDaoTransactionBlockValues {
   accountType: AccountTypes;
   fromAsset: IAssetWithBalance;
   selectedAsset?: IAssetWithBalance | null;
   offer: ExchangeOffer;
-  toAsset: TokenListToken;
+  toAsset: IAssetWithBalance;
   fromChainId: number;
   fromAssetDecimals?: number;
   fromAssetAddress?: string;
@@ -45,9 +48,14 @@ export interface IPlrDaoTransactionBlockValues {
   amount: string;
   receiverAddress?: string;
   hasEnoughPLR: boolean;
+  isPolygonAccountWithEnoughPLR: boolean;
+  enableAssetBridge: boolean;
+  enableAssetSwap: boolean;
+  route?: Route;
 }
 
 interface AccountBalance {
+  chainId: number;
   chainName: string;
   keyBasedWallet: number;
   smartWallet: number;
@@ -126,6 +134,16 @@ const mapOfferToOption = (offer: ExchangeOffer) => {
   };
 };
 
+const mapRouteToOption = (route: Route) => {
+  const [fistStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
+  return {
+    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    value: route.id,
+    iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+  };
+};
+
 const MAX_PLR_TOKEN_LIMIT = 10000;
 
 const PlrDaoStakingTransactionBlock = ({
@@ -141,7 +159,7 @@ const PlrDaoStakingTransactionBlock = ({
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
     values?.offer ? mapOfferToOption(values?.offer) : null,
   );
-  const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(values?.offer ? [values.offer] : null);
+  const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[]>(values?.offer ? [values.offer] : []);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
 
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.selectedAsset ?? null);
@@ -153,15 +171,28 @@ const PlrDaoStakingTransactionBlock = ({
   const [totalKeyBasedPLRTokens, setTotalKeyBasedPLRTokens] = useState<number>(0);
   const [totalSmartWalletPLRTokens, setTotalSmartWalletPLRTokens] = useState<number>(0);
 
+  const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
+  const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
+  const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
+
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
 
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
-
-  const filteredSupportedChains = supportedChains.filter((chain) =>
-    [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.POLYGON, CHAIN_ID.XDAI, CHAIN_ID.BINANCE].includes(chain.chainId)
+  const isPolygonAccountWithEnoughPLR = accounts.some(
+    (account) =>
+      account.chainId === CHAIN_ID.POLYGON &&
+      selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
+      selectedFromAsset?.symbol === 'PLR' &&
+      ((selectedAccountType === DestinationWalletEnum.Contract && account.smartWallet >= MAX_PLR_TOKEN_LIMIT) ||
+        (selectedAccountType === DestinationWalletEnum.Key && account.keyBasedWallet >= MAX_PLR_TOKEN_LIMIT))
   );
+  const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === 'PLR';
+  const enableAssetSwap = selectedFromAsset?.symbol !== 'PLR';
+  const toAsset = isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT : plrDaoAsset;
+
+  const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
 
   const theme: Theme = useTheme();
 
@@ -200,6 +231,43 @@ const PlrDaoStakingTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
   }, [selectedFromNetwork]);
 
+  const updateAvailableRoutes = useCallback(
+    debounce(async () => {
+      setSelectedRoute(null);
+      setAvailableRoutes([]);
+      if (!sdk || !selectedFromAsset || !amount || !selectedFromNetwork?.chainId || !isValidAmount(amount)) return;
+
+      if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
+        setTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress', 'Invalid receiver address');
+        return;
+      }
+
+      setIsLoadingAvailableRoutes(true);
+
+      try {
+        const { items: routes } = await sdk.getAdvanceRoutesLiFi({
+          fromChainId: selectedFromNetwork.chainId,
+          toChainId: plrDaoAsset.chainId,
+          fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+          fromTokenAddress: selectedFromAsset.address,
+          toTokenAddress: plrDaoAsset.address,
+          toAddress: receiverAddress ?? undefined,
+        });
+        setAvailableRoutes(routes);
+        if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
+      } catch (e) {
+        setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Cannot fetch routes');
+      }
+
+      setIsLoadingAvailableRoutes(false);
+    }, 200),
+    [sdk, selectedFromAsset, amount, selectedFromNetwork]
+  );
+
+  useEffect(() => {
+    updateAvailableRoutes();
+  }, [updateAvailableRoutes]);
+
   const getWalletBalance = async (chainId: number, name: string) => {
     try {
       const accountsBalances = await Promise.all(
@@ -220,12 +288,14 @@ const PlrDaoStakingTransactionBlock = ({
         }
       });
       return {
+        chainId,
         chainName: name,
         keyBasedWallet: keyBasedBalance,
         smartWallet: smartWalletBalance,
       };
     } catch (err) {
       return {
+        chainId,
         chainName: name,
         keyBasedWallet: 0,
         smartWallet: 0,
@@ -242,6 +312,9 @@ const PlrDaoStakingTransactionBlock = ({
 
   const fetchAllAccountBalances = async () => {
     try {
+      const filteredSupportedChains = supportedChains.filter((chain) =>
+        [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.POLYGON, CHAIN_ID.XDAI, CHAIN_ID.BINANCE].includes(chain.chainId)
+      );
       let accountBalanceWithSupportedChains: AccountBalance[] = await Promise.all(
         filteredSupportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title)),
       );
@@ -284,7 +357,7 @@ const PlrDaoStakingTransactionBlock = ({
         const offers = await sdk.getExchangeOffers({
           fromChainId: selectedFromAsset.chainId,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-          toTokenAddress: hasEnoughPLR ? plrDaoMemberNFT.address : plrDaoAsset.address,
+          toTokenAddress: toAsset.address,
           fromTokenAddress: selectedFromAsset.address,
         });
         return offers;
@@ -364,7 +437,9 @@ const PlrDaoStakingTransactionBlock = ({
 
   useEffect(() => {
     // update transaction block with best offer (LiFi)
-    const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
+    const offer = availableOffers.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
+    const route = availableRoutes.find((availableRoute) => availableRoute.id === selectedRoute?.value);
+
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress', 'Invalid receiver address');
@@ -373,13 +448,17 @@ const PlrDaoStakingTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
     setTransactionBlockValues(transactionBlockId, {
       hasEnoughPLR,
+      enableAssetBridge,
+      enableAssetSwap,
+      isPolygonAccountWithEnoughPLR,
       fromChainId: selectedFromNetwork?.chainId ?? undefined,
-      toAsset: hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset,
+      toAsset,
       fromAsset: selectedFromAsset ?? undefined,
       amount,
       offer,
       accountType: selectedAccountType,
       receiverAddress: receiverAddress ?? undefined,
+      route
     });
   }, [
     selectedFromNetwork,
@@ -387,9 +466,12 @@ const PlrDaoStakingTransactionBlock = ({
     amount,
     selectedOffer,
     availableOffers,
+    selectedRoute,
     selectedAccountType,
     receiverAddress,
   ]);
+
+  const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
     const multiCallCarryOver = multiCallData?.value || 0;
@@ -406,9 +488,13 @@ const PlrDaoStakingTransactionBlock = ({
 
   const RenderOption = (option: SelectOption) => {
     const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
-    const valueToReceive =
-      availableOffer &&
-      formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, plrDaoAsset.decimals));
+
+    const valueToReceiveRaw = availableOffer
+      ? ethers.utils.formatUnits(availableOffer.receiveAmount, plrDaoAsset.decimals)
+      : undefined;
+
+    const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
+
     return (
       <OfferDetails>
         <RoundedImage title={option.title} url={option.iconUrl} size={24} />
@@ -419,12 +505,20 @@ const PlrDaoStakingTransactionBlock = ({
           {!!valueToReceive && (
             <Text size={16} medium>
               {valueToReceive} {plrDaoAsset.symbol}
+              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$')}`}
             </Text>
           )}
         </div>
       </OfferDetails>
     );
   };
+
+  const renderRoute = (option: SelectOption) => (
+    <RouteOption
+      route={availableRoutes?.find((route) => route.id === option.value)}
+      isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
+    />
+  );
 
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
   const tokenArray = hasEnoughPLR ? [] : accounts;
@@ -447,10 +541,8 @@ const PlrDaoStakingTransactionBlock = ({
       : totalKeyBasedPLRTokens > 0
       ? 'Key Based'
       : 'Smart Wallet';
-  const unsupportedChains = supportedChains
-    .filter((chain) => !filteredSupportedChains.includes(chain))
-    .map((chain) => chain.chainId);
-  const selectedToChain = filteredSupportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
+  const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
+  const stakingBalance = isPolygonAccountWithEnoughPLR ? `${MAX_PLR_TOKEN_LIMIT}` : '';
 
   return (
     <>
@@ -469,13 +561,15 @@ const PlrDaoStakingTransactionBlock = ({
           </Text>
         }
         {'\n'}
-        {tokenArray.map(({ chainName, keyBasedWallet, smartWallet }) => (
+        {tokenArray.map(({ chainId, chainName, keyBasedWallet, smartWallet }) => (
           <Text size={12}>
             {<Block></Block>}
             {keyBasedWallet > 0 && (
               <Block
                 color={
-                  chainName === 'Polygon' && keyBasedWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                  chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
+                    ? theme?.color?.text?.tokenTotal
+                    : ''
                 }
               >
                 {`\u25CF`}
@@ -486,7 +580,9 @@ const PlrDaoStakingTransactionBlock = ({
             {smartWallet > 0 && (
               <Block
                 color={
-                  chainName === 'Polygon' && smartWallet < MAX_PLR_TOKEN_LIMIT ? theme?.color?.text?.tokenTotal : ''
+                  chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
+                    ? theme?.color?.text?.tokenTotal
+                    : ''
                 }
               >
                 {`\u25CF`}
@@ -503,7 +599,7 @@ const PlrDaoStakingTransactionBlock = ({
           selectedAccountType={selectedAccountType}
           onChange={(accountType) => {
             setSelectedAccountType(accountType);
-            setAvailableOffers(null);
+            setAvailableOffers([]);
             setSelectedOffer(null);
           }}
           hideKeyBased={smartWalletOnly}
@@ -518,13 +614,12 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
-            setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
+            setAmount(amountBN && !stakingBalance ? formatMaxAmount(amountBN, asset.decimals) : stakingBalance);
           }}
           onNetworkSelect={(network) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
             setSelectedFromNetwork(network);
           }}
-          hideChainIds={unsupportedChains}
           selectedNetwork={selectedFromNetwork}
           selectedAsset={selectedFromAsset}
           errorMessage={
@@ -540,11 +635,11 @@ const PlrDaoStakingTransactionBlock = ({
         <NetworkAssetSelectInput
           label="To"
           selectedNetwork={selectedToChain}
-          selectedAsset={hasEnoughPLR ? plrDaoMemberNFT : plrDaoAsset}
+          selectedAsset={toAsset}
           disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         />
-        {(!!selectedFromAsset && !!selectedFromNetwork && !hasEnoughPLR) && (
+        {!!selectedFromAsset && !!selectedFromNetwork && !isPolygonAccountWithEnoughPLR && (
           <TextInput
             label="You swap"
             onValueChange={onAmountChange}
@@ -605,7 +700,7 @@ const PlrDaoStakingTransactionBlock = ({
             showPasteButton
           />
         )}
-        {!!selectedFromAsset && !!amount && (
+        {!enableAssetBridge && !!selectedFromAsset && !!amount && (
           <SelectInput
             label={`Offer`}
             options={availableOffersOptions ?? []}
@@ -622,6 +717,29 @@ const PlrDaoStakingTransactionBlock = ({
             errorMessage={errorMessages?.offer}
           />
         )}
+        {!isPolygonAccountWithEnoughPLR &&
+          enableAssetBridge &&
+          !!selectedFromAsset &&
+          !!amount &&
+          (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
+            <SelectInput
+              label={`Route`}
+              options={availableRoutesOptions ?? []}
+              isLoading={isLoadingAvailableRoutes}
+              selectedOption={selectedRoute}
+              onOptionSelect={(option) => {
+                resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
+                setSelectedRoute(option);
+              }}
+              placeholder="Select route"
+              renderOptionListItemContent={renderRoute}
+              renderSelectedOptionContent={renderRoute}
+              errorMessage={errorMessages?.route}
+              disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
+              noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
+              forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1}
+            />
+          )}
       </>
     </>
   );
