@@ -93,7 +93,7 @@ const RouteOption = ({
       />
       <OfferDetailsRowsWrapper>
         <OfferDetailsRow>
-          {!!valueToReceive && <Text size={14} medium>{valueToReceive} {route?.toToken?.symbol}</Text>}
+          {!!valueToReceive && <Text size={14} medium>{valueToReceive} {route?.toToken?.symbol} · ${route.toAmountUSD}</Text>}
           <Text size={14} marginLeft={6} color={theme?.color?.text?.innerLabel} inline medium>
             {firstStep.toolDetails.name}
             {firstStepViaService?.name !== firstStep.toolDetails.name && ` via ${firstStepViaService?.name}`}
