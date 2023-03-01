@@ -1331,7 +1331,7 @@ const ActionPreview = ({
         {showStatus && (
           <TransactionStatus
             crossChainAction={crossChainAction}
-            setIsTransactionDone={setIsTransactionDone ?? undefined}
+            setIsTransactionDone={setIsTransactionDone}
           />
         )}
       </Card>

@@ -779,14 +779,14 @@ export const buildCrossChainAction = async (
           },
         } = transactionBlock;
 
-        const [fistStep] = route.steps;
-        const bridgeServiceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? ''];
+        const [firstStep] = route.steps;
+        const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
 
         const preview = {
           fromChainId,
           toChainId: plrDaoAsset.chainId,
-          providerName: fistStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
-          providerIconUrl: fistStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
+          providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
+          providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
           hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,
           isPolygonAccountWithEnoughPLR: transactionBlock.values?.isPolygonAccountWithEnoughPLR,
           enableAssetSwap: transactionBlock.values?.enableAssetSwap,
@@ -937,14 +937,14 @@ export const buildCrossChainAction = async (
         },
       } = transactionBlock;
 
-      const [fistStep] = route.steps;
-      const bridgeServiceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? ''];
+      const [firstStep] = route.steps;
+      const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
 
       const preview = {
         fromChainId,
         toChainId,
-        providerName: fistStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
-        providerIconUrl: fistStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
+        providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
+        providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
         fromAsset: {
           address: route.fromToken.address,
           decimals: route.fromToken.decimals,
