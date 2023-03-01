@@ -9,6 +9,7 @@ import {
   chunk,
   uniq,
 } from 'lodash';
+import { Sdk } from 'etherspot';
 
 const requestConfig = {
   timeout: 10000,
@@ -103,8 +104,24 @@ export const getAssetsPrices = async (
   return prices;
 };
 
-export const getAssetPriceInUsd = async (chainId: number, assetAddress: string): Promise<number | null> => {
+export const getAssetPriceInUsd = async (
+  chainId: number,
+  assetAddress: string,
+  sdk?: Sdk | null,
+): Promise<number | null> => {
   if (isZeroAddress(assetAddress)) return getNativeAssetPriceInUsd(chainId);
+
+  let sdkUsdPrice;
+  if (sdk) {
+    try {
+      const prices = await sdk.fetchExchangeRates({ chainId, tokens: [assetAddress] });
+      sdkUsdPrice = prices?.items?.[0]?.usd;
+    } catch (error) {
+      //
+    }
+  }
+
+  if (sdkUsdPrice) return sdkUsdPrice;
 
   try {
     const prices = await getAssetsPrices(chainId, [assetAddress]);
