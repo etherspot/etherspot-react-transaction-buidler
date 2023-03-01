@@ -39,6 +39,7 @@ export interface Theme {
       walletChainButtonActive?: string;
       tokenBalanceContainer?: string;
       horizontalLine?: string;
+      blockParagraphBorder?: string;
     };
     text?: {
       main?: string;
@@ -76,6 +77,8 @@ export interface Theme {
       tokenTotal?: string;
       reviewLabel?: string;
       settingsIcon?: string;
+      blockParagraphHighlight?: string;
+      blockParagraphHighlightSecondary?: string;
     };
   };
 }
@@ -121,6 +124,7 @@ export const defaultTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #fd9250, #ff5548)',
       walletChainDropdown: '#fff',
       walletChainButtonActive: '#ffeee6',
+      blockParagraphBorder: 'linear-gradient(#346ecd, #cd34a2)',
     },
     text: {
       main: '#fff',
@@ -158,6 +162,8 @@ export const defaultTheme: Theme = {
       pasteIcon: '#ff884d',
       settingsIcon: '#ee6723',
       walletDropdownIcon: '#221f33',
+      blockParagraphHighlight: '#e333e8',
+      blockParagraphHighlightSecondary: '#77e7f6',
     },
   },
 };
@@ -189,6 +195,7 @@ export const darkTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
+      blockParagraphBorder: 'linear-gradient(#346ecd, #cd34a2)',
       listItemQuickButtonPrimary: '#eb860b',
       listItemQuickButtonSecondary: '#4f367a',
     },
@@ -218,6 +225,8 @@ export const darkTheme: Theme = {
       pill: '#bbb8cc',
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
+      blockParagraphHighlight: '#e333e8',
+      blockParagraphHighlightSecondary: '#77e7f6',
       settingsIcon: '#ee6723',
     },
   },

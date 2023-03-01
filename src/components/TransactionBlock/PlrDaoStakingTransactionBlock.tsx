@@ -135,12 +135,12 @@ const mapOfferToOption = (offer: ExchangeOffer) => {
 };
 
 const mapRouteToOption = (route: Route) => {
-  const [fistStep] = route.steps;
-  const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
+  const [firstStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
-    iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
   };
 };
 
