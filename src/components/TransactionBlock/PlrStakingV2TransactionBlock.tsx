@@ -214,13 +214,13 @@ const PlrStakingV2TransactionBlock = ({
   ]);
 
   // cross chain swaps
-  const defaultRoute = values?.swap?.type == 'CROSS_CHAIN_SWAP' && values?.swap?.route;
+  const defaultRoute = values?.swap?.type === 'CROSS_CHAIN_SWAP' && values?.swap?.route;
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(defaultRoute ? mapRouteToOption(defaultRoute) : null);
   const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(defaultRoute ? [defaultRoute] : null);
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
 
   // same chain swaps
-  const defaultOffer = values?.swap?.type == 'SAME_CHAIN_SWAP' && values?.swap?.offer;
+  const defaultOffer = values?.swap?.type === 'SAME_CHAIN_SWAP' && values?.swap?.offer;
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(defaultOffer ? mapOfferToOption(defaultOffer) : null);
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(defaultOffer ? [defaultOffer] : null);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
