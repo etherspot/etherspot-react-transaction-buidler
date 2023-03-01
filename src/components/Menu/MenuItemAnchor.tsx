@@ -15,7 +15,8 @@ const MenuItemAnchorStyled = styled.a`
   margin-right: 12px;
   cursor: pointer;
   text-decoration: none;
-
+  color: ${({ theme }) => theme.color.text.topMenu};;
+  
   :visited {
     color: ${({ theme }) => theme.color.text.topMenu};
     text-decoration: none;

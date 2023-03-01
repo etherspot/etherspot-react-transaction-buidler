@@ -86,6 +86,7 @@ interface KlimaStakingAction {
 	receiveAmount?: string;
 	bridgeUsed?: string;
   gasCost?: string;
+  transactionHash?: string;
 }
 
 interface PlrStakingAction {

@@ -9,6 +9,7 @@ import {
   Web3WalletProvider,
   RateData,
   NftCollection,
+  WalletConnectWalletProvider,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { BigNumber, ethers } from 'ethers';
@@ -41,6 +42,10 @@ export interface IBalanceByChain {
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
 let supportedAssetsPerChainId: { [chainId: number]: IAsset[] } = {};
 let gasTokenAddressesPerChainId: { [chainId: number]: string[] } = {};
+
+interface IWalletConnectProvider <T>{
+  isWalletConnect?: boolean;
+}
 
 const EtherspotContextProvider = ({
   children,
@@ -81,6 +86,13 @@ const EtherspotContextProvider = ({
 
     if (isWalletProvider(defaultProvider)) {
       setProvider(defaultProvider);
+      return;
+    }
+
+    if ((defaultProvider as IWalletConnectProvider<Web3WalletProvider>).isWalletConnect) {
+      // @ts-ignore
+      const walletConnectProvider = WalletConnectWalletProvider.connect(defaultProvider.connector);
+      setProvider(walletConnectProvider);
       return;
     }
 
@@ -188,27 +200,20 @@ const EtherspotContextProvider = ({
 
   const getSupportedAssetsForChainId = useCallback(
     async (assetsChainId: number, force: boolean = false) => {
+      const sdk = assetsChainId !== CHAIN_ID.AVALANCHE && getSdkForChainId(assetsChainId); // Preload SDK if not Avalanche
+
       if (!sdk) return [];
 
       if (!force && supportedAssetsPerChainId[assetsChainId]?.length) return supportedAssetsPerChainId[assetsChainId];
 
       let assets: TokenListToken[] = [];
 
-      let loadMoreAssets = true;
-      let page = 1;
-      while (loadMoreAssets) {
-        try {
-          const { items: paginatedAssets } = await sdk.getExchangeSupportedAssets({
-            chainId: assetsChainId,
-            limit: 100,
-            page,
-          });
-          assets = [...assets, ...paginatedAssets];
-          loadMoreAssets = paginatedAssets?.length === 100;
-          page++;
-        } catch (e) {
-          loadMoreAssets = false;
-        }
+      try {
+        assets = await sdk.getTokenListTokens({
+          name: assetsChainId === CHAIN_ID.XDAI ? 'HoneyswapTokens' : 'PillarTokens',
+        });
+      } catch (e) {
+        //
       }
 
       const nativeAsset = nativeAssetPerChainId[assetsChainId];
@@ -421,7 +426,7 @@ const EtherspotContextProvider = ({
         fromAssetsBalances.map((asset) => asset.token)
       );
 
-      const assetsWithBalances = await Promise.all(
+      const assetsWithBalances: IAssetWithBalance[] = await Promise.all(
         supportedAssets.map(async (asset) => {
           let balance = ethers.BigNumber.from(0);
           let assetPriceUsd = null;
@@ -540,22 +545,22 @@ const EtherspotContextProvider = ({
     if (onLogout) onLogout();
   }, [setProvider, setProviderAddress, setAccountAddress, onLogout]);
 
-  useEffect(() => {
-    const handleBalanceGet = async () => {
+  const updateWalletBalances = useCallback(
+    async (force?: boolean) => {
       if (!sdk || !accountAddress) return;
-      await getSmartWalletBalancesByChain(accountAddress, supportedChains);
-    };
-    handleBalanceGet();
-  }, [supportedChains, sdk, accountAddress]);
 
-  useEffect(() => {
-    const handleKeybasedBalanceGet = async () => {
-      const isSdkConnected = sdk && accountAddress;
-      if (!isSdkConnected || !providerAddress) return;
-      await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
-    };
-    handleKeybasedBalanceGet();
-  }, [supportedChains, sdk, providerAddress, accountAddress]);
+      if (!!force || !smartWalletBalanceByChain.length) {
+        await getSmartWalletBalancesByChain(accountAddress, supportedChains);
+      }
+
+      if (!providerAddress) return;
+
+      if (!!force || !keybasedWalletBalanceByChain.length) {
+        await getKeybasedWalletBalancesPerChain(providerAddress, supportedChains);
+      }
+    },
+    [sdk, accountAddress, providerAddress, smartWalletBalanceByChain, keybasedWalletBalanceByChain]
+  );
 
   const contextData = useMemo(
     () => ({
@@ -583,6 +588,7 @@ const EtherspotContextProvider = ({
       setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
+      updateWalletBalances,
     }),
     [
       connect,
@@ -609,6 +615,7 @@ const EtherspotContextProvider = ({
       setKeybasedWalletBalanceByChain,
       getKeybasedWalletBalancesPerChain,
       getGasAssetsForChainId,
+      updateWalletBalances,
     ]
   );
 

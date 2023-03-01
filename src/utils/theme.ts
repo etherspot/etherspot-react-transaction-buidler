@@ -3,6 +3,7 @@ export interface Theme {
     background?: {
       main?: string;
       topMenu?: string;
+      topMenuWallet?: string;
       topMenuButton?: string;
       card?: string;
       selectInput?: string;
@@ -43,6 +44,7 @@ export interface Theme {
       main?: string;
       topBar?: string;
       topMenu?: string;
+      topMenuWallet?: string;
       card?: string;
       cardDisabled?: string;
       cardTitle?: string;
@@ -76,7 +78,7 @@ export interface Theme {
       settingsIcon?: string;
     };
   };
-};
+}
 
 export const defaultTheme: Theme = {
   color: {
@@ -86,6 +88,7 @@ export const defaultTheme: Theme = {
       tokenBalanceContainer: '#21002e',
       horizontalLine: 'linear-gradient(90deg, #23a9c9, #cd34a2)',
       topMenu: '#fff',
+      topMenuWallet: "rgba(255, 247, 242, 0.24)",
       topMenuButton: '#fff',
       selectInput: '#fff',
       selectInputExpanded: '#fff',
@@ -123,6 +126,7 @@ export const defaultTheme: Theme = {
       main: '#fff',
       topBar: '#fff',
       topMenu: '#191726',
+      topMenuWallet: '#fff',
       cardTitle: '#191726',
       card: '#000',
       cardDisabled: '#ddd',
@@ -162,19 +166,21 @@ export const darkTheme: Theme = {
   ...defaultTheme,
   color: {
     background: {
-      main: '#221f33',
-      topMenu: '#443d66',
-      topMenuButton: '#ff884d',
-      card: '#2b2640',
-      button: '#ff884d',
-      closeButton: '#ff884d',
-      selectInputToggleButton: '#ff884d',
-      selectInput: '#443d66',
-      selectInputExpanded: '#1a1726',
-      selectInputImagePlaceholder: '#443d66',
+      main: 'linear-gradient(169deg, #3e3869 5%, #241938 98%)',
+      topMenu: 'rgb(68, 61, 102)',
+      topMenuWallet: "rgba(111, 76, 172, 0.54)",
+      topMenuButton: '#ffffff',
+      card: '#262240',
+      button: 'linear-gradient(to bottom, #fdb754, #f18214)',
+      closeButton: '#ffffff',
+      selectInputToggleButton: '#998ae6',
+      selectInput: '#474078',
+      selectInputExpanded: '#130c1d',
+      selectInputImagePlaceholder: '#4f367a',
       textInput: '#1a1726',
       switchInput: '#1a1726',
-      switchInputActiveTab: '#443d66',
+      switchInputActiveTab:
+        'linear-gradient(to bottom, #734fb3, #422d66), linear-gradient(to bottom, #3d265c, #222130)',
       switchInputInactiveTab: 'transparent',
       pill: '#2b2640',
       checkboxInputInactive: '#665c99',
@@ -183,6 +189,8 @@ export const darkTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
+      listItemQuickButtonPrimary: '#eb860b',
+      listItemQuickButtonSecondary: '#4f367a',
     },
     text: {
       selectInput: '#ffeee6',
@@ -193,17 +201,18 @@ export const darkTheme: Theme = {
       outerLabel: '#998ae6',
       innerLabel: '#998ae6',
       topMenu: '#998ae6',
+      topMenuWallet: '#cab3f5',
       main: '#ffeee6',
       topBar: '#998ae6',
-      buttonSecondary: '#998ae6',
+      buttonSecondary: '#fbae49',
       card: '#ffeee6',
       cardTitle: '#ffeee6',
       button: '#fff',
       errorMessage: '#ff4d6a',
       textInput: '#ffeee6',
-      textInputSecondary: '#ffeee6',
+      textInputSecondary: '#9466e6',
       switchInputActiveTab: '#ffeee6',
-      switchInputInactiveTab: '#bbb8cc',
+      switchInputInactiveTab: '#9466e6',
       selectInputImagePlaceholder: '#ffeee6',
       cardDisabled: '#605e5e',
       pill: '#bbb8cc',

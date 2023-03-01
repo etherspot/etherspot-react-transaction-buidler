@@ -52,8 +52,15 @@ const SendAssetTransactionBlock = ({
   const theme: Theme = useTheme();
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
 
-  const { providerAddress, accountAddress, chainId, getSupportedAssetsWithBalancesForChainId, smartWalletOnly } =
-    useEtherspot();
+  const {
+    sdk,
+    providerAddress,
+    accountAddress,
+    chainId,
+    getSupportedAssetsWithBalancesForChainId,
+    smartWalletOnly,
+    updateWalletBalances,
+  } = useEtherspot();
 
   const onAmountChange = useCallback(
     (newAmount: string) => {
@@ -69,6 +76,10 @@ const SendAssetTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
     setReceiverAddress(newReceiverAddress);
   }, []);
+
+  useEffect(() => {
+    updateWalletBalances();
+  }, [sdk, accountAddress]);
 
   useEffect(() => {
     const preselectAsset = async (multiCallData: IMultiCallData) => {
