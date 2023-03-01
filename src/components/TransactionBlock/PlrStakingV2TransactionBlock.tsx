@@ -220,7 +220,7 @@ const PlrStakingV2TransactionBlock = ({
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
 
   // same chain swaps
-  const defaultOffer = values?.swap?.type == 'SAME_CHAIN_SWAP' && values?.swap?.offer;
+  const defaultOffer = values?.swap?.type === 'SAME_CHAIN_SWAP' && values?.swap?.offer;
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(defaultOffer ? mapOfferToOption(defaultOffer) : null);
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(defaultOffer ? [defaultOffer] : null);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
