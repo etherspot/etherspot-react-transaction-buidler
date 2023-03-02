@@ -243,7 +243,6 @@ const EtherspotContextProvider = ({
       try {
         const { items: balances } = await sdk.getAccountBalances({
           account: balancesForAddress ?? computedAccount,
-          tokens: assetAddressesWithoutZero,
           chainId: assetsChainId,
         });
 
