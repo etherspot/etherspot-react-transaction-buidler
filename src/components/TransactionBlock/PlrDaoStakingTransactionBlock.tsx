@@ -184,12 +184,12 @@ const PlrDaoStakingTransactionBlock = ({
     (account) =>
       account.chainId === CHAIN_ID.POLYGON &&
       selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
-      selectedFromAsset?.symbol === 'PLR' &&
+      selectedFromAsset?.symbol === 'DKU' &&
       ((selectedAccountType === DestinationWalletEnum.Contract && account.smartWallet >= MAX_PLR_TOKEN_LIMIT) ||
         (selectedAccountType === DestinationWalletEnum.Key && account.keyBasedWallet >= MAX_PLR_TOKEN_LIMIT))
   );
   const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === 'PLR';
-  const enableAssetSwap = selectedFromAsset?.symbol !== 'PLR';
+  const enableAssetSwap = selectedFromAsset?.symbol !== 'DKU';
   const toAsset = isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT : plrDaoAsset;
 
   const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
