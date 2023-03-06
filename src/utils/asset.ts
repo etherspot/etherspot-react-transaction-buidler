@@ -4,10 +4,10 @@ import { CHAIN_ID } from './chain';
 import { PLR_ADDRESS_PER_CHAIN } from '../constants/assetConstants';
 
 export const plrDaoAsset: IAssetWithBalance = {
-  address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
+  address: '0xE5b78d1b19A5C1d5F36D8b2DbFc6c79A6083FB61',
   chainId: CHAIN_ID.POLYGON,
-  name: 'Pillar',
-  symbol: 'PLR',
+  name: 'Deku (DKU)',
+  symbol: 'DKU',
   decimals: 18,
   logoURI: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
   balance: BigNumber.from(0),

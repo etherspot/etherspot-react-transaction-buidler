@@ -221,8 +221,22 @@ const EtherspotContextProvider = ({
         (asset) => !asset.address || addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address)
       );
 
-      supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
-
+      // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
+      supportedAssetsPerChainId[assetsChainId] =
+      hasNativeAsset || !nativeAsset
+        ? assets
+        : [
+            nativeAsset,
+            ...assets,
+            {
+              address: '0xE5b78d1b19A5C1d5F36D8b2DbFc6c79A6083FB61',
+              chainId: 137,
+              decimals: 18,
+              logoURI: 'https://tokens.1inch.io/0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9.png',
+              name: 'Deku',
+              symbol: 'DKU',
+            },
+          ];
       return supportedAssetsPerChainId[assetsChainId];
     },
     [sdk]
