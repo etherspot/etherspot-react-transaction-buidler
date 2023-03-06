@@ -521,7 +521,7 @@ const PlrDaoStakingTransactionBlock = ({
   );
 
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
-  const tokenArray = hasEnoughPLR ? [] : accounts;
+  const tokenArray = hasEnoughPLR && accounts.length == 1 ? [] : accounts;
 
   if (isNFTMember) {
     return (
