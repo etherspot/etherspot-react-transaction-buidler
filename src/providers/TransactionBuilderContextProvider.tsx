@@ -55,12 +55,14 @@ import WalletTransactionBlock from '../components/TransactionBlock/Wallet/Wallet
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
 import SettingMenu from '../components/SettingMenu/SettingMenu';
+import { TbCopy, TbWallet } from 'react-icons/tb';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
   hiddenTransactionBlockTypes?: ITransactionBlockType[];
   hideAddTransactionButton?: boolean;
   showMenuLogout?: boolean;
+  hideWalletBlock?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -80,14 +82,6 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
   &:last-child {
     margin-bottom: 0;
   }
-
-  ${({ disabled }) =>
-    !disabled &&
-    `
-    &:hover {
-      text-decoration: underline;
-    }
-  `}
 `;
 
 const TopNavigation = styled.div`
@@ -112,8 +106,8 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
   border-radius: 6px;
   ${({ theme, selected }) =>
     !!selected &&
-    `color: ${theme.color.text.searchInput};
-    background-color: ${theme.color.background.topMenu};`}
+  `color: ${theme.color.text.topMenuWallet};
+    background-color: ${theme.color.background.topMenuWallet};`}
 
   display: flex;
   justify-content: center;
@@ -270,6 +264,7 @@ const TransactionBuilderContextProvider = ({
   hiddenTransactionBlockTypes,
   hideAddTransactionButton,
   showMenuLogout,
+  hideWalletBlock = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -278,7 +273,7 @@ const TransactionBuilderContextProvider = ({
   const mappedDefaultTransactionBlocks = defaultTransactionBlocks
     ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
     : [];
-  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>([]);
+  const [transactionBlocks, setTransactionBlocks] = useState<ITransactionBlock[]>([...mappedDefaultTransactionBlocks]);
 
   type IValidationErrors = {
     [id: string]: ErrorMessages;
@@ -295,7 +290,9 @@ const TransactionBuilderContextProvider = ({
 
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
-  const [showWalletBlock, setShowWalletBlock] = useState(true);
+
+  const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && !hideWalletBlock;
+  const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
 
   const theme: Theme = useTheme();
 
@@ -551,11 +548,22 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.transactions,
             crossChainAction.gasTokenAddress ?? undefined
           );
+
       if (result?.errorMessage || !result?.transactionHash?.length) {
         // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
+        crossChainAction.transactions.map(transaction => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        })
         return;
       }
+
+      crossChainAction.transactions.map(transaction => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+        transaction.submitTimestamp = Date.now();
+        transaction.transactionHash = result.transactionHash;
+      })
+      crossChainAction.transactionHash = result.transactionHash;
 
       let flag = 1,
         errorOnLiFi;
@@ -570,6 +578,12 @@ const TransactionBuilderContextProvider = ({
           );
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
+            crossChainAction.transactions.map(transaction => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+            })
+            crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+            })
           } else if (status?.status === 'FAILED') {
             errorOnLiFi = 'Transaction Failed on LiFi';
             flag = 0;
@@ -627,6 +641,10 @@ const TransactionBuilderContextProvider = ({
         chainId: CHAIN_ID.POLYGON,
       };
 
+      crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
+      })
+
       result = await submitEtherspotAndWaitForTransactionHash(
         getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
         crossChainAction.transactions,
@@ -635,6 +653,9 @@ const TransactionBuilderContextProvider = ({
 
       if (result?.errorMessage || !result?.transactionHash?.length) {
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        })
         setIsSubmitting(false);
         return;
       }
@@ -794,14 +815,20 @@ const TransactionBuilderContextProvider = ({
       <TopNavigation>
         <WalletAddressesWrapper>
           <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
-            <Text marginRight={2}>{WalletIcon}</Text>
+            <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
+              <TbWallet size={16} />
+            </Text>
             {accountAddress ? (
               <>
                 <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
                   Wallet
                 </Text>
                 <Text onClick={() => onCopy(accountAddress)}>
-                  {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
+                  {copiedAddress ? (
+                    <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
+                  ) : (
+                    <TbCopy size={16} color={theme.color?.text?.topMenuWallet} />
+                  )}
                 </Text>
               </>
             ) : (

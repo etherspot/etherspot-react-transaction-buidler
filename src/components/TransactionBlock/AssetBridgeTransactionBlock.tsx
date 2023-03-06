@@ -12,12 +12,8 @@ import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../uti
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { Chain } from '../../utils/chain';
-import {
-  IAssetWithBalance,
-} from '../../providers/EtherspotContextProvider';
-import {
-  CombinedRoundedImages,
-} from '../Image';
+import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
+import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
@@ -51,12 +47,12 @@ const WalletReceiveWrapper = styled.div`
 `;
 
 const mapRouteToOption = (route: Route) => {
-  const [fistStep] = route.steps;
-  const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
+  const [firstStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? "LiFi",
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? "LiFi",
     value: route.id,
-    iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
     gasCostUSD: route.gasCostUSD,
   };
 };
@@ -65,7 +61,7 @@ const AssetBridgeTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
   values,
-  multiCallData
+  multiCallData,
 }: IAssetBridgeTransactionBlock) => {
   const {
     sdk,
@@ -73,6 +69,7 @@ const AssetBridgeTransactionBlock = ({
     accountAddress,
     getSupportedAssetsWithBalancesForChainId,
     smartWalletOnly,
+    updateWalletBalances,
   } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
@@ -84,20 +81,26 @@ const AssetBridgeTransactionBlock = ({
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(null);
 
-  const defaultCustomReceiverAddress = values?.receiverAddress
-    && !addressesEqual(providerAddress, values?.receiverAddress)
-    && !addressesEqual(accountAddress, values?.receiverAddress)
-    ? values.receiverAddress
-    : null;
+  const defaultCustomReceiverAddress =
+    values?.receiverAddress &&
+    !addressesEqual(providerAddress, values?.receiverAddress) &&
+    !addressesEqual(accountAddress, values?.receiverAddress)
+      ? values.receiverAddress
+      : null;
   const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
   const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
   const fixed = multiCallData?.fixed ?? false;
 
-  const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
-    || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
-    ? AccountTypes.Key
-    : AccountTypes.Contract;
-  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(defaultSelectedReceiveAccountType);
+  const defaultSelectedReceiveAccountType =
+    (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
+    (values?.receiverAddress &&
+      values?.accountType === AccountTypes.Contract &&
+      addressesEqual(providerAddress, values?.receiverAddress))
+      ? AccountTypes.Key
+      : AccountTypes.Contract;
+  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
+    defaultSelectedReceiveAccountType
+  );
 
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
 
@@ -107,7 +110,11 @@ const AssetBridgeTransactionBlock = ({
     setTransactionBlockFieldValidationError,
   } = useTransactionBuilder();
 
-  const theme: Theme = useTheme()
+  const theme: Theme = useTheme();
+
+  useEffect(() => {
+    updateWalletBalances();
+  }, [sdk, accountAddress]);
 
   useEffect(() => {
     const preselectAsset = async (multiCallData: IMultiCallData) => {
@@ -115,7 +122,7 @@ const AssetBridgeTransactionBlock = ({
       const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
         multiCallData.chain.chainId,
         false,
-        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress,
+        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress
       );
       const asset = supportedAssets.find((search) => search.address === multiCallData.token?.address);
       setSelectedFromAsset(asset || null);
@@ -142,10 +149,7 @@ const AssetBridgeTransactionBlock = ({
 
   useEffect(() => {
     if (selectedReceiveAccountType === DestinationWalletEnum.Custom) {
-      resetTransactionBlockFieldValidationError(
-        transactionBlockId,
-        "receiverAddress"
-      );
+      resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
       setUseCustomAddress(true);
     } else {
       setUseCustomAddress(false);
@@ -156,9 +160,7 @@ const AssetBridgeTransactionBlock = ({
   const receiverAddress = useMemo(() => {
     if (useCustomAddress) return customReceiverAddress;
     if (selectedReceiveAccountType === selectedAccountType) return null;
-    return selectedReceiveAccountType === AccountTypes.Key
-      ? providerAddress
-      : accountAddress;
+    return selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
   }, [
     useCustomAddress,
     customReceiverAddress,
@@ -168,63 +170,62 @@ const AssetBridgeTransactionBlock = ({
     accountAddress,
   ]);
 
-  const updateAvailableRoutes = useCallback(debounce(async () => {
-    setSelectedRoute(null);
-    setAvailableRoutes([]);
+  const updateAvailableRoutes = useCallback(
+    debounce(async () => {
+      setSelectedRoute(null);
+      setAvailableRoutes([]);
 
-    if (!sdk
-      || !selectedToAsset
-      || !selectedFromAsset
-      || !amount
-      || !selectedFromNetwork?.chainId
-      || !selectedToNetwork?.chainId
-      || !isValidAmount(amount)) return;
+      if (
+        !sdk ||
+        !selectedToAsset ||
+        !selectedFromAsset ||
+        !amount ||
+        !selectedFromNetwork?.chainId ||
+        !selectedToNetwork?.chainId ||
+        !isValidAmount(amount)
+      )
+        return;
 
-    if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
-      setTransactionBlockFieldValidationError(
-        transactionBlockId,
-        'receiverAddress',
-        'Invalid receiver address',
-      );
-      return;
-    }
+      if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
+        setTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress', 'Invalid receiver address');
+        return;
+      }
 
-    setIsLoadingAvailableRoutes(true);
+      setIsLoadingAvailableRoutes(true);
 
-    try {
-      const { items: routes } = await sdk.getAdvanceRoutesLiFi({
-        fromChainId: selectedFromNetwork.chainId,
-        toChainId: selectedToNetwork.chainId,
-        fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-        fromTokenAddress: selectedFromAsset.address,
-        toTokenAddress: selectedToAsset.address,
-        toAddress: receiverAddress ?? undefined,
-      });
-      setAvailableRoutes(routes);
-      if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
-    } catch (e) {
-      //
-    }
+      try {
+        const { items: routes } = await sdk.getAdvanceRoutesLiFi({
+          fromChainId: selectedFromNetwork.chainId,
+          toChainId: selectedToNetwork.chainId,
+          fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+          fromTokenAddress: selectedFromAsset.address,
+          toTokenAddress: selectedToAsset.address,
+          toAddress: receiverAddress ?? undefined,
+        });
+        setAvailableRoutes(routes);
+        if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
+      } catch (e) {
+        //
+      }
 
-    setIsLoadingAvailableRoutes(false);
-  }, 200), [
-    sdk,
-    selectedFromAsset,
-    selectedToAsset,
-    amount,
-    selectedFromNetwork,
-    selectedToNetwork,
-    receiverAddress,
-  ]);
+      setIsLoadingAvailableRoutes(false);
+    }, 200),
+    [sdk, selectedFromAsset, selectedToAsset, amount, selectedFromNetwork, selectedToNetwork, receiverAddress]
+  );
 
-  useEffect(() => { updateAvailableRoutes(); }, [updateAvailableRoutes]);
+  useEffect(() => {
+    updateAvailableRoutes();
+  }, [updateAvailableRoutes]);
 
-  const onAmountChange = useCallback((newAmount: string) => {
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    const decimals = selectedToAsset?.decimals ?? 18;
-    const updatedAmount = formatAssetAmountInput(newAmount, decimals);
-    setAmount(updatedAmount)
-  }, [selectedFromAsset, selectedToAsset]);
+  const onAmountChange = useCallback(
+    (newAmount: string) => {
+      resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+      const decimals = selectedToAsset?.decimals ?? 18;
+      const updatedAmount = formatAssetAmountInput(newAmount, decimals);
+      setAmount(updatedAmount);
+    },
+    [selectedFromAsset, selectedToAsset]
+  );
 
   useEffect(() => {
     const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
@@ -253,21 +254,21 @@ const AssetBridgeTransactionBlock = ({
     selectedAccountType,
   ]);
 
-  const availableRoutesOptions = useMemo(
-    () => availableRoutes?.map(mapRouteToOption),
-    [availableRoutes],
-  );
+  const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
     const multiCallCarryOver = multiCallData?.value || 0;
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
 
-    if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver;
+    if (!amount)
+      return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver;
 
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
-    return +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals) + multiCallCarryOver;
+    return (
+      +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals) +
+      multiCallCarryOver
+    );
   }, [amount, selectedFromAsset]);
-
 
   const renderOption = (option: SelectOption) => (
     <RouteOption
@@ -344,7 +345,11 @@ const AssetBridgeTransactionBlock = ({
           onValueChange={onAmountChange}
           value={amount}
           placeholder="0"
-          inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}` : undefined}
+          inputBottomText={
+            selectedFromAsset?.assetPriceUsd && amount
+              ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}`
+              : undefined
+          }
           inputLeftComponent={
             <CombinedRoundedImages
               url={selectedFromAsset.logoURI}

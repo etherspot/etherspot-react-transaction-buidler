@@ -20,6 +20,7 @@ import AccountSwitchInput from '../AccountSwitchInput';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import Text from '../Text/Text';
 import { IAssetSwapTransactionBlock, IMultiCallData } from '../../types/transactionBlock';
+import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 
 export interface ISwapAssetTransactionBlockValues {
   chain?: Chain;
@@ -72,17 +73,19 @@ const AssetSwapTransactionBlock = ({
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
   const [selectedToAsset, setSelectedToAsset] = useState<TokenListToken | null>(values?.toAsset ?? null);
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
-  const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(values?.offer ? mapOfferToOption(values?.offer) : null);
+  const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
+    values?.offer ? mapOfferToOption(values?.offer) : null
+  );
   const [availableToAssets, setAvailableToAssets] = useState<TokenListToken[] | null>(null);
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(values?.offer ? [values.offer] : null);
   const [isLoadingAvailableToAssets, setIsLoadingAvailableToAssets] = useState<boolean>(false);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
   const [showReceiverInput] = useState<boolean>(!!values?.receiverAddress);
   const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(
-    values?.accountType ?? AccountTypes.Contract,
-  );
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
   const fixed = multiCallData?.fixed ?? false;
+
+  const targetAssetPriceUsd = useAssetPriceUsd(selectedNetwork?.chainId, selectedToAsset?.address);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
   const {
@@ -92,6 +95,7 @@ const AssetSwapTransactionBlock = ({
     accountAddress,
     providerAddress,
     smartWalletOnly,
+    updateWalletBalances,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -101,7 +105,7 @@ const AssetSwapTransactionBlock = ({
       const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
         multiCallData.chain.chainId,
         false,
-        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress,
+        selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress
       );
       const asset = supportedAssets.find((search) => search.address === multiCallData.token?.address);
       setSelectedFromAsset(asset || null);
@@ -115,7 +119,8 @@ const AssetSwapTransactionBlock = ({
   const updateAvailableOffers = useCallback<() => Promise<ExchangeOffer[] | undefined>>(
     debounce(async () => {
       // there is a race condition here
-      if (multiCallData && fixed) { return; }
+      if (multiCallData && fixed) return;
+
       setSelectedOffer(null);
       setAvailableOffers([]);
 
@@ -147,23 +152,36 @@ const AssetSwapTransactionBlock = ({
         //
       }
     }, 200),
-    [sdk, selectedFromAsset, selectedToAsset, amount, selectedNetwork, accountAddress],
+    [sdk, selectedFromAsset, selectedToAsset, amount, selectedNetwork, accountAddress]
   );
+
+  useEffect(() => {
+    updateWalletBalances();
+  }, [sdk, accountAddress]);
 
   useEffect(() => {
     // this will ensure that the old data won't replace the new one
     let active = true;
-    updateAvailableOffers()
-      .then(offers => {
-        if (active && offers) {
-          setAvailableOffers(offers);
-          if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]))
-          setIsLoadingAvailableOffers(false);
-        }
-      });
+
+    const updateOffers = async () => {
+      try {
+        const offers = await updateAvailableOffers();
+        if (!active || !offers) return;
+
+        setAvailableOffers(offers);
+        if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
+        setIsLoadingAvailableOffers(false);
+      } catch (e) {
+        //
+      }
+    };
+
+    updateOffers();
 
     // hook's clean-up function
-    return () => { active = false };
+    return () => {
+      active = false;
+    };
   }, [updateAvailableOffers]);
 
   const updateAvailableToAssets = useCallback(async () => {
@@ -188,7 +206,7 @@ const AssetSwapTransactionBlock = ({
 
   const availableOffersOptions = useMemo(
     () => availableOffers?.map(mapOfferToOption),
-    [availableOffers, availableToAssets],
+    [availableOffers, availableToAssets]
   );
 
   const onAmountChange = useCallback(
@@ -198,7 +216,7 @@ const AssetSwapTransactionBlock = ({
       const updatedAmount = formatAssetAmountInput(newAmount, decimals);
       setAmount(updatedAmount);
     },
-    [selectedFromAsset],
+    [selectedFromAsset]
   );
 
   useEffect(() => {
@@ -215,7 +233,7 @@ const AssetSwapTransactionBlock = ({
         isDifferentReceiverAddress: showReceiverInput,
         accountType: selectedAccountType,
       },
-      multiCallData || undefined,
+      multiCallData || undefined
     );
   }, [
     selectedNetwork,
@@ -234,9 +252,7 @@ const AssetSwapTransactionBlock = ({
     const multiCallCarryOver = multiCallData?.value || 0;
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0 + multiCallCarryOver;
     if (!amount)
-      return (
-        +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver
-      );
+      return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals) + multiCallCarryOver;
     const assetAmountBN = ethers.utils.parseUnits(amount, selectedFromAsset.decimals);
     return (
       +ethers.utils.formatUnits(selectedFromAsset.balance.sub(assetAmountBN), selectedFromAsset.decimals) +
@@ -247,11 +263,15 @@ const AssetSwapTransactionBlock = ({
   const RenderOption = (option: SelectOption) => {
     const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
     const toAsset = availableToAssets?.find((availableAsset) =>
-      addressesEqual(availableAsset.address, selectedToAsset?.address),
+      addressesEqual(availableAsset.address, selectedToAsset?.address)
     );
-    const valueToReceive =
-      availableOffer &&
-      formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals));
+
+    const valueToReceiveRaw = availableOffer
+      ? ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals)
+      : undefined;
+
+    const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
+
     return (
       <OfferDetails>
         <RoundedImage title={option.title} url={option.iconUrl} size={24} />
@@ -262,6 +282,7 @@ const AssetSwapTransactionBlock = ({
           {!!valueToReceive && (
             <Text size={16} medium>
               {valueToReceive} {toAsset?.symbol}
+              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$')}`}
             </Text>
           )}
         </div>
@@ -274,7 +295,7 @@ const AssetSwapTransactionBlock = ({
       <Title>Swap asset</Title>
       {!multiCallData && (
         <AccountSwitchInput
-          label='From wallet'
+          label="From wallet"
           selectedAccountType={selectedAccountType}
           onChange={(accountType) => {
             if (accountType !== selectedAccountType) {
@@ -293,7 +314,7 @@ const AssetSwapTransactionBlock = ({
         />
       )}
       <NetworkAssetSelectInput
-        label='From'
+        label="From"
         onAssetSelect={(asset, amountBN) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAsset');
@@ -316,14 +337,14 @@ const AssetSwapTransactionBlock = ({
       {!!selectedNetwork && (
         <>
           <SelectInput
-            label='To'
+            label="To"
             options={availableToAssetsOptions ?? []}
             isLoading={isLoadingAvailableToAssets}
             selectedOption={selectedToAsset ? mapAssetToOption(selectedToAsset) : null}
             onOptionSelect={(assetOption) => {
               resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
               const toAsset = availableToAssets?.find((availableAsset) =>
-                addressesEqual(availableAsset.address, assetOption?.value),
+                addressesEqual(availableAsset.address, assetOption?.value)
               );
               setSelectedToAsset(toAsset ?? null);
             }}
@@ -332,10 +353,10 @@ const AssetSwapTransactionBlock = ({
           />
           {!!selectedFromAsset && (
             <TextInput
-              label='You swap'
+              label="You swap"
               onValueChange={onAmountChange}
               value={amount}
-              placeholder='0'
+              placeholder="0"
               inputBottomText={
                 selectedFromAsset?.assetPriceUsd && amount
                   ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}`
@@ -351,14 +372,10 @@ const AssetSwapTransactionBlock = ({
               }
               inputTopRightComponent={
                 <Pill
-                  label='Remaining'
-                  value={`${formatAmountDisplay(remainingSelectedFromAssetBalance ?? 0)} ${
-                    selectedFromAsset.symbol
-                  }`}
+                  label="Remaining"
+                  value={`${formatAmountDisplay(remainingSelectedFromAssetBalance ?? 0)} ${selectedFromAsset.symbol}`}
                   valueColor={
-                    (remainingSelectedFromAssetBalance ?? 0) < 0
-                      ? theme.color?.text?.errorMessage
-                      : undefined
+                    (remainingSelectedFromAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined
                   }
                 />
               }
@@ -404,7 +421,7 @@ const AssetSwapTransactionBlock = ({
           }}
           renderOptionListItemContent={RenderOption}
           renderSelectedOptionContent={RenderOption}
-          placeholder='Select offer'
+          placeholder="Select offer"
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
           forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1}

@@ -207,7 +207,7 @@ const TransactionStatus = ({
   setIsTransactionDone,
 }: {
   crossChainAction: ICrossChainAction;
-  setIsTransactionDone: (value: boolean) => void;
+  setIsTransactionDone?: (value: boolean) => void;
 }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
@@ -240,6 +240,12 @@ const TransactionStatus = ({
     if (isGettingExplorerLink) return;
 
     setIsGettingExplorerLink(true);
+
+    if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && !approvalTransaction) {
+      setIsGettingExplorerLink(false);
+      previewTransaction(crossChainAction.transactionHash, approvalTransaction);
+      return;
+    }
 
     const sdk = getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
@@ -298,6 +304,8 @@ const TransactionStatus = ({
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
           [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? "Submit transaction" : "Sign message",
           [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
+          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]: "Waiting for funds from Bridge",
+          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]: "Estimating second transaction",
           [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
           [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
           [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: showAsApproval ? "Transaction approved" : "Transaction completed",
@@ -312,6 +320,10 @@ const TransactionStatus = ({
             theme?.color?.background?.statusIconPending,
           [CROSS_CHAIN_ACTION_STATUS.FAILED]:
             theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]:
+            theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]:
+            theme?.color?.background?.statusIconPending,
           [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]:
             theme?.color?.background?.statusIconFailed,
           [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]:
@@ -329,6 +341,10 @@ const TransactionStatus = ({
             case CROSS_CHAIN_ACTION_STATUS.CONFIRMED:
               return <BiCheck size={16} />;
             case CROSS_CHAIN_ACTION_STATUS.PENDING:
+              return <BsClockHistory size={14} />;
+            case CROSS_CHAIN_ACTION_STATUS.RECEIVING:
+              return <BsClockHistory size={14} />;
+            case CROSS_CHAIN_ACTION_STATUS.ESTIMATING:
               return <BsClockHistory size={14} />;
             case CROSS_CHAIN_ACTION_STATUS.UNSENT:
               return <BsClockHistory size={14} />;
@@ -393,7 +409,8 @@ const TransactionStatus = ({
             ) : (
               <>
                 {transaction?.submitTimestamp &&
-                  transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING && (
+                  (transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING || 
+                    transactionStatus === CROSS_CHAIN_ACTION_STATUS.RECEIVING) && (
                     <TransactionStatusClock>
                       {!!transaction.finishTimestamp &&
                         moment(
@@ -646,6 +663,7 @@ const ActionPreview = ({
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
         />
+        <TransactionStatus crossChainAction={crossChainAction.destinationCrossChainAction[0]} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />
 			</Card>
 		);
 	}
@@ -864,7 +882,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
-    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, hasEnoughPLR } = preview;
+    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, isPolygonAccountWithEnoughPLR, enableAssetSwap} = preview;
 
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
@@ -894,7 +912,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {hasEnoughPLR ? (
+        {isPolygonAccountWithEnoughPLR ? (
           <>
             <DoubleTransactionActionsInSingleRow>
               <TransactionAction>
@@ -1024,7 +1042,7 @@ const ActionPreview = ({
               </>
             )}
           </ValueWrapper>
-          {!hasEnoughPLR && (
+          {enableAssetSwap && (
             <RouteWrapper>
               {previewList.map((preview) => {
                 if (!preview) return null;
@@ -1208,6 +1226,114 @@ const ActionPreview = ({
         </TransactionAction>
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
+      </Card>
+    );
+  }
+
+  if (type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2) {
+    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, swap } = preview;
+
+    const fromNetwork = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === fromChainId
+    );
+    const toNetwork = supportedChains.find(
+      (supportedChain) => supportedChain.chainId === toChainId
+    );
+
+    const fromChainTitle =
+      fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const toChainTitle =
+      toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
+
+    const fromAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+    );
+    const toAmount = formatAmountDisplay(
+      ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
+    );
+
+    const senderAddress = crossChainAction.useWeb3Provider
+      ? providerAddress
+      : accountAddress;
+
+    const cardTitle = swap
+      ? 'Asset swap'
+      : 'PLR stake'
+
+    return (
+      <Card
+        title={cardTitle}
+        marginBottom={20}
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
+        <DoubleTransactionActionsInSingleRow>
+          <TransactionAction>
+            <Label>You send</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={fromAsset.symbol}
+                url={fromAsset.iconUrl}
+                smallImageTitle={fromChainTitle}
+                smallImageUrl={fromNetwork?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={1} medium block>
+                  {fromAmount} {fromAsset.symbol}
+                </Text>
+                <Text size={12}>On {fromChainTitle}</Text>
+              </div>
+            </ValueWrapper>
+          </TransactionAction>
+          <TransactionAction>
+            <Label>You receive</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={toAsset.symbol}
+                url={toAsset.iconUrl}
+                smallImageTitle={toChainTitle}
+                smallImageUrl={toNetwork?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={3} medium block>
+                  {toAmount} {toAsset.symbol}
+                </Text>
+                <Text size={12}>On {toChainTitle}</Text>
+              </div>
+            </ValueWrapper>
+          </TransactionAction>
+        </DoubleTransactionActionsInSingleRow>
+        {!!senderAddress && !!receiverAddress && (
+          <TransactionAction>
+            <Text size={16} medium>
+              <>
+                From &nbsp;
+                <ClickableText onClick={() => onCopy(senderAddress)}>
+                  {humanizeHexString(senderAddress)}
+                </ClickableText>
+                &nbsp;
+              </>
+              to &nbsp;
+              <ClickableText onClick={() => onCopy(receiverAddress)}>
+                {humanizeHexString(receiverAddress)}
+              </ClickableText>
+            </Text>
+          </TransactionAction>
+        )}
+        {swap?.type === 'CROSS_CHAIN_SWAP' && swap?.route && (
+          <TransactionAction>
+            <Label>Route</Label>
+            <RouteOption route={swap.route} cost={cost} showActions />
+          </TransactionAction>
+        )}
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
+        {showStatus && (
+          <TransactionStatus
+            crossChainAction={crossChainAction}
+            setIsTransactionDone={setIsTransactionDone}
+          />
+        )}
       </Card>
     );
   }

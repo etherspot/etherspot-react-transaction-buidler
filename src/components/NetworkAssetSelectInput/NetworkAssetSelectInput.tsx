@@ -23,13 +23,12 @@ import {
   supportedChains,
 } from '../../utils/chain';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
-import { containsText } from '../../utils/validation';
+import { addressesEqual, containsText } from '../../utils/validation';
 import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../utils/common';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
-import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
   position: relative;
@@ -240,6 +239,7 @@ interface SelectInputProps {
   walletAddress?: string | null;
   showQuickInputButtons?: boolean;
   accountType?: string;
+  hideAssets?: { chainId: number, address: string }[];
 }
 
 const NetworkAssetSelectInput = ({
@@ -255,6 +255,7 @@ const NetworkAssetSelectInput = ({
   walletAddress,
   showQuickInputButtons,
   accountType,
+  hideAssets,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -268,14 +269,12 @@ const NetworkAssetSelectInput = ({
   const {
     sdk,
     getSupportedAssetsWithBalancesForChainId,
-    getSmartWalletBalancesByChain,
     smartWalletBalanceByChain,
     setSmartWalletBalanceByChain,
-    keybasedWalletBalanceByChain,
+    keyBasedWalletBalanceByChain,
     providerAddress,
     accountAddress,
-    getKeybasedWalletBalancesPerChain,
-    setKeybasedWalletBalanceByChain,
+    setKeyBasedWalletBalanceByChain,
   } = useEtherspot();
 
   const onSelectClick = useCallback(() => {
@@ -304,6 +303,13 @@ const NetworkAssetSelectInput = ({
 
       if (!shouldUpdate) return;
 
+      supportedAssets = supportedAssets.filter((supportedAsset) => {
+        if (!hideAssets) return supportedAsset;
+        return !hideAssets.some((
+          hidden,
+        ) => hidden.chainId === preselectedNetwork.chainId && addressesEqual(hidden.address, supportedAsset.address));
+      });
+
       setSelectedNetworkAssets(supportedAssets);
       setIsLoadingAssets(false);
     }
@@ -317,6 +323,7 @@ const NetworkAssetSelectInput = ({
     getSupportedAssetsWithBalancesForChainId,
     showPositiveBalanceAssets,
     walletAddress,
+    hideAssets,
   ]);
 
   const filteredSelectedNetworkAssets = useMemo(() => {
@@ -365,7 +372,7 @@ const NetworkAssetSelectInput = ({
       )
         return;
 
-      setKeybasedWalletBalanceByChain((prev) => [
+      setKeyBasedWalletBalanceByChain((prev) => [
         ...prev?.filter((element) => element.chain !== CHAIN_ID.AVALANCHE),
         {
           total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
@@ -414,13 +421,13 @@ const NetworkAssetSelectInput = ({
     if (
       accType === DestinationWalletEnum.Key &&
       label === 'From' &&
-      keybasedWalletBalanceByChain?.length
+      keyBasedWalletBalanceByChain?.length
     ) {
-      let balanceByChain = keybasedWalletBalanceByChain.filter(
+      let balanceByChain = keyBasedWalletBalanceByChain.filter(
         (item) => item.chain === supportedChain.chainId
       );
       let displayBalance =
-        keybasedWalletBalanceByChain?.length && balanceByChain.length
+        keyBasedWalletBalanceByChain?.length && balanceByChain.length
           ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
           : '';
       return displayBalance === ' · $0' ? '' : displayBalance;

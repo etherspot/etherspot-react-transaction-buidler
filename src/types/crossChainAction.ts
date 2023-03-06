@@ -4,6 +4,7 @@ import { Route } from '@lifi/sdk';
 
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { IMultiCallData } from './transactionBlock';
+import { IPlrStakingV2BlockSwap } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
 
 interface AssetTransfer {
   address: string;
@@ -45,11 +46,24 @@ interface KlimaStakingActionPreview {
 interface PlrStakingActionPreview {
   fromChainId: number;
   hasEnoughPLR: boolean;
+  isPolygonAccountWithEnoughPLR: boolean;
+  enableAssetSwap: boolean;
   fromAsset: AssetTransfer;
   toAsset: AssetTransfer;
   providerName: string;
   providerIconUrl: string | undefined;
   receiverAddress?: string;
+}
+
+interface PlrStakingV2ActionPreview {
+  fromChainId: number;
+  toChainId: number;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  providerName?: string;
+  providerIconUrl?: string;
+  receiverAddress?: string;
+  swap?: IPlrStakingV2BlockSwap;
 }
 
 export interface AssetSwapActionPreview {
@@ -84,6 +98,7 @@ interface KlimaStakingAction {
 	receiveAmount?: string;
 	bridgeUsed?: string;
   gasCost?: string;
+  transactionHash?: string;
 }
 
 interface PlrStakingAction {
@@ -93,6 +108,11 @@ interface PlrStakingAction {
   containsSwitchChain?: boolean;
   receiveAmount?: string;
   bridgeUsed?: string;
+}
+
+interface PlrStakingV2Action {
+  type: typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2;
+  preview: PlrStakingV2ActionPreview;
 }
 
 export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {
@@ -124,4 +144,11 @@ export type ICrossChainAction = {
   batchTransactions?: ICrossChainAction[];
   batchHash?: string;
   multiCallData?: IMultiCallData | null;
-} & (AssetBridgeAction | SendAssetAction | AssetSwapAction | KlimaStakingAction | PlrStakingAction);
+} & (
+  AssetBridgeAction
+  | SendAssetAction
+  | AssetSwapAction
+  | KlimaStakingAction
+  | PlrStakingAction
+  | PlrStakingV2Action
+);

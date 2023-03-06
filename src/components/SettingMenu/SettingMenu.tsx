@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { BsClockHistory } from 'react-icons/bs';
+import { FaRocket } from 'react-icons/fa';
 import { IoMdLogOut } from 'react-icons/io';
 import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
 import styled, { useTheme } from 'styled-components';
@@ -7,6 +8,7 @@ import { useTransactionBuilderModal } from '../../hooks';
 import useOnClickOutside from '../../hooks/useOnClickOutside';
 import { Theme } from '../../utils/theme';
 import History from '../History';
+import Deployment from '../Deployment';
 import MenuItemAnchor from '../Menu/MenuItemAnchor';
 import MenuItem from '../Menu/MenuItem';
 import EtherspotLogo from '../Image/EtherspotLogo';
@@ -69,6 +71,14 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             onClick={() => {
               hideMenu();
               showModal(<History />);
+            }}
+          />
+          <MenuItem
+            icon={<FaRocket size={16} style={{ marginRight: '12px' }} />}
+            title="Deployment"
+            onClick={() => {
+              hideMenu();
+              showModal(<Deployment />);
             }}
           />
           <MenuItemAnchor
