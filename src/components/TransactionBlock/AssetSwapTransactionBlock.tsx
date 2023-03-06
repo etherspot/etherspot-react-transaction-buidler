@@ -282,7 +282,7 @@ const AssetSwapTransactionBlock = ({
           {!!valueToReceive && (
             <Text size={16} medium>
               {valueToReceive} {toAsset?.symbol}
-              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$')}`}
+              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$', 2)}`}
             </Text>
           )}
         </div>
