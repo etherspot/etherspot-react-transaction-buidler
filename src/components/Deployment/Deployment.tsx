@@ -152,6 +152,7 @@ const Deployment = () => {
           <Label>Deployed</Label>
         </Header>
         <Body>
+          {deployedChains.length == 0 && <Section>No Chains</Section>}
           {deployedChains.map(({ iconUrl, title }) => (
             <Section>
               <RoundedImage url={iconUrl} title={title} size={24} />
@@ -167,6 +168,7 @@ const Deployment = () => {
           <Label>Not Deployed</Label>
         </Header>
         <Body>
+          {undeployedChains.length == 0 && <Section>No Chains</Section>}
           {undeployedChains.map(({ chainId, iconUrl, title }) => (
             <Section>
               <RoundedImage url={iconUrl} title={title} size={24} />
@@ -211,6 +213,7 @@ const Body = styled.div`
   display: block;
   overflow-y: scroll;
   background-color: ${({ theme }) => theme.color.background.listItem};
+  max-height: 200px;
   scrollbar-width: thin;
   ::-webkit-scrollbar {
     width: 8px;
