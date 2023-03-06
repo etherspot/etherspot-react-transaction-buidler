@@ -7,6 +7,7 @@ import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBl
 import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { ErrorMessages } from '../utils/validation';
 import { Chain } from '../utils/chain';
+import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
 
 export type IMultiCallData = {
   id: string;
@@ -32,7 +33,7 @@ export type ITransactionBlockType =
   | typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.DISABLED
-  | typeof TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
+  | typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2;
 
 export type IDefaultTransactionBlock = {
   title?: string;
@@ -64,6 +65,11 @@ export interface IPlrDaoStakingMembershipBlock extends ITransactionBlockBase {
   values?: IPlrDaoTransactionBlockValues;
 }
 
+export interface IPlrStakingV2Block extends ITransactionBlockBase {
+  type: typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2;
+  values?: IPlrStakingV2BlockValues;
+}
+
 interface IDisabledTransactionBlock extends ITransactionBlockBase {
   type: typeof TRANSACTION_BLOCK_TYPE.DISABLED;
 }
@@ -74,6 +80,7 @@ export type ITransactionBlock =
   | IAssetSwapTransactionBlock
   | IKlimaStakingTransactionBlock
   | IPlrDaoStakingMembershipBlock
+  | IPlrStakingV2Block
   | IDisabledTransactionBlock;
 
 export type ITransactionBlockValues =
@@ -81,6 +88,7 @@ export type ITransactionBlockValues =
   | ISwapAssetTransactionBlockValues
   | ISendAssetTransactionBlockValues
   | IKlimaStakingTransactionBlockValues
-  | IPlrDaoTransactionBlockValues;
+  | IPlrDaoTransactionBlockValues
+  | IPlrStakingV2BlockValues;
 
 export type IMulticallBlock = { icon: string } & ITransactionBlock;

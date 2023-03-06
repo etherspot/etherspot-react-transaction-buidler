@@ -10,7 +10,7 @@ import {
   TransactionsDispatcherContextProvider,
 } from '../providers';
 
-import { darkTheme, defaultTheme, Theme } from '../utils/theme';
+import { darkTheme, Theme } from '../utils/theme';
 import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
 
 interface EtherspotProps {

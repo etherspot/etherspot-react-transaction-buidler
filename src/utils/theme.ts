@@ -3,6 +3,7 @@ export interface Theme {
     background?: {
       main?: string;
       topMenu?: string;
+      topMenuWallet?: string;
       topMenuButton?: string;
       card?: string;
       selectInput?: string;
@@ -39,11 +40,13 @@ export interface Theme {
       tokenBalanceContainer?: string;
       horizontalLine?: string;
       deployButton?: string;
+      blockParagraphBorder?: string;
     };
     text?: {
       main?: string;
       topBar?: string;
       topMenu?: string;
+      topMenuWallet?: string;
       card?: string;
       cardDisabled?: string;
       cardTitle?: string;
@@ -75,6 +78,8 @@ export interface Theme {
       tokenTotal?: string;
       reviewLabel?: string;
       settingsIcon?: string;
+      blockParagraphHighlight?: string;
+      blockParagraphHighlightSecondary?: string;
     };
   };
 }
@@ -87,6 +92,7 @@ export const defaultTheme: Theme = {
       tokenBalanceContainer: '#21002e',
       horizontalLine: 'linear-gradient(90deg, #23a9c9, #cd34a2)',
       topMenu: '#fff',
+      topMenuWallet: 'rgba(255, 247, 242, 0.24)',
       topMenuButton: '#fff',
       selectInput: '#fff',
       selectInputExpanded: '#fff',
@@ -119,12 +125,14 @@ export const defaultTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #fd9250, #ff5548)',
       walletChainDropdown: '#fff',
       walletChainButtonActive: '#ffeee6',
-      deployButton: '#ff884d'
+      deployButton: '#ff884d',
+      blockParagraphBorder: 'linear-gradient(#346ecd, #cd34a2)',
     },
     text: {
       main: '#fff',
       topBar: '#fff',
       topMenu: '#191726',
+      topMenuWallet: '#fff',
       cardTitle: '#191726',
       card: '#000',
       cardDisabled: '#ddd',
@@ -156,6 +164,8 @@ export const defaultTheme: Theme = {
       pasteIcon: '#ff884d',
       settingsIcon: '#ee6723',
       walletDropdownIcon: '#221f33',
+      blockParagraphHighlight: '#e333e8',
+      blockParagraphHighlightSecondary: '#77e7f6',
     },
   },
 };
@@ -165,7 +175,8 @@ export const darkTheme: Theme = {
   color: {
     background: {
       main: 'linear-gradient(169deg, #3e3869 5%, #241938 98%)',
-      topMenu: '#443d66',
+      topMenu: 'rgb(68, 61, 102)',
+      topMenuWallet: 'rgba(111, 76, 172, 0.54)',
       topMenuButton: '#ffffff',
       card: '#262240',
       button: 'linear-gradient(to bottom, #fdb754, #f18214)',
@@ -173,6 +184,9 @@ export const darkTheme: Theme = {
       selectInputToggleButton: '#998ae6',
       selectInput: '#474078',
       selectInputExpanded: '#130c1d',
+      statusIconPending: '#ff6b35',
+      statusIconFailed: '#ff0000',
+      statusIconSuccess: '#1ba23d',
       selectInputImagePlaceholder: '#4f367a',
       selectInputScrollbar: '#ff7733',
       selectInputScrollbarHover: 'rgba(255, 119, 51, 0.8)',
@@ -189,6 +203,7 @@ export const darkTheme: Theme = {
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
+      blockParagraphBorder: 'linear-gradient(#346ecd, #cd34a2)',
       listItemQuickButtonPrimary: '#eb860b',
       listItemQuickButtonSecondary: '#4f367a',
       deployButton: '#ff884d',
@@ -202,6 +217,7 @@ export const darkTheme: Theme = {
       outerLabel: '#998ae6',
       innerLabel: '#998ae6',
       topMenu: '#998ae6',
+      topMenuWallet: '#cab3f5',
       main: '#ffeee6',
       topBar: '#998ae6',
       buttonSecondary: '#fbae49',
@@ -214,12 +230,15 @@ export const darkTheme: Theme = {
       tokenValue: '#57c2d6',
       textInputSecondary: '#9466e6',
       switchInputActiveTab: '#ffeee6',
+      transactionStatusLink: '#ff7733',
       switchInputInactiveTab: '#9466e6',
       selectInputImagePlaceholder: '#ffeee6',
       cardDisabled: '#605e5e',
       pill: '#bbb8cc',
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
+      blockParagraphHighlight: '#e333e8',
+      blockParagraphHighlightSecondary: '#77e7f6',
       settingsIcon: '#ee6723',
     },
   },

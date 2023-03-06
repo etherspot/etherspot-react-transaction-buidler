@@ -32,6 +32,7 @@ import { bridgeServiceIdToDetails } from '../../utils/bridge';
 
 //constants
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
+import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 
 export interface IPlrDaoTransactionBlockValues {
   accountType: AccountTypes;
@@ -134,12 +135,12 @@ const mapOfferToOption = (offer: ExchangeOffer) => {
 };
 
 const mapRouteToOption = (route: Route) => {
-  const [fistStep] = route.steps;
-  const serviceDetails = bridgeServiceIdToDetails[fistStep?.toolDetails?.key ?? 'lifi'];
+  const [firstStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: fistStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
-    iconUrl: fistStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
   };
 };
 
@@ -189,6 +190,9 @@ const PlrDaoStakingTransactionBlock = ({
   );
   const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === 'PLR';
   const enableAssetSwap = selectedFromAsset?.symbol !== 'PLR';
+  const toAsset = isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT : plrDaoAsset;
+
+  const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
 
   const theme: Theme = useTheme();
 
@@ -353,7 +357,7 @@ const PlrDaoStakingTransactionBlock = ({
         const offers = await sdk.getExchangeOffers({
           fromChainId: selectedFromAsset.chainId,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-          toTokenAddress: isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT.address : plrDaoAsset.address,
+          toTokenAddress: toAsset.address,
           fromTokenAddress: selectedFromAsset.address,
         });
         return offers;
@@ -448,7 +452,7 @@ const PlrDaoStakingTransactionBlock = ({
       enableAssetSwap,
       isPolygonAccountWithEnoughPLR,
       fromChainId: selectedFromNetwork?.chainId ?? undefined,
-      toAsset: isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT : plrDaoAsset,
+      toAsset,
       fromAsset: selectedFromAsset ?? undefined,
       amount,
       offer,
@@ -484,9 +488,13 @@ const PlrDaoStakingTransactionBlock = ({
 
   const RenderOption = (option: SelectOption) => {
     const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
-    const valueToReceive =
-      availableOffer &&
-      formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, plrDaoAsset.decimals));
+
+    const valueToReceiveRaw = availableOffer
+      ? ethers.utils.formatUnits(availableOffer.receiveAmount, plrDaoAsset.decimals)
+      : undefined;
+
+    const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
+
     return (
       <OfferDetails>
         <RoundedImage title={option.title} url={option.iconUrl} size={24} />
@@ -497,6 +505,7 @@ const PlrDaoStakingTransactionBlock = ({
           {!!valueToReceive && (
             <Text size={16} medium>
               {valueToReceive} {plrDaoAsset.symbol}
+              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$')}`}
             </Text>
           )}
         </div>
@@ -626,7 +635,7 @@ const PlrDaoStakingTransactionBlock = ({
         <NetworkAssetSelectInput
           label="To"
           selectedNetwork={selectedToChain}
-          selectedAsset={isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT : plrDaoAsset}
+          selectedAsset={toAsset}
           disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         />
