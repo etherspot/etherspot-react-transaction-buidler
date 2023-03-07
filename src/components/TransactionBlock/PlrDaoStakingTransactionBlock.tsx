@@ -385,13 +385,8 @@ const getNftList = async () => {
     } else {
       output = (await getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true))[0];
     }
-    if (output?.items?.length) {
-      // Check if NFT is present in the fetched output
-      let hasMembershiptNFT = output.items.filter((nft: INft) => nft.name.includes(plrDaoMemberNFT.name));
-      if (hasMembershiptNFT?.length) {
-        setIsNFTMember(true);
-      }
-    }
+    const hasMembershiptNFT = output.contractName === plrDaoMemberNFT.name;
+    setIsNFTMember(hasMembershiptNFT);
   } catch (error) {
     //
   }
