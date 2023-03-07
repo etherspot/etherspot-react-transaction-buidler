@@ -44,7 +44,7 @@ import { PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } f
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 
 interface IPillarDAO {
-  deposit(amount: BigNumber): {
+  encodeDeposit(amount: BigNumber): {
     to: string;
     data: string;
   };
@@ -568,15 +568,39 @@ export const buildCrossChainAction = async (
         } = transactionBlock;
         let transactions: any[] =[];
         const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
-  
-        if (ethers.utils.isAddress(fromAssetAddress) && !isZeroAddress(fromAssetAddress)) {
+        
+        if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address)) {
+          try {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+              '0xD54aE8275fCe00930d732F93Cf2fC0d588752f9A',
+              amountBN
+            );
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed to build PLR DAO stake approval transaction!' };
+            }
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              chainId: fromChainId,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+            transactions = [...transactions, approvalTransaction];
+          } catch (e) {
+            return { errorMessage: 'Failed to build approval transaction!' };
+          }
+        }
+
+        try {
           const plrDaoStakingContract = sdk.registerContract<IPillarDAO>(
             'plrDaoStakingContract',
             ['function deposit(uint256)'],
-            '0xD54aE8275fCe00930d732F93Cf2fC0d588752f9A',
+            transactions[0].to
           );
-          const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
-          const stakeTransactionRequest = plrDaoStakingContract?.deposit?.(amountBN);
+          const stakeTransactionRequest = plrDaoStakingContract?.encodeDeposit?.(amountBN);
           if (!stakeTransactionRequest || !stakeTransactionRequest.to) {
             return { errorMessage: 'Failed build transfer transaction!' };
           }
@@ -588,8 +612,10 @@ export const buildCrossChainAction = async (
             createTimestamp,
             status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
           };
-  
-          transactions = [approvalTransaction, ...transactions];
+
+          transactions = [...transactions, approvalTransaction];
+        } catch (e) {
+          return { errorMessage: 'Failed build transfer transaction!' };
         }
 
         const preview = {
@@ -616,56 +642,6 @@ export const buildCrossChainAction = async (
           providerName: '',
           providerIconUrl: '',
         };
-        if (
-          fromAssetAddress &&
-          !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address) &&
-          transactions.length === 1
-        ) {
-          try {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, amountBN);
-            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-              return { errorMessage: 'Failed build swap approval transaction!' };
-            }
-
-            const approvalTransaction = {
-              to: approvalTransactionRequest.to,
-              data: approvalTransactionRequest.data,
-              chainId: fromChainId,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
-
-            transactions = [approvalTransaction, ...transactions];
-          } catch (e) {
-            return { errorMessage: 'Failed to build approval transaction!' };
-          }
-        }
-
-        if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
-          try {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-            const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, amountBN);
-            if (!transferTransactionRequest || !transferTransactionRequest.to) {
-              return { errorMessage: 'Failed build transfer transaction!' };
-            }
-
-            const transferTransaction = {
-              to: transferTransactionRequest.to,
-              data: transferTransactionRequest.data,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
-
-            transactions = [...transactions, transferTransaction];
-          } catch (e) {
-            return { errorMessage: 'Failed to build asset transfer transaction!' };
-          }
-        }
         const crossChainAction: ICrossChainAction = {
           id: crossChainActionId,
           relatedTransactionBlockId: transactionBlock.id,

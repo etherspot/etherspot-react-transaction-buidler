@@ -542,7 +542,9 @@ const PlrDaoStakingTransactionBlock = ({
       ? 'Key Based'
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
-  const stakingBalance = isPolygonAccountWithEnoughPLR ? `${MAX_PLR_TOKEN_LIMIT}` : '';
+  const decimals = selectedFromAsset?.decimals ?? 18;
+  const updatedAmount = formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, decimals);
+  const stakingBalance = isPolygonAccountWithEnoughPLR ? updatedAmount : '';
 
   return (
     <>
