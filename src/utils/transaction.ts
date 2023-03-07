@@ -3,7 +3,6 @@ import {
   BridgingQuote,
   CrossChainServiceProvider,
   ExchangeOffer,
-  ExchangeProviders,
   GatewayTransactionStates,
   LiFiStatus,
   NotificationTypes,
@@ -26,7 +25,7 @@ import { map as rxjsMap } from 'rxjs/operators';
 
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
-import { CHAIN_ID, changeToChain, nativeAssetPerChainId, supportedChains, plrDaoMemberNFT } from './chain';
+import { CHAIN_ID, changeToChain, nativeAssetPerChainId, supportedChains } from './chain';
 import { plrDaoAsset, plrStakedAssetEthereumMainnet } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
@@ -561,22 +560,21 @@ export const buildCrossChainAction = async (
               decimals: fromAssetDecimals,
               logoURI: fromAssetIconUrl,
             },
+            toAsset: { decimals: toAssetDecimals },
             amount,
             receiverAddress,
             accountType,
           },
         } = transactionBlock;
-        let transactions: any[] =[];
+        let transactions: any[] = [];
+        let contractAddress = '0xdf5cFefc1CE077Fc468E3CFF130f955421D9B95a';
         const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
         
         if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address)) {
           try {
             const abi = getContractAbi(ContractNames.ERC20Token);
             const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
-              '0xD54aE8275fCe00930d732F93Cf2fC0d588752f9A',
-              amountBN
-            );
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(contractAddress, amountBN);
             if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
               return { errorMessage: 'Failed to build PLR DAO stake approval transaction!' };
             }
@@ -598,7 +596,7 @@ export const buildCrossChainAction = async (
           const plrDaoStakingContract = sdk.registerContract<IPillarDAO>(
             'plrDaoStakingContract',
             ['function deposit(uint256)'],
-            transactions[0].to
+            contractAddress
           );
           const stakeTransactionRequest = plrDaoStakingContract?.encodeDeposit?.(amountBN);
           if (!stakeTransactionRequest || !stakeTransactionRequest.to) {
@@ -633,7 +631,7 @@ export const buildCrossChainAction = async (
           amount: 1,
           toAsset: {
             address: plrDaoAsset.address,
-            decimals: 9,
+            decimals: toAssetDecimals,
             symbol: 'Pillar DAO NFT',
             amount: '1',
             iconUrl: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',

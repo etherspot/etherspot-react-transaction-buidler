@@ -4,7 +4,7 @@ import { CHAIN_ID } from './chain';
 import { PLR_ADDRESS_PER_CHAIN } from '../constants/assetConstants';
 
 export const plrDaoAsset: IAssetWithBalance = {
-  address: '0xE5b78d1b19A5C1d5F36D8b2DbFc6c79A6083FB61',
+  address: '0x6D5862a18C6a169D44d02a8B726a02A5B707B484',
   chainId: CHAIN_ID.POLYGON,
   name: 'Deku (DKU)',
   symbol: 'DKU',

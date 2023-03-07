@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, ExchangeOffer } from 'etherspot';
+import { AccountTypes, ExchangeOffer, NftCollection } from 'etherspot';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
 import { Route } from '@lifi/sdk';
@@ -59,6 +59,14 @@ interface AccountBalance {
   chainName: string;
   keyBasedWallet: number;
   smartWallet: number;
+}
+
+export interface INft {
+  tokenId: number;
+  name: string;
+  amount: number;
+  image: string;
+  ipfsGateway: string;
 }
 
 const Title = styled.h3`
@@ -152,7 +160,7 @@ const PlrDaoStakingTransactionBlock = ({
   values,
   multiCallData,
 }: IPlrDaoStakingMembershipBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSupportedAssetsWithBalancesForChainId } =
+  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSupportedAssetsWithBalancesForChainId, getNftsForChainId } =
     useEtherspot();
 
   const [amount, setAmount] = useState<string>('');
@@ -368,20 +376,26 @@ const PlrDaoStakingTransactionBlock = ({
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType],
   );
 
-  const getNftList = async () => {
-    try {
-      if (!accountAddress || !providerAddress || !sdk) return;
-      const output = await sdk.getNftList({
-        account: accountAddress || providerAddress,
-      });
-      let hasNFTContractAddress = output?.items?.filter((nft) => nft.contractAddress === plrDaoMemberNFT.address);
-      if (hasNFTContractAddress?.length) {
+const getNftList = async () => {
+  try {
+    if (!accountAddress || !providerAddress || !sdk) return;
+    let output: NftCollection;
+    if (providerAddress) {
+      output = (await getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true))[0];
+    } else {
+      output = (await getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true))[0];
+    }
+    if (output?.items?.length) {
+      // Check if NFT is present in the fetched output
+      let hasMembershiptNFT = output.items.filter((nft: INft) => nft.name.includes(plrDaoMemberNFT.name));
+      if (hasMembershiptNFT?.length) {
         setIsNFTMember(true);
       }
-    } catch (error) {
-      //
     }
-  };
+  } catch (error) {
+    //
+  }
+};
 
   useEffect(() => {
     // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
@@ -702,7 +716,7 @@ const PlrDaoStakingTransactionBlock = ({
             showPasteButton
           />
         )}
-        {!enableAssetBridge && !!selectedFromAsset && !!amount && (
+        {!isPolygonAccountWithEnoughPLR && !enableAssetBridge && !!selectedFromAsset && !!amount && (
           <SelectInput
             label={`Offer`}
             options={availableOffersOptions ?? []}
