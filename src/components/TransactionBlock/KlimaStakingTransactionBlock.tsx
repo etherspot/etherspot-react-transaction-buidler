@@ -324,7 +324,7 @@ const KlimaStakingTransactionBlock = ({
         {!!receiveAmount && (
           <Text size={16} medium>
             {receiveAmount} {klimaAsset.symbol}
-            {targetAssetPriceUsd && ` · ${formatAmountDisplay(+receiveAmount * targetAssetPriceUsd, '$')}`}
+            {targetAssetPriceUsd && ` · ${formatAmountDisplay(+receiveAmount * targetAssetPriceUsd, '$', 2)}`}
           </Text>
         )}
       </div>
