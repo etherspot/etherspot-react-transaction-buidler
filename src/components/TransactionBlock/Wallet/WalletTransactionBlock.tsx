@@ -689,7 +689,7 @@ const SearchInput = styled.input`
 `;
 
 const SearchIcon = styled.span`
-  margin-top -3px;
+  margin-top: -3px;
 
   ${({ onClick }) =>
     !!onClick &&
