@@ -378,9 +378,11 @@ const EtherspotContextProvider = ({
   const getRatesByNativeChainId = async (chainId: number) => {
     if (!sdk) return null;
     try {
+      const nativeTokenChainId = chainId === CHAIN_ID.AURORA ? CHAIN_ID.ETHEREUM_MAINNET : chainId;
+
       const rates: RateData = await sdk.fetchExchangeRates({
         tokens: [ethers.constants.AddressZero],
-        chainId,
+        chainId: nativeTokenChainId,
       });
       if (!rates.errored && rates.items.length) {
         return rates.items[0].usd;
