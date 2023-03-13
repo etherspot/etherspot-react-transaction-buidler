@@ -21,7 +21,11 @@ export const formatAssetAmountInput = (amount: string, decimals: number = 18): s
   return `${integer}.${fixedFraction}`;
 };
 
-export const formatAmountDisplay = (amountRaw: string | number, leftSymbol?: string): string => {
+export const formatAmountDisplay = (
+  amountRaw: string | number,
+  leftSymbol?: string,
+  minimumFractionDigits?: number,
+): string => {
   const amount = typeof amountRaw === 'number' ? `${amountRaw}` : amountRaw;
 
   // check string to avoid underflow
@@ -41,7 +45,7 @@ export const formatAmountDisplay = (amountRaw: string | number, leftSymbol?: str
     return smallAmount;
   }
 
-  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(+amount)}`;
+  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, minimumFractionDigits }).format(+amount)}`;
 };
 
 export const humanizeHexString = (
