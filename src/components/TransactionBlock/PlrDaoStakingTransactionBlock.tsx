@@ -379,14 +379,16 @@ const PlrDaoStakingTransactionBlock = ({
   );
 
   const getNftList = async () => {
+    if (!accountAddress || !providerAddress || !sdk) return;
     try {
-      if (!accountAddress || !providerAddress || !sdk) return;
-      let [providerNFTDetails]: NftCollection[] = await getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true);
-      let [accountNFTDetails]: NftCollection[] = await getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true);
-      const hasMembershiptNFT =
-        addressesEqual(providerNFTDetails.contractAddress, plrDaoMemberNFT.address) ||
-        addressesEqual(accountNFTDetails.contractAddress, plrDaoMemberNFT.address);
-      setIsNFTMember(hasMembershiptNFT);
+      const [providerNFTDetails, accountNFTDetails] = await Promise.all([
+        getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true),
+        getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
+      ]);
+      const hasMembershipNFT = providerNFTDetails
+        .concat(accountNFTDetails)
+        .some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNFT.address));
+      setIsNFTMember(hasMembershipNFT);
     } catch (error) {
       //
     }
