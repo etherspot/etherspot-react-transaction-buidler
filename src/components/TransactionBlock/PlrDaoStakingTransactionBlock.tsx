@@ -656,6 +656,7 @@ const PlrDaoStakingTransactionBlock = ({
                 smallImageUrl={selectedFromNetwork.iconUrl}
                 title={selectedFromAsset.symbol}
                 smallImageTitle={selectedFromNetwork.title}
+                smallBgColor={theme?.color?.background?.textInput}
               />
             }
             inputTopRightComponent={
