@@ -381,10 +381,8 @@ const PlrDaoStakingTransactionBlock = ({
   const getNftList = async () => {
     try {
       if (!accountAddress || !providerAddress || !sdk) return;
-      let accountNFTDetails: NftCollection;
-      let providerNFTDetails: NftCollection;
-      [providerNFTDetails] = await getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true);
-      [accountNFTDetails] = await getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true);
+      let [providerNFTDetails]: NftCollection[] = await getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true);
+      let [accountNFTDetails]: NftCollection[] = await getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true);
       const hasMembershiptNFT =
         addressesEqual(providerNFTDetails.contractAddress, plrDaoMemberNFT.address) ||
         addressesEqual(accountNFTDetails.contractAddress, plrDaoMemberNFT.address);
@@ -534,7 +532,7 @@ const PlrDaoStakingTransactionBlock = ({
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
   const tokenArray = hasEnoughPLR && accounts.length == 1 ? [] : accounts;
 
-  if (isNFTMember) {
+  if (!isNFTMember) {
     return (
       <>
         <Title>Pillar DAO Staking</Title>
