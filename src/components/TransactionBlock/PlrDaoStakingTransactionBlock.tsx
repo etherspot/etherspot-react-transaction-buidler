@@ -89,16 +89,20 @@ const OfferDetails = styled.div`
   font-family: 'PTRootUIWebMedium', sans-serif;
 `;
 
+const ContainerWrapper = styled.div`
+  background: ${({ theme }) => theme.color.background.horizontalLine};
+  margin: 12px 0 14px 0;
+  padding: 2px;
+  border-radius: 5px;
+`;
+
 const Container = styled.div`
   align-items: center;
   font-family: 'PTRootUIWebMedium', sans-serif;
-  background: ${({ theme }) => theme.color.background.tokenBalanceContainer};
+  background: ${({ theme }) => theme.color.background.card};
   color: ${({ theme }) => theme.color.text.tokenBalance};
   padding: 16px;
-  margin: 5px;
-  border-image: linear-gradient(#346ecd, #cd34a2) 30;
-  border-width: 2px;
-  border-style: solid;
+  border-radius: 4px;
 `;
 
 const Value = styled.div`
@@ -191,13 +195,11 @@ const PlrDaoStakingTransactionBlock = ({
   const isPolygonAccountWithEnoughPLR = accounts.some(
     (account) =>
       account.chainId === CHAIN_ID.POLYGON &&
-      selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
-      selectedFromAsset?.symbol === 'DKU' &&
       ((selectedAccountType === DestinationWalletEnum.Contract && account.smartWallet >= MAX_PLR_TOKEN_LIMIT) ||
         (selectedAccountType === DestinationWalletEnum.Key && account.keyBasedWallet >= MAX_PLR_TOKEN_LIMIT))
   );
-  const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === 'PLR';
-  const enableAssetSwap = selectedFromAsset?.symbol !== 'DKU';
+  const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === plrDaoAsset.symbol;
+  const enableAssetSwap = selectedFromAsset?.symbol !== plrDaoAsset.symbol;
   const toAsset = isPolygonAccountWithEnoughPLR ? plrDaoMemberNFT : plrDaoAsset;
 
   const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
@@ -376,21 +378,21 @@ const PlrDaoStakingTransactionBlock = ({
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType],
   );
 
-const getNftList = async () => {
-  try {
-    if (!accountAddress || !providerAddress || !sdk) return;
-    let output: NftCollection;
-    if (providerAddress) {
-      output = (await getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true))[0];
-    } else {
-      output = (await getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true))[0];
+  const getNftList = async () => {
+    try {
+      if (!accountAddress || !providerAddress || !sdk) return;
+      let accountNFTDetails: NftCollection;
+      let providerNFTDetails: NftCollection;
+      [providerNFTDetails] = await getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true);
+      [accountNFTDetails] = await getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true);
+      const hasMembershiptNFT =
+        addressesEqual(providerNFTDetails.contractAddress, plrDaoMemberNFT.address) ||
+        addressesEqual(accountNFTDetails.contractAddress, plrDaoMemberNFT.address);
+      setIsNFTMember(hasMembershiptNFT);
+    } catch (error) {
+      //
     }
-    const hasMembershiptNFT = output.contractName === plrDaoMemberNFT.name;
-    setIsNFTMember(hasMembershiptNFT);
-  } catch (error) {
-    //
-  }
-};
+  };
 
   useEffect(() => {
     // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
@@ -535,10 +537,16 @@ const getNftList = async () => {
   if (isNFTMember) {
     return (
       <>
-        <Title>Pillar DAO Membership</Title>
-        <Container>
-          <Text size={16}>Thank You!. You are already a Pillar DAO member.</Text>
-        </Container>
+        <Title>Pillar DAO Staking</Title>
+        <ContainerWrapper>
+          <Container>
+          <Text size={18} color={theme?.color?.text?.tokenValue}>
+            Thank You!
+          </Text>
+          <br />
+          <Text size={18} marginTop={2}>You are already a Pillar DAO member.</Text>
+          </Container>
+        </ContainerWrapper>
       </>
     );
   }
@@ -558,11 +566,12 @@ const getNftList = async () => {
   return (
     <>
       <Title>Stake into Pillar DAO</Title>
+      <ContainerWrapper>
       <Container>
         <Text size={16}>
           To become DAO member, you need to stake <Value>10,000 PLR</Value> tokens on Polygon.
         </Text>
-        <HorizontalLine></HorizontalLine>
+        <HorizontalLine />
         {
           <Text size={14}>
             You have&nbsp;
@@ -604,6 +613,7 @@ const getNftList = async () => {
           </Text>
         ))}
       </Container>
+      </ContainerWrapper>
       <>
         <AccountSwitchInput
           label="From wallet"

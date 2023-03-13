@@ -175,6 +175,7 @@ export const darkTheme: Theme = {
   color: {
     background: {
       main: 'linear-gradient(169deg, #3e3869 5%, #241938 98%)',
+      horizontalLine: 'linear-gradient(90deg, #23a9c9, #cd34a2)',
       topMenu: 'rgb(68, 61, 102)',
       topMenuWallet: 'rgba(111, 76, 172, 0.54)',
       topMenuButton: '#ffffff',

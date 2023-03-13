@@ -221,21 +221,10 @@ const EtherspotContextProvider = ({
       const hasNativeAsset = assets.some(
         (asset) => !asset.address || addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address)
       );
+      // To be added back when DKU token is no longer needed. This is for the DKU testing.
+      // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];  
       supportedAssetsPerChainId[assetsChainId] =
-      hasNativeAsset || !nativeAsset
-        ? assets
-        : [
-            nativeAsset,
-            ...assets,
-            {
-              address: plrDaoAsset.address,
-              chainId: 137,
-              decimals: 18,
-              logoURI: 'https://tokens.1inch.io/0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9.png',
-              name: 'Deku',
-              symbol: 'DKU',
-            },
-          ];
+        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, plrDaoAsset];
       return supportedAssetsPerChainId[assetsChainId];
     },
     [sdk]

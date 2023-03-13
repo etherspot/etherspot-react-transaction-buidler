@@ -25,7 +25,7 @@ import { map as rxjsMap } from 'rxjs/operators';
 
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
-import { CHAIN_ID, changeToChain, nativeAssetPerChainId, supportedChains } from './chain';
+import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNFT, supportedChains } from './chain';
 import { plrDaoAsset, plrStakedAssetEthereumMainnet } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
@@ -630,9 +630,9 @@ export const buildCrossChainAction = async (
           },
           amount: 1,
           toAsset: {
-            address: plrDaoAsset.address,
+            address: plrDaoMemberNFT.address,
             decimals: toAssetDecimals,
-            symbol: 'Pillar DAO NFT',
+            symbol: plrDaoMemberNFT.name,
             amount: '1',
             iconUrl: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
           },
