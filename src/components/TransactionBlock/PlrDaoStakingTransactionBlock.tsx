@@ -33,6 +33,7 @@ import { bridgeServiceIdToDetails } from '../../utils/bridge';
 //constants
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
+import { OfferRoute } from '../OfferRoute/OfferRoute';
 
 export interface IPlrDaoTransactionBlockValues {
   accountType: AccountTypes;
@@ -158,7 +159,7 @@ const PlrDaoStakingTransactionBlock = ({
 
   const [amount, setAmount] = useState<string>('');
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
-    values?.offer ? mapOfferToOption(values?.offer) : null,
+    values?.offer ? mapOfferToOption(values?.offer) : null
   );
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[]>(values?.offer ? [values.offer] : []);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
@@ -216,7 +217,7 @@ const PlrDaoStakingTransactionBlock = ({
       : AccountTypes.Contract;
 
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
-    defaultSelectedReceiveAccountType,
+    defaultSelectedReceiveAccountType
   );
 
   const {
@@ -274,7 +275,7 @@ const PlrDaoStakingTransactionBlock = ({
       const accountsBalances = await Promise.all(
         [accountAddress, providerAddress].map(async (address) => {
           return await getSupportedAssetsWithBalancesForChainId(chainId, true, address);
-        }),
+        })
       );
       let smartWalletBalance = 0;
       let keyBasedBalance = 0;
@@ -317,10 +318,10 @@ const PlrDaoStakingTransactionBlock = ({
         [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.POLYGON, CHAIN_ID.XDAI, CHAIN_ID.BINANCE].includes(chain.chainId)
       );
       let accountBalanceWithSupportedChains: AccountBalance[] = await Promise.all(
-        filteredSupportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title)),
+        filteredSupportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title))
       );
       accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
-        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet > 0,
+        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet > 0
       );
 
       const totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
@@ -366,7 +367,7 @@ const PlrDaoStakingTransactionBlock = ({
         setTransactionBlockFieldValidationError(transactionBlockId, 'offer', 'Cannot fetch offers');
       }
     }, 200),
-    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType],
+    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType]
   );
 
   const getNftList = async () => {
@@ -400,7 +401,7 @@ const PlrDaoStakingTransactionBlock = ({
         setIsLoadingAvailableOffers(false);
         if (!offers.length) return;
         const bestOffer: ExchangeOffer | undefined = offers?.find(
-          (offer) => offer.provider === swapServiceIdToDetails['Lifi'].title,
+          (offer) => offer.provider === swapServiceIdToDetails['Lifi'].title
         );
         const selectedOffer = bestOffer?.provider ? bestOffer : offers[0];
         setSelectedOffer(mapOfferToOption(selectedOffer));
@@ -459,7 +460,7 @@ const PlrDaoStakingTransactionBlock = ({
       offer,
       accountType: selectedAccountType,
       receiverAddress: receiverAddress ?? undefined,
-      route
+      route,
     });
   }, [
     selectedFromNetwork,
@@ -712,8 +713,26 @@ const PlrDaoStakingTransactionBlock = ({
               resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
               setSelectedOffer(option);
             }}
-            renderOptionListItemContent={RenderOption}
-            renderSelectedOptionContent={RenderOption}
+            renderOptionListItemContent={(option) => (
+              <OfferRoute
+                option={option}
+                availableOffers={availableOffers}
+                targetAssetPriceUsd={targetAssetPriceUsd}
+                selectedAccountType={selectedAccountType}
+                selectedFromAsset={selectedFromAsset}
+                selectedNetwork={selectedFromNetwork}
+              />
+            )}
+            renderSelectedOptionContent={(option) => (
+              <OfferRoute
+                option={option}
+                availableOffers={availableOffers}
+                targetAssetPriceUsd={targetAssetPriceUsd}
+                selectedAccountType={selectedAccountType}
+                selectedFromAsset={selectedFromAsset}
+                selectedNetwork={selectedFromNetwork}
+              />
+            )}
             placeholder="Select offer"
             errorMessage={errorMessages?.offer}
           />
