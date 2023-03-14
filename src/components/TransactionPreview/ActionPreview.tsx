@@ -882,7 +882,16 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
-    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress, isPolygonAccountWithEnoughPLR, enableAssetSwap} = preview;
+    const {
+      fromAsset,
+      fromChainId,
+      toAsset,
+      providerName,
+      providerIconUrl,
+      receiverAddress,
+      enableAssetSwap,
+      enableAssetBridge,
+    } = preview;
 
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
@@ -899,9 +908,10 @@ const ActionPreview = ({
     const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
     const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-    const toAmount = isPolygonAccountWithEnoughPLR
-      ? toAsset.amount
-      : formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
+    const toAmount =
+      !enableAssetSwap && !enableAssetBridge
+        ? toAsset.amount
+        : formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
     const timeStamp = crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp;
@@ -914,7 +924,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {isPolygonAccountWithEnoughPLR ? (
+        {!enableAssetSwap && !enableAssetBridge ? (
           <>
             <DoubleTransactionActionsInSingleRow>
               <TransactionAction>
@@ -1018,7 +1028,7 @@ const ActionPreview = ({
           </>
         )}
         <TransactionAction>
-          {!isPolygonAccountWithEnoughPLR && (
+          {(enableAssetSwap || enableAssetBridge) && (
             <>
               <ColoredText>Route</ColoredText>
               <ValueWrapper>
@@ -1056,12 +1066,15 @@ const ActionPreview = ({
                 const { fromAsset, toAsset, providerName, providerIconUrl } = preview;
 
                 const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-                const toAmount = isPolygonAccountWithEnoughPLR
-                  ? toAsset.amount
-                  : formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+                const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
                 return (
                   <Row>
-                    <RoundedImage style={{ marginTop: 2 }} title={providerName} url={providerIconUrl} size={10} />
+                    <RoundedImage
+                      style={{ marginTop: 2 }}
+                      title={providerName ?? 'Unknown'}
+                      url={providerIconUrl}
+                      size={10}
+                    />
                     <ValueBlock>
                       <Text size={12} marginBottom={2} regular block>
                         {`Swap on ${fromChainTitle} via ${providerName}`}

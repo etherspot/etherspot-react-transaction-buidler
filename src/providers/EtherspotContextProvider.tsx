@@ -20,7 +20,7 @@ import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-tok
 import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
 import { sumAssetsBalanceWorth } from '../utils/common';
-import { plrDaoAsset } from '../utils/asset';
+import { testPlrDaoAsset } from '../utils/asset';
 
 export type IAsset = TokenListToken;
 
@@ -224,7 +224,7 @@ const EtherspotContextProvider = ({
       // To be added back when DKU token is no longer needed. This is for the DKU testing.
       // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];  
       supportedAssetsPerChainId[assetsChainId] =
-        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, plrDaoAsset];
+        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset];
       return supportedAssetsPerChainId[assetsChainId];
     },
     [sdk]
