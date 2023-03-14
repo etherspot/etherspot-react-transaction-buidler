@@ -25,7 +25,7 @@ import { map as rxjsMap } from 'rxjs/operators';
 
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
-import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNFT, supportedChains } from './chain';
+import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
 import { plrDaoAsset, testPlrDaoAsset, plrStakedAssetEthereumMainnet } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
@@ -42,14 +42,14 @@ import { ITransactionBlock } from '../types/transactionBlock';
 import { PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 
-interface IPillarDAO {
+interface IPillarDao {
   encodeDeposit(amount: BigNumber): {
     to: string;
     data: string;
   };
 };
 
-interface IPLRTransaction {
+interface IPlrTransaction {
   to: string;
   data: string;
   chainId: number;
@@ -578,7 +578,7 @@ export const buildCrossChainAction = async (
             accountType,
           },
         } = transactionBlock;
-        let transactions: IPLRTransaction[] = [];
+        let transactions: IPlrTransaction[] = [];
         let contractAddress = '0xdf5cFefc1CE077Fc468E3CFF130f955421D9B95a';
         const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
@@ -605,7 +605,7 @@ export const buildCrossChainAction = async (
         }
 
         try {
-          const plrDaoStakingContract = sdk.registerContract<IPillarDAO>(
+          const plrDaoStakingContract = sdk.registerContract<IPillarDao>(
             'plrDaoStakingContract',
             ['function deposit(uint256)'],
             contractAddress
@@ -642,9 +642,9 @@ export const buildCrossChainAction = async (
           },
           amount: 1,
           toAsset: {
-            address: plrDaoMemberNFT.address,
+            address: plrDaoMemberNft.address,
             decimals: toAssetDecimals,
-            symbol: plrDaoMemberNFT.name,
+            symbol: plrDaoMemberNft.name,
             amount: '1',
             iconUrl: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
           },

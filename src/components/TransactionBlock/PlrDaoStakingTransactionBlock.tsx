@@ -24,7 +24,7 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 // utils
 import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
-import { Chain, supportedChains, plrDaoMemberNFT, CHAIN_ID } from '../../utils/chain';
+import { Chain, supportedChains, plrDaoMemberNft, CHAIN_ID } from '../../utils/chain';
 import { plrDaoAsset, testPlrDaoAsset } from '../../utils/asset';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
@@ -193,7 +193,7 @@ const PlrDaoStakingTransactionBlock = ({
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
   const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === testPlrDaoAsset.symbol;
   const enableAssetSwap = selectedFromAsset?.symbol !== testPlrDaoAsset.symbol;
-  const toAsset = enableAssetBridge || enableAssetSwap ? testPlrDaoAsset : plrDaoMemberNFT;
+  const toAsset = enableAssetBridge || enableAssetSwap ? testPlrDaoAsset : plrDaoMemberNft;
 
   const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
 
@@ -371,23 +371,18 @@ const PlrDaoStakingTransactionBlock = ({
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType],
   );
 
-  const getNftList = () => {
+  const getNftList = async () => {
     if (!accountAddress || !providerAddress || !sdk) return Promise.resolve();
-
-    const nftPromiseArray = [providerAddress, accountAddress].map((address) =>
-      getNftsForChainId(CHAIN_ID.POLYGON, address, true)
-    );
-
-    Promise.all(nftPromiseArray)
-      .then(([providerNFTDetails, accountNFTDetails]) => {
-        const hasMembershipNFT = providerNFTDetails
-          .concat(accountNFTDetails)
-          .some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNFT.address));
-        setIsNFTMember(hasMembershipNFT);
-      })
-      .catch((error) => {
-        //
-      });
+    try {
+      const nftCollection = await Promise.all(
+        [providerAddress, accountAddress].map(
+          async (address) => await getNftsForChainId(CHAIN_ID.POLYGON, address, true)
+        )
+      ).then(([provider, account]) => provider.concat(account));
+      setIsNFTMember(nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft.address)));
+    } catch (e) {
+      //
+    }
   };
 
   useEffect(() => {

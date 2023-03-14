@@ -196,7 +196,7 @@ export const klimaAsset: IAssetWithBalance = {
   balanceWorthUsd: null,
 }
 
-export const plrDaoMemberNFT = {
+export const plrDaoMemberNft = {
   address: '0x267c85113BAfbBe829918fB4c23135af72c9C472',
   chainId: CHAIN_ID.POLYGON,
   name: "DekuDAO NFT",
