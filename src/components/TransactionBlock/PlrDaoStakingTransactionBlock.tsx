@@ -507,7 +507,7 @@ const PlrDaoStakingTransactionBlock = ({
           {!!valueToReceive && (
             <Text size={16} medium>
               {valueToReceive} {plrDaoAsset.symbol}
-              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$')}`}
+              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$', 2)}`}
             </Text>
           )}
         </div>
