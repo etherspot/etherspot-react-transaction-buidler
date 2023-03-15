@@ -482,6 +482,7 @@ const NetworkAssetSelectInput = ({
                 key={`${supportedChain.chainId}`}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (onNetworkSelect) onNetworkSelect(supportedChain);
                   setPreselectedNetwork(supportedChain)
                 }}
               >

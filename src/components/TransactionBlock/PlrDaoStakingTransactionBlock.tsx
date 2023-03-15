@@ -549,9 +549,6 @@ const PlrDaoStakingTransactionBlock = ({
       ? 'Key Based'
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
-  const decimals = selectedFromAsset?.decimals ?? 18;
-  const updatedAmount = formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, decimals);
-  const stakingBalance = !enableAssetBridge && !enableAssetSwap ? updatedAmount : '';
 
   return (
     <>
@@ -625,7 +622,11 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
-            setAmount(amountBN && !stakingBalance ? formatMaxAmount(amountBN, asset.decimals) : stakingBalance);
+            if (selectedFromNetwork?.chainId === CHAIN_ID.POLYGON && asset?.symbol === testPlrDaoAsset.symbol) {
+              setAmount(formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, asset.decimals));
+              return;
+            }
+            setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
           }}
           onNetworkSelect={(network) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
