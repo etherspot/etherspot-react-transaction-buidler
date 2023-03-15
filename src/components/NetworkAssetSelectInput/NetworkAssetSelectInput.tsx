@@ -458,7 +458,7 @@ const NetworkAssetSelectInput = ({
             smallImageUrl={selectedNetwork.iconUrl}
             title={selectedAsset.symbol}
             smallImageTitle={selectedNetwork.title}
-            smallBgColor={theme?.color?.background?.selectInput}
+            borderColor={theme?.color?.background?.selectInput}
           />
           <LargeOptionDetails>
             <div>{selectedAsset.symbol}</div>

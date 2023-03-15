@@ -354,7 +354,7 @@ const AssetBridgeTransactionBlock = ({
               smallImageUrl={selectedFromNetwork.iconUrl}
               title={selectedFromAsset.symbol}
               smallImageTitle={selectedFromNetwork.title}
-              smallBgColor={theme?.color?.background?.textInput}
+              borderColor={theme?.color?.background?.textInput}
             />
           }
           inputTopRightComponent={

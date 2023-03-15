@@ -368,7 +368,7 @@ const AssetSwapTransactionBlock = ({
                   smallImageUrl={selectedNetwork.iconUrl}
                   title={selectedFromAsset.symbol}
                   smallImageTitle={selectedNetwork.title}
-                  smallBgColor={theme?.color?.background?.textInput}
+                  borderColor={theme?.color?.background?.textInput}
                 />
               }
               inputTopRightComponent={
