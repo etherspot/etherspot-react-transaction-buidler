@@ -64,6 +64,7 @@ export interface Theme {
       buttonSecondary?: string;
       errorMessage?: string;
       searchInput?: string;
+      searchIcon?: string;
       searchInputSecondary?: string;
       pill?: string;
       pillValue?: string;
@@ -80,6 +81,7 @@ export interface Theme {
       settingsIcon?: string;
       blockParagraphHighlight?: string;
       blockParagraphHighlightSecondary?: string;
+      selectAllButton?: string;
     };
   };
 }
@@ -154,6 +156,7 @@ export const defaultTheme: Theme = {
       buttonSecondary: '#ffeee6',
       errorMessage: '#ff0000',
       searchInput: '#ff7733',
+      searchIcon: '#ff7733',
       searchInputSecondary: '#ff7733',
       pill: '#6e6b6a',
       pillValue: '#191726',
@@ -166,6 +169,7 @@ export const defaultTheme: Theme = {
       walletDropdownIcon: '#221f33',
       blockParagraphHighlight: '#e333e8',
       blockParagraphHighlightSecondary: '#77e7f6',
+      selectAllButton: '#221f33',
     },
   },
 };
@@ -213,6 +217,7 @@ export const darkTheme: Theme = {
       selectInputOption: '#ffeee6',
       selectInputOptionSecondary: '#ffeee6',
       searchInput: '#998ae6',
+      searchIcon: '#998ae6',
       searchInputSecondary: '#998ae6',
       outerLabel: '#998ae6',
       innerLabel: '#998ae6',
@@ -240,6 +245,7 @@ export const darkTheme: Theme = {
       blockParagraphHighlight: '#e333e8',
       blockParagraphHighlightSecondary: '#77e7f6',
       settingsIcon: '#ee6723',
+      selectAllButton: '#ff884d',
     },
   },
 };
