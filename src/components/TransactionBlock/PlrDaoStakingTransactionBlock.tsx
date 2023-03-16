@@ -17,6 +17,7 @@ import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import RouteOption from '../RouteOption';
+import { OfferRoute } from '../OfferRoute/OfferRoute';
 
 // providers
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -33,7 +34,6 @@ import { bridgeServiceIdToDetails } from '../../utils/bridge';
 //constants
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
-import { OfferRoute } from '../OfferRoute/OfferRoute';
 
 export interface IPlrDaoTransactionBlockValues {
   accountType: AccountTypes;
@@ -128,7 +128,7 @@ const Block = styled.div`
 
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
-  console.log('Offer', offer);
+
   return {
     title: serviceDetails?.title ?? offer.provider,
     value: offer.provider,
@@ -546,6 +546,17 @@ const PlrDaoStakingTransactionBlock = ({
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
   const stakingBalance = isPolygonAccountWithEnoughPLR ? `${MAX_PLR_TOKEN_LIMIT}` : '';
 
+  const offerOption = (option: SelectOption) => (
+    <OfferRoute
+      option={option}
+      availableOffers={availableOffers}
+      targetAssetPriceUsd={targetAssetPriceUsd}
+      selectedAccountType={selectedAccountType}
+      selectedFromAsset={selectedFromAsset}
+      selectedNetwork={selectedFromNetwork}
+    />
+  );
+
   return (
     <>
       <Title>Stake into Pillar DAO</Title>
@@ -713,26 +724,8 @@ const PlrDaoStakingTransactionBlock = ({
               resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
               setSelectedOffer(option);
             }}
-            renderOptionListItemContent={(option) => (
-              <OfferRoute
-                option={option}
-                availableOffers={availableOffers}
-                targetAssetPriceUsd={targetAssetPriceUsd}
-                selectedAccountType={selectedAccountType}
-                selectedFromAsset={selectedFromAsset}
-                selectedNetwork={selectedFromNetwork}
-              />
-            )}
-            renderSelectedOptionContent={(option) => (
-              <OfferRoute
-                option={option}
-                availableOffers={availableOffers}
-                targetAssetPriceUsd={targetAssetPriceUsd}
-                selectedAccountType={selectedAccountType}
-                selectedFromAsset={selectedFromAsset}
-                selectedNetwork={selectedFromNetwork}
-              />
-            )}
+            renderOptionListItemContent={offerOption}
+            renderSelectedOptionContent={offerOption}
             placeholder="Select offer"
             errorMessage={errorMessages?.offer}
           />

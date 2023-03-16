@@ -335,7 +335,7 @@ const KlimaStakingTransactionBlock = ({
               Gas price:&nbsp;
             </Text>
             <Text size={14} marginRight={22} medium inline>
-              {option.gasCostUSD && `$ ${option.gasCostUSD}`}
+              {option.gasCostUSD && `${formatAmountDisplay(option.gasCostUSD, '$', 2)}`}
             </Text>
           </div>
           {!!receiveAmount && (

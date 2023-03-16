@@ -254,6 +254,19 @@ const AssetSwapTransactionBlock = ({
     );
   }, [amount, selectedFromAsset]);
 
+  const offerOption = (option: SelectOption) => (
+    <OfferRoute
+      option={option}
+      availableOffers={availableOffers}
+      availableToAssets={availableToAssets}
+      selectedToAsset={selectedToAsset}
+      targetAssetPriceUsd={targetAssetPriceUsd}
+      selectedAccountType={selectedAccountType}
+      selectedFromAsset={selectedFromAsset}
+      selectedNetwork={selectedNetwork}
+    />
+  );
+
   return (
     <>
       <Title>Swap asset</Title>
@@ -383,30 +396,8 @@ const AssetSwapTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
             setSelectedOffer(option);
           }}
-          renderOptionListItemContent={(option) => (
-            <OfferRoute
-              option={option}
-              availableOffers={availableOffers}
-              availableToAssets={availableToAssets}
-              selectedToAsset={selectedToAsset}
-              targetAssetPriceUsd={targetAssetPriceUsd}
-              selectedAccountType={selectedAccountType}
-              selectedFromAsset={selectedFromAsset}
-              selectedNetwork={selectedNetwork}
-            />
-          )}
-          renderSelectedOptionContent={(option) => (
-            <OfferRoute
-              option={option}
-              availableOffers={availableOffers}
-              availableToAssets={availableToAssets}
-              selectedToAsset={selectedToAsset}
-              targetAssetPriceUsd={targetAssetPriceUsd}
-              selectedAccountType={selectedAccountType}
-              selectedFromAsset={selectedFromAsset}
-              selectedNetwork={selectedNetwork}
-            />
-          )}
+          renderOptionListItemContent={offerOption}
+          renderSelectedOptionContent={offerOption}
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}

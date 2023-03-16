@@ -3,19 +3,22 @@ import { AccountTypes, ExchangeOffer, TokenListToken } from 'etherspot';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 
+// hooks
 import { useEtherspot } from '../../hooks';
 
+// utils
 import { addressesEqual } from '../../utils/validation';
 import { formatAmountDisplay } from '../../utils/common';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { Chain } from '../../utils/chain';
 
+// local
 import { SelectOption } from '../SelectInput/SelectInput';
 import { RoundedImage } from '../Image';
 import { Text } from '../Text';
 import { Theme } from '../../utils/theme';
 
-type RouteOptionProps = {
+type OfferRouteProps = {
   option: SelectOption;
   availableOffers: ExchangeOffer[] | null;
   targetAssetPriceUsd: number | null;
@@ -26,7 +29,7 @@ type RouteOptionProps = {
   availableToAssets?: TokenListToken[] | null;
 };
 
-export const OfferRoute = (props: RouteOptionProps) => {
+export const OfferRoute = (props: OfferRouteProps) => {
   const {
     option,
     availableOffers,
@@ -37,8 +40,8 @@ export const OfferRoute = (props: RouteOptionProps) => {
     selectedFromAsset,
     selectedAccountType,
   } = props;
-  const [gasPrice, setGasPrice] = useState('-');
-  const [isEstimating, setIsEstimating] = useState(true);
+  const [gasPrice, setGasPrice] = useState<string | undefined>();
+  const [isEstimating, setIsEstimating] = useState(false);
   const { getSdkForChainId } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -49,25 +52,24 @@ export const OfferRoute = (props: RouteOptionProps) => {
     if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
       await sdkByChain.computeContractAccount();
 
-      await sdkByChain.clearGatewayBatch();
+      sdkByChain.clearGatewayBatch();
 
-      for (let i = 0; i < offer.transactions.length; i++) {
-        await sdkByChain.batchExecuteAccountTransaction(offer.transactions[i]);
-      }
+      await Promise.all(
+        offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
+      );
 
       const feeTokens = await sdkByChain.getGatewaySupportedTokens();
 
       try {
         const estimation = await sdkByChain.estimateGatewayBatch({ feeToken: feeTokens[0].address }); // pay gas using USDC
         setIsEstimating(false);
-        return `${ethers.utils.formatUnits(estimation.estimation.feeAmount)}`;
+        return ethers.utils.formatUnits(estimation.estimation.feeAmount);
       } catch (error) {
         //
       }
     }
 
     setIsEstimating(false);
-    return '-';
   };
 
   const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
@@ -83,7 +85,7 @@ export const OfferRoute = (props: RouteOptionProps) => {
 
   useEffect(() => {
     if (availableOffer) {
-      getGasSwapUsdValue(availableOffer).then((res) => setGasPrice(formatAmountDisplay(res, '$')));
+      getGasSwapUsdValue(availableOffer).then((res) => res && setGasPrice(formatAmountDisplay(res, '$', 2)));
     }
   }, [availableOffer]);
 
@@ -99,7 +101,7 @@ export const OfferRoute = (props: RouteOptionProps) => {
             {selectedAccountType === AccountTypes.Contract && (
               <>
                 <Text color={theme.color?.text?.innerLabel}>Gas price: </Text>
-                {isEstimating ? 'Estamiting...' : gasPrice}
+                {isEstimating ? 'Estimating...' : gasPrice ? gasPrice : '-'}
               </>
             )}
           </Text>
