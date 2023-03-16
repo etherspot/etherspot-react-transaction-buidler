@@ -187,6 +187,7 @@ const SendAssetTransactionBlock = ({
               smallImageUrl={selectedNetwork.iconUrl}
               title={selectedAsset.symbol}
               smallImageTitle={selectedNetwork.title}
+              borderColor={theme?.color?.background?.textInput}
             />
           }
           inputTopRightComponent={
