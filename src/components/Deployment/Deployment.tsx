@@ -198,6 +198,7 @@ const Wrapper = styled.div`
 const Section = styled.div`
   display: flex;
   background: ${({ theme }) => theme.color.background.card};
+  align-items: center;
   margin-top: 8px;
   padding: 10px;
   border-radius: 10px;
