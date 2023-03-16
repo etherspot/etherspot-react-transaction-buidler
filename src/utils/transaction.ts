@@ -47,7 +47,7 @@ interface IPillarDao {
     to: string;
     data: string;
   };
-};
+}
 
 interface IPlrTransaction {
   to: string;

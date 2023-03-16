@@ -372,15 +372,17 @@ const PlrDaoStakingTransactionBlock = ({
   );
 
   const getNftList = async () => {
-    if (!accountAddress || !providerAddress || !sdk) return Promise.resolve();
+    if (!accountAddress || !providerAddress || !sdk) {
+      return;
+    }
     try {
-      const nftCollection = await Promise.all(
-        [providerAddress, accountAddress].map(
-          async (address) => await getNftsForChainId(CHAIN_ID.POLYGON, address, true)
-        )
-      ).then(([provider, account]) => provider.concat(account));
+      const [providerAddressNfts, accountAddressNfts] = await Promise.all([
+        getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true),
+        getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
+      ]);
+      const nftCollection = [...providerAddressNfts, ...accountAddressNfts];
       setIsNFTMember(nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft.address)));
-    } catch (e) {
+    } catch (error) {
       //
     }
   };
@@ -524,7 +526,7 @@ const PlrDaoStakingTransactionBlock = ({
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
   const tokenArray = hasEnoughPLR && accounts.length == 1 ? [] : accounts;
 
-  if (isNFTMember) {
+  if (!isNFTMember) {
     return (
       <>
         <Title>Pillar DAO Staking</Title>
@@ -730,7 +732,7 @@ const PlrDaoStakingTransactionBlock = ({
         )}
         {enableAssetBridge && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
           <SelectInput
-            label={`Route`}
+            label={"Route"}
             options={availableRoutesOptions ?? []}
             isLoading={isLoadingAvailableRoutes}
             selectedOption={selectedRoute}

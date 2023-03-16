@@ -899,6 +899,8 @@ const ActionPreview = ({
         )
       : [crossChainAction.preview];
 
+    const enablePlrStaking = !enableAssetSwap && !enableAssetBridge;
+
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
     const toNetwork = supportedChains[1];
@@ -908,10 +910,7 @@ const ActionPreview = ({
     const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
     const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-    const toAmount =
-      !enableAssetSwap && !enableAssetBridge
-        ? toAsset.amount
-        : formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
+    const toAmount = enablePlrStaking ? toAsset.amount : formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
     const timeStamp = crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp;
@@ -924,7 +923,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {!enableAssetSwap && !enableAssetBridge ? (
+        {enablePlrStaking ? (
           <>
             <DoubleTransactionActionsInSingleRow>
               <TransactionAction>

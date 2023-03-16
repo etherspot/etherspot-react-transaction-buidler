@@ -221,8 +221,8 @@ const EtherspotContextProvider = ({
       const hasNativeAsset = assets.some(
         (asset) => !asset.address || addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address)
       );
-      // To be added back when DKU token is no longer needed. This is for the DKU testing.
-      // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];  
+      // TODO: to be added back when DKU token is no longer needed. This is for the DKU testing.
+      // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
       supportedAssetsPerChainId[assetsChainId] =
         hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset];
       return supportedAssetsPerChainId[assetsChainId];
