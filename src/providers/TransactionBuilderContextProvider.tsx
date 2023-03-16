@@ -57,6 +57,7 @@ import useInterval from '../hooks/useInterval';
 import SettingMenu from '../components/SettingMenu/SettingMenu';
 import { TbCopy, TbWallet } from 'react-icons/tb';
 import { BiCheck } from 'react-icons/bi';
+import { CgSandClock } from 'react-icons/cg';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -190,7 +191,8 @@ const ConnectionIcon = styled.div<{ isConnected?: boolean }>`
   border-radius: 50%;
   margin-right: 1rem;
 
-  background-color: ${({ isConnected = false }) => (isConnected ? '#1FD402' : '#FF3A00')};
+  background-color: ${({ isConnected = false, theme }) =>
+    isConnected ? theme.color.background.statusIconSuccess : theme.color.background.statusIconFailed};
 `;
 
 const SettingsWrapper = styled.div`
@@ -200,14 +202,21 @@ const SettingsWrapper = styled.div`
 `;
 
 const StatusIconWrapper = styled.span<{ color?: string }>`
-  display: inline-block;
-  width: 24px;
-  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   border-radius: 12px;
   ${({ color }) => color && `background: ${color};`}
   color: #fff;
   margin-right: 10px;
-  text-align: center;
+`;
+
+const StatusWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const availableTransactionBlocks: ITransactionBlock[] = [
@@ -826,18 +835,28 @@ const TransactionBuilderContextProvider = ({
 
   useEffect(() => {
     if (isWalletConnecting) {
-      setConnectionStatus(<Text>Is Connecting</Text>);
+      setConnectionStatus(<Text color={theme.color?.text?.button}>Connecting</Text>);
     } else if (accountAddress && !isWalletConnecting) {
       setConnectionStatus(
-        <Text>
-          <BiCheck size={16} /> Connected
-        </Text>
+        <>
+          <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
+            <BiCheck size={12} />
+          </StatusIconWrapper>{' '}
+          <Text color={theme.color?.text?.button}>Connected</Text>
+        </>
       );
       setTimeout(() => {
         setConnectionStatus(null);
       }, 2000);
     } else if (!accountAddress) {
-      setConnectionStatus(<Text>Sign to connect</Text>);
+      setConnectionStatus(
+        <>
+          <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
+            <CgSandClock size={10} />
+          </StatusIconWrapper>
+          <Text color={theme.color?.text?.button}>Sign to connect</Text>
+        </>
+      );
     } else {
       setConnectionStatus(null);
     }
@@ -903,7 +922,7 @@ const TransactionBuilderContextProvider = ({
             </WalletAddress>
           )}
         </WalletAddressesWrapper>
-        {connectionStatus}
+        <StatusWrapper>{connectionStatus}</StatusWrapper>
         <SettingsWrapper>
           <ConnectionIcon isConnected={!!accountAddress} />
           <SettingMenu showLogout={showMenuLogout} logout={logout} />
