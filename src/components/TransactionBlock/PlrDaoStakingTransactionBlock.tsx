@@ -526,7 +526,7 @@ const PlrDaoStakingTransactionBlock = ({
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
   const tokenArray = hasEnoughPLR && accounts.length == 1 ? [] : accounts;
 
-  if (!isNFTMember) {
+  if (isNFTMember) {
     return (
       <>
         <Title>Pillar DAO Staking</Title>
