@@ -546,7 +546,7 @@ const PlrDaoStakingTransactionBlock = ({
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
   const stakingBalance = isPolygonAccountWithEnoughPLR ? `${MAX_PLR_TOKEN_LIMIT}` : '';
 
-  const offerOption = (option: SelectOption) => (
+  const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
       option={option}
       availableOffers={availableOffers}
@@ -724,8 +724,8 @@ const PlrDaoStakingTransactionBlock = ({
               resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
               setSelectedOffer(option);
             }}
-            renderOptionListItemContent={offerOption}
-            renderSelectedOptionContent={offerOption}
+            renderOptionListItemContent={renderOfferOption}
+            renderSelectedOptionContent={renderOfferOption}
             placeholder="Select offer"
             errorMessage={errorMessages?.offer}
           />

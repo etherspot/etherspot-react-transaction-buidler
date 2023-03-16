@@ -254,7 +254,7 @@ const AssetSwapTransactionBlock = ({
     );
   }, [amount, selectedFromAsset]);
 
-  const offerOption = (option: SelectOption) => (
+  const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
       option={option}
       availableOffers={availableOffers}
@@ -396,8 +396,8 @@ const AssetSwapTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
             setSelectedOffer(option);
           }}
-          renderOptionListItemContent={offerOption}
-          renderSelectedOptionContent={offerOption}
+          renderOptionListItemContent={renderOfferOption}
+          renderSelectedOptionContent={renderOfferOption}
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
