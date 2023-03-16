@@ -121,7 +121,8 @@ const Deployment = () => {
   }, []);
 
   return (
-    <Card title="Deployments" marginBottom={20}>
+    <Card title="Deployments" marginBottom={20} color={theme?.color?.background?.topMenu}>
+      <HorizontalLine />
       {errorMessage && (
         <Modal>
           <CloseButton onClick={handleClose} top={18} right={20} />
@@ -148,7 +149,7 @@ const Deployment = () => {
       )}
       <Wrapper>
         <Header>
-          <IoMdCheckmark size={20} style={{ marginRight: '2px' }} />
+          <IoMdCheckmark size={16} style={{ marginRight: '2px' }} />
           <Label>Deployed</Label>
         </Header>
         <Body>
@@ -157,15 +158,14 @@ const Deployment = () => {
             <Section>
               <RoundedImage url={iconUrl} title={title} size={24} />
               {title}
-              <span style={{ marginLeft: 'auto' }}>Auth Chain</span>
             </Section>
           ))}
         </Body>
       </Wrapper>
       <Wrapper>
         <Header>
-          <CgSandClock size={20} style={{ marginRight: '2px' }} />
-          <Label>Not Deployed</Label>
+          <CgSandClock size={16} style={{ marginRight: '2px' }} />
+          <Label>Not deployed</Label>
         </Header>
         <Body>
           {undeployedChains.length == 0 && <Section>No Chains</Section>}
@@ -197,23 +197,36 @@ const Wrapper = styled.div`
 
 const Section = styled.div`
   display: flex;
-  background: ${({ theme }) => theme.color.background.topMenu};
-  margin-top: 5px;
-  padding: 15px;
+  background: ${({ theme }) => theme.color.background.card};
+  margin-top: 8px;
+  padding: 10px;
   border-radius: 10px;
-  font-weight: bold;
+  font-family: 'PTRootUIWebMedium', sans-serif;
+  box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
 `;
 
 const Header = styled.div`
   display: block;
   color: ${({ theme }) => theme.color.text.outerLabel};
+  font-size: 15px;
+`;
+
+const Label = styled.label`
+  display: inline-block;
+  padding: 0;
+`;
+
+const HorizontalLine = styled.div`
+  width: 100%;
+  height: 0.1px;
+  background: ${({ theme }) => theme.color.text.outerLabel};
 `;
 
 const Body = styled.div`
   display: block;
   overflow-y: scroll;
   background-color: ${({ theme }) => theme.color.background.listItem};
-  max-height: 200px;
+  max-height: 293px;
   scrollbar-width: thin;
   ::-webkit-scrollbar {
     width: 8px;
@@ -237,15 +250,9 @@ const Body = styled.div`
   }
 `;
 
-const Label = styled.label`
-  display: inline-block;
-  margin-bottom: 14px;
-  font-size: 14px;
-`;
-
 const DeployButton = styled.button`
   background: ${({ theme }) => theme.color.background.deployButton};
-  color: ${({ theme }) => theme.color.text.listItemQuickButtonPrimary};
+  color: ${({ theme }) => theme.color.text.card};
   font-weight: bold;
   border: none;
   cursor: pointer;
