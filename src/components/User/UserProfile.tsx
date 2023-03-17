@@ -54,35 +54,34 @@ const UserProfile = () => {
   }, []);
 
   return (
-    <>
-      <Card title="Profile" marginBottom={20} color={theme?.color?.background?.topMenu}>
-        {email && (
-          <Wrapper>
-            <Text>Email</Text>
-            <Section>{email}</Section>
-          </Wrapper>
-        )}
+    <Card title="Profile" marginBottom={20} color={theme?.color?.background?.topMenu}>
+      <HorizontalLine />
+      {email && (
         <Wrapper>
-          <Text>Address</Text>
-          <Section>
-            {accountAddress ? (
-              <>
-                {accountAddress}
-                <Text onClick={() => onCopy(accountAddress)} marginLeft={3}>
-                  {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
-                </Text>
-              </>
-            ) : (
-              <p>No adderess</p>
-            )}
-          </Section>
+          <Header>Email</Header>
+          <Value>{email}</Value>
         </Wrapper>
-        <Wrapper>
-          <Text>ENS</Text>
-          <Section>{ensNode ? ensNode : 'Not found'}</Section>
-        </Wrapper>
-      </Card>
-    </>
+      )}
+      <Wrapper>
+        <Header>Address</Header>
+        <Value>
+          {accountAddress ? (
+            <>
+              {accountAddress}
+              <Text onClick={() => onCopy(accountAddress)} marginLeft={3}>
+                {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
+              </Text>
+            </>
+          ) : (
+            <p>No adderess</p>
+          )}
+        </Value>
+      </Wrapper>
+      <Wrapper>
+        <Header>ENS</Header>
+        <Value>{ensNode ? ensNode : 'Not found'}</Value>
+      </Wrapper>
+    </Card>
   );
 };
 
@@ -91,17 +90,30 @@ export default UserProfile;
 const Wrapper = styled.div`
   display: block;
   margin-top: 20px;
+  font-family: 'PTRootUIWebMedium', sans-serif;
 `;
 
-const Section = styled.div`
+const Header = styled.div`
+  display: block;
+  color: ${({ theme }) => theme.color.text.outerLabel};
+  font-size: 15px;
+`;
+
+const Value = styled.div`
   display: flex;
   margin-top: 5px;
-  padding: 15px;
+  padding: 10px;
   border-radius: 10px;
-  font-weight: bold;
   background: ${({ theme }) => theme.color.background.card};
+  color: ${({ theme }) => theme.color.text.card};
 `;
 
 const CheckmarkIcon = styled(HiCheck)`
   margin-top: -3px;
+`;
+
+const HorizontalLine = styled.div`
+  width: 100%;
+  height: 1px;
+  background: ${({ theme }) => theme.color.text.outerLabel};
 `;
