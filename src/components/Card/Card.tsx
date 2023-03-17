@@ -3,8 +3,8 @@ import styled from 'styled-components';
 import { CloseButton } from '../Button';
 import React from 'react';
 
-const Wrapper = styled.div<{ marginBottom?: number }>`
-  background: ${({ theme }) => theme.color.background.card};
+const Wrapper = styled.div<{ marginBottom?: number; color?: string }>`
+  background: ${({ theme, color }) => color ?? theme.color.background.card};
   color: ${({ theme }) => theme.color.text.card};
   border-radius: 12px;
   padding: 16px 20px;
@@ -35,6 +35,7 @@ const TopButtonsWrapper = styled.div`
 
 interface CardProps {
   showCloseButton?: boolean;
+  color?: string;
   marginBottom?: number;
   title?: string;
   onCloseButtonClick?: () => void;
@@ -46,11 +47,12 @@ const Card = ({
   children,
   showCloseButton,
   onCloseButtonClick,
+  color,
   marginBottom,
   title,
   additionalTopButtons,
 }: CardProps) => (
-  <Wrapper marginBottom={marginBottom}>
+  <Wrapper marginBottom={marginBottom} color={color}>
     {!!title && <Title>{title}</Title>}
     {children}
     <TopButtonsWrapper>
