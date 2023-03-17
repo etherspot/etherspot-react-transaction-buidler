@@ -159,7 +159,7 @@ export interface SelectOption {
   title: string;
   value: any;
   iconUrl?: string;
-  gasCostUSD?: string;
+  extension?: string;
 }
 
 interface SelectInputProps {

@@ -96,12 +96,12 @@ const OfferGasPriceContainer = styled.div`
   align-items: flex-end;
 `;
 
-const mapRouteToOption = (route: BridgingQuote) => {
+const mapRouteToOption = (route: BridgingQuote): SelectOption => {
   return {
     title: bridgeServiceIdToDetails['lifi'].title,
     value: route.estimate.toAmount,
     iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
-    gasCostUSD: route.estimate.gasCosts.amountUSD,
+    extension: route.estimate.gasCosts.amountUSD,
   };
 };
 
@@ -255,7 +255,7 @@ const KlimaStakingTransactionBlock = ({
     setIsRouteFetching(true);
 
     if (selectedFromAsset?.assetPriceUsd) {
-      if(+amount * selectedFromAsset.assetPriceUsd < 0.4) {
+      if (+amount * selectedFromAsset.assetPriceUsd < 0.4) {
         setTransactionBlockFieldValidationError(
           transactionBlockId,
           'amount',
@@ -281,7 +281,7 @@ const KlimaStakingTransactionBlock = ({
 
       setRouteToUSDC(routeToUsdc.items);
 
-      if(routeToUsdc.items.length === 0) {
+      if (routeToUsdc.items.length === 0) {
         setIsRouteFetching(false);
         resetRoutes();
         return;
@@ -312,7 +312,7 @@ const KlimaStakingTransactionBlock = ({
       resetRoutes();
       setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount')
     }
-  }, 200),[
+  }, 200), [
     selectedFromNetwork,
     selectedFromAsset,
     amount,
@@ -335,7 +335,7 @@ const KlimaStakingTransactionBlock = ({
               Gas price:&nbsp;
             </Text>
             <Text size={14} marginRight={22} medium inline>
-              {option.gasCostUSD && `${formatAmountDisplay(option.gasCostUSD, '$', 2)}`}
+              {option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
             </Text>
           </div>
           {!!receiveAmount && (
