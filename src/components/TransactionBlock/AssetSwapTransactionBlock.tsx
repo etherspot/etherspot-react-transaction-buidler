@@ -77,6 +77,7 @@ const AssetSwapTransactionBlock = ({
   const [showReceiverInput] = useState<boolean>(!!values?.receiverAddress);
   const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
   const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
+  const [exchangeRateByChainId, setExchangeRateByChainId] = useState<number>(0);
   const fixed = multiCallData?.fixed ?? false;
 
   const targetAssetPriceUsd = useAssetPriceUsd(selectedNetwork?.chainId, selectedToAsset?.address);
@@ -90,6 +91,7 @@ const AssetSwapTransactionBlock = ({
     providerAddress,
     smartWalletOnly,
     updateWalletBalances,
+    getRatesByNativeChainId,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -254,6 +256,16 @@ const AssetSwapTransactionBlock = ({
     );
   }, [amount, selectedFromAsset]);
 
+  useEffect(() => {
+    if (selectedNetwork?.chainId) {
+      getRatesByNativeChainId(selectedNetwork?.chainId).then((res) => {
+        if (res) {
+          setExchangeRateByChainId(res);
+        }
+      });
+    }
+  }, [selectedNetwork]);
+
   const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
       option={option}
@@ -264,6 +276,7 @@ const AssetSwapTransactionBlock = ({
       selectedAccountType={selectedAccountType}
       selectedFromAsset={selectedFromAsset}
       selectedNetwork={selectedNetwork}
+      exchnageRate={exchangeRateByChainId}
     />
   );
 

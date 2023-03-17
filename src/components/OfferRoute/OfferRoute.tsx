@@ -24,6 +24,7 @@ type OfferRouteProps = {
   targetAssetPriceUsd: number | null;
   selectedFromAsset: IAssetWithBalance | null;
   selectedAccountType: string;
+  exchnageRate?: number;
   selectedToAsset?: TokenListToken | null;
   selectedNetwork?: Chain | null;
   availableToAssets?: TokenListToken[] | null;
@@ -39,6 +40,7 @@ export const OfferRoute = (props: OfferRouteProps) => {
     selectedNetwork,
     selectedFromAsset,
     selectedAccountType,
+    exchnageRate = 0,
   } = props;
   const [gasPrice, setGasPrice] = useState<string | undefined>();
   const [isEstimating, setIsEstimating] = useState(false);
@@ -58,12 +60,10 @@ export const OfferRoute = (props: OfferRouteProps) => {
         offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
       );
 
-      const feeTokens = await sdkByChain.getGatewaySupportedTokens();
-
       try {
-        const estimation = await sdkByChain.estimateGatewayBatch({ feeToken: feeTokens[0].address }); // pay gas using USDC
+        const estimation = await sdkByChain.estimateGatewayBatch();
         setIsEstimating(false);
-        return ethers.utils.formatUnits(estimation.estimation.feeAmount);
+        return Number(ethers.utils.formatUnits(estimation.estimation.feeAmount)) * exchnageRate;
       } catch (error) {
         //
       }

@@ -154,8 +154,14 @@ const PlrDaoStakingTransactionBlock = ({
   values,
   multiCallData,
 }: IPlrDaoStakingMembershipBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSupportedAssetsWithBalancesForChainId } =
-    useEtherspot();
+  const {
+    smartWalletOnly,
+    providerAddress,
+    accountAddress,
+    sdk,
+    getSupportedAssetsWithBalancesForChainId,
+    getRatesByNativeChainId,
+  } = useEtherspot();
 
   const [amount, setAmount] = useState<string>('');
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
@@ -176,6 +182,7 @@ const PlrDaoStakingTransactionBlock = ({
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
+  const [exchangeRateByChainId, setExchangeRateByChainId] = useState<number>(0);
 
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
@@ -546,6 +553,16 @@ const PlrDaoStakingTransactionBlock = ({
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
   const stakingBalance = isPolygonAccountWithEnoughPLR ? `${MAX_PLR_TOKEN_LIMIT}` : '';
 
+  useEffect(() => {
+    if (selectedFromNetwork?.chainId) {
+      getRatesByNativeChainId(selectedFromNetwork?.chainId).then((res) => {
+        if (res) {
+          setExchangeRateByChainId(res);
+        }
+      });
+    }
+  }, [selectedFromNetwork]);
+
   const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
       option={option}
@@ -554,6 +571,7 @@ const PlrDaoStakingTransactionBlock = ({
       selectedAccountType={selectedAccountType}
       selectedFromAsset={selectedFromAsset}
       selectedNetwork={selectedFromNetwork}
+      exchnageRate={exchangeRateByChainId}
     />
   );
 
