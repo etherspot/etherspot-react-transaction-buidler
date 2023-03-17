@@ -46,12 +46,12 @@ interface KlimaStakingActionPreview {
 interface PlrStakingActionPreview {
   fromChainId: number;
   hasEnoughPLR: boolean;
-  isPolygonAccountWithEnoughPLR: boolean;
   enableAssetSwap: boolean;
+  enableAssetBridge: boolean;
   fromAsset: AssetTransfer;
   toAsset: AssetTransfer;
-  providerName: string;
-  providerIconUrl: string | undefined;
+  providerName?: string;
+  providerIconUrl?: string | undefined;
   receiverAddress?: string;
 }
 

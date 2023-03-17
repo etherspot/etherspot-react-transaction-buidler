@@ -379,7 +379,12 @@ const KlimaStakingTransactionBlock = ({
         hideChainIds={[CHAIN_ID.POLYGON]}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
-        errorMessage={errorMessages?.fromChainId || errorMessages?.fromAssetSymbol || errorMessages?.fromAssetAddress || errorMessages?.fromAssetDecimals}
+        errorMessage={
+          errorMessages?.fromChainId ||
+          errorMessages?.fromAssetSymbol ||
+          errorMessages?.fromAssetAddress ||
+          errorMessages?.fromAssetDecimals
+        }
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
@@ -399,13 +404,18 @@ const KlimaStakingTransactionBlock = ({
           onValueChange={onAmountChange}
           value={amount}
           placeholder="0"
-          inputBottomText={selectedFromAsset?.assetPriceUsd && amount ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}` : undefined}
+          inputBottomText={
+            selectedFromAsset?.assetPriceUsd && amount
+              ? `${formatAmountDisplay(+amount * selectedFromAsset.assetPriceUsd, '$')}`
+              : undefined
+          }
           inputLeftComponent={
             <CombinedRoundedImages
               url={selectedFromAsset.logoURI}
               smallImageUrl={selectedFromNetwork.iconUrl}
               title={selectedFromAsset.symbol}
               smallImageTitle={selectedFromNetwork.title}
+              borderColor={theme?.color?.background?.textInput}
             />
           }
           inputTopRightComponent={
@@ -452,7 +462,7 @@ const KlimaStakingTransactionBlock = ({
       {!!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
         <SelectInput
           label={`Offer`}
-          options={ selectedRoute ? [selectedRoute] : []}
+          options={selectedRoute ? [selectedRoute] : []}
           isLoading={isRouteFetching}
           selectedOption={selectedRoute}
           renderOptionListItemContent={renderOption}

@@ -439,8 +439,12 @@ const NetworkAssetSelectInput = ({
     <Wrapper hover={!showSelectModal} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
-        {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
-        {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />}
+        {!showSelectModal && (
+          <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />
+        )}
+        {showSelectModal && (
+          <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />
+        )}
       </SelectWrapper>
       {!showSelectModal && (!selectedAsset || !selectedNetwork) && (
         <SelectedOption onClick={onSelectClick} disabled={disabled}>
@@ -454,6 +458,7 @@ const NetworkAssetSelectInput = ({
             smallImageUrl={selectedNetwork.iconUrl}
             title={selectedAsset.symbol}
             smallImageTitle={selectedNetwork.title}
+            borderColor={theme?.color?.background?.selectInput}
           />
           <LargeOptionDetails>
             <div>{selectedAsset.symbol}</div>
@@ -462,13 +467,16 @@ const NetworkAssetSelectInput = ({
         </LargeSelectedOption>
       )}
       {showSelectModal && preselectedNetwork && (
-        <SelectedOption onClick={(e) => {
-              e.stopPropagation()
-              setPreselectedNetwork(null)
-            }
-          }
-          disabled={disabled}>
-          {!!preselectedNetwork?.iconUrl && <RoundedImage url={preselectedNetwork?.iconUrl} title={preselectedNetwork.title} size={24} />}
+        <SelectedOption
+          onClick={(e) => {
+            e.stopPropagation();
+            setPreselectedNetwork(null);
+          }}
+          disabled={disabled}
+        >
+          {!!preselectedNetwork?.iconUrl && (
+            <RoundedImage url={preselectedNetwork?.iconUrl} title={preselectedNetwork.title} size={24} />
+          )}
           {preselectedNetwork.title}
         </SelectedOption>
       )}
@@ -482,15 +490,18 @@ const NetworkAssetSelectInput = ({
                 key={`${supportedChain.chainId}`}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (onNetworkSelect) onNetworkSelect(supportedChain);
                   setPreselectedNetwork(supportedChain)
                 }}
               >
                 <>
-                  {!!supportedChain.iconUrl && <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />}
+                  {!!supportedChain.iconUrl && (
+                    <RoundedImage url={supportedChain.iconUrl} title={supportedChain.title} size={24} />
+                  )}
                   {supportedChain.title} {formatBalanceByChainByAccountType(supportedChain, accountType)}
                 </>
               </OptionListItem>
-          ))}
+            ))}
         </OptionList>
       )}
       {showSelectModal && preselectedNetwork && (
@@ -502,10 +513,11 @@ const NetworkAssetSelectInput = ({
               {selectedNetworkAssets?.length > 5 && (
                 <SearchInputWrapper htmlFor={searchInputId}>
                   <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
-                  <SearchInput id={searchInputId}
+                  <SearchInput
+                    id={searchInputId}
                     onChange={(e: any) => setAssetSearchQuery(e?.target?.value)}
                     placeholder="Search"
-                    onClick={(e:any) => e.stopPropagation()}
+                    onClick={(e: any) => e.stopPropagation()}
                     onFocus={(e: any) => {
                       e.stopPropagation();
                     }}
@@ -514,13 +526,15 @@ const NetworkAssetSelectInput = ({
               )}
               <OptionsScroll>
                 {filteredSelectedNetworkAssets.map((asset, index) => (
-                  <LargeOptionListItem key={`${asset.address ?? '0x'}-${index}`}
-                  onClick={(e:any) => {
-                    e.stopPropagation();
-                    if(!showQuickInputButtons){
-                      onListItemClick(asset)
-                    }
-                  }}>
+                  <LargeOptionListItem
+                    key={`${asset.address ?? '0x'}-${index}`}
+                    onClick={(e: any) => {
+                      e.stopPropagation();
+                      if (!showQuickInputButtons) {
+                        onListItemClick(asset);
+                      }
+                    }}
+                  >
                     <LargeOptionListItemLeft onClick={() => onListItemClick(asset)}>
                       <RoundedImage url={asset.logoURI} title={asset.name} />
                       <LargeOptionDetails>
@@ -530,15 +544,23 @@ const NetworkAssetSelectInput = ({
                         </div>
                         <LargeOptionDetailsBottom>
                           {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))} {asset.symbol}
-                          {!asset.balance.isZero() && asset?.balanceWorthUsd && `・${formatAmountDisplay(asset.balanceWorthUsd, '$')}`}
+                          {!asset.balance.isZero() &&
+                            asset?.balanceWorthUsd &&
+                            `・${formatAmountDisplay(asset.balanceWorthUsd, '$')}`}
                         </LargeOptionDetailsBottom>
                       </LargeOptionDetails>
                     </LargeOptionListItemLeft>
                     {showQuickInputButtons && BigNumber.isBigNumber(asset.balance) && !asset.balance.isZero() && (
                       <LargeOptionListItemRight>
-                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(4))}>25%</QuickAmountButton>
-                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(2))}>50%</QuickAmountButton>
-                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance)} primary>Max</QuickAmountButton>
+                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(4))}>
+                          25%
+                        </QuickAmountButton>
+                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(2))}>
+                          50%
+                        </QuickAmountButton>
+                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance)} primary>
+                          Max
+                        </QuickAmountButton>
                       </LargeOptionListItemRight>
                     )}
                   </LargeOptionListItem>

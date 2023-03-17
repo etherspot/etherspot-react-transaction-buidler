@@ -15,6 +15,18 @@ export const plrDaoAsset: IAssetWithBalance = {
   balanceWorthUsd: null,
 };
 
+export const testPlrDaoAsset: IAssetWithBalance = {
+  address: '0x6D5862a18C6a169D44d02a8B726a02A5B707B484',
+  chainId: CHAIN_ID.POLYGON,
+  name: 'Deku (DKU)',
+  symbol: 'DKU',
+  decimals: 18,
+  logoURI: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
+  balance: BigNumber.from(0),
+  assetPriceUsd: null,
+  balanceWorthUsd: null,
+};
+
 export const getPlrAssetForChainId = (
   chainId: number,
   balance: BigNumber = BigNumber.from(0),
