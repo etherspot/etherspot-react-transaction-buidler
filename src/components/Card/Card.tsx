@@ -4,7 +4,7 @@ import { CloseButton } from '../Button';
 import React from 'react';
 
 const Wrapper = styled.div<{ marginBottom?: number; color?: string }>`
-  background: ${({ theme, color }) => (color ? color : theme.color.background.card)};
+  background: ${({ theme, color }) => color ?? theme.color.background.card};
   color: ${({ theme }) => theme.color.text.card};
   border-radius: 12px;
   padding: 16px 20px;

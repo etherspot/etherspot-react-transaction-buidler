@@ -219,7 +219,7 @@ const Label = styled.label`
 
 const HorizontalLine = styled.div`
   width: 100%;
-  height: 0.1px;
+  height: 1px;
   background: ${({ theme }) => theme.color.text.outerLabel};
 `;
 
@@ -227,7 +227,7 @@ const Body = styled.div`
   display: block;
   overflow-y: scroll;
   background-color: ${({ theme }) => theme.color.background.listItem};
-  max-height: 293px;
+  max-height: 230px;
   scrollbar-width: thin;
   ::-webkit-scrollbar {
     width: 8px;
