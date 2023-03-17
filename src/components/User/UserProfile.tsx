@@ -99,7 +99,7 @@ const Section = styled.div`
   padding: 15px;
   border-radius: 10px;
   font-weight: bold;
-  background: ${({ theme }) => theme.color.background.topMenu};
+  background: ${({ theme }) => theme.color.background.card};
 `;
 
 const CheckmarkIcon = styled(HiCheck)`
