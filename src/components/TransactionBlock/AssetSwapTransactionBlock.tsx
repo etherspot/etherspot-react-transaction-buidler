@@ -21,6 +21,7 @@ import { swapServiceIdToDetails } from '../../utils/swap';
 import Text from '../Text/Text';
 import { IAssetSwapTransactionBlock, IMultiCallData } from '../../types/transactionBlock';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
+import { OfferRoute } from '../OfferRoute/OfferRoute';
 
 export interface ISwapAssetTransactionBlockValues {
   chain?: Chain;
@@ -39,13 +40,6 @@ const Title = styled.h3`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: 'PTRootUIWebBold', sans-serif;
-`;
-
-const OfferDetails = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  font-family: 'PTRootUIWebMedium', sans-serif;
 `;
 
 const mapOfferToOption = (offer: ExchangeOffer) => {
@@ -83,6 +77,7 @@ const AssetSwapTransactionBlock = ({
   const [showReceiverInput] = useState<boolean>(!!values?.receiverAddress);
   const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
   const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
+  const [exchangeRateByChainId, setExchangeRateByChainId] = useState<number>(0);
   const fixed = multiCallData?.fixed ?? false;
 
   const targetAssetPriceUsd = useAssetPriceUsd(selectedNetwork?.chainId, selectedToAsset?.address);
@@ -96,6 +91,7 @@ const AssetSwapTransactionBlock = ({
     providerAddress,
     smartWalletOnly,
     updateWalletBalances,
+    getRatesByNativeChainId,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -260,35 +256,29 @@ const AssetSwapTransactionBlock = ({
     );
   }, [amount, selectedFromAsset]);
 
-  const RenderOption = (option: SelectOption) => {
-    const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
-    const toAsset = availableToAssets?.find((availableAsset) =>
-      addressesEqual(availableAsset.address, selectedToAsset?.address)
-    );
+  useEffect(() => {
+    if (selectedNetwork?.chainId) {
+      getRatesByNativeChainId(selectedNetwork?.chainId).then((res) => {
+        if (res) {
+          setExchangeRateByChainId(res);
+        }
+      });
+    }
+  }, [selectedNetwork]);
 
-    const valueToReceiveRaw = availableOffer
-      ? ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals)
-      : undefined;
-
-    const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
-
-    return (
-      <OfferDetails>
-        <RoundedImage title={option.title} url={option.iconUrl} size={24} />
-        <div>
-          <Text size={12} marginBottom={2} medium block>
-            {option.title}
-          </Text>
-          {!!valueToReceive && (
-            <Text size={16} medium>
-              {valueToReceive} {toAsset?.symbol}
-              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$', 2)}`}
-            </Text>
-          )}
-        </div>
-      </OfferDetails>
-    );
-  };
+  const renderOfferOption = (option: SelectOption) => (
+    <OfferRoute
+      option={option}
+      availableOffers={availableOffers}
+      availableToAssets={availableToAssets}
+      selectedToAsset={selectedToAsset}
+      targetAssetPriceUsd={targetAssetPriceUsd}
+      selectedAccountType={selectedAccountType}
+      selectedFromAsset={selectedFromAsset}
+      selectedNetwork={selectedNetwork}
+      exchnageRate={exchangeRateByChainId}
+    />
+  );
 
   return (
     <>
@@ -420,8 +410,8 @@ const AssetSwapTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
             setSelectedOffer(option);
           }}
-          renderOptionListItemContent={RenderOption}
-          renderSelectedOptionContent={RenderOption}
+          renderOptionListItemContent={renderOfferOption}
+          renderSelectedOptionContent={renderOfferOption}
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}

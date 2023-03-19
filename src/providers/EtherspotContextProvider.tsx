@@ -44,7 +44,7 @@ let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
 let supportedAssetsPerChainId: { [chainId: number]: IAsset[] } = {};
 let gasTokenAddressesPerChainId: { [chainId: number]: string[] } = {};
 
-interface IWalletConnectProvider <T>{
+interface IWalletConnectProvider<T> {
   isWalletConnect?: boolean;
 }
 
@@ -325,7 +325,7 @@ const EtherspotContextProvider = ({
 
             balanceWorthUsd = assetPriceUsd
               ? // isZero check to avoid underflow
-              +ethers.utils.formatUnits(balance, asset.decimals) * assetPriceUsd
+                +ethers.utils.formatUnits(balance, asset.decimals) * assetPriceUsd
               : null;
           } catch (e) {
             //
@@ -562,6 +562,7 @@ const EtherspotContextProvider = ({
       loadKeyBasedWalletBalancesPerChain,
       getGasAssetsForChainId,
       updateWalletBalances,
+      getRatesByNativeChainId,
     }),
     [
       connect,
@@ -588,6 +589,7 @@ const EtherspotContextProvider = ({
       loadKeyBasedWalletBalancesPerChain,
       getGasAssetsForChainId,
       updateWalletBalances,
+      getRatesByNativeChainId,
     ]
   );
 

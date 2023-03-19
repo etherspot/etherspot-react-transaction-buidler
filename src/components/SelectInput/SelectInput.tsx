@@ -159,6 +159,7 @@ export interface SelectOption {
   title: string;
   value: any;
   iconUrl?: string;
+  extension?: string;
 }
 
 interface SelectInputProps {

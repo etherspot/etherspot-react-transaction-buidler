@@ -50,9 +50,10 @@ const mapRouteToOption = (route: Route) => {
   const [firstStep] = route.steps;
   const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? "LiFi",
     value: route.id,
     iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    extension: route.gasCostUSD,
   };
 };
 
@@ -82,8 +83,8 @@ const AssetBridgeTransactionBlock = ({
 
   const defaultCustomReceiverAddress =
     values?.receiverAddress &&
-    !addressesEqual(providerAddress, values?.receiverAddress) &&
-    !addressesEqual(accountAddress, values?.receiverAddress)
+      !addressesEqual(providerAddress, values?.receiverAddress) &&
+      !addressesEqual(accountAddress, values?.receiverAddress)
       ? values.receiverAddress
       : null;
   const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
@@ -92,9 +93,9 @@ const AssetBridgeTransactionBlock = ({
 
   const defaultSelectedReceiveAccountType =
     (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
-    (values?.receiverAddress &&
-      values?.accountType === AccountTypes.Contract &&
-      addressesEqual(providerAddress, values?.receiverAddress))
+      (values?.receiverAddress &&
+        values?.accountType === AccountTypes.Contract &&
+        addressesEqual(providerAddress, values?.receiverAddress))
       ? AccountTypes.Key
       : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
@@ -273,6 +274,7 @@ const AssetBridgeTransactionBlock = ({
     <RouteOption
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
+      cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
     />
   );
 

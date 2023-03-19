@@ -17,6 +17,7 @@ import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import RouteOption from '../RouteOption';
+import { OfferRoute } from '../OfferRoute/OfferRoute';
 
 // providers
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -138,6 +139,7 @@ const Block = styled.div`
 
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
+
   return {
     title: serviceDetails?.title ?? offer.provider,
     value: offer.provider,
@@ -163,12 +165,19 @@ const PlrDaoStakingTransactionBlock = ({
   values,
   multiCallData,
 }: IPlrDaoStakingMembershipBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSupportedAssetsWithBalancesForChainId, getNftsForChainId } =
-    useEtherspot();
+  const {
+    smartWalletOnly,
+    providerAddress,
+    accountAddress,
+    sdk,
+    getSupportedAssetsWithBalancesForChainId,
+    getRatesByNativeChainId,
+    getNftsForChainId,
+  } = useEtherspot();
 
   const [amount, setAmount] = useState<string>('');
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
-    values?.offer ? mapOfferToOption(values?.offer) : null,
+    values?.offer ? mapOfferToOption(values?.offer) : null
   );
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[]>(values?.offer ? [values.offer] : []);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
@@ -185,13 +194,15 @@ const PlrDaoStakingTransactionBlock = ({
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
+  const [exchangeRateByChainId, setExchangeRateByChainId] = useState<number>(0);
 
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
 
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
-  const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === testPlrDaoAsset.symbol;
+  const enableAssetBridge =
+    selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === testPlrDaoAsset.symbol;
   const enableAssetSwap = selectedFromAsset?.symbol !== testPlrDaoAsset.symbol;
   const toAsset = enableAssetBridge || enableAssetSwap ? testPlrDaoAsset : plrDaoMemberNft;
 
@@ -218,7 +229,7 @@ const PlrDaoStakingTransactionBlock = ({
       : AccountTypes.Contract;
 
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
-    defaultSelectedReceiveAccountType,
+    defaultSelectedReceiveAccountType
   );
 
   const {
@@ -276,7 +287,7 @@ const PlrDaoStakingTransactionBlock = ({
       const accountsBalances = await Promise.all(
         [accountAddress, providerAddress].map(async (address) => {
           return await getSupportedAssetsWithBalancesForChainId(chainId, true, address);
-        }),
+        })
       );
       let smartWalletBalance = 0;
       let keyBasedBalance = 0;
@@ -319,10 +330,10 @@ const PlrDaoStakingTransactionBlock = ({
         [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.POLYGON, CHAIN_ID.XDAI, CHAIN_ID.BINANCE].includes(chain.chainId)
       );
       let accountBalanceWithSupportedChains: AccountBalance[] = await Promise.all(
-        filteredSupportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title)),
+        filteredSupportedChains.map((chain) => getWalletBalance(chain.chainId, chain.title))
       );
       accountBalanceWithSupportedChains = accountBalanceWithSupportedChains?.filter(
-        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet > 0,
+        (data: AccountBalance) => data.keyBasedWallet > 0 || data.smartWallet > 0
       );
 
       const totalKeyBasedPLRTokens = getTotal(accountBalanceWithSupportedChains as AccountBalance[], 'keyBasedWallet');
@@ -368,7 +379,7 @@ const PlrDaoStakingTransactionBlock = ({
         setTransactionBlockFieldValidationError(transactionBlockId, 'offer', 'Cannot fetch offers');
       }
     }, 200),
-    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType],
+    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType]
   );
 
   const getNftList = async () => {
@@ -403,7 +414,7 @@ const PlrDaoStakingTransactionBlock = ({
         setIsLoadingAvailableOffers(false);
         if (!offers.length) return;
         const bestOffer: ExchangeOffer | undefined = offers?.find(
-          (offer) => offer.provider === swapServiceIdToDetails['Lifi'].title,
+          (offer) => offer.provider === swapServiceIdToDetails['Lifi'].title
         );
         const selectedOffer = bestOffer?.provider ? bestOffer : offers[0];
         setSelectedOffer(mapOfferToOption(selectedOffer));
@@ -461,7 +472,7 @@ const PlrDaoStakingTransactionBlock = ({
       offer,
       accountType: selectedAccountType,
       receiverAddress: receiverAddress ?? undefined,
-      route
+      route,
     });
   }, [
     selectedFromNetwork,
@@ -532,11 +543,13 @@ const PlrDaoStakingTransactionBlock = ({
         <Title>Pillar DAO Staking</Title>
         <ContainerWrapper>
           <Container>
-          <Text size={18} color={theme?.color?.text?.tokenValue}>
-            Thank You!
-          </Text>
-          <br />
-          <Text size={18} marginTop={2}>You are already a Pillar DAO member.</Text>
+            <Text size={18} color={theme?.color?.text?.tokenValue}>
+              Thank You!
+            </Text>
+            <br />
+            <Text size={18} marginTop={2}>
+              You are already a Pillar DAO member.
+            </Text>
           </Container>
         </ContainerWrapper>
       </>
@@ -552,56 +565,78 @@ const PlrDaoStakingTransactionBlock = ({
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
 
+  useEffect(() => {
+    if (selectedFromNetwork?.chainId) {
+      getRatesByNativeChainId(selectedFromNetwork?.chainId).then((res) => {
+        if (res) {
+          setExchangeRateByChainId(res);
+        }
+      });
+    }
+  }, [selectedFromNetwork]);
+
+  const renderOfferOption = (option: SelectOption) => (
+    <OfferRoute
+      option={option}
+      availableOffers={availableOffers}
+      targetAssetPriceUsd={targetAssetPriceUsd}
+      selectedAccountType={selectedAccountType}
+      selectedFromAsset={selectedFromAsset}
+      selectedNetwork={selectedFromNetwork}
+      exchnageRate={exchangeRateByChainId}
+    />
+  );
+
   return (
     <>
       <Title>Stake into Pillar DAO</Title>
       <ContainerWrapper>
-      <Container>
-        <Text size={16}>
-          To become DAO member, you need to stake <Value>10,000 PLR</Value> tokens on Polygon.
-        </Text>
-        <HorizontalLine />
-        {
-          <Text size={14}>
-            You have&nbsp;
-            {hasEnoughPLR ? <Value>{totalTokens} PLR</Value> : <Total>{totalTokens} PLR</Total>}
-            {' tokens '}
-            {accounts.length > 0 ? `on ${chain} on ${wallet}` : ''}
+        <Container>
+          <Text size={16}>
+            To become DAO member, you need to stake <Value>10,000 PLR</Value> tokens on Polygon.
           </Text>
-        }
-        {'\n'}
-        {tokenArray.map(({ chainId, chainName, keyBasedWallet, smartWallet }) => (
-          <Text size={12}>
-            {<Block></Block>}
-            {keyBasedWallet > 0 && (
-              <Block
-                color={
-                  chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
-                    ? theme?.color?.text?.tokenTotal
-                    : ''
-                }
-              >
-                {`\u25CF`}
-                <Bold>{formatAmountDisplay(keyBasedWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
-                <Bold> Keybased Wallet</Bold>
-              </Block>
-            )}
-            {smartWallet > 0 && (
-              <Block
-                color={
-                  chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
-                    ? theme?.color?.text?.tokenTotal
-                    : ''
-                }
-              >
-                {`\u25CF`}
-                <Bold>{formatAmountDisplay(smartWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
-                <Bold> Smart Wallet</Bold>
-              </Block>
-            )}
-          </Text>
-        ))}
-      </Container>
+          <HorizontalLine />
+          {
+            <Text size={14}>
+              You have&nbsp;
+              {hasEnoughPLR ? <Value>{totalTokens} PLR</Value> : <Total>{totalTokens} PLR</Total>}
+              {' tokens '}
+              {accounts.length > 0 ? `on ${chain} on ${wallet}` : ''}
+            </Text>
+          }
+          {'\n'}
+          {tokenArray.map(({ chainId, chainName, keyBasedWallet, smartWallet }) => (
+            <Text size={12}>
+              {<Block></Block>}
+              {keyBasedWallet > 0 && (
+                <Block
+                  color={
+                    chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
+                      ? theme?.color?.text?.tokenTotal
+                      : ''
+                  }
+                >
+                  {`\u25CF`}
+                  <Bold>{formatAmountDisplay(keyBasedWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
+                  <Bold> Keybased Wallet</Bold>
+                </Block>
+              )}
+              {smartWallet > 0 && (
+                <Block
+                  color={
+                    chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
+                      ? theme?.color?.text?.tokenTotal
+                      : ''
+                  }
+                >
+                  {`\u25CF`}
+                  <Bold>{formatAmountDisplay(smartWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
+                  <Bold> Smart Wallet</Bold>
+                </Block>
+              )}
+            </Text>
+          ))}
+        </Container>
       </ContainerWrapper>
       <>
         <AccountSwitchInput
@@ -725,15 +760,15 @@ const PlrDaoStakingTransactionBlock = ({
               resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
               setSelectedOffer(option);
             }}
-            renderOptionListItemContent={RenderOption}
-            renderSelectedOptionContent={RenderOption}
+            renderOptionListItemContent={renderOfferOption}
+            renderSelectedOptionContent={renderOfferOption}
             placeholder="Select offer"
             errorMessage={errorMessages?.offer}
           />
         )}
         {enableAssetBridge && !!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
           <SelectInput
-            label={"Route"}
+            label={'Route'}
             options={availableRoutesOptions ?? []}
             isLoading={isLoadingAvailableRoutes}
             selectedOption={selectedRoute}
