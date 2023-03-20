@@ -4,6 +4,7 @@ import styled, { useTheme } from 'styled-components';
 // components
 import Text from '../Text/Text';
 import { WalletCopyIcon } from '../TransactionBlock/Icons';
+import Card from '../Card';
 
 // hooks
 import { useEtherspot } from '../../hooks';
@@ -13,14 +14,14 @@ import { HiCheck } from 'react-icons/hi';
 
 // utils
 import { Theme } from '../../utils/theme';
-import { ENSNode } from 'etherspot';
-import Card from '../Card';
+import { onCopy } from '../../utils/common';
 
 // constants
 import { OPENLOGIN_STORE } from '../../constants/storageConstants';
+import { ENSNode } from 'etherspot';
 
 const UserProfile = () => {
-  const { accountAddress, getENSNode } = useEtherspot();
+  const { accountAddress, getEnsNode } = useEtherspot();
 
   const theme: Theme = useTheme();
 
@@ -31,25 +32,20 @@ const UserProfile = () => {
   const openLoginStore = openLoginStoreString && JSON.parse(openLoginStoreString);
   const email = openLoginStore?.email ?? '';
 
-  const onCopy = async (valueToCopy: string) => {
-    try {
-      await navigator.clipboard.writeText(valueToCopy);
-      setCopiedAddress(true);
-      setTimeout(() => setCopiedAddress(false), 10000);
-    } catch (e) {
-      alert('Unable to copy!');
-    }
+  const onSuccess = async () => {
+    setCopiedAddress(true);
+    setTimeout(() => setCopiedAddress(false), 10000);
   };
 
   useEffect(() => {
-    async function getAccount() {
+    const getAccount = async () => {
       try {
-        const account: ENSNode = await getENSNode(1, accountAddress, false);
+        const account: ENSNode = await getEnsNode(1, accountAddress, false);
         setEnsNode(account.name);
       } catch (err) {
         //
       }
-    }
+    };
     getAccount();
   }, []);
 
@@ -68,18 +64,18 @@ const UserProfile = () => {
           {accountAddress ? (
             <>
               {accountAddress}
-              <Text onClick={() => onCopy(accountAddress)} marginLeft={3}>
+              <Text onClick={() => onCopy(accountAddress, onSuccess)} marginLeft={3}>
                 {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
               </Text>
             </>
           ) : (
-            <p>No adderess</p>
+            <p>No address</p>
           )}
         </Value>
       </Wrapper>
       <Wrapper>
         <Header>ENS</Header>
-        <Value>{ensNode ? ensNode : 'Not found'}</Value>
+        <Value>{ensNode ?? 'Not found'}</Value>
       </Wrapper>
     </Card>
   );

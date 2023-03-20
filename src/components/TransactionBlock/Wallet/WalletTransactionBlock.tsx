@@ -23,7 +23,7 @@ import { Text } from '../../Text';
 import SwitchInput from '../../SwitchInput/SwitchInput';
 import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../../constants/transactionBuilderConstants';
 import { ISendAssetTransactionBlockValues } from '../SendAssetTransactionBlock';
-import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../../utils/common';
+import { formatAmountDisplay, onCopy, sumAssetsBalanceWorth } from '../../../utils/common';
 import { sortAssetsByValue } from '../../../utils/sort';
 
 // Local
@@ -348,15 +348,6 @@ const WalletTransactionBlock = ({
   const changeTab = (tab: ITabs) => {
     resetModals();
     setTab(tab);
-  };
-
-  const onCopy = async (valueToCopy: string) => {
-    try {
-      await navigator.clipboard.writeText(valueToCopy);
-      alert('Copied!');
-    } catch (e) {
-      alert('Unable to copy!');
-    }
   };
 
   const selectAllChain = () => {

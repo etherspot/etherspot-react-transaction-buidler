@@ -38,7 +38,7 @@ export interface EtherspotContextData {
     loadSmartWalletBalancesByChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
     loadKeyBasedWalletBalancesPerChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
     getNftsForChainId: (chainId: number, address?: string | null, recompute?: boolean) => Promise<NftCollection[]>;
-    getENSNode: (chainId: number, address?: string | null, recompute?: boolean) => Promise<ENSNode>;
+    getEnsNode: (chainId: number, address?: string | null, recompute?: boolean) => Promise<ENSNode>;
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
     totalWorthPerAddress: ITotalWorthPerAddress;
     logout: () => void;

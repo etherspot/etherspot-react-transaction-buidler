@@ -18,7 +18,7 @@ import {
   getTransactionExplorerLink,
   isERC20ApprovalTransactionData,
 } from "../../utils/transaction";
-import { formatAmountDisplay, humanizeHexString } from "../../utils/common";
+import { formatAmountDisplay, humanizeHexString, onCopy } from '../../utils/common';
 import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
 import { Theme } from "../../utils/theme";
 
@@ -502,13 +502,6 @@ const ActionPreview = ({
     }
   }, [isSubmitted, timer]);
 
-  const onCopy = (valueToCopy: string) => {
-      navigator.clipboard.writeText(valueToCopy).then((res) => {
-        alert("Copied!");
-      }).catch((err) => {
-        //
-      });
-  };
 
 	const onEditButtonClick = () => {
 		if (editButtonDisabled || !onEdit) return;
