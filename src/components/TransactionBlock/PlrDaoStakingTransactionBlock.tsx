@@ -245,6 +245,16 @@ const PlrDaoStakingTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAssetAddress');
   }, [selectedFromNetwork]);
 
+  useEffect(() => {
+    if (selectedFromNetwork?.chainId) {
+      getRatesByNativeChainId(selectedFromNetwork?.chainId).then((res) => {
+        if (res) {
+          setExchangeRateByChainId(res);
+        }
+      });
+    }
+  }, [selectedFromNetwork]);
+  
   const updateAvailableRoutes = useCallback(
     debounce(async () => {
       setSelectedRoute(null);
@@ -564,16 +574,6 @@ const PlrDaoStakingTransactionBlock = ({
       ? 'Key Based'
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
-
-  useEffect(() => {
-    if (selectedFromNetwork?.chainId) {
-      getRatesByNativeChainId(selectedFromNetwork?.chainId).then((res) => {
-        if (res) {
-          setExchangeRateByChainId(res);
-        }
-      });
-    }
-  }, [selectedFromNetwork]);
 
   const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
