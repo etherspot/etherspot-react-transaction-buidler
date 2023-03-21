@@ -302,7 +302,7 @@ const TransactionBuilderContextProvider = ({
     setCopiedAddressInterval(null);
   }, copiedAddressInterval);
 
-  const onSuccess = async () => {
+  const onCopySuccess = async () => {
     setCopiedAddress(true);
     if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
   };
@@ -818,7 +818,7 @@ const TransactionBuilderContextProvider = ({
                 <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
                   Wallet
                 </Text>
-                <Text onClick={() => onCopy(accountAddress, onSuccess)}>
+                <Text onClick={() => onCopy(accountAddress, onCopySuccess)}>
                   {copiedAddress ? (
                     <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
                   ) : (

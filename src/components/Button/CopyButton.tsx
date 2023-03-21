@@ -37,14 +37,14 @@ interface CopyButtonProps {
 const CopyButton = ({ valueToCopy, left, top }: CopyButtonProps) => {
   const [copied, setCopied] = useState(false);
 
-  const onSuccess = useCallback(() => {
+  const onCopySuccess = useCallback(() => {
     setCopied(true);
     setTimeout(() => setCopied(false), 1000);
   }, []);
 
   return (
     <Wrapper left={left} top={top}>
-      {!copied && <CopyButtonIcon onClick={() => onCopy(valueToCopy, onSuccess)} size={15} />}
+      {!copied && <CopyButtonIcon onClick={() => onCopy(valueToCopy, onCopySuccess)} size={15} />}
       {copied && <CopiedButtonIcon onClick={() => setCopied(false)} size={15} />}
     </Wrapper>
   );

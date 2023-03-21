@@ -13,7 +13,7 @@ describe('User Profile component', () => {
   jest.mock('../../hooks', () => ({
     useEtherspot: jest.fn(() => ({
       accountAddress: mockProps.address,
-      getENSNode: jest.fn(() => Promise.resolve({ name: mockProps.ensNode })),
+      getEnsNode: jest.fn(() => Promise.resolve({ name: mockProps.ensNode })),
     })),
   }));
 

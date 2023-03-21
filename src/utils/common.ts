@@ -94,7 +94,7 @@ export const onCopy = async (valueToCopy: string, onSuccess?: () => void) => {
   try {
     await navigator.clipboard.writeText(valueToCopy);
     alert('Copied!');
-    if (onSuccess) onSuccess();
+    onSuccess?.();
   } catch (e) {
     alert('Unable to copy');
   }

@@ -32,7 +32,7 @@ const UserProfile = () => {
   const openLoginStore = openLoginStoreString && JSON.parse(openLoginStoreString);
   const email = openLoginStore?.email ?? '';
 
-  const onSuccess = async () => {
+  const onCopySuccess = async () => {
     setCopiedAddress(true);
     setTimeout(() => setCopiedAddress(false), 10000);
   };
@@ -64,7 +64,7 @@ const UserProfile = () => {
           {accountAddress ? (
             <>
               {accountAddress}
-              <Text onClick={() => onCopy(accountAddress, onSuccess)} marginLeft={3}>
+              <Text onClick={() => onCopy(accountAddress, onCopySuccess)} marginLeft={3}>
                 {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
               </Text>
             </>
