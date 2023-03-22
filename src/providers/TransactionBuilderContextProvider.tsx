@@ -851,7 +851,7 @@ const TransactionBuilderContextProvider = ({
     if (sdk && connect) {
       setIsWalletConnecting(true);
       try {
-        const address = await connect();
+        await connect();
       } catch {}
     }
     setIsWalletConnecting(false);
@@ -862,6 +862,8 @@ const TransactionBuilderContextProvider = ({
   }, [sdk]);
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+
     if (isWalletConnecting) {
       setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTING);
     } else if (accountAddress && !isWalletConnecting) {
@@ -874,6 +876,9 @@ const TransactionBuilderContextProvider = ({
     } else {
       setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTED);
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [accountAddress, isWalletConnecting]);
 
   // Mt Pelerin
