@@ -787,8 +787,36 @@ const TransactionBuilderContextProvider = ({
     [dispatchedCrossChainActions]
   );
 
+  const CONNECTION_STATUSES = {
+    IS_CONNECTED: 'connected',
+    IS_CONNECTING: 'isConnecting',
+    JUST_CONNECTED: 'justConnected',
+    NOT_CONNECTED: 'notConnected',
+  };
+
+  const connectedStatusMessages = {
+    [CONNECTION_STATUSES.IS_CONNECTING]: <Text color={theme.color?.text?.button}>Connecting</Text>,
+    [CONNECTION_STATUSES.JUST_CONNECTED]: (
+      <>
+        <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
+          <BiCheck size={12} />
+        </StatusIconWrapper>{' '}
+        <Text color={theme.color?.text?.button}>Connected</Text>
+      </>
+    ),
+    [CONNECTION_STATUSES.IS_CONNECTED]: null,
+    [CONNECTION_STATUSES.NOT_CONNECTED]: (
+      <>
+        <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
+          <CgSandClock size={10} />
+        </StatusIconWrapper>
+        <Text color={theme.color?.text?.button}>Sign to connect</Text>
+      </>
+    ),
+  };
+
   const [showMulticallOptions, setShowMulticallOptions] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<ReactElement | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>(CONNECTION_STATUSES.IS_CONNECTING);
 
   const addTransactionBlock = (
     availableTransactionBlock: ITransactionBlock,
@@ -835,30 +863,16 @@ const TransactionBuilderContextProvider = ({
 
   useEffect(() => {
     if (isWalletConnecting) {
-      setConnectionStatus(<Text color={theme.color?.text?.button}>Connecting</Text>);
+      setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTING);
     } else if (accountAddress && !isWalletConnecting) {
-      setConnectionStatus(
-        <>
-          <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
-            <BiCheck size={12} />
-          </StatusIconWrapper>{' '}
-          <Text color={theme.color?.text?.button}>Connected</Text>
-        </>
-      );
+      setConnectionStatus(CONNECTION_STATUSES.JUST_CONNECTED);
       setTimeout(() => {
-        setConnectionStatus(null);
+        setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTED);
       }, 2000);
     } else if (!accountAddress) {
-      setConnectionStatus(
-        <>
-          <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
-            <CgSandClock size={10} />
-          </StatusIconWrapper>
-          <Text color={theme.color?.text?.button}>Sign to connect</Text>
-        </>
-      );
+      setConnectionStatus(CONNECTION_STATUSES.NOT_CONNECTED);
     } else {
-      setConnectionStatus(null);
+      setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTED);
     }
   }, [accountAddress, isWalletConnecting]);
 
@@ -922,7 +936,7 @@ const TransactionBuilderContextProvider = ({
             </WalletAddress>
           )}
         </WalletAddressesWrapper>
-        <StatusWrapper>{connectionStatus}</StatusWrapper>
+        <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>
         <SettingsWrapper>
           <ConnectionIcon isConnected={!!accountAddress} />
           <SettingMenu showLogout={showMenuLogout} logout={logout} />
