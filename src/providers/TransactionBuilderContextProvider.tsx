@@ -868,7 +868,7 @@ const TransactionBuilderContextProvider = ({
       setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTING);
     } else if (accountAddress && !isWalletConnecting) {
       setConnectionStatus(CONNECTION_STATUSES.JUST_CONNECTED);
-      setTimeout(() => {
+      timer = setTimeout(() => {
         setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTED);
       }, 2000);
     } else if (!accountAddress) {
