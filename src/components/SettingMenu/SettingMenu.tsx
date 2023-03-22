@@ -65,10 +65,10 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           <MenuItemAnchor
             title="Dashboard"
             link="https://dashboard.etherspot.io"
-            icon={<MdOutlineDashboardCustomize size={16} style={{ marginRight: '12' }} />}
+            icon={<MdOutlineDashboardCustomize size={16} style={{ marginRight: '12px' }} />}
           />
           <MenuItem
-            icon={<BiUser size={16} style={{ marginRight: '12' }} />}
+            icon={<BiUser size={16} style={{ marginRight: '12px' }} />}
             title="Profile"
             onClick={() => {
               hideMenu();
@@ -76,7 +76,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             }}
           />
           <MenuItem
-            icon={<BsClockHistory size={16} style={{ marginRight: '12' }} />}
+            icon={<BsClockHistory size={16} style={{ marginRight: '12px' }} />}
             title="History"
             onClick={() => {
               hideMenu();
@@ -84,7 +84,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             }}
           />
           <MenuItem
-            icon={<FaRocket size={16} style={{ marginRight: '12' }} />}
+            icon={<FaRocket size={16} style={{ marginRight: '12px' }} />}
             title="Deployment"
             onClick={() => {
               hideMenu();
@@ -94,11 +94,11 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           <MenuItemAnchor
             title="About Etherspot"
             link="https://etherspot.io/"
-            icon={<EtherspotLogo width={16} height={16} style={{ marginRight: '12' }} />}
+            icon={<EtherspotLogo width={16} height={16} style={{ marginRight: '12px' }} />}
           />
           {showLogout && (
             <MenuItem
-              icon={<IoMdLogOut size={16} style={{ marginRight: '12' }} />}
+              icon={<IoMdLogOut size={16} style={{ marginRight: '12px' }} />}
               onClick={() => {
                 logout();
               }}

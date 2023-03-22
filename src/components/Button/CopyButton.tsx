@@ -4,7 +4,7 @@ import React, {
   useState,
 } from 'react';
 import { FaClipboardCheck, FaRegClipboard } from 'react-icons/fa';
-import { onCopy } from '../../utils/common';
+import { copyToClipboard } from '../../utils/common';
 
 
 const Wrapper = styled.span<{
@@ -44,7 +44,7 @@ const CopyButton = ({ valueToCopy, left, top }: CopyButtonProps) => {
 
   return (
     <Wrapper left={left} top={top}>
-      {!copied && <CopyButtonIcon onClick={() => onCopy(valueToCopy, onCopySuccess)} size={15} />}
+      {!copied && <CopyButtonIcon onClick={() => copyToClipboard(valueToCopy, onCopySuccess)} size={15} />}
       {copied && <CopiedButtonIcon onClick={() => setCopied(false)} size={15} />}
     </Wrapper>
   );

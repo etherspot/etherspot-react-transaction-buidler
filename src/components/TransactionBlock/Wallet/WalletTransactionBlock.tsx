@@ -23,7 +23,7 @@ import { Text } from '../../Text';
 import SwitchInput from '../../SwitchInput/SwitchInput';
 import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../../constants/transactionBuilderConstants';
 import { ISendAssetTransactionBlockValues } from '../SendAssetTransactionBlock';
-import { formatAmountDisplay, onCopy, sumAssetsBalanceWorth } from '../../../utils/common';
+import { formatAmountDisplay, copyToClipboard, sumAssetsBalanceWorth } from '../../../utils/common';
 import { sortAssetsByValue } from '../../../utils/sort';
 
 // Local
@@ -476,7 +476,7 @@ const WalletTransactionBlock = ({
         selectedChains={selectedChains}
         hideChainList={hideChainList}
         displayAssets={displayAssets}
-        onCopy={onCopy}
+        onCopy={copyToClipboard}
         toggleChainBlock={toggleChainBlock}
       />
 
@@ -487,7 +487,7 @@ const WalletTransactionBlock = ({
         selectedChains={selectedChains}
         hideChainList={hideChainList}
         displayNfts={displayNfts}
-        onCopy={onCopy}
+        onCopy={copyToClipboard}
         toggleChainBlock={toggleChainBlock}
       />
     </>

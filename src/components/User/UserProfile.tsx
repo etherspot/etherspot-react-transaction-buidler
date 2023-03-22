@@ -14,7 +14,8 @@ import { HiCheck } from 'react-icons/hi';
 
 // utils
 import { Theme } from '../../utils/theme';
-import { onCopy } from '../../utils/common';
+import { copyToClipboard } from '../../utils/common';
+import { CHAIN_ID } from '../../utils/chain';
 
 // constants
 import { OPENLOGIN_STORE } from '../../constants/storageConstants';
@@ -26,11 +27,17 @@ const UserProfile = () => {
   const theme: Theme = useTheme();
 
   const [copiedAddress, setCopiedAddress] = useState(false);
-  const [ensNode, setEnsNode] = useState<string | undefined>(undefined);
+  const [ensName, setEnsName] = useState<string | undefined>(undefined);
 
-  const openLoginStoreString = localStorage.getItem(OPENLOGIN_STORE);
-  const openLoginStore = openLoginStoreString && JSON.parse(openLoginStoreString);
-  const email = openLoginStore?.email ?? '';
+  let email;
+  try {
+    const openLoginStoreString = localStorage.getItem(OPENLOGIN_STORE);
+    const openLoginStore = openLoginStoreString && JSON.parse(openLoginStoreString);
+    email = openLoginStore?.email ?? '';
+  } catch (err) {
+    console.error('Error accessing local storage:', err);
+    email = '';
+  }
 
   const onCopySuccess = async () => {
     setCopiedAddress(true);
@@ -40,8 +47,8 @@ const UserProfile = () => {
   useEffect(() => {
     const getAccount = async () => {
       try {
-        const account: ENSNode = await getEnsNode(1, accountAddress, false);
-        setEnsNode(account.name);
+        const account: ENSNode = await getEnsNode(CHAIN_ID.ETHEREUM_MAINNET, accountAddress, false);
+        setEnsName(account.name);
       } catch (err) {
         //
       }
@@ -64,7 +71,7 @@ const UserProfile = () => {
           {accountAddress ? (
             <>
               {accountAddress}
-              <Text onClick={() => onCopy(accountAddress, onCopySuccess)} marginLeft={3}>
+              <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)} marginLeft={3}>
                 {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
               </Text>
             </>
@@ -75,7 +82,7 @@ const UserProfile = () => {
       </Wrapper>
       <Wrapper>
         <Header>ENS</Header>
-        <Value>{ensNode ?? 'Not found'}</Value>
+        <Value>{ensName ?? 'Not found'}</Value>
       </Wrapper>
     </Card>
   );

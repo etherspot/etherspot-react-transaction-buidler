@@ -35,7 +35,7 @@ import {
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString, onCopy } from '../utils/common';
+import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard } from '../utils/common';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
@@ -818,7 +818,7 @@ const TransactionBuilderContextProvider = ({
                 <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
                   Wallet
                 </Text>
-                <Text onClick={() => onCopy(accountAddress, onCopySuccess)}>
+                <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)}>
                   {copiedAddress ? (
                     <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
                   ) : (

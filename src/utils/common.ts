@@ -90,11 +90,11 @@ export const buildUrlOptions = (options: { [key: string]: string }): string => {
   return optionStr;
 };
 
-export const onCopy = async (valueToCopy: string, onSuccess?: () => void) => {
+export const copyToClipboard = async (valueToCopy: string, onSuccess?: () => void) => {
   try {
     await navigator.clipboard.writeText(valueToCopy);
     alert('Copied!');
-    onSuccess?.();
+    if (onSuccess) onSuccess();
   } catch (e) {
     alert('Unable to copy');
   }

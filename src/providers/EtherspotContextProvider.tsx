@@ -519,9 +519,9 @@ const EtherspotContextProvider = ({
       address: string | null = accountAddress,
       recompute: boolean = true
     ): Promise<ENSNode | null> => {
-      const sdk = getSdkForChainId(chainId);
+      const sdkForChain = getSdkForChainId(chainId);
 
-      if (!sdk) return null;
+      if (!sdkForChain) return null;
 
       let computedAccount;
 
@@ -536,8 +536,8 @@ const EtherspotContextProvider = ({
       if (!address && !computedAccount) return null;
 
       try {
-        const ens = await sdk.getENSNode({
-          nameOrHashOrAddress: address || computedAccount || '',
+        const ens = await sdkForChain.getENSNode({
+          nameOrHashOrAddress: address || computedAccount,
         });
         return ens;
       } catch (e) {
