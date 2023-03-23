@@ -9,6 +9,7 @@ import { ITransactionBlock } from '../types/transactionBlock';
 import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
 import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { ISwapAssetV2TransactionBlockValues } from '../components/TransactionBlock/AssetSwapV2TransactionBlock';
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {
   if (!address) return false;
@@ -108,6 +109,27 @@ export const validateTransactionBlockValues = (
     if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) {
       errors.receiverAddress = 'Invalid receiver address!';
     }
+    if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
+  }
+
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP_V2) {
+    const transactionBlockValues: ISwapAssetV2TransactionBlockValues | undefined = transactionBlock.values;
+    if (!transactionBlockValues?.fromChain) errors.fromChain = 'No chain selected!';
+    if (!transactionBlockValues?.toChain) errors.toChain = 'No destination chain selected!';
+    if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
+    if (!transactionBlockValues?.fromAsset) errors.fromAsset = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.toAsset) errors.toAsset = 'Invalid destination asset selected!';
+    if (transactionBlockValues?.swap?.type === 'CROSS_CHAIN_SWAP' && !transactionBlockValues?.swap?.route) {
+      errors.route = 'No route selected!';
+    }
+    if (transactionBlockValues?.swap?.type === 'SAME_CHAIN_SWAP' && !transactionBlockValues?.swap?.offer) {
+      errors.route = 'No offer selected!';
+    }
+    if (
+      transactionBlockValues?.isDifferentReceiverAddress &&
+      !isValidEthereumAddress(transactionBlockValues?.receiverAddress)
+    )
+      errors.receiverAddress = 'Invalid receiver address!';
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
   }
 

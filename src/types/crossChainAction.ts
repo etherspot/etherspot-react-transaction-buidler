@@ -5,6 +5,7 @@ import { Route } from '@lifi/sdk';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { IMultiCallData } from './transactionBlock';
 import { IPlrStakingV2BlockSwap } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { IAssetSwapV2BlockSwap } from '../components/TransactionBlock/AssetSwapV2TransactionBlock';
 
 interface AssetTransfer {
   address: string;
@@ -66,6 +67,17 @@ interface PlrStakingV2ActionPreview {
   swap?: IPlrStakingV2BlockSwap;
 }
 
+export interface AssetSwapV2ActionPreview {
+  swap?: IAssetSwapV2BlockSwap;
+  fromChainId: number;
+  fromAsset: AssetTransfer;
+  toChainId: number;
+  toAsset: AssetTransfer;
+  providerName?: string;
+  providerIconUrl?: string;
+  receiverAddress?: string;
+}
+
 export interface AssetSwapActionPreview {
   chainId: number;
   fromAsset: AssetTransfer;
@@ -115,6 +127,11 @@ interface PlrStakingV2Action {
   preview: PlrStakingV2ActionPreview;
 }
 
+interface AssetSwapV2Action {
+  type: typeof TRANSACTION_BLOCK_TYPE.ASSET_SWAP_V2;
+  preview: AssetSwapV2ActionPreview;
+}
+
 export interface ICrossChainActionTransaction extends ExecuteAccountTransactionDto {
   status?: string;
   transactionHash?: string;
@@ -151,4 +168,5 @@ export type ICrossChainAction = {
   | KlimaStakingAction
   | PlrStakingAction
   | PlrStakingV2Action
+  | AssetSwapV2Action
 );

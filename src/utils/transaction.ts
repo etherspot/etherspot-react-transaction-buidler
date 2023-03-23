@@ -1317,6 +1317,167 @@ export const buildCrossChainAction = async (
     return { crossChainAction };
   }
 
+  if (
+    transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP_V2 &&
+    !!transactionBlock?.values?.fromChain &&
+    !!transactionBlock?.values?.toChain &&
+    !!transactionBlock?.values?.fromAsset &&
+    !!transactionBlock?.values?.toAsset &&
+    !!transactionBlock?.values?.amount &&
+    !!transactionBlock?.values?.swap
+  ) {
+    try {
+      const {
+        values: {
+          amount,
+          fromChain: { chainId: fromChainId },
+          toChain: { chainId: toChainId },
+          fromAsset: {
+            address: fromAssetAddress,
+            symbol: fromAssetSymbol,
+            decimals: fromAssetDecimals,
+            logoURI: fromAssetIconUrl,
+          },
+          toAsset: {
+            address: toAssetAddress,
+            symbol: toAssetSymbol,
+            decimals: toAssetDecimals,
+            logoURI: toAssetIconUrl,
+          },
+          swap,
+          receiverAddress,
+          accountType,
+        },
+      } = transactionBlock;
+
+      const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      let toAssetAmount = addressesEqual(toAssetAddress, plrStakedAssetEthereumMainnet.address) ? fromAmountBN : '0';
+
+      let providerName;
+      let providerIconUrl;
+      let transactions: ICrossChainActionTransaction[] = [];
+
+      if (swap.type === 'SAME_CHAIN_SWAP' && swap.offer) {
+        try {
+          const swapServiceDetails = swapServiceIdToDetails[swap.offer.provider];
+          providerName = swapServiceDetails.title ?? 'Unknown provider';
+          providerIconUrl = swapServiceDetails?.iconUrl;
+          transactions = swap.offer.transactions.map((transaction) => ({
+            ...transaction,
+            chainId: fromChainId,
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          }));
+          toAssetAmount = swap.offer.receiveAmount;
+        } catch (e) {
+          return { errorMessage: 'Failed to build same chain swap transaction!' };
+        }
+      } else if (swap.type === 'CROSS_CHAIN_SWAP' && swap.route) {
+        try {
+          const routeData = await fetchBestRoute(
+            sdk,
+            fromChainId,
+            toChainId,
+            fromAmountBN,
+            fromAssetAddress,
+            toAssetAddress,
+            receiverAddress
+          );
+
+          if (routeData.errorMessage) return { errorMessage: routeData.errorMessage };
+          if (!routeData.bestRoute) return { errorMessage: 'Failed build swap transaction!' };
+
+          transactions = routeData.destinationTxns ?? [];
+          toAssetAmount = BigNumber.from(routeData.bestRoute.toAmount);
+        } catch (e) {
+          return { errorMessage: 'Failed to build cross chain swap transaction!' };
+        }
+      }
+      let preview = {
+        fromChainId,
+        toChainId,
+        fromAsset: {
+          address: fromAssetAddress,
+          decimals: fromAssetDecimals,
+          symbol: fromAssetSymbol,
+          amount: fromAmountBN.toString(),
+          iconUrl: fromAssetIconUrl,
+        },
+        toAsset: {
+          address: toAssetAddress,
+          decimals: toAssetDecimals,
+          symbol: toAssetSymbol,
+          amount: toAssetAmount.toString(),
+          iconUrl: toAssetIconUrl,
+        },
+        providerName,
+        providerIconUrl,
+        receiverAddress,
+        swap,
+      };
+      // not native asset and no erc20 approval transaction included
+      if (
+        fromAssetAddress &&
+        !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address) &&
+        transactions.length === 1
+      ) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, fromAmountBN);
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build asset swap approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          fromChainId,
+          value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        };
+
+        transactions = [approvalTransaction, ...transactions];
+      }
+
+      if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, toAssetAmount);
+        if (!transferTransactionRequest || !transferTransactionRequest.to) {
+          return { errorMessage: 'Failed build transfer transaction!' };
+        }
+
+        const transferTransaction = {
+          to: transferTransactionRequest.to,
+          data: transferTransactionRequest.data,
+          value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        };
+
+        transactions = [...transactions, transferTransaction];
+      }
+
+      const crossChainAction: ICrossChainAction = {
+        id: crossChainActionId,
+        relatedTransactionBlockId: transactionBlock.id,
+        chainId: fromChainId,
+        type: TRANSACTION_BLOCK_TYPE.ASSET_SWAP_V2,
+        preview,
+        transactions,
+        isEstimating: false,
+        estimated: null,
+        useWeb3Provider: accountType === AccountTypes.Key,
+        multiCallData: transactionBlock?.multiCallData,
+      };
+
+      return { crossChainAction };
+    } catch (e) {
+      return { errorMessage: 'Failed to build swap transaction!' };
+    }
+  }
   return { errorMessage: 'Failed to build transaction!' };
 };
 

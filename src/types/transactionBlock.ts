@@ -3,6 +3,7 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { ISendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
 import { IAssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
 import { ISwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
+import { ISwapAssetV2TransactionBlockValues } from '../components/TransactionBlock/AssetSwapV2TransactionBlock';
 import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
 import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { ErrorMessages } from '../utils/validation';
@@ -33,7 +34,8 @@ export type ITransactionBlockType =
   | typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.DISABLED
-  | typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2;
+  | typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2
+  | typeof TRANSACTION_BLOCK_TYPE.ASSET_SWAP_V2;
 
 export type IDefaultTransactionBlock = {
   title?: string;
@@ -70,6 +72,11 @@ export interface IPlrStakingV2Block extends ITransactionBlockBase {
   values?: IPlrStakingV2BlockValues;
 }
 
+export interface IAssetSwapV2TransactionBlock extends ITransactionBlockBase {
+  type: typeof TRANSACTION_BLOCK_TYPE.ASSET_SWAP_V2;
+  values?: ISwapAssetV2TransactionBlockValues;
+}
+
 interface IDisabledTransactionBlock extends ITransactionBlockBase {
   type: typeof TRANSACTION_BLOCK_TYPE.DISABLED;
 }
@@ -81,6 +88,7 @@ export type ITransactionBlock =
   | IKlimaStakingTransactionBlock
   | IPlrDaoStakingMembershipBlock
   | IPlrStakingV2Block
+  | IAssetSwapV2TransactionBlock
   | IDisabledTransactionBlock;
 
 export type ITransactionBlockValues =
@@ -89,6 +97,7 @@ export type ITransactionBlockValues =
   | ISendAssetTransactionBlockValues
   | IKlimaStakingTransactionBlockValues
   | IPlrDaoTransactionBlockValues
-  | IPlrStakingV2BlockValues;
+  | IPlrStakingV2BlockValues
+  | ISwapAssetV2TransactionBlockValues;
 
 export type IMulticallBlock = { icon: string } & ITransactionBlock;
