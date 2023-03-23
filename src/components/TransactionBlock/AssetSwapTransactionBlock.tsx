@@ -8,7 +8,12 @@ import debounce from 'debounce-promise';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
+import {
+  formatAmountDisplay,
+  formatAssetAmountInput,
+  formatMaxAmount,
+  getOfferItemIndexByBestOffer,
+} from '../../utils/common';
 import { addressesEqual, isValidAmount } from '../../utils/validation';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -92,6 +97,7 @@ const AssetSwapTransactionBlock = ({
     smartWalletOnly,
     updateWalletBalances,
     getRatesByNativeChainId,
+    getSdkForChainId,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -151,6 +157,27 @@ const AssetSwapTransactionBlock = ({
     [sdk, selectedFromAsset, selectedToAsset, amount, selectedNetwork, accountAddress]
   );
 
+  const getGasSwapUsdValue = async (offer: ExchangeOffer) => {
+    const sdkByChain = getSdkForChainId(selectedNetwork?.chainId ?? 1);
+
+    if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
+      await sdkByChain.computeContractAccount();
+
+      sdkByChain.clearGatewayBatch();
+
+      await Promise.all(
+        offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
+      );
+
+      try {
+        const estimation = await sdkByChain.estimateGatewayBatch();
+        return Number(ethers.utils.formatUnits(estimation.estimation.feeAmount)) * exchangeRateByChainId;
+      } catch (error) {
+        //
+      }
+    }
+  };
+
   useEffect(() => {
     updateWalletBalances();
   }, [sdk, accountAddress]);
@@ -164,8 +191,25 @@ const AssetSwapTransactionBlock = ({
         const offers = await updateAvailableOffers();
         if (!active || !offers) return;
 
+        const usdValuesGas = await Promise.all(offers.map((offer) => getGasSwapUsdValue(offer)));
+        const valuesToReceiveRaw = offers.map((offer) => {
+          const toAsset = availableToAssets
+            ? availableToAssets?.find((availableAsset) =>
+                addressesEqual(availableAsset.address, selectedToAsset?.address)
+              )
+            : null;
+
+          return targetAssetPriceUsd
+            ? +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals) * targetAssetPriceUsd
+            : +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals);
+        });
+
+        let bestOfferIndex = getOfferItemIndexByBestOffer(usdValuesGas, valuesToReceiveRaw);
+
         setAvailableOffers(offers);
         if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
+        if (!isNaN(bestOfferIndex) && offers.length > 1) setSelectedOffer(mapOfferToOption(offers[bestOfferIndex]));
+
         setIsLoadingAvailableOffers(false);
       } catch (e) {
         //
@@ -285,7 +329,7 @@ const AssetSwapTransactionBlock = ({
       <Title>Swap asset</Title>
       {!multiCallData && (
         <AccountSwitchInput
-          label="From wallet"
+          label="Frommm wallet"
           selectedAccountType={selectedAccountType}
           onChange={(accountType) => {
             if (accountType !== selectedAccountType) {
@@ -415,7 +459,7 @@ const AssetSwapTransactionBlock = ({
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
-          forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1}
+          forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1 && !selectedOffer}
         />
       )}
     </>

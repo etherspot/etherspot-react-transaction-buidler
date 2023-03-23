@@ -24,7 +24,7 @@ export const formatAssetAmountInput = (amount: string, decimals: number = 18): s
 export const formatAmountDisplay = (
   amountRaw: string | number,
   leftSymbol?: string,
-  minimumFractionDigits?: number,
+  minimumFractionDigits?: number
 ): string => {
   const amount = typeof amountRaw === 'number' ? `${amountRaw}` : amountRaw;
 
@@ -45,7 +45,10 @@ export const formatAmountDisplay = (
     return smallAmount;
   }
 
-  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, minimumFractionDigits }).format(+amount)}`;
+  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits,
+  }).format(+amount)}`;
 };
 
 export const humanizeHexString = (
@@ -88,4 +91,17 @@ export const buildUrlOptions = (options: { [key: string]: string }): string => {
     optionStr += `${!optionStr ? '?' : '&'}${key}=${encodeURIComponent(value)}`;
   });
   return optionStr;
+};
+
+export const getOfferItemIndexByBestOffer = (gasUsd: (number | undefined)[], recieveAmount: number[]) => {
+  let index = 0;
+  let minAmount = gasUsd[0] ? recieveAmount[0] - gasUsd[0] : 100000;
+
+  for (let i = 0; i < gasUsd.length; i++) {
+    let gasAmount = gasUsd[i];
+    if (gasAmount) {
+      index = recieveAmount[i] - gasAmount > minAmount ? i : index;
+    }
+  }
+  return index;
 };

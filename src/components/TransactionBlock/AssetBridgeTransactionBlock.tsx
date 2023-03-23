@@ -7,7 +7,12 @@ import debounce from 'debounce-promise';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
+import {
+  formatAmountDisplay,
+  formatAssetAmountInput,
+  formatMaxAmount,
+  getOfferItemIndexByBestOffer,
+} from '../../utils/common';
 import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
@@ -50,7 +55,7 @@ const mapRouteToOption = (route: Route) => {
   const [firstStep] = route.steps;
   const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? "LiFi",
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
     iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
     extension: route.gasCostUSD,
@@ -83,8 +88,8 @@ const AssetBridgeTransactionBlock = ({
 
   const defaultCustomReceiverAddress =
     values?.receiverAddress &&
-      !addressesEqual(providerAddress, values?.receiverAddress) &&
-      !addressesEqual(accountAddress, values?.receiverAddress)
+    !addressesEqual(providerAddress, values?.receiverAddress) &&
+    !addressesEqual(accountAddress, values?.receiverAddress)
       ? values.receiverAddress
       : null;
   const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
@@ -93,9 +98,9 @@ const AssetBridgeTransactionBlock = ({
 
   const defaultSelectedReceiveAccountType =
     (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
-      (values?.receiverAddress &&
-        values?.accountType === AccountTypes.Contract &&
-        addressesEqual(providerAddress, values?.receiverAddress))
+    (values?.receiverAddress &&
+      values?.accountType === AccountTypes.Contract &&
+      addressesEqual(providerAddress, values?.receiverAddress))
       ? AccountTypes.Key
       : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
@@ -203,7 +208,13 @@ const AssetBridgeTransactionBlock = ({
           toAddress: receiverAddress ?? undefined,
         });
         setAvailableRoutes(routes);
+        const bestRouteIndex = getOfferItemIndexByBestOffer(
+          routes.map((route) => (route.gasCostUSD ? +route.gasCostUSD : undefined)),
+          routes.map((route) => +route.fromAmountUSD)
+        );
+
         if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
+        if (routes.length > 1) setSelectedRoute(mapRouteToOption(routes[bestRouteIndex]));
       } catch (e) {
         //
       }
@@ -407,7 +418,7 @@ const AssetBridgeTransactionBlock = ({
           errorMessage={errorMessages?.route}
           disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
           noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
-          forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1}
+          forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
         />
       )}
     </>
