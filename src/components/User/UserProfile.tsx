@@ -36,7 +36,6 @@ const UserProfile = () => {
     email = openLoginStore?.email ?? '';
   } catch (err) {
     console.error('Error accessing local storage:', err);
-    email = '';
   }
 
   const onCopySuccess = async () => {
