@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { HiCheck } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
@@ -56,6 +56,8 @@ import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
 import SettingMenu from '../components/SettingMenu/SettingMenu';
 import { TbCopy, TbWallet } from 'react-icons/tb';
+import { BiCheck } from 'react-icons/bi';
+import { CgSandClock } from 'react-icons/cg';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -106,7 +108,7 @@ const WalletAddress = styled.span<{ disabled?: boolean; selected?: boolean }>`
   border-radius: 6px;
   ${({ theme, selected }) =>
     !!selected &&
-  `color: ${theme.color.text.topMenuWallet};
+    `color: ${theme.color.text.topMenuWallet};
     background-color: ${theme.color.background.topMenuWallet};`}
 
   display: flex;
@@ -181,6 +183,40 @@ const MulticallBlockListItemWrapper = styled(TransactionBlockListItemWrapper)`
   div:first-child {
     margin-right: 5px;
   }
+`;
+
+const ConnectionIcon = styled.div<{ isConnected?: boolean }>`
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  margin-right: 1rem;
+
+  background-color: ${({ isConnected = false, theme }) =>
+    isConnected ? theme.color.background.statusIconSuccess : theme.color.background.statusIconFailed};
+`;
+
+const SettingsWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const StatusIconWrapper = styled.span<{ color?: string }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 12px;
+  ${({ color }) => color && `background: ${color};`}
+  color: #fff;
+  margin-right: 10px;
+`;
+
+const StatusWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const availableTransactionBlocks: ITransactionBlock[] = [
@@ -298,6 +334,7 @@ const TransactionBuilderContextProvider = ({
 
   const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && !hideWalletBlock;
   const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
+  const [isWalletConnecting, setIsWalletConnecting] = useState(false);
 
   const theme: Theme = useTheme();
 
@@ -557,17 +594,17 @@ const TransactionBuilderContextProvider = ({
       if (result?.errorMessage || !result?.transactionHash?.length) {
         // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
-        crossChainAction.transactions.map(transaction => {
+        crossChainAction.transactions.map((transaction) => {
           transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
-        })
+        });
         return;
       }
 
-      crossChainAction.transactions.map(transaction => {
+      crossChainAction.transactions.map((transaction) => {
         transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
         transaction.submitTimestamp = Date.now();
         transaction.transactionHash = result.transactionHash;
-      })
+      });
       crossChainAction.transactionHash = result.transactionHash;
 
       let flag = 1,
@@ -583,12 +620,12 @@ const TransactionBuilderContextProvider = ({
           );
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
-            crossChainAction.transactions.map(transaction => {
+            crossChainAction.transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
-            })
-            crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+            });
+            crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
-            })
+            });
           } else if (status?.status === 'FAILED') {
             errorOnLiFi = 'Transaction Failed on LiFi';
             flag = 0;
@@ -646,9 +683,9 @@ const TransactionBuilderContextProvider = ({
         chainId: CHAIN_ID.POLYGON,
       };
 
-      crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+      crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
         transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
-      })
+      });
 
       result = await submitEtherspotAndWaitForTransactionHash(
         getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
@@ -658,9 +695,9 @@ const TransactionBuilderContextProvider = ({
 
       if (result?.errorMessage || !result?.transactionHash?.length) {
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
-        crossChainAction.destinationCrossChainAction[0].transactions.map(transaction => {
+        crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
           transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
-        })
+        });
         setIsSubmitting(false);
         return;
       }
@@ -755,7 +792,36 @@ const TransactionBuilderContextProvider = ({
     [dispatchedCrossChainActions]
   );
 
+  const CONNECTION_STATUSES = {
+    IS_CONNECTED: 'connected',
+    IS_CONNECTING: 'isConnecting',
+    JUST_CONNECTED: 'justConnected',
+    NOT_CONNECTED: 'notConnected',
+  };
+
+  const connectedStatusMessages = {
+    [CONNECTION_STATUSES.IS_CONNECTING]: <Text color={theme.color?.text?.button}>Connecting</Text>,
+    [CONNECTION_STATUSES.JUST_CONNECTED]: (
+      <>
+        <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
+          <BiCheck size={12} />
+        </StatusIconWrapper>{' '}
+        <Text color={theme.color?.text?.button}>Connected</Text>
+      </>
+    ),
+    [CONNECTION_STATUSES.IS_CONNECTED]: null,
+    [CONNECTION_STATUSES.NOT_CONNECTED]: (
+      <>
+        <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
+          <CgSandClock size={10} />
+        </StatusIconWrapper>
+        <Text color={theme.color?.text?.button}>Sign to connect</Text>
+      </>
+    ),
+  };
+
   const [showMulticallOptions, setShowMulticallOptions] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>(CONNECTION_STATUSES.IS_CONNECTING);
 
   const addTransactionBlock = (
     availableTransactionBlock: ITransactionBlock,
@@ -785,6 +851,40 @@ const TransactionBuilderContextProvider = ({
     setTransactionBlocks((current) => current.concat(transactionBlock));
     setShowTransactionBlockSelect(false);
   };
+
+  const connectionCheck = async () => {
+    if (sdk && connect) {
+      setIsWalletConnecting(true);
+      try {
+        await connect();
+      } catch {}
+    }
+    setIsWalletConnecting(false);
+  };
+
+  useEffect(() => {
+    connectionCheck();
+  }, [sdk]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+
+    if (isWalletConnecting) {
+      setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTING);
+    } else if (accountAddress && !isWalletConnecting) {
+      setConnectionStatus(CONNECTION_STATUSES.JUST_CONNECTED);
+      timer = setTimeout(() => {
+        setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTED);
+      }, 2000);
+    } else if (!accountAddress) {
+      setConnectionStatus(CONNECTION_STATUSES.NOT_CONNECTED);
+    } else {
+      setConnectionStatus(CONNECTION_STATUSES.IS_CONNECTED);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [accountAddress, isWalletConnecting]);
 
   // Mt Pelerin
   const [deployingAccount, setDeployingAccount] = useState(false);
@@ -837,7 +937,7 @@ const TransactionBuilderContextProvider = ({
                 </Text>
               </>
             ) : (
-              <Text onClick={connect}>Wallet: Connect</Text>
+              <Text onClick={connect}>Wallet</Text>
             )}
           </WalletAddress>
           {accountAddress && (
@@ -846,7 +946,11 @@ const TransactionBuilderContextProvider = ({
             </WalletAddress>
           )}
         </WalletAddressesWrapper>
-        <SettingMenu showLogout={showMenuLogout} logout={logout} />
+        <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>
+        <SettingsWrapper>
+          <ConnectionIcon isConnected={!!accountAddress} />
+          <SettingMenu showLogout={showMenuLogout} logout={logout} />
+        </SettingsWrapper>
       </TopNavigation>
       <div>
         {/* Wallet */}
