@@ -298,10 +298,13 @@ const KlimaStakingTransactionBlock = ({
       })
 
       if (routeToKlima.items.length > 0) {
-        setSelectedRoute(mapRouteToOption(routeToKlima.items[0]));
-        setToolUsed(routeToUsdc.items[0].LiFiBridgeUsed ?? '');
+        // routeToKlima.items[0].estimate.fromAmount
+        const bestRouteIndex = getBestRouteIndex(routeToKlima.items);
+
+        setSelectedRoute(mapRouteToOption(routeToKlima.items[bestRouteIndex]));
+        setToolUsed(routeToUsdc.items[bestRouteIndex].LiFiBridgeUsed ?? '');
         setRouteToKlima(routeToKlima.items);
-        setReceiveAmount(ethers.utils.formatUnits(routeToKlima.items[0].estimate.toAmount, klimaAsset.decimals));
+        setReceiveAmount(ethers.utils.formatUnits(routeToKlima.items[bestRouteIndex].estimate.toAmount, klimaAsset.decimals));
         resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
         setIsRouteFetching(false);
       } else {
@@ -319,6 +322,26 @@ const KlimaStakingTransactionBlock = ({
     selectedAccountType,
     receiverAddress,
   ])
+
+  const getBestRouteIndex = (items: BridgingQuote[]) => {
+    let index = 0;
+    let maxReturnAmount =
+      +ethers.utils.formatUnits(items[0].estimate.toAmount) * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) -
+      +items[0].estimate.gasCosts.amountUSD;
+
+    for (let i = 1; i < items.length; i++) {
+      const amountToRecieve = +ethers.utils.formatUnits(items[i].estimate.toAmount, klimaAsset.decimals);
+      const gasPriceUsd = +items[i].estimate.gasCosts.amountUSD;
+      const currentReturnAmount = amountToRecieve * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) - gasPriceUsd;
+
+      if (targetAssetPriceUsd && currentReturnAmount > maxReturnAmount) {
+        index = i;
+        maxReturnAmount = currentReturnAmount;
+      }
+    }
+
+    return index;
+  };
 
   useEffect(() => { computeReceiveAmount(); }, [computeReceiveAmount]);
 
