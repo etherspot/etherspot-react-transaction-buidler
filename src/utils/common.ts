@@ -97,7 +97,7 @@ export const getOfferItemIndexByBestOffer = (gasUsd: (number | undefined)[], rec
   let index = 0;
   let minAmount = gasUsd[0] ? recieveAmount[0] - gasUsd[0] : 100000;
 
-  for (let i = 0; i < gasUsd.length; i++) {
+  for (let i = 1; i < gasUsd.length; i++) {
     let gasAmount = gasUsd[i];
     if (gasAmount) {
       index = recieveAmount[i] - gasAmount > minAmount ? i : index;

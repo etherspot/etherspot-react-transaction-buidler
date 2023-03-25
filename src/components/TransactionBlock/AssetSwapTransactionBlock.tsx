@@ -329,7 +329,7 @@ const AssetSwapTransactionBlock = ({
       <Title>Swap asset</Title>
       {!multiCallData && (
         <AccountSwitchInput
-          label="Frommm wallet"
+          label="From wallet"
           selectedAccountType={selectedAccountType}
           onChange={(accountType) => {
             if (accountType !== selectedAccountType) {
