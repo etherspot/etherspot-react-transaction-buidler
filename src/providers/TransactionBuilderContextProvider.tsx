@@ -217,6 +217,19 @@ const StatusWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+`;
+
+const SignButton = styled.button`
+  border: none;
+  outline: none;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
 `;
 
 const availableTransactionBlocks: ITransactionBlock[] = [
@@ -801,12 +814,12 @@ const TransactionBuilderContextProvider = ({
     ),
     [CONNECTION_STATUSES.IS_CONNECTED]: null,
     [CONNECTION_STATUSES.NOT_CONNECTED]: (
-      <>
+      <SignButton onClick={connect}>
         <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
           <CgSandClock size={10} />
         </StatusIconWrapper>
         <Text color={theme.color?.text?.button}>Sign to connect</Text>
-      </>
+      </SignButton>
     ),
   };
 
