@@ -22,11 +22,11 @@ import { OPENLOGIN_STORE } from '../../constants/storageConstants';
 import { ENSNode } from 'etherspot';
 
 const UserProfile = () => {
-  const { accountAddress, getEnsNode } = useEtherspot();
+  const { accountAddress, providerAddress, getEnsNode } = useEtherspot();
 
   const theme: Theme = useTheme();
 
-  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState<{ [key: string]: boolean }>({});
   const [ensName, setEnsName] = useState<string | undefined>(undefined);
 
   let email;
@@ -38,9 +38,9 @@ const UserProfile = () => {
     console.error('Error accessing local storage:', err);
   }
 
-  const onCopySuccess = async () => {
-    setCopiedAddress(true);
-    setTimeout(() => setCopiedAddress(false), 10000);
+  const onCopySuccess = async (address: string) => {
+    setCopiedAddress((prevState) => ({ ...prevState, [address]: true }));
+    setTimeout(() => setCopiedAddress((prevState) => ({ ...prevState, [address]: false })), 10000);
   };
 
   useEffect(() => {
@@ -65,13 +65,39 @@ const UserProfile = () => {
         </Wrapper>
       )}
       <Wrapper>
-        <Header>Address</Header>
+        <Header>Smart wallet address</Header>
         <Value>
           {accountAddress ? (
             <>
               {accountAddress}
-              <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)} marginLeft={3}>
-                {copiedAddress ? <CheckmarkIcon color={theme.color?.text?.textInput} /> : WalletCopyIcon}
+              <Text onClick={() => copyToClipboard(accountAddress, () => onCopySuccess(accountAddress))} marginLeft={3}>
+                {copiedAddress[accountAddress] ? (
+                  <CheckmarkIcon color={theme.color?.text?.textInput} />
+                ) : (
+                  WalletCopyIcon
+                )}
+              </Text>
+            </>
+          ) : (
+            <p>No address</p>
+          )}
+        </Value>
+      </Wrapper>
+      <Wrapper>
+        <Header>Key based address</Header>
+        <Value>
+          {providerAddress ? (
+            <>
+              {providerAddress}
+              <Text
+                onClick={() => copyToClipboard(providerAddress, () => onCopySuccess(providerAddress))}
+                marginLeft={3}
+              >
+                {copiedAddress[providerAddress] ? (
+                  <CheckmarkIcon color={theme.color?.text?.textInput} />
+                ) : (
+                  WalletCopyIcon
+                )}
               </Text>
             </>
           ) : (
