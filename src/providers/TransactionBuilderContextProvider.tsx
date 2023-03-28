@@ -35,7 +35,7 @@ import {
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString } from '../utils/common';
+import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard } from '../utils/common';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
@@ -217,6 +217,19 @@ const StatusWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+`;
+
+const SignButton = styled.button`
+  border: none;
+  outline: none;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
 `;
 
 const availableTransactionBlocks: ITransactionBlock[] = [
@@ -339,14 +352,9 @@ const TransactionBuilderContextProvider = ({
     setCopiedAddressInterval(null);
   }, copiedAddressInterval);
 
-  const onCopy = async (valueToCopy: string) => {
-    try {
-      setCopiedAddress(true);
-      if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
-      await navigator.clipboard.writeText(valueToCopy);
-    } catch (e) {
-      alert('Unable to copy!');
-    }
+  const onCopySuccess = async () => {
+    setCopiedAddress(true);
+    if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
   };
 
   const {
@@ -806,12 +814,12 @@ const TransactionBuilderContextProvider = ({
     ),
     [CONNECTION_STATUSES.IS_CONNECTED]: null,
     [CONNECTION_STATUSES.NOT_CONNECTED]: (
-      <>
+      <SignButton onClick={connect}>
         <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
           <CgSandClock size={10} />
         </StatusIconWrapper>
         <Text color={theme.color?.text?.button}>Sign to connect</Text>
-      </>
+      </SignButton>
     ),
   };
 
@@ -923,7 +931,7 @@ const TransactionBuilderContextProvider = ({
                 <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
                   Wallet
                 </Text>
-                <Text onClick={() => onCopy(accountAddress)}>
+                <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)}>
                   {copiedAddress ? (
                     <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
                   ) : (

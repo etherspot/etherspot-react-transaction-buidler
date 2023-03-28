@@ -18,7 +18,7 @@ import {
   getTransactionExplorerLink,
   isERC20ApprovalTransactionData,
 } from "../../utils/transaction";
-import { formatAmountDisplay, humanizeHexString } from "../../utils/common";
+import { formatAmountDisplay, humanizeHexString, copyToClipboard } from '../../utils/common';
 import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
 import { Theme } from "../../utils/theme";
 
@@ -502,13 +502,6 @@ const ActionPreview = ({
     }
   }, [isSubmitted, timer]);
 
-  const onCopy = (valueToCopy: string) => {
-      navigator.clipboard.writeText(valueToCopy).then((res) => {
-        alert("Copied!");
-      }).catch((err) => {
-        //
-      });
-  };
 
 	const onEditButtonClick = () => {
 		if (editButtonDisabled || !onEdit) return;
@@ -622,13 +615,13 @@ const ActionPreview = ({
 						<Text size={16} medium>
 							<>
 								From &nbsp;
-								<ClickableText onClick={() => onCopy(senderAddress)}>
+								<ClickableText onClick={() => copyToClipboard(senderAddress)}>
 									{humanizeHexString(senderAddress)}
 								</ClickableText>
 								&nbsp;
 							</>
 							to &nbsp;
-							<ClickableText onClick={() => onCopy(receiverAddress)}>
+							<ClickableText onClick={() => copyToClipboard(receiverAddress)}>
 								{humanizeHexString(receiverAddress)}
 							</ClickableText>
 						</Text>
@@ -743,13 +736,13 @@ const ActionPreview = ({
             <Text size={16} medium>
               <>
                 From &nbsp;
-                <ClickableText onClick={() => onCopy(senderAddress)}>
+                <ClickableText onClick={() => copyToClipboard(senderAddress)}>
                   {humanizeHexString(senderAddress)}
                 </ClickableText>
                 &nbsp;
               </>
               to &nbsp;
-              <ClickableText onClick={() => onCopy(receiverAddress)}>
+              <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
                 {humanizeHexString(receiverAddress)}
               </ClickableText>
             </Text>
@@ -811,7 +804,7 @@ const ActionPreview = ({
               {!!fromAddress && (
                 <>
                   From &nbsp;
-                  <ClickableText onClick={() => onCopy(fromAddress)}>
+                  <ClickableText onClick={() => copyToClipboard(fromAddress)}>
                     {humanizeHexString(fromAddress)}
                   </ClickableText>
                   &nbsp;
@@ -819,7 +812,7 @@ const ActionPreview = ({
               )}
               {fromAddress ? "to" : "To"}
               &nbsp;
-              <ClickableText onClick={() => onCopy(receiverAddress)}>
+              <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
                 {humanizeHexString(receiverAddress)}
               </ClickableText>
             </Text>
@@ -966,13 +959,13 @@ const ActionPreview = ({
                 <Text size={16} medium>
                   <>
                     From &nbsp;
-                    <ClickableText onClick={() => onCopy(senderAddress)}>
+                    <ClickableText onClick={() => copyToClipboard(senderAddress)}>
                       {humanizeHexString(senderAddress)}
                     </ClickableText>
                     &nbsp;
                   </>
                   to &nbsp;
-                  <ClickableText onClick={() => onCopy(receiverAddress)}>
+                  <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
                     {humanizeHexString(receiverAddress)}
                   </ClickableText>
                 </Text>
@@ -1329,13 +1322,13 @@ const ActionPreview = ({
             <Text size={16} medium>
               <>
                 From &nbsp;
-                <ClickableText onClick={() => onCopy(senderAddress)}>
+                <ClickableText onClick={() => copyToClipboard(senderAddress)}>
                   {humanizeHexString(senderAddress)}
                 </ClickableText>
                 &nbsp;
               </>
               to &nbsp;
-              <ClickableText onClick={() => onCopy(receiverAddress)}>
+              <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
                 {humanizeHexString(receiverAddress)}
               </ClickableText>
             </Text>
