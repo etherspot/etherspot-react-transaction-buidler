@@ -43,6 +43,15 @@ interface KlimaStakingActionPreview {
 	receiverAddress?: string;
 }
 
+interface GmxStakingActionPreview {
+	fromChainId: number;
+	fromAsset: AssetTransfer;
+	toAsset: AssetTransfer;
+	providerName: string;
+	providerIconUrl: string | undefined;
+	receiverAddress?: string;
+}
+
 interface PlrStakingActionPreview {
   fromChainId: number;
   hasEnoughPLR: boolean;
@@ -101,6 +110,17 @@ interface KlimaStakingAction {
   transactionHash?: string;
 }
 
+interface GmxStakingAction {
+	type: typeof TRANSACTION_BLOCK_TYPE.GMX_STAKE;
+	preview: GmxStakingActionPreview;
+	destinationCrossChainAction: ICrossChainAction[];
+	containsSwitchChain?: boolean;
+	receiveAmount?: string;
+	bridgeUsed?: string;
+  gasCost?: string;
+  transactionHash?: string;
+}
+
 interface PlrStakingAction {
   type: typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE;
   preview: PlrStakingActionPreview;
@@ -149,6 +169,7 @@ export type ICrossChainAction = {
   | SendAssetAction
   | AssetSwapAction
   | KlimaStakingAction
+  | GmxStakingAction
   | PlrStakingAction
   | PlrStakingV2Action
 );

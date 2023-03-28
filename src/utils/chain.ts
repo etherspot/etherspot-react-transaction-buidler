@@ -196,6 +196,18 @@ export const klimaAsset: IAssetWithBalance = {
   balanceWorthUsd: null,
 }
 
+export const gmxAsset: IAssetWithBalance = {
+  address: '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a',
+  chainId: CHAIN_ID.ARBITRUM,
+  name: 'GMX',
+  symbol: 'GMX',
+  decimals: 18,
+  logoURI: 'https://gmx.io/og.png', // host this ourselves later
+  balance: BigNumber.from(0),
+  assetPriceUsd: null,
+  balanceWorthUsd: null,
+}
+
 export const plrDaoMemberNft = {
   address: '0x267c85113BAfbBe829918fB4c23135af72c9C472',
   chainId: CHAIN_ID.POLYGON,

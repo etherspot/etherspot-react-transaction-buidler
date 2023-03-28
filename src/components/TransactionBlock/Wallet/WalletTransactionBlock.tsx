@@ -48,7 +48,7 @@ export interface IWalletTransactionBlock {
   chain?: Chain;
   availableTransactionBlocks: ITransactionBlock[];
   hasTransactionBlockAdded: boolean;
-  addTransactionBlock: (block: ITransactionBlock, isBridgeDisabled: boolean, isKlimaIncluded: boolean) => void;
+  addTransactionBlock: (block: ITransactionBlock, isBridgeDisabled: boolean, isKlimaIncluded: boolean, isGMXIncluded: boolean) => void;
   hideWalletBlock: () => void;
 }
 
@@ -256,11 +256,13 @@ const WalletTransactionBlock = ({
     const isBridgeTransactionBlock = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
     const isBridgeTransactionBlockAndDisabled = isBridgeTransactionBlock && hasTransactionBlockAdded;
     const isKlimaBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
+    const isGmxBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.GMX_STAKE;
 
     addTransactionBlock(
       availableTransactionBlock,
       isBridgeTransactionBlockAndDisabled || false,
-      isKlimaBlockIncluded || false
+      isKlimaBlockIncluded || false, 
+      isGmxBlockIncluded || false
     );
     hideWalletBlock();
   };

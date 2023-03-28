@@ -4,6 +4,7 @@ import { ISendAssetTransactionBlockValues } from '../components/TransactionBlock
 import { IAssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
 import { ISwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
 import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
+import { IGmxStakingTransactionBlockValues } from '../components/TransactionBlock/GMXStakingTransactionBlock';
 import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { ErrorMessages } from '../utils/validation';
 import { Chain } from '../utils/chain';
@@ -31,6 +32,7 @@ export type ITransactionBlockType =
   | typeof TRANSACTION_BLOCK_TYPE.SEND_ASSET
   | typeof TRANSACTION_BLOCK_TYPE.ASSET_SWAP
   | typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
+  | typeof TRANSACTION_BLOCK_TYPE.GMX_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.DISABLED
   | typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2;
@@ -60,6 +62,11 @@ export interface IKlimaStakingTransactionBlock extends ITransactionBlockBase {
   values?: IKlimaStakingTransactionBlockValues;
 }
 
+export interface IGmxStakingTransactionBlock extends ITransactionBlockBase {
+  type: typeof TRANSACTION_BLOCK_TYPE.GMX_STAKE;
+  values?: IGmxStakingTransactionBlockValues;
+}
+
 export interface IPlrDaoStakingMembershipBlock extends ITransactionBlockBase {
   type: typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE;
   values?: IPlrDaoTransactionBlockValues;
@@ -79,6 +86,7 @@ export type ITransactionBlock =
   | ISendAssetTransactionBlock
   | IAssetSwapTransactionBlock
   | IKlimaStakingTransactionBlock
+  | IGmxStakingTransactionBlock
   | IPlrDaoStakingMembershipBlock
   | IPlrStakingV2Block
   | IDisabledTransactionBlock;
@@ -88,6 +96,7 @@ export type ITransactionBlockValues =
   | ISwapAssetTransactionBlockValues
   | ISendAssetTransactionBlockValues
   | IKlimaStakingTransactionBlockValues
+  | IGmxStakingTransactionBlockValues
   | IPlrDaoTransactionBlockValues
   | IPlrStakingV2BlockValues;
 

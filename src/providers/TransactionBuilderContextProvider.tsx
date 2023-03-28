@@ -26,6 +26,7 @@ import {
   estimateCrossChainAction,
   getCrossChainStatusByHash,
   klimaDaoStaking,
+  gmxStaking,
   submitEtherspotTransactionsBatch,
   submitWeb3ProviderTransaction,
   submitWeb3ProviderTransactions,
@@ -50,7 +51,7 @@ import {
   WalletIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
-import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { POLYGON_USDC_CONTRACT_ADDRESS, ARBITRUM_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
@@ -239,6 +240,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
     id: getTimeBasedUniqueId(),
     title: 'Klima Staking',
     type: TRANSACTION_BLOCK_TYPE.KLIMA_STAKE,
+  },
+  {
+    id: getTimeBasedUniqueId(),
+    title: 'GMX Staking',
+    type: TRANSACTION_BLOCK_TYPE.GMX_STAKE,
   },
   {
     id: getTimeBasedUniqueId(),
@@ -700,6 +706,149 @@ const TransactionBuilderContextProvider = ({
       setTransactionBlocks([]);
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
+    } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.GMX_STAKE) {
+      let crossChainAction = crossChainActions[0];
+
+      if (!crossChainAction.receiveAmount) {
+        showAlertModal('Failed to get receiveAmount');
+        setIsSubmitting(false);
+        return;
+      }
+
+      let result: {
+        transactionHash?: string;
+        errorMessage?: string;
+      };
+
+      result = crossChainAction.useWeb3Provider
+        ? await submitWeb3ProviderTransactions(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            web3Provider,
+            crossChainAction.transactions,
+            crossChainAction.chainId,
+            providerAddress
+          )
+        : await submitEtherspotAndWaitForTransactionHash(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            crossChainAction.transactions,
+            crossChainAction.gasTokenAddress ?? undefined
+          );
+
+      if (result?.errorMessage || !result?.transactionHash?.length) {
+        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        setIsSubmitting(false);
+        crossChainAction.transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        });
+        return;
+      }
+
+      crossChainAction.transactions.map((transaction) => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+        transaction.submitTimestamp = Date.now();
+        transaction.transactionHash = result.transactionHash;
+      });
+      crossChainAction.transactionHash = result.transactionHash;
+
+      let flag = 1,
+        errorOnLiFi;
+      while (flag) {
+        try {
+          const status = await getCrossChainStatusByHash(
+            getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+            crossChainAction.chainId,
+            CHAIN_ID.POLYGON,
+            result.transactionHash,
+            crossChainAction.bridgeUsed
+          );
+          if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
+            flag = 0;
+            crossChainAction.transactions.map((transaction) => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+            });
+            crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+            });
+          } else if (status?.status === 'FAILED') {
+            errorOnLiFi = 'Transaction Failed on LiFi';
+            flag = 0;
+          }
+          await sleep(30);
+        } catch (err) {
+          errorOnLiFi = 'Transaction Failed on LiFi';
+          flag = 0;
+        }
+      }
+
+      if (errorOnLiFi) {
+        showAlertModal(errorOnLiFi);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const estimateGas = await estimateCrossChainAction(
+        getSdkForChainId(CHAIN_ID.ARBITRUM),
+        web3Provider,
+        crossChainAction.destinationCrossChainAction[0],
+        providerAddress,
+        accountAddress
+      );
+
+      const stakingTxns = await gmxStaking(
+        transactionBlocks[0].type === 'GMX_STAKE' ? transactionBlocks[0].values?.routeToGmx : null,
+        transactionBlocks[0].type === 'GMX_STAKE' ? transactionBlocks[0].values?.receiverAddress : '',
+        getSdkForChainId(CHAIN_ID.ARBITRUM),
+        false,
+        BigNumber.from(crossChainAction.receiveAmount)
+          .sub(utils.parseUnits('0.02', 6))
+          .sub(estimateGas.feeAmount ?? '0')
+          .toString()
+      );
+
+      if (stakingTxns.errorMessage) {
+        showAlertModal(stakingTxns.errorMessage);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const estimated = await estimateCrossChainAction(
+        getSdkForChainId(CHAIN_ID.ARBITRUM),
+        web3Provider,
+        crossChainAction.destinationCrossChainAction[0],
+        providerAddress,
+        accountAddress
+      );
+
+      crossChainAction = {
+        ...crossChainAction,
+        estimated,
+        transactions: stakingTxns.result?.transactions ?? [],
+        chainId: CHAIN_ID.ARBITRUM,
+      };
+
+      crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
+      });
+
+      result = await submitEtherspotAndWaitForTransactionHash(
+        getSdkForChainId(CHAIN_ID.ARBITRUM) as Sdk,
+        crossChainAction.transactions,
+        ARBITRUM_USDC_CONTRACT_ADDRESS
+      );
+
+      if (result?.errorMessage || !result?.transactionHash?.length) {
+        showAlertModal(result.errorMessage ?? 'Unable to send Arbitrum transaction!');
+        crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      setCrossChainActions([]);
+      setTransactionBlocks([]);
+      showAlertModal('Transaction sent');
+      setIsSubmitting(false);
+
     } else {
       setCrossChainActions([]);
       setTransactionBlocks([]);
@@ -775,6 +924,10 @@ const TransactionBuilderContextProvider = ({
     (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
   );
 
+  const hasGmxBlockAdded = transactionBlocks.some(
+    (transactionBlock) => transactionBlock.type === TRANSACTION_BLOCK_TYPE.GMX_STAKE
+  );
+
   const crossChainActionsInProcessing = useMemo(() => {
     if (!processingCrossChainActionIds?.length) return;
     return dispatchedCrossChainActions?.filter((crossChainAction) =>
@@ -821,7 +974,8 @@ const TransactionBuilderContextProvider = ({
   const addTransactionBlock = (
     availableTransactionBlock: ITransactionBlock,
     isBridgeTransactionBlockAndDisabled = false,
-    isKlimaBlockIncluded = false
+    isKlimaBlockIncluded = false,
+    isGmxBlockIncluded = false, // Need to check this is correct
   ) => {
     if (!availableTransactionBlock) return;
 
@@ -834,6 +988,19 @@ const TransactionBuilderContextProvider = ({
     if (hasKlimaBlockAdded) {
       showAlertModal(
         'Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed'
+      );
+      return;
+    }
+
+    if (isGmxBlockIncluded && transactionBlocks.length > 0) {
+      showAlertModal(
+        'Cannot add gmx staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed'
+      );
+      return;
+    }
+    if (hasGmxBlockAdded) {
+      showAlertModal(
+        'Cannot add another transaction block with transaction batch. Please remove GMX transaction or continue after the GMX transaction is executed'
       );
       return;
     }
@@ -1363,6 +1530,7 @@ const TransactionBuilderContextProvider = ({
                       ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
                       : availableTransactionBlock.title;
                     const isKlimaBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
+                    const isGmxBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.GMX_STAKE;
                     return (
                       <TransactionBlockListItemWrapper
                         key={availableTransactionBlock.title}
@@ -1370,10 +1538,11 @@ const TransactionBuilderContextProvider = ({
                           addTransactionBlock(
                             availableTransactionBlock,
                             isBridgeTransactionBlockAndDisabled,
-                            isKlimaBlockIncluded
+                            isKlimaBlockIncluded,
+                            isGmxBlockIncluded
                           )
                         }
-                        disabled={isDisabled || hasKlimaBlockAdded}
+                        disabled={isDisabled || hasKlimaBlockAdded || hasGmxBlockAdded }
                       >
                         &bull; {availableTransactionBlockTitle}
                       </TransactionBlockListItemWrapper>

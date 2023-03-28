@@ -39,7 +39,7 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS, ARBITRUM_USDC_CONTRACT_ADDRESS} from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 
 interface IPillarDao {
@@ -391,6 +391,127 @@ export const klimaDaoStaking = async (
   }
 };
 
+export const gmxStaking = async (
+  routeToGmx?: BridgingQuote | null,
+  receiverAddress?: string,
+  sdk?: EtherspotSdk | null,
+  flag?: Boolean,
+  amount?: string
+): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[]; provider?: string } }> => {
+  if (!sdk) return { errorMessage: 'No sdk found' };
+
+  if (!routeToGmx) {
+    const quotes = await sdk.getCrossChainQuotes({
+      fromChainId: CHAIN_ID.ARBITRUM,
+      toChainId: CHAIN_ID.ARBITRUM,
+      fromAmount: BigNumber.from(amount).sub('250000'),
+      fromTokenAddress: ARBITRUM_USDC_CONTRACT_ADDRESS,
+      toTokenAddress: '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a',
+      toAddress: receiverAddress ?? undefined,
+      serviceProvider: CrossChainServiceProvider.LiFi,
+    });
+    if (quotes.items.length > 0) routeToGmx = quotes.items[0];
+    else return { errorMessage: 'No routes found for staking. Please try again' };
+  }
+
+  try {
+    const fromAssetAddress = ARBITRUM_USDC_CONTRACT_ADDRESS;
+    const createTimestamp = +new Date();
+
+    const bestRoute = routeToGmx;
+
+    let transactions = [
+      {
+        to: bestRoute.transaction.to,
+        value: bestRoute.transaction.value as string,
+        data: bestRoute.transaction.data as string,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      },
+    ];
+
+    if (flag) {
+      return { result: { transactions, provider: 'LiFi' } };
+    }
+
+    // not native asset and no erc20 approval transaction included
+    if (
+      !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.ARBITRUM].address) &&
+      transactions.length === 1 &&
+      bestRoute.approvalData
+    ) {
+      const abi = getContractAbi(ContractNames.ERC20Token);
+      const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+        bestRoute.approvalData.approvalAddress,
+        bestRoute.approvalData.amount
+      );
+      if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+        return { errorMessage: 'Failed build bridge approval transaction!' };
+      }
+
+      const approvalTransaction = {
+        to: approvalTransactionRequest.to,
+        data: approvalTransactionRequest.data,
+        chainId: CHAIN_ID.ARBITRUM,
+        value: '0',
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      };
+
+      transactions = [approvalTransaction, ...transactions];
+    }
+
+    const abi = getContractAbi(ContractNames.ERC20Token);
+    const erc20Contract = sdk.registerContract<ERC20TokenContract>(
+      'erc20Contract',
+      abi,
+      '0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a'
+    ); // GMX staking contract on Arbitrum
+    const gmxApprovalTransactionRequest = erc20Contract?.encodeApprove?.(
+      '0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1',
+      bestRoute.estimate.toAmount
+    ); // Gmx staking
+    if (!gmxApprovalTransactionRequest || !gmxApprovalTransactionRequest.to) {
+      return { errorMessage: 'Failed build bridge approval transaction!' };
+    }
+
+    const gmxApprovalTransaction = {
+      to: gmxApprovalTransactionRequest.to,
+      data: gmxApprovalTransactionRequest.data,
+      chainId: CHAIN_ID.ARBITRUM,
+      value: '0',
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    };
+
+    const gmxStakingAbi = ['function stakeGmx(uint256 value)'];
+    const gmxStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>(
+      'gmxStakingContract',
+      gmxStakingAbi,
+      '0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1'
+    ); // Gmx on Arbitrum
+    const gmxStakeTransactionRequest = gmxStakingContract.encodeStake?.(bestRoute.estimate.toAmount);
+    if (!gmxStakeTransactionRequest || !gmxStakeTransactionRequest.to) {
+      return { errorMessage: 'Failed build bridge approval transaction!' };
+    }
+
+    const gmxStakingTransaction = {
+      to: gmxStakeTransactionRequest.to,
+      data: gmxStakeTransactionRequest.data,
+      chainId: CHAIN_ID.ARBITRUM,
+      value: '0',
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    };
+
+    transactions = [...transactions, gmxApprovalTransaction, gmxStakingTransaction];
+
+    return { result: { transactions, provider: 'LiFi' } };
+  } catch (e) {
+    return { errorMessage: 'Failed to get staking exchange transaction' };
+  }
+};
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
@@ -543,6 +664,153 @@ export const buildCrossChainAction = async (
       }
     } catch (e) {
       return { errorMessage: 'Failed to get KLIMA staking transaction!' };
+    }
+  }
+
+  if (
+    transactionBlock.type === TRANSACTION_BLOCK_TYPE.GMX_STAKE &&
+    !!transactionBlock?.values?.fromChainId &&
+    !!transactionBlock?.values?.fromAssetAddress &&
+    !!transactionBlock?.values?.fromAssetDecimals &&
+    !!transactionBlock?.values?.fromAssetSymbol &&
+    !!transactionBlock?.values?.amount &&
+    !!transactionBlock?.values?.receiverAddress &&
+    !!transactionBlock?.values?.routeToGmx &&
+    !!transactionBlock?.values?.routeToUSDC &&
+    !!transactionBlock?.values?.receiveAmount
+  ) {
+    try {
+      const {
+        values: {
+          fromChainId,
+          fromAssetAddress,
+          fromAssetDecimals,
+          fromAssetSymbol,
+          fromAssetIconUrl,
+          amount,
+          accountType,
+          routeToGmx,
+          routeToUSDC,
+          receiveAmount,
+          receiverAddress,
+          toolUsed,
+        },
+      } = transactionBlock;
+
+      const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      if (fromChainId !== CHAIN_ID.ARBITRUM) {
+        try {
+          let destinationTxns: ICrossChainActionTransaction[] = [];
+          let transactions: ICrossChainActionTransaction[] = [];
+
+          transactions = [
+            {
+              to: routeToUSDC.transaction.to,
+              value: routeToUSDC.transaction.value as string,
+              data: routeToUSDC.transaction.data as string,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            },
+          ];
+
+          if (
+            ethers.utils.isAddress(fromAssetAddress) &&
+            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address) &&
+            routeToUSDC.approvalData?.approvalAddress
+          ) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+              routeToUSDC.approvalData.approvalAddress,
+              routeToUSDC.approvalData.amount
+            );
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed build bridge approval transaction!' };
+            }
+
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              value: '0',
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+
+            transactions = [approvalTransaction, ...transactions];
+          }
+
+          const result = await gmxStaking(routeToGmx, receiverAddress, sdk, true, '0');
+
+          if (result.errorMessage) return { errorMessage: result.errorMessage };
+
+          if (result.result?.transactions?.length) {
+            result.result?.transactions.map((element) => {
+              destinationTxns.push(element);
+            });
+          }
+
+          const preview = {
+            fromChainId,
+            fromAsset: {
+              address: fromAssetAddress,
+              decimals: fromAssetDecimals,
+              symbol: fromAssetSymbol,
+              amount: amountBN.toString(),
+              iconUrl: fromAssetIconUrl,
+            },
+            amount: ethers.utils.parseUnits(receiveAmount ?? '0', 18),
+            toAsset: {
+              address: '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a',
+              decimals: 18,
+              symbol: 'GMX',
+              amount: ethers.utils.parseUnits(receiveAmount ?? '0', 18).toString(),
+              iconUrl: 'https://arbiscan.io/token/images/gmxarbi_32.png',
+            },
+            receiverAddress: transactionBlock?.values?.receiverAddress,
+            providerName: result.result?.provider ?? 'Unknown provider',
+            providerIconUrl: result.result?.provider ?? '',
+          };
+
+          const crossChainAction: ICrossChainAction = {
+            id: crossChainActionId,
+            relatedTransactionBlockId: transactionBlock.id,
+            chainId: fromChainId,
+            type: TRANSACTION_BLOCK_TYPE.GMX_STAKE,
+            preview,
+            transactions,
+            isEstimating: false,
+            estimated: null,
+            containsSwitchChain: false,
+            bridgeUsed: toolUsed,
+            receiveAmount: ethers.utils.parseUnits(routeToUSDC.estimate.toAmount ?? '0', 6).toString(),
+            useWeb3Provider: accountType === AccountTypes.Key,
+            gasCost: routeToUSDC.estimate.gasCosts.amountUSD,
+            destinationCrossChainAction: [
+              {
+                id: uniqueId(`${createTimestamp}-`),
+                relatedTransactionBlockId: transactionBlock.id,
+                chainId: CHAIN_ID.POLYGON,
+                type: TRANSACTION_BLOCK_TYPE.GMX_STAKE,
+                preview,
+                transactions: destinationTxns,
+                isEstimating: false,
+                estimated: null,
+                useWeb3Provider: false,
+                destinationCrossChainAction: [],
+              },
+            ],
+          };
+
+          return { crossChainAction };
+        } catch (e) {
+          return { errorMessage: 'Failed to get bridge route!' };
+        }
+      } else {
+        return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
+      }
+    } catch (e) {
+      return { errorMessage: 'Failed to get GMX staking transaction!' };
     }
   }
 
