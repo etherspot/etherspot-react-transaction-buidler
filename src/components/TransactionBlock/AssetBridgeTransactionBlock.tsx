@@ -213,8 +213,7 @@ const AssetBridgeTransactionBlock = ({
           routes.map((route) => +route.fromAmountUSD)
         );
 
-        if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
-        if (routes.length > 1) setSelectedRoute(mapRouteToOption(routes[bestRouteIndex]));
+        setSelectedRoute(mapRouteToOption(routes[bestRouteIndex]));
       } catch (e) {
         //
       }

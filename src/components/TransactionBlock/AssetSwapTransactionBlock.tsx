@@ -158,7 +158,9 @@ const AssetSwapTransactionBlock = ({
   );
 
   const getGasSwapUsdValue = async (offer: ExchangeOffer) => {
-    const sdkByChain = getSdkForChainId(selectedNetwork?.chainId ?? 1);
+    if (!selectedNetwork?.chainId) return;
+
+    const sdkByChain = getSdkForChainId(selectedNetwork?.chainId);
 
     if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
       await sdkByChain.computeContractAccount();
@@ -171,7 +173,7 @@ const AssetSwapTransactionBlock = ({
 
       try {
         const estimation = await sdkByChain.estimateGatewayBatch();
-        return Number(ethers.utils.formatUnits(estimation.estimation.feeAmount)) * exchangeRateByChainId;
+        return +ethers.utils.formatUnits(estimation.estimation.feeAmount) * exchangeRateByChainId;
       } catch (error) {
         //
       }
@@ -207,8 +209,7 @@ const AssetSwapTransactionBlock = ({
         let bestOfferIndex = getOfferItemIndexByBestOffer(usdValuesGas, valuesToReceiveRaw);
 
         setAvailableOffers(offers);
-        if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
-        if (!isNaN(bestOfferIndex) && offers.length > 1) setSelectedOffer(mapOfferToOption(offers[bestOfferIndex]));
+        setSelectedOffer(mapOfferToOption(offers[bestOfferIndex]));
 
         setIsLoadingAvailableOffers(false);
       } catch (e) {
