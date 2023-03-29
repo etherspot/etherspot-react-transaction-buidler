@@ -5,14 +5,16 @@ import UserProfile from '../components/User/UserProfile';
 describe('User Profile component', () => {
   const mockProps = {
     email: 'test@test.com',
-    address: '0x1234567890123456789012345678901234567890',
+    smartWalletAddress: '0x1234567890123456789012345678901234567890',
+    keyBasedAddress: '0x3117e94DE054a002FC552aeF579c982Bd693f609',
     ensNode: 'ensNode.eth',
   };
 
   // Mock useEtherspot hook
   jest.mock('../../hooks', () => ({
     useEtherspot: jest.fn(() => ({
-      accountAddress: mockProps.address,
+      accountAddress: mockProps.smartWalletAddress,
+      providerAddress: mockProps.keyBasedAddress,
       getEnsNode: jest.fn(() => Promise.resolve({ name: mockProps.ensNode })),
     })),
   }));
@@ -35,15 +37,26 @@ describe('User Profile component', () => {
     expect(screen.getByText(mockProps.email)).toBeInTheDocument();
   });
 
-  it('should render user address and copy button', () => {
-    expect(screen.getByText('Address')).toBeInTheDocument();
-    expect(screen.getByText(mockProps.address)).toBeInTheDocument();
+  it('should render smart wallet address and copy button', () => {
+    expect(screen.getByText('Smart wallet address')).toBeInTheDocument();
+    expect(screen.getByText(mockProps.smartWalletAddress)).toBeInTheDocument();
   });
 
-  it('should copy user address to clipboard when copy button is clicked', async () => {
+  it('should render key based address and copy button', () => {
+    expect(screen.getByText('Key based address')).toBeInTheDocument();
+    expect(screen.getByText(mockProps.keyBasedAddress)).toBeInTheDocument();
+  });
+
+  it('should copy key based address to clipboard when copy button is clicked', async () => {
     const copyButton = screen.getByLabelText('Copy address to clipboard');
     fireEvent.click(copyButton);
-    expect(await navigator.clipboard.readText()).toEqual(mockProps.address);
+    expect(await navigator.clipboard.readText()).toEqual(mockProps.keyBasedAddress);
+  });
+
+  it('should copy smart wallet address to clipboard when copy button is clicked', async () => {
+    const copyButton = screen.getByLabelText('Copy address to clipboard');
+    fireEvent.click(copyButton);
+    expect(await navigator.clipboard.readText()).toEqual(mockProps.smartWalletAddress);
   });
 
   it('should render ENS node name', async () => {
