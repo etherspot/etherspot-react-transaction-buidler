@@ -10,11 +10,11 @@ import Card from '../Card';
 import { useEtherspot } from '../../hooks';
 
 // icons
-import { HiCheck } from 'react-icons/hi';
+import { FcCheckmark } from 'react-icons/fc';
 
 // utils
 import { Theme } from '../../utils/theme';
-import { copyToClipboard } from '../../utils/common';
+import { copyToClipboard, humanizeHexString } from '../../utils/common';
 import { CHAIN_ID } from '../../utils/chain';
 
 // constants
@@ -26,7 +26,7 @@ const UserProfile = () => {
 
   const theme: Theme = useTheme();
 
-  const [copiedAddress, setCopiedAddress] = useState<{ [key: string]: boolean }>({});
+  const [copiedAddress, setCopiedAddress] = useState<string>('');
   const [ensName, setEnsName] = useState<string | undefined>(undefined);
 
   let email;
@@ -39,8 +39,8 @@ const UserProfile = () => {
   }
 
   const onCopySuccess = async (address: string) => {
-    setCopiedAddress((prevState) => ({ ...prevState, [address]: true }));
-    setTimeout(() => setCopiedAddress((prevState) => ({ ...prevState, [address]: false })), 10000);
+    setCopiedAddress(address);
+    setTimeout(() => setCopiedAddress(''), 10000);
   };
 
   useEffect(() => {
@@ -68,16 +68,16 @@ const UserProfile = () => {
         <Header>Smart wallet address</Header>
         <Value>
           {accountAddress ? (
-            <>
-              {accountAddress}
+            <AddressCopyButtonWrapper>
+              <AddressWrapper>{humanizeHexString(accountAddress, 36, 4)}</AddressWrapper>
               <Text onClick={() => copyToClipboard(accountAddress, () => onCopySuccess(accountAddress))} marginLeft={3}>
-                {copiedAddress[accountAddress] ? (
+                {copiedAddress == accountAddress ? (
                   <CheckmarkIcon color={theme.color?.text?.textInput} />
                 ) : (
                   WalletCopyIcon
                 )}
               </Text>
-            </>
+            </AddressCopyButtonWrapper>
           ) : (
             <p>No address</p>
           )}
@@ -87,19 +87,19 @@ const UserProfile = () => {
         <Header>Key based address</Header>
         <Value>
           {providerAddress ? (
-            <>
-              {providerAddress}
+            <AddressCopyButtonWrapper>
+              <AddressWrapper>{humanizeHexString(providerAddress, 36, 4)}</AddressWrapper>
               <Text
                 onClick={() => copyToClipboard(providerAddress, () => onCopySuccess(providerAddress))}
                 marginLeft={3}
               >
-                {copiedAddress[providerAddress] ? (
+                {copiedAddress == providerAddress ? (
                   <CheckmarkIcon color={theme.color?.text?.textInput} />
                 ) : (
                   WalletCopyIcon
                 )}
               </Text>
-            </>
+            </AddressCopyButtonWrapper>
           ) : (
             <p>No address</p>
           )}
@@ -136,7 +136,7 @@ const Value = styled.div`
   color: ${({ theme }) => theme.color.text.card};
 `;
 
-const CheckmarkIcon = styled(HiCheck)`
+const CheckmarkIcon = styled(FcCheckmark)`
   margin-top: -3px;
 `;
 
@@ -144,4 +144,14 @@ const HorizontalLine = styled.div`
   width: 100%;
   height: 1px;
   background: ${({ theme }) => theme.color.text.outerLabel};
+`;
+
+const AddressCopyButtonWrapper = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+`;
+
+const AddressWrapper = styled.div`
+  overflow: hidden;
 `;
