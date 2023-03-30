@@ -45,10 +45,9 @@ export const formatAmountDisplay = (
     return smallAmount;
   }
 
-  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 2,
-    minimumFractionDigits,
-  }).format(+amount)}`;
+  const formatConfig = { maximumFractionDigits: 2, minimumFractionDigits };
+
+  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', formatConfig).format(+amount)}`;
 };
 
 export const humanizeHexString = (
@@ -93,6 +92,10 @@ export const buildUrlOptions = (options: { [key: string]: string }): string => {
   return optionStr;
 };
 
+/**
+ * Calculation of best offer index here is done on the basis of the best offer returned
+ * that in turn is calculated on the basis of the amount to receive (usd) minus the gas fees usd
+ */
 export const getOfferItemIndexByBestOffer = (gasUsd: (number | undefined)[], receiveAmount: number[]) => {
   let index = 0;
   let minAmount = gasUsd[0] ? receiveAmount[0] - gasUsd[0] : 100000;
