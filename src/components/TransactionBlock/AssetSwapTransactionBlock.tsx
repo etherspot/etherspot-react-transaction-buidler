@@ -163,7 +163,9 @@ const AssetSwapTransactionBlock = ({
     const sdkByChain = getSdkForChainId(selectedNetwork?.chainId);
 
     if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
-      await sdkByChain.computeContractAccount();
+      if (sdkByChain.state.account.type !== AccountTypes.Contract) {
+        await sdkByChain.computeContractAccount();
+      }
 
       sdkByChain.clearGatewayBatch();
 

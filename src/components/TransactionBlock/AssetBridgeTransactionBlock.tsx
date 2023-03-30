@@ -208,10 +208,15 @@ const AssetBridgeTransactionBlock = ({
           toAddress: receiverAddress ?? undefined,
         });
         setAvailableRoutes(routes);
-        const bestRouteIndex = getOfferItemIndexByBestOffer(
-          routes.map((route) => (route.gasCostUSD ? +route.gasCostUSD : undefined)),
-          routes.map((route) => +route.fromAmountUSD)
-        );
+        let gasUsdValues: (number | undefined)[] = [];
+        let receiveAmount: number[] = [];
+
+        routes.forEach(({ gasCostUSD, fromAmountUSD }) => {
+          gasUsdValues.push(gasCostUSD ? +gasCostUSD : undefined);
+          receiveAmount.push(+fromAmountUSD);
+        });
+
+        const bestRouteIndex = getOfferItemIndexByBestOffer(gasUsdValues, receiveAmount);
 
         setSelectedRoute(mapRouteToOption(routes[bestRouteIndex]));
       } catch (e) {
