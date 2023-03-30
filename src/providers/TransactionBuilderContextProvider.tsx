@@ -803,7 +803,14 @@ const TransactionBuilderContextProvider = ({
   };
 
   const connectedStatusMessages = {
-    [CONNECTION_STATUSES.IS_CONNECTING]: <Text color={theme.color?.text?.button}>Connecting</Text>,
+    [CONNECTION_STATUSES.IS_CONNECTING]: (
+      <SignButton>
+        <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
+          <CgSandClock size={10} />
+        </StatusIconWrapper>
+        <Text color={theme.color?.text?.button}>Sign to connect</Text>
+      </SignButton>
+    ),
     [CONNECTION_STATUSES.JUST_CONNECTED]: (
       <>
         <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
