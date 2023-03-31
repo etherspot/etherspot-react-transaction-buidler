@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, ExchangeOffer } from 'etherspot';
+import { AccountStates, AccountTypes, ExchangeOffer } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
@@ -168,6 +168,10 @@ const AssetSwapTransactionBlock = ({
       }
 
       sdkByChain.clearGatewayBatch();
+
+      if (sdkByChain.state.account.state === AccountStates.UnDeployed) {
+        await sdkByChain.batchDeployAccount();
+      }
 
       await Promise.all(
         offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
