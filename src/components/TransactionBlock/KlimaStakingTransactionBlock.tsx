@@ -275,7 +275,6 @@ const KlimaStakingTransactionBlock = ({
         });
 
         if (routeToKlima.items.length > 0) {
-          // routeToKlima.items[0].estimate.fromAmount
           const bestRouteIndex = getBestRouteIndex(routeToKlima.items);
 
           setSelectedRoute(mapRouteToOption(routeToKlima.items[bestRouteIndex]));

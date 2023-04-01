@@ -207,9 +207,7 @@ const AssetSwapTransactionBlock = ({
               )
             : null;
 
-          return targetAssetPriceUsd
-            ? +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals) * targetAssetPriceUsd
-            : +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals);
+          return +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals) * (targetAssetPriceUsd ?? 1);
         });
 
         let bestOfferIndex = getOfferItemIndexByBestOffer(usdValuesGas, valuesToReceiveRaw);
