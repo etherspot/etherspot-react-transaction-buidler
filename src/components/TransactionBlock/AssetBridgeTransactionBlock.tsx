@@ -175,6 +175,19 @@ const AssetBridgeTransactionBlock = ({
     accountAddress,
   ]);
 
+  const getBestRouteItem = (routes: Route[]) => {
+    let bestRoute = routes[0];
+    let minAmount = routes[0].gasCostUSD ? +routes[0].fromAmountUSD - +routes[0].gasCostUSD : Number.MAX_SAFE_INTEGER;
+
+    routes.forEach(({ gasCostUSD, fromAmountUSD }, index) => {
+      if (gasCostUSD) {
+        if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = routes[index];
+      }
+    });
+
+    return bestRoute;
+  };
+
   const updateAvailableRoutes = useCallback(
     debounce(async () => {
       setSelectedRoute(null);
@@ -216,9 +229,9 @@ const AssetBridgeTransactionBlock = ({
           receiveAmount.push(+fromAmountUSD);
         });
 
-        const bestRouteIndex = getOfferItemIndexByBestOffer(gasUsdValues, receiveAmount);
+        const bestRoute = getBestRouteItem(routes);
 
-        setSelectedRoute(mapRouteToOption(routes[bestRouteIndex]));
+        setSelectedRoute(mapRouteToOption(bestRoute));
       } catch (e) {
         //
       }
