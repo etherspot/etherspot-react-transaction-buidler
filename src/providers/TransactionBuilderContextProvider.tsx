@@ -1212,28 +1212,8 @@ const TransactionBuilderContextProvider = ({
                             j === multiCallBlocks.length - 1 && showMulticallOptions !== transactionBlock.id ? 0 : 20
                           }
                           onCloseButtonClick={() =>
-                            showConfirmModal('Are you sure you want to remove selected transaction?', () => {
-                              if (j == 0) {
-                                // Remove entire block if there's only one multicall
-                                setTransactionBlocks((current) => {
-                                  return current.filter((block) => block.id !== transactionBlock.id);
-                                });
-                              } else {
-                                // Remove last instance of a multicall block
-                                setTransactionBlocks((current) => {
-                                  return current
-                                    .filter((block) => block.id !== multiCallBlock.id)
-                                    .map((block) => {
-                                      if (block.id !== multiCallBlock.multiCallData?.lastCallId) {
-                                        return block;
-                                      }
-                                      if (block.multiCallData) {
-                                        block.multiCallData.fixed = false;
-                                      }
-                                      return block;
-                                    });
-                                });
-                              }
+                            setTransactionBlocks((current) => {
+                              return current.filter((block) => block.id !== transactionBlock.id);
                             })
                           }
                           // Should only have the option to delete last multicall, any change mid structure should reset the entire block
@@ -1279,10 +1259,8 @@ const TransactionBuilderContextProvider = ({
                         i === transactionBlocks.length - 1 && showMulticallOptions !== transactionBlock.id ? 0 : 20
                       }
                       onCloseButtonClick={() =>
-                        showConfirmModal('Are you sure you want to remove selected transaction?', () =>
-                          setTransactionBlocks((current) =>
-                            current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
-                          )
+                        setTransactionBlocks((current) =>
+                          current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
                         )
                       }
                       showCloseButton={!editingTransactionBlock}
