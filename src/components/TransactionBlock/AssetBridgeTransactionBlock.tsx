@@ -7,12 +7,7 @@ import debounce from 'debounce-promise';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import {
-  formatAmountDisplay,
-  formatAssetAmountInput,
-  formatMaxAmount,
-  getOfferItemIndexByBestOffer,
-} from '../../utils/common';
+import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
 import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
@@ -179,10 +174,10 @@ const AssetBridgeTransactionBlock = ({
     let bestRoute = routes[0];
     let minAmount = routes[0].gasCostUSD ? +routes[0].fromAmountUSD - +routes[0].gasCostUSD : Number.MAX_SAFE_INTEGER;
 
-    routes.forEach(({ gasCostUSD, fromAmountUSD }, index) => {
-      if (gasCostUSD) {
-        if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = routes[index];
-      }
+    routes.forEach((route) => {
+      const { gasCostUSD, fromAmountUSD } = route;
+      if (!gasCostUSD) return;
+      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
     });
 
     return bestRoute;
@@ -221,13 +216,6 @@ const AssetBridgeTransactionBlock = ({
           toAddress: receiverAddress ?? undefined,
         });
         setAvailableRoutes(routes);
-        let gasUsdValues: (number | undefined)[] = [];
-        let receiveAmount: number[] = [];
-
-        routes.forEach(({ gasCostUSD, fromAmountUSD }) => {
-          gasUsdValues.push(gasCostUSD ? +gasCostUSD : undefined);
-          receiveAmount.push(+fromAmountUSD);
-        });
 
         const bestRoute = getBestRouteItem(routes);
 

@@ -8,12 +8,7 @@ import debounce from 'debounce-promise';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import {
-  formatAmountDisplay,
-  formatAssetAmountInput,
-  formatMaxAmount,
-  getOfferItemIndexByBestOffer,
-} from '../../utils/common';
+import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
 import { addressesEqual, isValidAmount } from '../../utils/validation';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -200,20 +195,31 @@ const AssetSwapTransactionBlock = ({
         if (!active || !offers) return;
 
         const usdValuesGas = await Promise.all(offers.map((offer) => getGasSwapUsdValue(offer)));
-        const valuesToReceiveRaw = offers.map((offer) => {
+
+        let minAmount = Number.MIN_SAFE_INTEGER;
+
+        let bestOffer = offers[0];
+
+        offers.forEach((offer, index) => {
           const toAsset = availableToAssets
             ? availableToAssets?.find((availableAsset) =>
                 addressesEqual(availableAsset.address, selectedToAsset?.address)
               )
             : null;
 
-          return +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals) * (targetAssetPriceUsd ?? 1);
+          const valueToRecieve =
+            +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals) * (targetAssetPriceUsd ?? 1);
+
+          const gasPrice = usdValuesGas[index];
+
+          if (gasPrice && valueToRecieve - gasPrice > minAmount) {
+            minAmount = valueToRecieve - gasPrice;
+            bestOffer = offer;
+          }
         });
 
-        let bestOfferIndex = getOfferItemIndexByBestOffer(usdValuesGas, valuesToReceiveRaw);
-
         setAvailableOffers(offers);
-        setSelectedOffer(mapOfferToOption(offers[bestOfferIndex]));
+        setSelectedOffer(mapOfferToOption(bestOffer));
 
         setIsLoadingAvailableOffers(false);
       } catch (e) {
