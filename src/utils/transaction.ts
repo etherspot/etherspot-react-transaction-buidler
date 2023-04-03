@@ -49,6 +49,13 @@ interface IPillarDao {
   };
 }
 
+interface IGMX {
+  encodeDeposit(amount: BigNumber): {
+    to: string;
+    data: string;
+  };
+}
+
 interface IPlrTransaction {
   to: string;
   data: string;
@@ -391,6 +398,7 @@ export const klimaDaoStaking = async (
   }
 };
 
+///
 export const gmxStaking = async (
   routeToGmx?: BridgingQuote | null,
   receiverAddress?: string,
@@ -447,9 +455,9 @@ export const gmxStaking = async (
         bestRoute.approvalData.amount
       );
       if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-        return { errorMessage: 'Failed build bridge approval transaction!' };
+        return { errorMessage: 'Failed build bridge approval transaction!1' };
       }
-
+//
       const approvalTransaction = {
         to: approvalTransactionRequest.to,
         data: approvalTransactionRequest.data,
@@ -473,7 +481,7 @@ export const gmxStaking = async (
       bestRoute.estimate.toAmount
     ); // Gmx staking
     if (!gmxApprovalTransactionRequest || !gmxApprovalTransactionRequest.to) {
-      return { errorMessage: 'Failed build bridge approval transaction!' };
+      return { errorMessage: 'Failed build bridge approval transaction!2' };
     }
 
     const gmxApprovalTransaction = {
@@ -485,15 +493,40 @@ export const gmxStaking = async (
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    const gmxStakingAbi = ['function stakeGmx(uint256 value)'];
-    const gmxStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>(
+
+    // Klima example 
+    /*
+    const klimaStakingAbi = ['function stake(uint256 value)'];
+    const klimaStakingContract = sdk.registerContract<{ encodeStake: (amount: BigNumberish) => TransactionRequest }>(
+      'klimaStakingContract',
+      klimaStakingAbi,
+      '0x4D70a031Fc76DA6a9bC0C922101A05FA95c3A227'
+    ); // Klima ojn Polygon
+    const klimaStakeTransactionRequest = klimaStakingContract.encodeStake?.(bestRoute.estimate.toAmount); // Klima staking
+    if (!klimaStakeTransactionRequest || !klimaStakeTransactionRequest.to) {
+      return { errorMessage: 'Failed build bridge approval transaction!' };
+    }
+    */
+  
+
+    const gmxStakingAbi = ['function stakeGmx(uint256 value )'];
+    const gmxStakingContract = sdk.registerContract<{ encodeStakeGmx: (amount: BigNumberish) => TransactionRequest }>(
       'gmxStakingContract',
       gmxStakingAbi,
       '0xA906F338CB21815cBc4Bc87ace9e68c87eF8d8F1'
     ); // Gmx on Arbitrum
-    const gmxStakeTransactionRequest = gmxStakingContract.encodeStake?.(bestRoute.estimate.toAmount);
+
+    
+    console.log(bestRoute.estimate.toAmount);
+
+    const gmxStakeTransactionRequest = gmxStakingContract.encodeStakeGmx?.(bestRoute.estimate.toAmount);
+    
+
+    console.log(gmxStakeTransactionRequest, gmxStakeTransactionRequest?.to, bestRoute.estimate.toAmount)
     if (!gmxStakeTransactionRequest || !gmxStakeTransactionRequest.to) {
-      return { errorMessage: 'Failed build bridge approval transaction!' };
+      alert(gmxStakeTransactionRequest);
+      alert(gmxStakeTransactionRequest?.to);
+      return { errorMessage: 'Failed build bridge approval transaction!3' };
     }
 
     const gmxStakingTransaction = {

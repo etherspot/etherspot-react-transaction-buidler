@@ -10,6 +10,7 @@ import {
   AccountTypes, BridgingQuote, CrossChainServiceProvider,
 } from 'etherspot';
 import { BigNumber, ethers } from 'ethers';
+import { Route } from '@lifi/sdk';
 
 // Types
 import { IGmxStakingTransactionBlock } from '../../types/transactionBlock';
@@ -64,8 +65,8 @@ export interface IGmxStakingTransactionBlockValues {
   accountType: AccountTypes;
   receiverAddress?: string;
   receiveAmount?: string;
-  routeToUSDC?: BridgingQuote;
-  routeToGmx?: BridgingQuote;
+  routeToUSDC?: Route;
+  routeToGmx?: Route;
   toolUsed?: string;
 }
 
@@ -96,12 +97,12 @@ const OfferGasPriceContainer = styled.div`
   align-items: flex-end;
 `;
 
-const mapRouteToOption = (route: BridgingQuote): SelectOption => {
+const mapRouteToOption = (route: Route): SelectOption => {
   return {
     title: bridgeServiceIdToDetails['lifi'].title,
-    value: route.estimate.toAmount,
+    value: route.toAmount,
     iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
-    extension: route.estimate.gasCosts.amountUSD,
+    extension: route.gasCostUSD,
   };
 };
 
@@ -116,8 +117,8 @@ const GmxStakingTransactionBlock = ({
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [receiveAmount, setReceiveAmount] = useState<string>('');
-  const [routeToUSDC, setRouteToUSDC] = useState<BridgingQuote[]>([]);
-  const [routeToGmx, setRouteToGmx] = useState<BridgingQuote[]>([]);
+  const [routeToUSDC, setRouteToUSDC] = useState<Route[]>([]);
+  const [routeToGmx, setRouteToGmx] = useState<Route[]>([]);
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [toolUsed, setToolUsed] = useState<string>('');
@@ -172,11 +173,11 @@ const GmxStakingTransactionBlock = ({
   ]);
 
   useEffect(() => {
-    if (selectedFromAsset?.assetPriceUsd && (+amount * selectedFromAsset.assetPriceUsd < 0.01)) {
+    if (selectedFromAsset?.assetPriceUsd && (+amount * selectedFromAsset.assetPriceUsd < 0.4)) {
       setTransactionBlockFieldValidationError(
         transactionBlockId,
         'amount',
-        'Minimum amount 0.01 USD',
+        'Minimum amount 0.4 USD',
       );
       return;
     }
@@ -192,7 +193,7 @@ const GmxStakingTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
 
     if (routeToUSDC.length == 0 || routeToGmx.length == 0 || isRouteFetching || !toolUsed) {
-     // console.log(routeToUSDC.length, routeToGmx.length, isRouteFetching, toolUsed);
+      console.log(routeToUSDC.length, routeToGmx.length, isRouteFetching, toolUsed);
       setTransactionBlockFieldValidationError(
         transactionBlockId,
         'route',
@@ -256,11 +257,11 @@ const GmxStakingTransactionBlock = ({
     setIsRouteFetching(true);
 
     if (selectedFromAsset?.assetPriceUsd) {
-      if (+amount * selectedFromAsset.assetPriceUsd < 0.01) {
+      if (+amount * selectedFromAsset.assetPriceUsd < 0.4) {
         setTransactionBlockFieldValidationError(
           transactionBlockId,
           'amount',
-          'Minimum amount 0.01 USD',
+          'Minimum amount 0.4 USD',
         );
         resetRoutes();
         return;
@@ -269,40 +270,37 @@ const GmxStakingTransactionBlock = ({
 
     try {
 
-      const routeToUsdc = await sdk.getCrossChainQuotes({
+      const { items: routeToUsdc }  = await sdk.getAdvanceRoutesLiFi({
         fromChainId: selectedFromNetwork.chainId,
         toChainId: CHAIN_ID.ARBITRUM,
         fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
         fromTokenAddress: selectedFromAsset.address,
         fromAddress: selectedAccountType === AccountTypes.Key ? sdk.state.walletAddress : sdk.state.accountAddress,
         toTokenAddress: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
-        toAddress: sdk.state.accountAddress,
-        serviceProvider: CrossChainServiceProvider.LiFi,
+        toAddress: sdk.state.accountAddress
       })
 
-      setRouteToUSDC(routeToUsdc.items);
+      setRouteToUSDC(routeToUsdc);
 
-      if (routeToUsdc.items.length === 0) {
+      if (routeToUsdc.length === 0) {
         setIsRouteFetching(false);
         resetRoutes();
         return;
       }
 
-      const routeToGmx = await sdk.getCrossChainQuotes({
+      const { items: routeToGmx } = await sdk.getAdvanceRoutesLiFi({
         fromChainId: CHAIN_ID.ARBITRUM,
         toChainId: CHAIN_ID.ARBITRUM,
-        //fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('250000'),
-        fromAmount: BigNumber.from('290000'),
+        fromAmount: BigNumber.from(routeToUsdc[8]).sub('250000'),
         fromTokenAddress: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
         toTokenAddress: '0xfc5a1a6eb076a2c7ad06ed22c90d7e710e35ad0a',
-        toAddress: receiverAddress ?? undefined,
-        serviceProvider: CrossChainServiceProvider.LiFi,
+        toAddress: receiverAddress ?? undefined
       })
 
-      if (routeToGmx.items.length > 0) {
-        setSelectedRoute(mapRouteToOption(routeToGmx.items[0]));
-        setToolUsed(routeToUsdc.items[0].LiFiBridgeUsed ?? '');
-        setRouteToGmx(routeToGmx.items);
+      if (routeToGmx.length > 0) {
+        setSelectedRoute(mapRouteToOption(routeToGmx[0]));
+        //setToolUsed(routeToUsdc.items[0].LiFiBridgeUsed ?? '');
+        setRouteToGmx(routeToGmx);
         setReceiveAmount(ethers.utils.formatUnits(routeToGmx.items[0].estimate.toAmount, gmxAsset.decimals));
         resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
         setIsRouteFetching(false);

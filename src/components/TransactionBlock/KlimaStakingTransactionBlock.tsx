@@ -192,6 +192,7 @@ const KlimaStakingTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
 
     if (routeToUSDC.length == 0 || routeToKlima.length == 0 || isRouteFetching || !toolUsed) {
+      console.log(routeToUSDC.length, routeToKlima.length, isRouteFetching, toolUsed);
       setTransactionBlockFieldValidationError(
         transactionBlockId,
         'route',

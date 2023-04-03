@@ -706,7 +706,11 @@ const TransactionBuilderContextProvider = ({
       setTransactionBlocks([]);
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
+    
     } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.GMX_STAKE) {
+
+      console.log("XXX GMX START");
+
       let crossChainAction = crossChainActions[0];
 
       if (!crossChainAction.receiveAmount) {
@@ -720,6 +724,7 @@ const TransactionBuilderContextProvider = ({
         errorMessage?: string;
       };
 
+      /*
       result = crossChainAction.useWeb3Provider
         ? await submitWeb3ProviderTransactions(
             getSdkForChainId(crossChainAction.chainId) as Sdk,
@@ -733,11 +738,15 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.transactions,
             crossChainAction.gasTokenAddress ?? undefined
           );
+      */
+
+      result = { transactionHash: '0xa0c34e693b9619a242f888c6fbbdb866fecaa4815f5a196eea74c65b37e99459' };
 
       if (result?.errorMessage || !result?.transactionHash?.length) {
-        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
         crossChainAction.transactions.map((transaction) => {
+          console.log(result?.errorMessage);
           transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
         });
         return;
@@ -754,13 +763,16 @@ const TransactionBuilderContextProvider = ({
         errorOnLiFi;
       while (flag) {
         try {
+          const status = { status: 'DONE', subStatus: 'COMPLETED' }
+          /*
           const status = await getCrossChainStatusByHash(
-            getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+            getSdkForChainId(CHAIN_ID.ARBITRUM) as Sdk,
             crossChainAction.chainId,
-            CHAIN_ID.POLYGON,
+            CHAIN_ID.ARBITRUM,
             result.transactionHash,
             crossChainAction.bridgeUsed
           );
+          */
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
             crossChainAction.transactions.map((transaction) => {
@@ -794,6 +806,10 @@ const TransactionBuilderContextProvider = ({
         accountAddress
       );
 
+      console.log("XXX: estimateGas");
+      console.log(estimateGas, sdk?.fetchExchangeRates({chainId:CHAIN_ID.ARBITRUM, tokens:[ethers.constants.AddressZero]}));
+      
+      /*
       const stakingTxns = await gmxStaking(
         transactionBlocks[0].type === 'GMX_STAKE' ? transactionBlocks[0].values?.routeToGmx : null,
         transactionBlocks[0].type === 'GMX_STAKE' ? transactionBlocks[0].values?.receiverAddress : '',
@@ -844,11 +860,12 @@ const TransactionBuilderContextProvider = ({
         setIsSubmitting(false);
         return;
       }
+      */
       setCrossChainActions([]);
       setTransactionBlocks([]);
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
-
+      
     } else {
       setCrossChainActions([]);
       setTransactionBlocks([]);

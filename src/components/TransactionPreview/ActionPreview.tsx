@@ -692,7 +692,7 @@ const ActionPreview = ({
 
 		return (
 			<Card
-				title='GMX Staking zzz'
+				title='GMX Staking'
 				marginBottom={20}
 				onCloseButtonClick={onRemove}
 				showCloseButton={showCloseButton}
