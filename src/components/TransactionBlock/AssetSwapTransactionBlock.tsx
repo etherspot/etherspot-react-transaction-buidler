@@ -133,6 +133,8 @@ const AssetSwapTransactionBlock = ({
 
       setIsLoadingAvailableOffers(true);
 
+      // test code
+
       try {
         // needed computed account address before calling getExchangeOffers
         if (!accountAddress) await sdk.computeContractAccount();
