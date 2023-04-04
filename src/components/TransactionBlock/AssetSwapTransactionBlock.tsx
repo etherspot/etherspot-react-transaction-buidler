@@ -198,7 +198,9 @@ const AssetSwapTransactionBlock = ({
 
         let minAmount = Number.MIN_SAFE_INTEGER;
 
-        let bestOffer = offers[0];
+        let offerNotLifi = offers.find((offer) => mapOfferToOption(offer).title !== 'LiFi');
+
+        let bestOffer = offerNotLifi ? offerNotLifi : offers[0];
 
         offers.forEach((offer, index) => {
           const toAsset = availableToAssets
@@ -212,7 +214,7 @@ const AssetSwapTransactionBlock = ({
 
           const gasPrice = usdValuesGas[index];
 
-          if (gasPrice && valueToRecieve - gasPrice > minAmount) {
+          if (mapOfferToOption(offer).title !== 'LiFi' && gasPrice && valueToRecieve - gasPrice > minAmount) {
             minAmount = valueToRecieve - gasPrice;
             bestOffer = offer;
           }
