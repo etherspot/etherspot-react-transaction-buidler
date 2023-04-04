@@ -24,7 +24,7 @@ export const formatAssetAmountInput = (amount: string, decimals: number = 18): s
 export const formatAmountDisplay = (
   amountRaw: string | number,
   leftSymbol?: string,
-  minimumFractionDigits?: number,
+  minimumFractionDigits?: number
 ): string => {
   const amount = typeof amountRaw === 'number' ? `${amountRaw}` : amountRaw;
 
@@ -45,7 +45,9 @@ export const formatAmountDisplay = (
     return smallAmount;
   }
 
-  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, minimumFractionDigits }).format(+amount)}`;
+  const formatConfig = { maximumFractionDigits: 2, minimumFractionDigits };
+
+  return `${leftSymbol ?? ''}${new Intl.NumberFormat('en-US', formatConfig).format(+amount)}`;
 };
 
 export const humanizeHexString = (
@@ -88,6 +90,22 @@ export const buildUrlOptions = (options: { [key: string]: string }): string => {
     optionStr += `${!optionStr ? '?' : '&'}${key}=${encodeURIComponent(value)}`;
   });
   return optionStr;
+};
+
+/**
+ * Calculation of best offer index here is done on the basis of the best offer returned
+ * that in turn is calculated on the basis of the amount to receive (usd) minus the gas fees usd
+ */
+export const getOfferItemIndexByBestOffer = (gasUsd: (number | undefined)[], receiveAmount: number[]) => {
+  let index = 0;
+  let minAmount = gasUsd[0] ? receiveAmount[0] - gasUsd[0] : 100000;
+
+  for (let i = 1; i < gasUsd.length; i++) {
+    let gasAmount = gasUsd[i];
+
+    if (gasAmount && receiveAmount[i] - gasAmount > minAmount) index = i;
+  }
+  return index;
 };
 
 export const copyToClipboard = async (valueToCopy: string, onSuccess?: () => void) => {

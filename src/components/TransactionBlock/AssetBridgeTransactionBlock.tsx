@@ -50,7 +50,7 @@ const mapRouteToOption = (route: Route) => {
   const [firstStep] = route.steps;
   const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
   return {
-    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? "LiFi",
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
     iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
     extension: route.gasCostUSD,
@@ -83,8 +83,8 @@ const AssetBridgeTransactionBlock = ({
 
   const defaultCustomReceiverAddress =
     values?.receiverAddress &&
-      !addressesEqual(providerAddress, values?.receiverAddress) &&
-      !addressesEqual(accountAddress, values?.receiverAddress)
+    !addressesEqual(providerAddress, values?.receiverAddress) &&
+    !addressesEqual(accountAddress, values?.receiverAddress)
       ? values.receiverAddress
       : null;
   const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
@@ -93,9 +93,9 @@ const AssetBridgeTransactionBlock = ({
 
   const defaultSelectedReceiveAccountType =
     (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
-      (values?.receiverAddress &&
-        values?.accountType === AccountTypes.Contract &&
-        addressesEqual(providerAddress, values?.receiverAddress))
+    (values?.receiverAddress &&
+      values?.accountType === AccountTypes.Contract &&
+      addressesEqual(providerAddress, values?.receiverAddress))
       ? AccountTypes.Key
       : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
@@ -170,6 +170,19 @@ const AssetBridgeTransactionBlock = ({
     accountAddress,
   ]);
 
+  const getBestRouteItem = (routes: Route[]) => {
+    let bestRoute = routes[0];
+    let minAmount = routes[0].gasCostUSD ? +routes[0].fromAmountUSD - +routes[0].gasCostUSD : Number.MAX_SAFE_INTEGER;
+
+    routes.forEach((route) => {
+      const { gasCostUSD, fromAmountUSD } = route;
+      if (!gasCostUSD) return;
+      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
+    });
+
+    return bestRoute;
+  };
+
   const updateAvailableRoutes = useCallback(
     debounce(async () => {
       setSelectedRoute(null);
@@ -203,7 +216,10 @@ const AssetBridgeTransactionBlock = ({
           toAddress: receiverAddress ?? undefined,
         });
         setAvailableRoutes(routes);
-        if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
+
+        const bestRoute = getBestRouteItem(routes);
+
+        setSelectedRoute(mapRouteToOption(bestRoute));
       } catch (e) {
         //
       }
@@ -407,7 +423,7 @@ const AssetBridgeTransactionBlock = ({
           errorMessage={errorMessages?.route}
           disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
           noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
-          forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1}
+          forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
         />
       )}
     </>

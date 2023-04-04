@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, ExchangeOffer } from 'etherspot';
+import { AccountStates, AccountTypes, ExchangeOffer } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
@@ -92,6 +92,7 @@ const AssetSwapTransactionBlock = ({
     smartWalletOnly,
     updateWalletBalances,
     getRatesByNativeChainId,
+    getSdkForChainId,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -151,6 +152,35 @@ const AssetSwapTransactionBlock = ({
     [sdk, selectedFromAsset, selectedToAsset, amount, selectedNetwork, accountAddress]
   );
 
+  const getGasSwapUsdValue = async (offer: ExchangeOffer) => {
+    if (!selectedNetwork?.chainId) return;
+
+    const sdkByChain = getSdkForChainId(selectedNetwork?.chainId);
+
+    if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
+      if (sdkByChain.state.account.type !== AccountTypes.Contract) {
+        await sdkByChain.computeContractAccount();
+      }
+
+      sdkByChain.clearGatewayBatch();
+
+      if (sdkByChain.state.account.state === AccountStates.UnDeployed) {
+        await sdkByChain.batchDeployAccount();
+      }
+
+      await Promise.all(
+        offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
+      );
+
+      try {
+        const estimation = await sdkByChain.estimateGatewayBatch();
+        return +ethers.utils.formatUnits(estimation.estimation.feeAmount) * exchangeRateByChainId;
+      } catch (error) {
+        //
+      }
+    }
+  };
+
   useEffect(() => {
     updateWalletBalances();
   }, [sdk, accountAddress]);
@@ -164,8 +194,35 @@ const AssetSwapTransactionBlock = ({
         const offers = await updateAvailableOffers();
         if (!active || !offers) return;
 
+        const usdValuesGas = await Promise.all(offers.map((offer) => getGasSwapUsdValue(offer)));
+
+        let minAmount = Number.MIN_SAFE_INTEGER;
+
+        let offerNotLifi = offers.find((offer) => mapOfferToOption(offer).title !== 'LiFi');
+
+        let bestOffer = offerNotLifi ? offerNotLifi : offers[0];
+
+        offers.forEach((offer, index) => {
+          const toAsset = availableToAssets
+            ? availableToAssets?.find((availableAsset) =>
+                addressesEqual(availableAsset.address, selectedToAsset?.address)
+              )
+            : null;
+
+          const valueToRecieve =
+            +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals) * (targetAssetPriceUsd ?? 1);
+
+          const gasPrice = usdValuesGas[index];
+
+          if (mapOfferToOption(offer).title !== 'LiFi' && gasPrice && valueToRecieve - gasPrice > minAmount) {
+            minAmount = valueToRecieve - gasPrice;
+            bestOffer = offer;
+          }
+        });
+
         setAvailableOffers(offers);
-        if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
+        setSelectedOffer(mapOfferToOption(bestOffer));
+
         setIsLoadingAvailableOffers(false);
       } catch (e) {
         //
@@ -415,7 +472,7 @@ const AssetSwapTransactionBlock = ({
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
-          forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1}
+          forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1 && !selectedOffer}
         />
       )}
     </>
