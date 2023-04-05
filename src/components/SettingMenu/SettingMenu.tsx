@@ -47,7 +47,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
 
   const menuRef = useRef<null | HTMLDivElement>(null);
   const theme: Theme = useTheme();
-  const { showModal } = useTransactionBuilderModal();
+  const { showModal, hideModal } = useTransactionBuilderModal();
 
   const hideMenu = () => setShowMenu(false);
   useOnClickOutside(menuRef, hideMenu);
@@ -72,7 +72,14 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             title="Profile"
             onClick={() => {
               hideMenu();
-              showModal(<UserProfile />);
+              showModal(
+                <UserProfile
+                  onBackButtonClick={() => {
+                    hideModal();
+                    setShowMenu(true);
+                  }}
+                />,
+              );
             }}
           />
           <MenuItem
