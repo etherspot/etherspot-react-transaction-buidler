@@ -354,7 +354,7 @@ const TransactionBuilderContextProvider = ({
 
   const onCopySuccess = async () => {
     setCopiedAddress(true);
-    if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
+    if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(2000);
   };
 
   const {

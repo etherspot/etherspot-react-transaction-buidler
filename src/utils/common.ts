@@ -111,9 +111,8 @@ export const getOfferItemIndexByBestOffer = (gasUsd: (number | undefined)[], rec
 export const copyToClipboard = async (valueToCopy: string, onSuccess?: () => void) => {
   try {
     await navigator.clipboard.writeText(valueToCopy);
-    alert('Copied!');
     if (onSuccess) onSuccess();
-  } catch (e) {
+  } catch {
     alert('Unable to copy');
   }
 };
