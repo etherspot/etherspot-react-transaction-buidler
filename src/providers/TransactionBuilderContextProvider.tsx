@@ -1241,8 +1241,7 @@ const TransactionBuilderContextProvider = ({
                             errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                           />
                           {j === multiCallBlocks.length - 1 &&
-                            (multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
-                              multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET) && (
+                            multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
                               <MultiCallButton
                                 disabled={!!disabled || !isBlockValid}
                                 onClick={async () => {
@@ -1257,9 +1256,6 @@ const TransactionBuilderContextProvider = ({
                                 {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                                   multiCallBlock.values?.toAsset?.symbol &&
                                   ` with ${multiCallBlock.values?.toAsset?.symbol}`}
-                                {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
-                                  multiCallBlock.values?.selectedAsset &&
-                                  ` with ${multiCallBlock.values?.selectedAsset?.symbol}`}
                               </MultiCallButton>
                             )}
                         </Card>
@@ -1283,8 +1279,7 @@ const TransactionBuilderContextProvider = ({
                         {...transactionBlock}
                         errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                       />
-                      {(transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
-                        transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) &&
+                      {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                         transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
                         !editingTransactionBlock && (
                           <MultiCallButton
@@ -1301,9 +1296,6 @@ const TransactionBuilderContextProvider = ({
                             {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                               transactionBlock.values?.toAsset?.symbol &&
                               ` with ${transactionBlock.values?.toAsset?.symbol}`}
-                            {transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
-                              transactionBlock.values?.selectedAsset &&
-                              ` with ${transactionBlock.values?.selectedAsset?.symbol}`}
                           </MultiCallButton>
                         )}
                     </Card>
