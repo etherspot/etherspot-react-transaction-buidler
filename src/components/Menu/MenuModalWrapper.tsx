@@ -17,7 +17,7 @@ const MenuModalWrapper = ({
   onBackButtonClick?: () => void;
 }) => {
   const theme: Theme = useTheme();
-  console.log('theme?.color?.background?.settingsModalBorder ', theme?.color?.background?.settingsModalBorder);
+
   return (
     <ModalWrapper marginBottom={20} color={theme?.color?.background?.topMenu}>
       <ModalHeader>
