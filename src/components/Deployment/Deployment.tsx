@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates,Account } from 'etherspot';
+import { AccountStates, Account } from 'etherspot';
 
 // icons
 import { IoMdCheckmark } from 'react-icons/io';
@@ -18,15 +18,7 @@ import { PrimaryButton, CloseButton } from '../Button';
 import { supportedChains } from '../../utils/chain';
 import { deployAccount } from '../../utils/transaction';
 import { Theme } from '../../utils/theme';
-interface IAccountTypes {
-  address: string;
-  createdAt: Date;
-  ensNode: null;
-  state: string;
-  store: string;
-  type: string;
-  updatedAt: Date;
-}
+import MenuModalWrapper from '../Menu/MenuModalWrapper';
 
 interface IDeployChain {
   chainId: number;
@@ -37,7 +29,7 @@ interface IDeployChain {
   state: AccountStates;
 }
 
-const Deployment = () => {
+const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   const [deployedChains, setDeployedChains] = useState<IDeployChain[]>([]);
   const [undeployedChains, setUndeployedChains] = useState<IDeployChain[]>([]);
   const [confirmModal, setConfirmModal] = useState<boolean>(false);
@@ -78,14 +70,14 @@ const Deployment = () => {
     if (!data) return;
     const [undeployed, deployed] = data.reduce(
       (acc: IDeployChain[][], curr: IDeployChain) => {
-        if (curr.state ===  AccountStates.UnDeployed) {
+        if (curr.state === AccountStates.UnDeployed) {
           acc[0].push(curr);
         } else {
           acc[1].push(curr);
         }
         return acc;
       },
-      [[], []]
+      [[], []],
     );
     setUndeployedChains(undeployed);
     setDeployedChains(deployed);
@@ -93,7 +85,7 @@ const Deployment = () => {
 
   const deploy = async () => {
     if (!selectedChain || !accountAddress) return;
-    
+
     const sdk = getSdkForChainId(selectedChain);
     if (!sdk) {
       setErrorMessage('Failed to proceed with selected actions!');
@@ -115,14 +107,13 @@ const Deployment = () => {
   const hideModal = () => {
     setConfirmModal(false);
   };
-  
+
   useEffect(() => {
     getDeploymentData();
   }, []);
 
   return (
-    <Card title="Deployments" marginBottom={20} color={theme?.color?.background?.topMenu}>
-      <HorizontalLine />
+    <MenuModalWrapper title="Deployments" onBackButtonClick={onBackButtonClick}>
       {errorMessage && (
         <Modal>
           <CloseButton onClick={handleClose} top={18} right={20} />
@@ -185,7 +176,7 @@ const Deployment = () => {
           ))}
         </Body>
       </Wrapper>
-    </Card>
+    </MenuModalWrapper>
   );
 };
 
@@ -203,24 +194,17 @@ const Section = styled.div`
   padding: 10px;
   border-radius: 10px;
   font-family: 'PTRootUIWebMedium', sans-serif;
-  box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
 `;
 
 const Header = styled.div`
   display: block;
-  color: ${({ theme }) => theme.color.text.outerLabel};
+  color: ${({ theme }) => theme.color.text.settingsModalSubHeader};
   font-size: 15px;
 `;
 
 const Label = styled.label`
   display: inline-block;
   padding: 0;
-`;
-
-const HorizontalLine = styled.div`
-  width: 100%;
-  height: 1px;
-  background: ${({ theme }) => theme.color.text.outerLabel};
 `;
 
 const Body = styled.div`
@@ -252,7 +236,7 @@ const Body = styled.div`
 `;
 
 const DeployButton = styled.button`
-  background: ${({ theme }) => theme.color.background.deployButton};
+  background: ${({ theme }) => theme.color.background.settingMenuMain};
   color: ${({ theme }) => theme.color.text.card};
   font-weight: bold;
   border: none;

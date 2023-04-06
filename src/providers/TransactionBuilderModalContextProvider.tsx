@@ -90,7 +90,7 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
       {!!modal && (
         <Modal noBackground>
           {modal}
-          <CloseButton onClick={hideModal} top={12} right={20} />
+          <CloseButton onClick={hideModal} top={24} right={32} />
         </Modal>
       )}
     </TransactionBuilderModalContext.Provider>

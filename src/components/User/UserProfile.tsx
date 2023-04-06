@@ -19,7 +19,7 @@ import { CHAIN_ID } from '../../utils/chain';
 // constants
 import { OPENLOGIN_STORE, WAGMI_STORE } from '../../constants/storageConstants';
 import { ENSNode } from 'etherspot';
-import { IoChevronBackCircleOutline } from 'react-icons/io5';
+import MenuModalWrapper from '../Menu/MenuModalWrapper';
 
 const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   const { accountAddress, providerAddress, getEnsNode } = useEtherspot();
@@ -62,21 +62,16 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
   }, []);
 
   return (
-    <ModalWrapper marginBottom={20} color={theme?.color?.background?.topMenu}>
-      <ModalHeader>
-        <BackButton color={theme?.color?.text?.settingsIcon} onClick={onBackButtonClick} />
-        <HeaderText>Profile</HeaderText>
-      </ModalHeader>
-      <HorizontalLine />
+    <MenuModalWrapper title="Profile" onBackButtonClick={onBackButtonClick}>
       {!isWeb3Login && (
         <Wrapper>
-          <Header>Email</Header>
+          <FieldHeader>Email</FieldHeader>
           <Value>{email}</Value>
         </Wrapper>
       )}
       {isWeb3Login && (
         <Wrapper>
-          <Header>Keybased Address</Header>
+          <FieldHeader color={theme?.color?.text?.settingsModalSubHeader}>Keybased Address</FieldHeader>
           <Value>
             {providerAddress ? (
               <AddressCopyButtonWrapper>
@@ -99,7 +94,7 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
         </Wrapper>
       )}
       <Wrapper>
-        <Header>Smart Wallet Address</Header>
+        <FieldHeader color={theme?.color?.text?.settingsModalSubHeader}>Smart Wallet Address</FieldHeader>
         <Value>
           {accountAddress ? (
             <AddressCopyButtonWrapper>
@@ -118,25 +113,24 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
         </Value>
       </Wrapper>
       <Wrapper>
-        <Header>ENS</Header>
+        <FieldHeader color={theme?.color?.text?.settingsModalSubHeader}>ENS</FieldHeader>
         <Value>{ensName ?? 'Not found'}</Value>
       </Wrapper>
-    </ModalWrapper>
+    </MenuModalWrapper>
   );
 };
 
 export default UserProfile;
 
 const Wrapper = styled.div`
-  display: block;
-  margin-top: 20px;
-  font-family: 'PTRootUIWebMedium', sans-serif;
+  margin: 8px 0px;
 `;
 
-const Header = styled.div`
+const FieldHeader = styled.div`
   display: block;
-  color: ${({ theme }) => theme.color.text.outerLabel};
+  color: ${({ theme }) => theme.color.text.settingsModalSubHeader};
   font-size: 15px;
+  margin: 4px 0px;
 `;
 
 const Value = styled.div`
@@ -153,20 +147,6 @@ const CheckmarkIcon = styled(FcCheckmark)`
   margin-top: -3px;
 `;
 
-const BackButton = styled(IoChevronBackCircleOutline)`
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.5;
-  }
-`;
-
-const HorizontalLine = styled.div`
-  width: 100%;
-  height: 1px;
-  background: ${({ theme }) => theme.color.text.outerLabel};
-`;
-
 const AddressCopyButtonWrapper = styled.div`
   width: 100%;
   display: flex;
@@ -176,29 +156,4 @@ const AddressCopyButtonWrapper = styled.div`
 
 const AddressWrapper = styled.div`
   overflow: hidden;
-`;
-
-const ModalWrapper = styled.div<{ marginBottom?: number; color?: string }>`
-  background: ${({ theme, color }) => color ?? theme.color.background.card};
-  color: ${({ theme }) => theme.color.text.card};
-  border-radius: 12px;
-  padding: 16px 20px;
-  ${({ marginBottom }) => marginBottom && `margin-bottom: ${marginBottom}px;`};
-  position: relative;
-  box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
-  text-align: left;
-  user-select: none;
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-`;
-
-const HeaderText = styled.h3`
-  margin-left: 8px;
-  font-size: 16px;
-  color: ${({ theme }) => theme.color.text.cardTitle};
-  font-family: 'PTRootUIWebBold', sans-serif;
 `;

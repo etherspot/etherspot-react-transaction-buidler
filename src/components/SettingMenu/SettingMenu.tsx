@@ -95,7 +95,14 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             title="Deployment"
             onClick={() => {
               hideMenu();
-              showModal(<Deployment />);
+              showModal(
+                <Deployment
+                  onBackButtonClick={() => {
+                    hideModal();
+                    setShowMenu(true);
+                  }}
+                />,
+              );
             }}
           />
           <MenuItemAnchor
