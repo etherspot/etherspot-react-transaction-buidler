@@ -3,12 +3,14 @@ import { BsClockHistory } from 'react-icons/bs';
 import { FaRocket } from 'react-icons/fa';
 import { IoMdLogOut } from 'react-icons/io';
 import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
+import { BiUser } from 'react-icons/bi';
 import styled, { useTheme } from 'styled-components';
 import { useTransactionBuilderModal } from '../../hooks';
 import useOnClickOutside from '../../hooks/useOnClickOutside';
 import { Theme } from '../../utils/theme';
 import History from '../History';
 import Deployment from '../Deployment';
+import UserProfile from '../User/UserProfile';
 import MenuItemAnchor from '../Menu/MenuItemAnchor';
 import MenuItem from '../Menu/MenuItem';
 import EtherspotLogo from '../Image/EtherspotLogo';
@@ -64,6 +66,14 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             title="Dashboard"
             link="https://dashboard.etherspot.io"
             icon={<MdOutlineDashboardCustomize size={16} style={{ marginRight: '12px' }} />}
+          />
+          <MenuItem
+            icon={<BiUser size={16} style={{ marginRight: '12px' }} />}
+            title="Profile"
+            onClick={() => {
+              hideMenu();
+              showModal(<UserProfile />);
+            }}
           />
           <MenuItem
             icon={<BsClockHistory size={16} style={{ marginRight: '12px' }} />}

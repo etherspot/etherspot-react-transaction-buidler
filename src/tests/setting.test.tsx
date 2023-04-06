@@ -13,6 +13,10 @@ jest.mock('../components/History/index.ts', () => {
   return jest.mock;
 });
 
+jest.mock('../components/User/UserProfile.tsx', () => {
+  return jest.mock;
+});
+
 describe('builder setting menu', () => {
   test('should render builder setting menu', async () => {
     const defaultValue = {
@@ -33,6 +37,7 @@ describe('builder setting menu', () => {
 
     fireEvent.click(await menuContext.findByTestId('builder-setting-menu'));
     expect(menuContext.getByText('Dashboard')).toHaveAttribute('href', 'https://dashboard.etherspot.io');
+    expect(menuContext.getByText('Profile')).toBeInTheDocument();
     expect(menuContext.getByText('History')).toBeInTheDocument();
     expect(menuContext.getByText('Etherspot')).toHaveAttribute('href', 'https://etherspot.io/');
     expect(menuContext.getByText('Logout')).toBeInTheDocument();

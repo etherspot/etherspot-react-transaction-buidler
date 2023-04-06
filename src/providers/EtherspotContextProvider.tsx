@@ -10,6 +10,7 @@ import {
   RateData,
   NftCollection,
   WalletConnectWalletProvider,
+  ENSNode,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { BigNumber, ethers } from 'ethers';
@@ -511,6 +512,43 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
+  // get ENS Node
+  const getEnsNode = useCallback(
+    async (
+      chainId: number,
+      address: string | null = accountAddress,
+      recompute: boolean = true
+    ): Promise<ENSNode | null> => {
+      const sdkForChain = getSdkForChainId(chainId);
+
+      if (!sdkForChain) return null;
+
+      let computedAccount;
+
+      if (!address && recompute) {
+        try {
+          computedAccount = await connect();
+        } catch (e) {
+          //
+        }
+      }
+
+      if (!address && !computedAccount) return null;
+
+      try {
+        const ens = await sdkForChain.getENSNode({
+          nameOrHashOrAddress: address || computedAccount,
+        });
+        return ens;
+      } catch (e) {
+        //
+      }
+
+      return null;
+    },
+    [sdk, accountAddress]
+  );
+
   const logout = useCallback(() => {
     sdkPerChain = {};
     setProvider(null);
@@ -552,6 +590,7 @@ const EtherspotContextProvider = ({
       loadSmartWalletBalancesByChain,
       getSupportedAssetsWithBalancesForChainId,
       getNftsForChainId,
+      getEnsNode,
       providerAddress,
       web3Provider: provider,
       totalWorthPerAddress,
@@ -579,6 +618,7 @@ const EtherspotContextProvider = ({
       loadSmartWalletBalancesByChain,
       getSupportedAssetsWithBalancesForChainId,
       getNftsForChainId,
+      getEnsNode,
       providerAddress,
       provider,
       totalWorthPerAddress,
