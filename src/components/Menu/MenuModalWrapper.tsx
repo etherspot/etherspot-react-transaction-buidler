@@ -19,13 +19,14 @@ const MenuModalWrapper = ({
   const theme: Theme = useTheme();
 
   return (
-    <ModalWrapper marginBottom={20} color={theme?.color?.background?.topMenu}>
+    <ModalWrapper marginBottom={20}>
       <ModalHeader>
-        {onBackButtonClick && <BackButton color={theme?.color?.text?.settingsIcon} onClick={onBackButtonClick} />}
+        {onBackButtonClick && (
+          <BackButton color={theme?.color?.background?.settingMenuMain} onClick={onBackButtonClick} />
+        )}
         <HeaderTitle>{title}</HeaderTitle>
       </ModalHeader>
-      <HorizontalLine color={theme?.color?.background?.settingsModalBorder} />
-      <ModalBody>{children}</ModalBody>
+      {children}
     </ModalWrapper>
   );
 };
@@ -33,7 +34,7 @@ const MenuModalWrapper = ({
 export default MenuModalWrapper;
 
 const ModalWrapper = styled.div<{ marginBottom?: number; color?: string }>`
-  background: ${({ theme, color }) => color ?? theme.color.background.card};
+  background: ${({ theme }) => theme.color.background.settingsModal};
   color: ${({ theme }) => theme.color.text.card};
   border-radius: 12px;
   padding: 16px 20px;
@@ -47,30 +48,22 @@ const ModalWrapper = styled.div<{ marginBottom?: number; color?: string }>`
 const ModalHeader = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-`;
-
-const HorizontalLine = styled.div`
-  width: 100%;
-  height: 1px;
-  background: ${({ theme, color }) => color ?? theme.color.background.settingsModalBorder};
+  padding-bottom: 14px;
+  border-bottom: ${({ theme }) => theme.color.background.settingsModalBorder};
+  border-width: thin;
+  border-bottom-style: groove;
 `;
 
 const HeaderTitle = styled.span`
   margin-left: 8px;
   font-size: 16px;
-  color: ${({ theme }) => theme.color.text.cardTitle};
-  font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
 const BackButton = styled(IoChevronBackCircleOutline)`
+  color: #fd9250;
   cursor: pointer;
 
-  &:hover {
+  :hover {
     opacity: 0.5;
   }
-`;
-
-const ModalBody = styled.div`
-  padding: 8px 0px;
 `;

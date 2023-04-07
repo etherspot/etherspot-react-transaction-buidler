@@ -1,12 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { BsClockHistory } from 'react-icons/bs';
-import { FaRocket } from 'react-icons/fa';
-import { IoMdLogOut } from 'react-icons/io';
-import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
-import { BiUser } from 'react-icons/bi';
 import styled, { useTheme } from 'styled-components';
-import { useTransactionBuilderModal } from '../../hooks';
-import useOnClickOutside from '../../hooks/useOnClickOutside';
+
+// Components
 import { Theme } from '../../utils/theme';
 import History from '../History';
 import Deployment from '../Deployment';
@@ -14,28 +9,17 @@ import UserProfile from '../User/UserProfile';
 import MenuItemAnchor from '../Menu/MenuItemAnchor';
 import MenuItem from '../Menu/MenuItem';
 import EtherspotLogo from '../Image/EtherspotLogo';
+import { CloseButton } from '../Button';
 
-const MenuWrapper = styled.div`
-  z-index: 10;
-  position: absolute;
-  top: 40px;
-  right: 15px;
-  background: ${({ theme }) => theme.color.background.topMenu};
-  color: ${({ theme }) => theme.color.text.topMenu};
-  border-radius: 5px;
-  padding: 12px 16px;
-  font-size: 14px;
-  text-align: left;
-  box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
-`;
+// Hooks
+import { useTransactionBuilderModal } from '../../hooks';
 
-const MenuButton = styled(MdOutlineSettings)`
-  cursor: pointer;
-
-  &:hover {
-    opacity: 0.5;
-  }
-`;
+// Icons
+import { BsClockHistory } from 'react-icons/bs';
+import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
+import { IoWalletOutline } from 'react-icons/io5';
+import { TbLogout } from 'react-icons/tb';
+import { HiOutlineUser } from 'react-icons/hi';
 
 export interface SettingMenuProps {
   showLogout?: boolean;
@@ -49,9 +33,6 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
   const theme: Theme = useTheme();
   const { showModal, hideModal } = useTransactionBuilderModal();
 
-  const hideMenu = () => setShowMenu(false);
-  useOnClickOutside(menuRef, hideMenu);
-
   return (
     <>
       <MenuButton
@@ -61,17 +42,17 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
         onClick={() => setShowMenu(!showMenu)}
       />
       {showMenu && (
-        <MenuWrapper ref={menuRef}>
+        <MenuWrapper>
+          <CloseButtonWrapper onClick={() => setShowMenu(false)} display="inline-block" />
           <MenuItemAnchor
             title="Dashboard"
             link="https://dashboard.etherspot.io"
             icon={<MdOutlineDashboardCustomize size={16} style={{ marginRight: '12px' }} />}
           />
           <MenuItem
-            icon={<BiUser size={16} style={{ marginRight: '12px' }} />}
+            icon={<HiOutlineUser size={16} style={{ marginRight: '12px' }} />}
             title="Profile"
             onClick={() => {
-              hideMenu();
               showModal(
                 <UserProfile
                   onBackButtonClick={() => {
@@ -86,15 +67,13 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             icon={<BsClockHistory size={16} style={{ marginRight: '12px' }} />}
             title="History"
             onClick={() => {
-              hideMenu();
               showModal(<History />);
             }}
           />
           <MenuItem
-            icon={<FaRocket size={16} style={{ marginRight: '12px' }} />}
-            title="Deployment"
+            icon={<IoWalletOutline size={16} style={{ marginRight: '12px' }} />}
+            title="Deployments"
             onClick={() => {
-              hideMenu();
               showModal(
                 <Deployment
                   onBackButtonClick={() => {
@@ -112,7 +91,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           />
           {showLogout && (
             <MenuItem
-              icon={<IoMdLogOut size={16} style={{ marginRight: '12px' }} />}
+              icon={<TbLogout size={16} style={{ marginRight: '12px' }} />}
               onClick={() => {
                 logout();
               }}
@@ -126,3 +105,32 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
 };
 
 export default SettingMenu;
+
+const MenuWrapper = styled.div`
+  width: 180px;
+  z-index: 5;
+  position: absolute;
+  top: 42px;
+  right: 15px;
+  background: ${({ theme }) => theme.color.background.settingsModal};
+  color: ${({ theme }) => theme.color.text.settingsMenuItem};
+  border-radius: 5px;
+  padding: 8px 16px;
+  font-size: 16px;
+  text-align: left;
+  box-shadow: rgb(0 0 0 / 24%) 0px 3px 8px;
+`;
+
+const MenuButton = styled(MdOutlineSettings)`
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.5;
+  }
+`;
+
+const CloseButtonWrapper = styled(CloseButton)`
+  position: absolute;
+  top: 6px;
+  right: 12px;
+`;

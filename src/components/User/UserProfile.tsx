@@ -3,13 +3,13 @@ import styled, { useTheme } from 'styled-components';
 
 // components
 import Text from '../Text/Text';
-import { WalletCopyIcon } from '../TransactionBlock/Icons';
 
 // hooks
 import { useEtherspot } from '../../hooks';
 
 // icons
 import { FcCheckmark } from 'react-icons/fc';
+import { IoCopyOutline } from 'react-icons/io5';
 
 // utils
 import { Theme } from '../../utils/theme';
@@ -83,7 +83,7 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
                   {copiedAddress == providerAddress ? (
                     <CheckmarkIcon color={theme.color?.text?.textInput} />
                   ) : (
-                    WalletCopyIcon
+                    <WalletCopyIconWrapper />
                   )}
                 </Text>
               </AddressCopyButtonWrapper>
@@ -103,7 +103,7 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
                 {copiedAddress == accountAddress ? (
                   <CheckmarkIcon color={theme.color?.text?.textInput} />
                 ) : (
-                  WalletCopyIcon
+                  <WalletCopyIconWrapper />
                 )}
               </Text>
             </AddressCopyButtonWrapper>
@@ -123,7 +123,16 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
 export default UserProfile;
 
 const Wrapper = styled.div`
-  margin: 8px 0px;
+  margin: 12px 0px;
+`;
+
+const WalletCopyIconWrapper = styled(IoCopyOutline)`
+  color: #fd9250;
+
+  &:hover {
+    cursor: pointer;
+    opacity: 0.7;
+  }
 `;
 
 const FieldHeader = styled.div`
@@ -140,7 +149,8 @@ const Value = styled.div`
   border-radius: 10px;
   background: ${({ theme }) => theme.color.background.card};
   color: ${({ theme }) => theme.color.text.card};
-  font-size: 14px;
+  font-size: 15px;
+  font-family: 'PTRootUIWebMedium', sans-serif;
 `;
 
 const CheckmarkIcon = styled(FcCheckmark)`

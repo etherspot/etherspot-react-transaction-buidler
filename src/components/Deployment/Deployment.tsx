@@ -7,12 +7,10 @@ import { IoMdCheckmark } from 'react-icons/io';
 import { CgSandClock } from 'react-icons/cg';
 
 // components
-import Card from '../Card/Card';
 import { RoundedImage } from '../Image';
 import { useEtherspot } from '../../hooks';
 import Modal from '../Modal/Modal';
-import { Paragraph } from '../Text';
-import { PrimaryButton, CloseButton } from '../Button';
+import { CloseButton } from '../Button';
 
 // utils
 import { supportedChains } from '../../utils/chain';
@@ -35,6 +33,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
   const [confirmModal, setConfirmModal] = useState<boolean>(false);
   const [selectedChain, setSelectedChain] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoadingChainsStatus, setIsLoadingChainsStatus] = useState<boolean>(false);
 
   const { getSdkForChainId, accountAddress } = useEtherspot();
   const theme: Theme = useTheme();
@@ -66,6 +65,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
   };
 
   const getDeploymentData = async () => {
+    setIsLoadingChainsStatus(true);
     const data: IDeployChain[] = await getDeploymentStatus();
     if (!data) return;
     const [undeployed, deployed] = data.reduce(
@@ -79,6 +79,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
       },
       [[], []],
     );
+    setIsLoadingChainsStatus(false);
     setUndeployedChains(undeployed);
     setDeployedChains(deployed);
   };
@@ -88,14 +89,14 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
 
     const sdk = getSdkForChainId(selectedChain);
     if (!sdk) {
-      setErrorMessage('Failed to proceed with selected actions!');
+      setErrorMessage('Failed to deploy selected chains!');
       return;
     }
     try {
       await deployAccount(sdk);
       await getDeploymentData();
     } catch (err) {
-      setErrorMessage('Failed to proceed with selected actions!');
+      setErrorMessage('Failed to deploy selected chains!');
       hideModal();
     }
   };
@@ -112,26 +113,25 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
     getDeploymentData();
   }, []);
 
+  var selectedDeploymentChain;
+  if (!!confirmModal && selectedChain) {
+    selectedDeploymentChain = undeployedChains.find(({ chainId }) => chainId === selectedChain);
+  }
+
   return (
     <MenuModalWrapper title="Deployments" onBackButtonClick={onBackButtonClick}>
       {errorMessage && (
-        <Modal>
+        <Modal backgroundColor={theme?.color?.background?.settingsModal}>
           <CloseButton onClick={handleClose} top={18} right={20} />
           <AlertWrapper>{errorMessage}</AlertWrapper>
         </Modal>
       )}
-      {!!confirmModal && (
-        <Modal>
-          <Paragraph>Deploy your wallet on Ethereum to sign messages</Paragraph>
-          <PrimaryButton
-            background={theme?.color?.background?.selectInputScrollbar}
-            color={theme?.color?.text?.listItemQuickButtonPrimary}
-            display="flex"
-            justifyContent="center"
-            onClick={deploy}
-          >
-            Deploy
-          </PrimaryButton>
+      {!!confirmModal && selectedDeploymentChain?.title && (
+        <Modal backgroundColor={theme?.color?.background?.settingsModal}>
+          <ConfirmMessageWrapper>
+            Deploy your wallet on {selectedDeploymentChain?.title} to sign messages.
+          </ConfirmMessageWrapper>
+          <ConfirmDeployButton onClick={deploy}>Deploy</ConfirmDeployButton>
           <br />
           <SecondaryButton color={theme.color?.text?.card} onClick={hideModal}>
             Cancel
@@ -144,10 +144,10 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
           <Label>Deployed</Label>
         </Header>
         <Body>
-          {deployedChains.length == 0 && <Section>No Chains</Section>}
+          {deployedChains.length == 0 && <Section>{isLoadingChainsStatus ? 'Loading...' : 'No Chains'}</Section>}
           {deployedChains.map(({ iconUrl, title }) => (
             <Section>
-              <RoundedImage url={iconUrl} title={title} size={24} />
+              <RoundedImage url={iconUrl} title={title} size={20} />
               {title}
             </Section>
           ))}
@@ -159,10 +159,10 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
           <Label>Not deployed</Label>
         </Header>
         <Body>
-          {undeployedChains.length == 0 && <Section>No Chains</Section>}
+          {undeployedChains.length == 0 && <Section>{isLoadingChainsStatus ? 'Loading...' : 'No Chains'}</Section>}
           {undeployedChains.map(({ chainId, iconUrl, title }) => (
             <Section>
-              <RoundedImage url={iconUrl} title={title} size={24} />
+              <RoundedImage url={iconUrl} title={title} size={20} />
               {title}
               <DeployButton
                 onClick={() => {
@@ -183,13 +183,35 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
 export default Deployment;
 
 const Wrapper = styled.div`
-  margin-top: 10px;
+  margin: 12px 0px;
+`;
+
+const ConfirmMessageWrapper = styled.p`
+  padding: 16px 0px;
+  text-align: center;
+`;
+
+const ConfirmDeployButton = styled.div`
+  display: flex;
+  justify-content: center;
+  background: ${({ theme }) => theme.color.background.settingMenuMain};
+  color: #fff;
+  padding: 18px;
+  border-radius: 16px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.19);
+
+  &:hover {
+    opacity: 0.7;
+  }
 `;
 
 const Section = styled.div`
   display: flex;
   background: ${({ theme }) => theme.color.background.card};
   align-items: center;
+  height: 28px;
   margin-top: 8px;
   padding: 10px;
   border-radius: 10px;
@@ -197,9 +219,11 @@ const Section = styled.div`
 `;
 
 const Header = styled.div`
-  display: block;
+  display: flex;
+  align-items: center;
   color: ${({ theme }) => theme.color.text.settingsModalSubHeader};
   font-size: 15px;
+  margin: 6px 0px;
 `;
 
 const Label = styled.label`
@@ -208,9 +232,9 @@ const Label = styled.label`
 `;
 
 const Body = styled.div`
-  display: block;
-  overflow-y: scroll;
   background-color: ${({ theme }) => theme.color.background.listItem};
+  padding-right: 14px;
+  overflow-y: scroll;
   max-height: 230px;
   scrollbar-width: thin;
   ::-webkit-scrollbar {
@@ -222,33 +246,40 @@ const Body = styled.div`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.color.background.selectInputScrollbar};
+    background: ${({ theme }) => theme.color.background.settingMenuMain};
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarHover};
+    opacity: 0.7;
   }
 
   ::-webkit-scrollbar-thumb:active {
-    background-color: ${({ theme }) => theme.color.background.selectInputScrollbarActive};
+    opacity: 0.7;
   }
 `;
 
 const DeployButton = styled.button`
   background: ${({ theme }) => theme.color.background.settingMenuMain};
-  color: ${({ theme }) => theme.color.text.card};
-  font-weight: bold;
+  color: #fff;
   border: none;
   cursor: pointer;
   border-radius: 10px;
-  height: 30px;
-  width: 80px;
+  height: 28px;
+  width: 90px;
   margin-left: auto;
+  font-size: 14px;
+  font-size: 14px;
+
+  &:hover {
+    opacity: 0.7;
+  }
 `;
 
 const SecondaryButton = styled.button`
   margin: 0 auto;
+  padding-bottom: 8px;
+  font-size: 16px;
   display: flex;
   color: ${({ theme }) => theme.color?.text?.card};
   background: ${({ theme }) => theme.color.background.switchInputInactiveTab};

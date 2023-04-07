@@ -10,20 +10,22 @@ const ModalOverlay = styled.div<{ noBackground?: boolean }>`
   padding: 15px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 12px;
+  z-index: 10;
 `;
 
 const ModalContentWrapper = styled.div<{ noBackground?: boolean }>`
   max-height: 100%;
   overflow-x: hidden;
   overflow-y: scroll;
-  -ms-overflow-style: none; 
+  -ms-overflow-style: none;
   scrollbar-width: none;
-  
-  ${({ noBackground, theme }) => !noBackground && `
-    max-height: calc(100% - 30px);
+
+  ${({ noBackground, theme, color }) =>
+    !noBackground &&
+    `max-height: calc(100% - 30px);
     border-radius: 15px;
     padding: 15px;
-    background: ${theme.color.background.card};
+    background: ${color ?? theme.color.background.card};
     color: ${theme.color.text.card};
   `}
 
@@ -32,19 +34,24 @@ const ModalContentWrapper = styled.div<{ noBackground?: boolean }>`
   }
 `;
 
-const Modal = ({ children, noBackground }: {
+const Modal = ({
+  children,
+  noBackground,
+  backgroundColor,
+}: {
   children: React.ReactNode;
   noBackground?: boolean;
+  backgroundColor?: string;
 }) => {
   if (!children) return null;
 
   return (
     <ModalOverlay>
-      <ModalContentWrapper noBackground={noBackground}>
+      <ModalContentWrapper color={backgroundColor} noBackground={noBackground}>
         {children}
       </ModalContentWrapper>
     </ModalOverlay>
-  )
+  );
 };
 
 export default Modal;

@@ -11,19 +11,18 @@ const MenuItemAnchorStyled = styled.a`
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  margin-bottom: 10px;
-  margin-right: 12px;
+  padding: 8px 0px;
   cursor: pointer;
   text-decoration: none;
-  color: ${({ theme }) => theme.color.text.topMenu};;
-  
+  color: ${({ theme }) => theme.color.text.settingsMenuItem};
+
   :visited {
-    color: ${({ theme }) => theme.color.text.topMenu};
+    color: ${({ theme }) => theme.color.text.settingsMenuItem};
     text-decoration: none;
   }
 
   :hover {
-    color: ${({ theme }) => theme.color.text.settingsIcon};
+    color: ${({ theme }) => theme.color.text.settingsMenuItemHover};
     text-decoration: none;
   }
 `;

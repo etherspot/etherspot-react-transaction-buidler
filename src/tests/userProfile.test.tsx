@@ -29,7 +29,7 @@ describe('User Profile component', () => {
   });
 
   beforeEach(() => {
-    render(<UserProfile />);
+    render(<UserProfile onBackButtonClick={jest.fn} />);
   });
 
   it('should render user email', () => {
