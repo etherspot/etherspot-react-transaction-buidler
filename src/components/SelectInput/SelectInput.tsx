@@ -22,9 +22,6 @@ const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean}>`
   padding: 8px 14px 14px;
   cursor: pointer;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
-  &:hover {
-    ${({ theme }) => `background-color: ${ theme.color.background.dropdownHoverColor };`}
-  }
 `;
 
 const SelectButtonWrapper = styled.div<{ disabled?: boolean }>`
@@ -101,10 +98,6 @@ const SelectedOption = styled.div<{ disabled?: boolean; noHover?: boolean; }>`
 
   ${({ disabled }) => !disabled && `
     cursor: pointer;
-  
-    &:hover {
-      opacity: 0.5;
-    }
   `}
 
   ${({ noHover }) => noHover && `
@@ -147,6 +140,7 @@ const OptionListItem = styled(SelectedOption)`
   text-align: left;
   cursor: pointer;
   padding: 7.5px 3px;
+  border-radius: 6px;
   &:hover {
     ${({ theme }) => `background-color: ${ theme.color.background.selectInputExpandedHover };`}
   }
