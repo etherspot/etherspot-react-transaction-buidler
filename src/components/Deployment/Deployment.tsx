@@ -269,7 +269,6 @@ const DeployButton = styled.button`
   width: 90px;
   margin-left: auto;
   font-size: 14px;
-  font-size: 14px;
 
   &:hover {
     opacity: 0.7;

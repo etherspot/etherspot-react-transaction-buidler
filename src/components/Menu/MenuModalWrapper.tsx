@@ -19,7 +19,7 @@ const MenuModalWrapper = ({
   const theme: Theme = useTheme();
 
   return (
-    <ModalWrapper marginBottom={20}>
+    <ModalWrapper>
       <ModalHeader>
         {onBackButtonClick && (
           <BackButton color={theme?.color?.background?.settingMenuMain} onClick={onBackButtonClick} />
@@ -38,7 +38,7 @@ const ModalWrapper = styled.div<{ marginBottom?: number; color?: string }>`
   color: ${({ theme }) => theme.color.text.card};
   border-radius: 12px;
   padding: 16px 20px;
-  ${({ marginBottom }) => marginBottom && `margin-bottom: ${marginBottom}px;`};
+  margin-bottom: 12px;
   position: relative;
   box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
   text-align: left;
