@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AccountTypes, ExchangeOffer, TokenListToken } from 'etherspot';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
+import { BiCheck } from 'react-icons/bi';
 
 // hooks
 import { useEtherspot } from '../../hooks';
@@ -28,6 +29,7 @@ type OfferRouteProps = {
   selectedToAsset?: TokenListToken | null;
   selectedNetwork?: Chain | null;
   availableToAssets?: TokenListToken[] | null;
+  isChecked?: boolean;
 };
 
 export const OfferRoute = (props: OfferRouteProps) => {
@@ -41,6 +43,7 @@ export const OfferRoute = (props: OfferRouteProps) => {
     selectedFromAsset,
     selectedAccountType,
     exchnageRate = 0,
+    isChecked = false,
   } = props;
   const [gasPrice, setGasPrice] = useState<string | undefined>();
   const [isEstimating, setIsEstimating] = useState(false);
@@ -113,18 +116,37 @@ export const OfferRoute = (props: OfferRouteProps) => {
           </Text>
         )}
       </div>
+      {isChecked && (
+        <OfferChecked>
+          <BiCheck size={14} />
+        </OfferChecked>
+      )}
     </OfferDetails>
   );
 };
 
 const OfferDetails = styled.div`
+  position: relative;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   font-family: 'PTRootUIWebMedium', sans-serif;
+  width: 100%;
 `;
 
 const OfferTopRow = styled.div`
   display: flex;
   justify-content: space-between;
+`;
+
+const OfferChecked = styled.div`
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  background: ${({ theme }) => theme.color.background.statusIconSuccess};
+  width: 14px;
+  height: 14px;
+  font-size: 4px;
+  border-radius: 7px;
+  color: #fff;
 `;

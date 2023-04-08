@@ -424,6 +424,7 @@ const AssetBridgeTransactionBlock = ({
           disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
           noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
           forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
+          isOffer
         />
       )}
     </>

@@ -325,6 +325,7 @@ const AssetSwapTransactionBlock = ({
 
   const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
+      isChecked={selectedOffer?.value && selectedOffer.value === option.value}
       option={option}
       availableOffers={availableOffers}
       availableToAssets={availableToAssets}
@@ -473,6 +474,7 @@ const AssetSwapTransactionBlock = ({
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
           forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1 && !selectedOffer}
+          isOffer
         />
       )}
     </>

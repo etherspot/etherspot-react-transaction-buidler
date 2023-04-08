@@ -13,10 +13,11 @@ import { containsText } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean}>`
+const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: boolean }>`
   position: relative;
   margin-bottom: 18px;
-  background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
+  background: ${({ theme, expanded, isOffer }) =>
+    expanded || isOffer ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
@@ -142,7 +143,7 @@ const OptionListItem = styled(SelectedOption)`
   padding: 7.5px 3px;
   border-radius: 6px;
   &:hover {
-    ${({ theme }) => `background-color: ${ theme.color.background.selectInputExpandedHover };`}
+    ${({ theme }) => `background-color: ${theme.color.background.selectInputExpandedHover};`}
   }
   &:last-child {
     margin-bottom: 0;
@@ -171,6 +172,7 @@ interface SelectInputProps {
   renderOptionListItemContent?: (option: SelectOption) => React.ReactNode;
   forceShow?: boolean
   noOpen?: boolean
+  isOffer?: boolean
 }
 
 const SelectInput = ({
@@ -188,6 +190,7 @@ const SelectInput = ({
   renderSelectedOptionContent,
   forceShow = false,
   noOpen = false,
+  isOffer = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-select-search-input-'));
@@ -201,10 +204,10 @@ const SelectInput = ({
   }, [isLoading, disabled, showSelectModal]);
 
   const hideSelectModal = () => setShowSelectModal(false);
-+
-  useEffect(() => {
-    setShowSelectModal(forceShow);
-  }, [forceShow])
+  +
+    useEffect(() => {
+      setShowSelectModal(forceShow);
+    }, [forceShow])
 
   const selectedOptionTitle = useMemo(() => {
     if (isLoading && !selectedOption?.title) return 'Loading options...';
@@ -218,14 +221,14 @@ const SelectInput = ({
   ]);
 
   const filteredSelectOptions: SelectOption[] = useMemo(
-    () => options.filter((selectOption) => containsText(selectOption?.title, searchQuery) || containsText(selectOption?.value , searchQuery)),
+    () => options.filter((selectOption) => containsText(selectOption?.title, searchQuery) || containsText(selectOption?.value, searchQuery)),
     [options, searchQuery],
   );
 
   return (
     <>
       {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
-      <Wrapper disabled={disabled} expanded={showSelectModal} onClick={onSelectClick}>
+      <Wrapper isOffer={isOffer} disabled={disabled} expanded={showSelectModal} onClick={onSelectClick}>
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         {!isLoading && options?.length > 1 && (
           <SelectButtonWrapper onClick={onSelectClick} disabled={disabled}>
@@ -237,7 +240,7 @@ const SelectInput = ({
           <SelectedOption onClick={(e) => {
             e.stopPropagation()
             onSelectClick()
-            }} 
+          }}
             disabled={disabled} noHover={noOpen}>
             {!!renderSelectedOptionContent && selectedOption && renderSelectedOptionContent(selectedOption)}
             {(!renderSelectedOptionContent || !selectedOption) && (
@@ -253,14 +256,14 @@ const SelectInput = ({
             {!noSearch && options?.length > 5 && (
               <SearchInputWrapper htmlFor={searchInputId}>
                 <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
-                <SearchInput 
-                  id={searchInputId} 
-                  onChange={(e: any) => setSearchQuery(e?.target?.value)} 
+                <SearchInput
+                  id={searchInputId}
+                  onChange={(e: any) => setSearchQuery(e?.target?.value)}
                   placeholder="Search"
-                  onClick={(e:any) => {
+                  onClick={(e: any) => {
                     e.stopPropagation()
                   }}
-                  onFocus={(e:any) => {
+                  onFocus={(e: any) => {
                     e.stopPropagation()
                   }}
                 />
