@@ -127,7 +127,7 @@ const Wrapper = styled.div`
 `;
 
 const WalletCopyIconWrapper = styled(IoCopyOutline)`
-  color: #fd9250;
+  color: ${({ theme }) => theme.color.text.settingsMenuItemHover};
 
   &:hover {
     cursor: pointer;

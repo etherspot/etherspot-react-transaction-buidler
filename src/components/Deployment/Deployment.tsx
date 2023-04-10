@@ -33,7 +33,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
   const [confirmModal, setConfirmModal] = useState<boolean>(false);
   const [selectedChain, setSelectedChain] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isLoadingChainsStatus, setIsLoadingChainsStatus] = useState<boolean>(false);
+  const [isLoadingChainsStatus, setIsLoadingChainsStatus] = useState(false);
 
   const { getSdkForChainId, accountAddress } = useEtherspot();
   const theme: Theme = useTheme();
@@ -113,7 +113,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
     getDeploymentData();
   }, []);
 
-  var selectedDeploymentChain;
+  let selectedDeploymentChain;
   if (!!confirmModal && selectedChain) {
     selectedDeploymentChain = undeployedChains.find(({ chainId }) => chainId === selectedChain);
   }
@@ -195,7 +195,7 @@ const ConfirmDeployButton = styled.div`
   display: flex;
   justify-content: center;
   background: ${({ theme }) => theme.color.background.settingMenuMain};
-  color: #fff;
+  color: ${({ theme }) => theme.color.text.main};
   padding: 18px;
   border-radius: 16px;
   font-size: 16px;
@@ -234,7 +234,7 @@ const Label = styled.label`
 const Body = styled.div`
   background-color: ${({ theme }) => theme.color.background.listItem};
   padding-right: 14px;
-  overflow-y: scroll;
+  overflow-y: auto;
   max-height: 230px;
   scrollbar-width: thin;
   ::-webkit-scrollbar {
@@ -261,7 +261,7 @@ const Body = styled.div`
 
 const DeployButton = styled.button`
   background: ${({ theme }) => theme.color.background.settingMenuMain};
-  color: #fff;
+  color: ${({ theme }) => theme.color.text.main};
   border: none;
   cursor: pointer;
   border-radius: 10px;

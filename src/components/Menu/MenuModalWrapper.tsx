@@ -50,7 +50,7 @@ const ModalHeader = styled.div`
   align-items: center;
   padding-bottom: 14px;
   border-bottom: ${({ theme }) => theme.color.background.settingsModalBorder};
-  border-width: thin;
+  border-width: 1px;
   border-bottom-style: groove;
 `;
 
@@ -60,7 +60,7 @@ const HeaderTitle = styled.span`
 `;
 
 const BackButton = styled(IoChevronBackCircleOutline)`
-  color: #fd9250;
+  color: ${({ theme }) => theme.color.text.settingsMenuItemHover};
   cursor: pointer;
 
   :hover {
