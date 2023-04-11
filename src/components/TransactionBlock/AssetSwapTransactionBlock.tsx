@@ -42,6 +42,11 @@ const Title = styled.h3`
   font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
+const ToOptionContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
   return {
@@ -338,6 +343,25 @@ const AssetSwapTransactionBlock = ({
     />
   );
 
+  const renderToAssetOption = (option: SelectOption) => {
+    if (selectedFromAsset && selectedNetwork && selectedNetwork) {
+      return (
+        <ToOptionContainer>
+          <CombinedRoundedImages
+            url={option.iconUrl}
+            smallImageUrl={selectedNetwork.iconUrl}
+            title={selectedFromAsset.symbol}
+            smallImageTitle={selectedNetwork.title}
+            borderColor={theme?.color?.background?.textInput}
+          />
+          <Text>{option.title}</Text>
+        </ToOptionContainer>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <>
       <Title>Swap asset</Title>
@@ -398,6 +422,8 @@ const AssetSwapTransactionBlock = ({
             }}
             errorMessage={errorMessages?.toAsset}
             disabled={!!fixed}
+            renderSelectedOptionContent={renderToAssetOption}
+            renderOptionListItemContent={renderToAssetOption}
           />
           {!!selectedFromAsset && (
             <TextInput
