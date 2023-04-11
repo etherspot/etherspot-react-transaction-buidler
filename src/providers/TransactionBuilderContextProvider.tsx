@@ -58,6 +58,7 @@ import SettingMenu from '../components/SettingMenu/SettingMenu';
 import { TbCopy, TbWallet } from 'react-icons/tb';
 import { BiCheck } from 'react-icons/bi';
 import { CgSandClock } from 'react-icons/cg';
+import { isEmpty } from 'lodash';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -354,7 +355,7 @@ const TransactionBuilderContextProvider = ({
 
   const onCopySuccess = async () => {
     setCopiedAddress(true);
-    if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(10000);
+    if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(2000);
   };
 
   const {
@@ -387,7 +388,7 @@ const TransactionBuilderContextProvider = ({
     [crossChainActions]
   );
 
-  const onValidate = useCallback(() => {
+  const getValidationErrors = () => {
     let validationErrors: IValidationErrors = {};
     transactionBlocks.forEach((transactionBlock) => {
       const transactionBlockErrors = validateTransactionBlockValues(transactionBlock);
@@ -397,9 +398,22 @@ const TransactionBuilderContextProvider = ({
         [transactionBlock.id]: transactionBlockErrors,
       };
     });
+
+    return validationErrors;
+  };
+
+  const onValidate = useCallback(() => {
+    const validationErrors = getValidationErrors();
+
     setTransactionBlockValidationErrors(validationErrors);
 
     return validationErrors;
+  }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
+
+  const isBlockValid = useMemo(() => {
+    const validationErrors = getValidationErrors();
+
+    return isEmpty(validationErrors);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
 
   const onContinueClick = useCallback(async () => {
@@ -485,7 +499,6 @@ const TransactionBuilderContextProvider = ({
     }
 
     if (errorMessage) {
-      showAlertModal(errorMessage);
       return;
     }
 
@@ -1228,10 +1241,9 @@ const TransactionBuilderContextProvider = ({
                             errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                           />
                           {j === multiCallBlocks.length - 1 &&
-                            (multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
-                              multiCallBlock.type == TRANSACTION_BLOCK_TYPE.SEND_ASSET) && (
+                            multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
                               <MultiCallButton
-                                disabled={!!disabled}
+                                disabled={!!disabled || !isBlockValid}
                                 onClick={async () => {
                                   // Add new transaction block to the multicall block list
                                   let validationErrors = await onValidate();
@@ -1244,9 +1256,6 @@ const TransactionBuilderContextProvider = ({
                                 {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                                   multiCallBlock.values?.toAsset?.symbol &&
                                   ` with ${multiCallBlock.values?.toAsset?.symbol}`}
-                                {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
-                                  multiCallBlock.values?.selectedAsset &&
-                                  ` with ${multiCallBlock.values?.selectedAsset?.symbol}`}
                               </MultiCallButton>
                             )}
                         </Card>
@@ -1270,12 +1279,11 @@ const TransactionBuilderContextProvider = ({
                         {...transactionBlock}
                         errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                       />
-                      {(transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
-                        transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) &&
+                      {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                         transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
                         !editingTransactionBlock && (
                           <MultiCallButton
-                            disabled={!!disabled}
+                            disabled={!!disabled || !isBlockValid}
                             onClick={async () => {
                               // Add new transaction block to the multicall block list
                               let validationErrors = await onValidate();
@@ -1288,9 +1296,6 @@ const TransactionBuilderContextProvider = ({
                             {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                               transactionBlock.values?.toAsset?.symbol &&
                               ` with ${transactionBlock.values?.toAsset?.symbol}`}
-                            {transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
-                              transactionBlock.values?.selectedAsset &&
-                              ` with ${transactionBlock.values?.selectedAsset?.symbol}`}
                           </MultiCallButton>
                         )}
                     </Card>
@@ -1312,7 +1317,7 @@ const TransactionBuilderContextProvider = ({
                 <PrimaryButton
                   marginTop={editingTransactionBlock ? 0 : 30}
                   onClick={onContinueClick}
-                  disabled={isChecking}
+                  disabled={isChecking || !isBlockValid}
                 >
                   {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
                   {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}

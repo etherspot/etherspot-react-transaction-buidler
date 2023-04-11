@@ -45,7 +45,7 @@ export const supportedChains: Chain[] = [
   },
   {
     chainId: CHAIN_ID.XDAI,
-    title: 'Gnosis Chain (xDai)',
+    title: 'Gnosis Chain',
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/gnosis.png',
     explorerUrl: 'https://blockscout.com/xdai/mainnet/tx/',
   },
@@ -194,19 +194,19 @@ export const klimaAsset: IAssetWithBalance = {
   balance: BigNumber.from(0),
   assetPriceUsd: null,
   balanceWorthUsd: null,
-}
+};
 
 export const plrDaoMemberNft = {
   address: '0x267c85113BAfbBe829918fB4c23135af72c9C472',
   chainId: CHAIN_ID.POLYGON,
-  name: "DekuDAO NFT",
-  symbol: "Dekunft",
+  name: 'DekuDAO NFT',
+  symbol: 'Dekunft',
   decimals: 18,
   logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
   balance: BigNumber.from(0),
   assetPriceUsd: null,
   balanceWorthUsd: null,
-}
+};
 
 export const changeToChain = async (chainId: number): Promise<boolean> => {
   // @ts-ignore
@@ -251,4 +251,4 @@ export const changeToChain = async (chainId: number): Promise<boolean> => {
 
   alert(`Please manually switch to ${supportedChain.title}.`);
   return false;
-}
+};

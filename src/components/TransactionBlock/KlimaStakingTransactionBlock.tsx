@@ -477,6 +477,7 @@ const KlimaStakingTransactionBlock = ({
           placeholder="Offer"
           errorMessage={!isRouteFetching ? errorMessages?.route : ''}
           noOpen={true}
+          isOffer
         />
       )}
     </>

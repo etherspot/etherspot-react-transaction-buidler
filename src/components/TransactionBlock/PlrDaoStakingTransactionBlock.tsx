@@ -578,6 +578,7 @@ const PlrDaoStakingTransactionBlock = ({
   const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
       option={option}
+      isChecked={selectedOffer?.value && selectedOffer.value === option.value}
       availableOffers={availableOffers}
       targetAssetPriceUsd={targetAssetPriceUsd}
       selectedAccountType={selectedAccountType}
@@ -783,6 +784,7 @@ const PlrDaoStakingTransactionBlock = ({
             disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
             noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
             forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1}
+            isOffer
           />
         )}
       </>

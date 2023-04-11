@@ -31,7 +31,7 @@ export const formatAmountDisplay = (
   // check string to avoid underflow
   if ((amount !== '0.01' && amount.startsWith('0.01')) || amount.startsWith('0.00')) {
     const [, fraction] = amount.split('.');
-    let smallAmount = `~${leftSymbol ?? ''}0.`;
+    let smallAmount = `${leftSymbol ?? ''}0.`;
 
     [...fraction].every((digitString) => {
       if (digitString === '0') {
@@ -111,9 +111,8 @@ export const getOfferItemIndexByBestOffer = (gasUsd: (number | undefined)[], rec
 export const copyToClipboard = async (valueToCopy: string, onSuccess?: () => void) => {
   try {
     await navigator.clipboard.writeText(valueToCopy);
-    alert('Copied!');
     if (onSuccess) onSuccess();
-  } catch (e) {
+  } catch {
     alert('Unable to copy');
   }
 };

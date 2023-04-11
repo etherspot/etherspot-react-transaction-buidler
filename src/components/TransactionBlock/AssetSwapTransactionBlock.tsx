@@ -42,6 +42,11 @@ const Title = styled.h3`
   font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
+const ToOptionContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
   return {
@@ -325,6 +330,7 @@ const AssetSwapTransactionBlock = ({
 
   const renderOfferOption = (option: SelectOption) => (
     <OfferRoute
+      isChecked={selectedOffer?.value && selectedOffer.value === option.value}
       option={option}
       availableOffers={availableOffers}
       availableToAssets={availableToAssets}
@@ -336,6 +342,25 @@ const AssetSwapTransactionBlock = ({
       exchnageRate={exchangeRateByChainId}
     />
   );
+
+  const renderToAssetOption = (option: SelectOption) => {
+    if (selectedFromAsset && selectedNetwork && selectedNetwork) {
+      return (
+        <ToOptionContainer>
+          <CombinedRoundedImages
+            url={option.iconUrl}
+            smallImageUrl={selectedNetwork.iconUrl}
+            title={selectedFromAsset.symbol}
+            smallImageTitle={selectedNetwork.title}
+            borderColor={theme?.color?.background?.textInput}
+          />
+          <Text>{option.title}</Text>
+        </ToOptionContainer>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <>
@@ -397,6 +422,8 @@ const AssetSwapTransactionBlock = ({
             }}
             errorMessage={errorMessages?.toAsset}
             disabled={!!fixed}
+            renderSelectedOptionContent={renderToAssetOption}
+            renderOptionListItemContent={renderToAssetOption}
           />
           {!!selectedFromAsset && (
             <TextInput
@@ -473,6 +500,7 @@ const AssetSwapTransactionBlock = ({
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
           forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1 && !selectedOffer}
+          isOffer
         />
       )}
     </>
