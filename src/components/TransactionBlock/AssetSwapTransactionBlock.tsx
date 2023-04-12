@@ -47,6 +47,12 @@ const ToOptionContainer = styled.div`
   align-items: center;
 `;
 
+const ToOptionChainAsset = styled.div`
+  display: flex;
+  flex-direction: column;
+  row-gap: 1rem;
+`;
+
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
   return {
@@ -354,7 +360,10 @@ const AssetSwapTransactionBlock = ({
             smallImageTitle={selectedNetwork.title}
             borderColor={theme?.color?.background?.textInput}
           />
-          <Text>{option.title}</Text>
+          <ToOptionChainAsset>
+            <Text>{option.title}</Text>
+            <Text size={12}>On {selectedNetwork.title}</Text>
+          </ToOptionChainAsset>
         </ToOptionContainer>
       );
     }
