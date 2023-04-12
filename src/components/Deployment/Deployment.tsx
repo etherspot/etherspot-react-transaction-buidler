@@ -126,7 +126,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
           <AlertWrapper>{errorMessage}</AlertWrapper>
         </Modal>
       )}
-      {!!confirmModal && selectedDeploymentChain?.title && (
+      {!!confirmModal && !!selectedDeploymentChain && (
         <Modal backgroundColor={theme?.color?.background?.settingsModal}>
           <ConfirmMessageWrapper>
             Deploy your wallet on {selectedDeploymentChain?.title} to sign messages.

@@ -7,15 +7,13 @@ import { IoChevronBackCircleOutline } from 'react-icons/io5';
 // Utils
 import { Theme } from '../../utils/theme';
 
-const MenuModalWrapper = ({
-  children,
-  title,
-  onBackButtonClick,
-}: {
+interface IMenuModalWrapper {
   children: React.ReactNode;
   title: string;
   onBackButtonClick?: () => void;
-}) => {
+}
+
+const MenuModalWrapper = ({ children, title, onBackButtonClick }: IMenuModalWrapper) => {
   const theme: Theme = useTheme();
 
   return (
