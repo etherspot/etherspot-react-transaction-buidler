@@ -196,7 +196,7 @@ const ChainHeaderCopyIcon = styled.span`
 const ChainBlockList = styled.div`
   padding: 1px 12px;
   max-height: 320px;
-  overflow-y: scroll;
+  overflow-y: auto;
 `;
 
 const ListItem = styled.div`

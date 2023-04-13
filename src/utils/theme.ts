@@ -41,6 +41,9 @@ export interface Theme {
       horizontalLine?: string;
       deployButton?: string;
       blockParagraphBorder?: string;
+      settingMenuMain?: string;
+      settingsModalBorder?: string;
+      settingsModal?: string;
     };
     text?: {
       main?: string;
@@ -82,6 +85,9 @@ export interface Theme {
       blockParagraphHighlight?: string;
       blockParagraphHighlightSecondary?: string;
       selectAllButton?: string;
+      settingsModalSubHeader?: string;
+      settingsMenuItem?: string;
+      settingsMenuItemHover?: string;
     };
   };
 }
@@ -129,6 +135,9 @@ export const defaultTheme: Theme = {
       walletChainButtonActive: '#ffeee6',
       deployButton: '#ff884d',
       blockParagraphBorder: 'linear-gradient(#346ecd, #cd34a2)',
+      settingMenuMain: 'linear-gradient(rgb(253, 146, 80), rgb(255, 85, 72))',
+      settingsModalBorder: '#d9d9d940',
+      settingsModal: '#fff',
     },
     text: {
       main: '#fff',
@@ -170,6 +179,9 @@ export const defaultTheme: Theme = {
       blockParagraphHighlight: '#e333e8',
       blockParagraphHighlightSecondary: '#77e7f6',
       selectAllButton: '#221f33',
+      settingsModalSubHeader: '#6e6b6a',
+      settingsMenuItem: '#191726',
+      settingsMenuItemHover: '#ee6723',
     },
   },
 };
@@ -212,6 +224,9 @@ export const darkTheme: Theme = {
       listItemQuickButtonPrimary: '#eb860b',
       listItemQuickButtonSecondary: '#4f367a',
       deployButton: '#ff884d',
+      settingMenuMain: 'linear-gradient(to bottom,#fdb754,#f18214)',
+      settingsModalBorder: '#b6b1d2',
+      settingsModal: '#474078',
     },
     text: {
       selectInput: '#ffeee6',
@@ -247,6 +262,9 @@ export const darkTheme: Theme = {
       blockParagraphHighlightSecondary: '#77e7f6',
       settingsIcon: '#ee6723',
       selectAllButton: '#ff884d',
+      settingsModalSubHeader: '#b6b1d2',
+      settingsMenuItem: '#fff',
+      settingsMenuItemHover: '#f4973a',
     },
   },
 };
