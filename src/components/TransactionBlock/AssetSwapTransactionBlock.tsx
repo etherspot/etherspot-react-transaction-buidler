@@ -50,7 +50,7 @@ const ToOptionContainer = styled.div`
 const ToOptionChainAsset = styled.div`
   display: flex;
   flex-direction: column;
-  row-gap: 1rem;
+  row-gap: 5px;
 `;
 
 const mapOfferToOption = (offer: ExchangeOffer) => {

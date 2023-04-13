@@ -33,6 +33,7 @@ import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 // hooks
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
+import { BiCheck } from "react-icons/bi";
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -63,10 +64,12 @@ const WalletReceiveWrapper = styled.div`
 `;
 
 const OfferDetails = styled.div`
+  position: relative;
   display: flex;
   flex-direction: row;
-  align-items: center;
-  font-family: 'PTRootUIWebMedium', sans-serif;
+  align-items: flex-start;
+  font-family: "PTRootUIWebMedium", sans-serif;
+  width: 100%;
 `;
 
 const OfferGasPriceContainer = styled.div`
@@ -74,6 +77,18 @@ const OfferGasPriceContainer = styled.div`
   justify-content: flex-start;
   gap: 1rem;
   align-items: flex-end;
+`;
+
+const OfferChecked = styled.div`
+  position: absolute;
+  top: -10px;
+  right: 5px;
+  background: ${({ theme }) => theme.color.background.statusIconSuccess};
+  width: 14px;
+  height: 14px;
+  font-size: 4px;
+  border-radius: 7px;
+  color: #fff;
 `;
 
 const mapRouteToOption = (route: BridgingQuote): SelectOption => {
@@ -353,6 +368,9 @@ const KlimaStakingTransactionBlock = ({
           )}
         </OfferGasPriceContainer>
       </div>
+      <OfferChecked>
+        <BiCheck size={14} />
+      </OfferChecked>
     </OfferDetails>
   );
 
