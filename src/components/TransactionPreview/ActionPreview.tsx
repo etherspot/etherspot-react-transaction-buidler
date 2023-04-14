@@ -287,9 +287,7 @@ const TransactionStatus = ({
   }, []);
 
   // only show first on sdk batch transactions
-  const statusPreviewTransactions = crossChainAction.useWeb3Provider
-    ? crossChainAction.transactions
-    : [crossChainAction.transactions[0]];
+  const statusPreviewTransactions = [crossChainAction.transactions[0]];
 
   return (
     <>
@@ -435,7 +433,7 @@ const TransactionStatus = ({
                       )}
                       <Text size={16} medium>
                         {showAsApproval
-                          ? `Aprove: ${actionStatusTitle.toLowerCase()}`
+                          ? `Approve: ${actionStatusTitle.toLowerCase()}`
                           : actionStatusTitle}
                       </Text>
                     </TransactionStatusMessageWrapper>

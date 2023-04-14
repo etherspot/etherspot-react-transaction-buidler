@@ -1281,7 +1281,9 @@ const TransactionBuilderContextProvider = ({
                       />
                       {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                         transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
-                        !editingTransactionBlock && (
+                        !editingTransactionBlock &&
+                        isBlockValid &&
+                        !disabled && (
                           <MultiCallButton
                             disabled={!!disabled || !isBlockValid}
                             onClick={async () => {
@@ -1314,14 +1316,16 @@ const TransactionBuilderContextProvider = ({
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br />
-                <PrimaryButton
-                  marginTop={editingTransactionBlock ? 0 : 30}
-                  onClick={onContinueClick}
-                  disabled={isChecking || !isBlockValid}
-                >
-                  {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
-                  {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
-                </PrimaryButton>
+                {!isChecking && isBlockValid && (
+                  <PrimaryButton
+                    marginTop={editingTransactionBlock ? 0 : 30}
+                    onClick={onContinueClick}
+                    disabled={isChecking || !isBlockValid}
+                  >
+                    {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
+                    {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
+                  </PrimaryButton>
+                )}
               </>
             )}
             {!!editingTransactionBlock && (
