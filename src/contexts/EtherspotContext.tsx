@@ -9,6 +9,7 @@ import {
   IBalanceByChain,
 } from '../providers/EtherspotContextProvider';
 import { Chain } from '../utils/chain';
+import { Theme } from '../utils/theme';
 
 export interface EtherspotContextData {
   data: {
@@ -48,6 +49,7 @@ export interface EtherspotContextData {
     getGasAssetsForChainId: (chainId: number, sender?: string) => Promise<IAssetWithBalance[]>;
     updateWalletBalances: (force?: boolean) => void;
     getRatesByNativeChainId: (chainId: number) => Promise<number | null>;
+    changeTheme: (theme: Theme) => void;
   };
 }
 

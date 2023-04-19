@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
 import { SessionStorage, WalletProviderLike } from 'etherspot';
 import { merge } from 'lodash';
@@ -10,7 +10,7 @@ import {
   TransactionsDispatcherContextProvider,
 } from '../providers';
 
-import { darkTheme, Theme } from '../utils/theme';
+import { darkTheme, getTheme, Theme, ThemeType } from '../utils/theme';
 import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
 
 interface EtherspotProps {
@@ -65,35 +65,49 @@ const Etherspot = ({
   smartWalletOnly,
   hideWalletBlock = false,
   onLogout,
-}: EtherspotProps) => (
-  <ThemeProvider theme={merge({}, darkTheme, themeOverride)}>
-    <EtherspotContextProvider
-      provider={provider}
-      chainId={chainId}
-      etherspotSessionStorage={etherspotSessionStorage}
-      onLogout={onLogout}
-      smartWalletOnly={smartWalletOnly}
-    >
-      <style>
-        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
-        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
-        @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
-      </style>
-      <ComponentWrapper>
-        <TransactionBuilderModalContextProvider>
-          <TransactionsDispatcherContextProvider>
-            <TransactionBuilderContextProvider
-              defaultTransactionBlocks={defaultTransactionBlocks}
-              hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
-              hideAddTransactionButton={hideAddTransactionButton}
-              showMenuLogout={showMenuLogout}
-              hideWalletBlock={hideWalletBlock}
-            />
-          </TransactionsDispatcherContextProvider>
-        </TransactionBuilderModalContextProvider>
-      </ComponentWrapper>
-    </EtherspotContextProvider>
-  </ThemeProvider>
-);
+}: EtherspotProps) => {
+  const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));
+
+  useEffect(() => {
+    const currentTheme = localStorage.getItem('current-theme');
+    if (!currentTheme) {
+      localStorage.setItem('current-theme', ThemeType.DARK);
+      return;
+    }
+    setActiveTheme(getTheme(currentTheme as ThemeType));
+  }, []);
+
+  return (
+    <ThemeProvider theme={merge({}, activeTheme, themeOverride)}>
+      <EtherspotContextProvider
+        provider={provider}
+        chainId={chainId}
+        etherspotSessionStorage={etherspotSessionStorage}
+        onLogout={onLogout}
+        smartWalletOnly={smartWalletOnly}
+        changeTheme={setActiveTheme}
+      >
+        <style>
+          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
+          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
+          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
+        </style>
+        <ComponentWrapper>
+          <TransactionBuilderModalContextProvider>
+            <TransactionsDispatcherContextProvider>
+              <TransactionBuilderContextProvider
+                defaultTransactionBlocks={defaultTransactionBlocks}
+                hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
+                hideAddTransactionButton={hideAddTransactionButton}
+                showMenuLogout={showMenuLogout}
+                hideWalletBlock={hideWalletBlock}
+              />
+            </TransactionsDispatcherContextProvider>
+          </TransactionBuilderModalContextProvider>
+        </ComponentWrapper>
+      </EtherspotContextProvider>
+    </ThemeProvider>
+  );
+};
 
 export default Etherspot;

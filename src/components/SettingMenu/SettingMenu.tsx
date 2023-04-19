@@ -17,9 +17,10 @@ import { useTransactionBuilderModal } from '../../hooks';
 // Icons
 import { BsClockHistory } from 'react-icons/bs';
 import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
-import { IoWalletOutline } from 'react-icons/io5';
+import { IoColorPaletteOutline, IoWalletOutline } from 'react-icons/io5';
 import { TbLogout } from 'react-icons/tb';
 import { HiOutlineUser } from 'react-icons/hi';
+import ThemeModal from '../ThemeModal';
 
 export interface SettingMenuProps {
   showLogout?: boolean;
@@ -28,8 +29,8 @@ export interface SettingMenuProps {
 
 const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
   const [showMenu, setShowMenu] = useState<boolean>(false);
+  const [showSubMenu, setShowSubMenu] = useState<boolean>(false);
 
-  const menuRef = useRef<null | HTMLDivElement>(null);
   const theme: Theme = useTheme();
   const { showModal, hideModal } = useTransactionBuilderModal();
 
@@ -47,10 +48,10 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           <MenuItemAnchor
             title="Dashboard"
             link="https://dashboard.etherspot.io"
-            icon={<MdOutlineDashboardCustomize size={16} style={{ marginRight: '12px' }} />}
+            icon={<MdOutlineDashboardCustomize size={16} style={{ marginRight: 12 }} />}
           />
           <MenuItem
-            icon={<HiOutlineUser size={16} style={{ marginRight: '12px' }} />}
+            icon={<HiOutlineUser size={16} style={{ marginRight: 12 }} />}
             title="Profile"
             onClick={() => {
               showModal(
@@ -64,14 +65,14 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             }}
           />
           <MenuItem
-            icon={<BsClockHistory size={16} style={{ marginRight: '12px' }} />}
+            icon={<BsClockHistory size={16} style={{ marginRight: 12 }} />}
             title="History"
             onClick={() => {
               showModal(<History />);
             }}
           />
           <MenuItem
-            icon={<IoWalletOutline size={16} style={{ marginRight: '12px' }} />}
+            icon={<IoWalletOutline size={16} style={{ marginRight: 12 }} />}
             title="Deployments"
             onClick={() => {
               showModal(
@@ -84,14 +85,22 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
               );
             }}
           />
+          <MenuItem
+            icon={<IoColorPaletteOutline size={16} style={{ marginRight: 12 }} />}
+            title="Theme"
+            onClick={() => {
+              setShowSubMenu(true);
+              setShowMenu(false);
+            }}
+          />
           <MenuItemAnchor
             title="About Etherspot"
             link="https://etherspot.io/"
-            icon={<EtherspotLogo width={16} height={16} style={{ marginRight: '12px' }} />}
+            icon={<EtherspotLogo width={16} height={16} style={{ marginRight: 12 }} />}
           />
           {showLogout && (
             <MenuItem
-              icon={<TbLogout size={16} style={{ marginRight: '12px' }} />}
+              icon={<TbLogout size={16} style={{ marginRight: 12 }} />}
               onClick={() => {
                 logout();
               }}
@@ -99,6 +108,20 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             />
           )}
         </MenuWrapper>
+      )}
+      {showSubMenu && (
+        <>
+          <ThemeModal
+            onBackButtonClick={() => {
+              setShowMenu(true);
+              setShowSubMenu(false);
+            }}
+            onSubMenuCloseClick={() => {
+              setShowMenu(false);
+              setShowSubMenu(false);
+            }}
+          />
+        </>
       )}
     </>
   );
