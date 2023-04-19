@@ -390,7 +390,7 @@ const TransactionStatus = ({
             }
         }, [transactionStatus]);
 
-        if(hasApprovalTransaction && !showAsApproval && !isTokenApproved) {
+        if (hasApprovalTransaction && !showAsApproval && !isTokenApproved) {
           return null;
         }
 
