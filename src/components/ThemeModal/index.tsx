@@ -53,7 +53,7 @@ const ThemeModal = ({
       {Object.keys(ThemeType).map((value, index) => (
         <ThemeTextWrapper key={index} onClick={() => onThemeSelection(value as ThemeType)}>
           <span>{startCase(lowerCase(value))}</span>
-          {appliedTheme == value && <IoMdCheckmark size={16} style={{ marginRight: '2' }} />}
+          {appliedTheme === value && <IoMdCheckmark size={16} style={{ marginRight: '2' }} />}
         </ThemeTextWrapper>
       ))}
     </SubMenuWrapper>

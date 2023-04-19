@@ -69,9 +69,9 @@ const Etherspot = ({
   const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));
 
   useEffect(() => {
-    const currentTheme = localStorage.getItem("current-theme");
-    if(!currentTheme){
-      localStorage.setItem("current-theme", ThemeType.DARK);
+    const currentTheme = localStorage.getItem('current-theme');
+    if (!currentTheme) {
+      localStorage.setItem('current-theme', ThemeType.DARK);
       return;
     }
     setActiveTheme(getTheme(currentTheme as ThemeType));
