@@ -43,7 +43,7 @@ const ModalWrapper = styled.div<{ marginBottom?: number; color?: string }>`
   user-select: none;
 `;
 
-const ModalHeader = styled.div`
+export const ModalHeader = styled.div`
   display: flex;
   align-items: center;
   padding-bottom: 14px;
@@ -52,12 +52,12 @@ const ModalHeader = styled.div`
   border-bottom-style: groove;
 `;
 
-const HeaderTitle = styled.span`
+export const HeaderTitle = styled.span`
   margin-left: 8px;
   font-size: 16px;
 `;
 
-const BackButton = styled(IoChevronBackCircleOutline)`
+export const BackButton = styled(IoChevronBackCircleOutline)`
   color: ${({ theme }) => theme.color.text.settingsMenuItemHover};
   cursor: pointer;
 

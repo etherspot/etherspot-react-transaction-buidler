@@ -268,3 +268,102 @@ export const darkTheme: Theme = {
     },
   },
 };
+
+export const synthTheme: Theme = {
+  ...defaultTheme,
+  color: {
+    background: {
+      main: 'linear-gradient(#4d036a,#0c0c0c)',
+      horizontalLine: 'linear-gradient(90deg, #23a9c9, #cd34a2)',
+      topMenu: 'rgb(68, 61, 102)',
+      topMenuWallet: 'rgba(111, 76, 172, 0.54)',
+      topMenuButton: '#ffffff',
+      card: '#320145',
+      button: 'linear-gradient(to bottom, #fdb754, #f18214)',
+      closeButton: '#ffffff',
+      selectInputToggleButton: '#998ae6',
+      selectInput: '#610384',
+      selectInputExpanded: '#130c1d',
+      statusIconPending: '#ff6b35',
+      statusIconFailed: '#ff0000',
+      statusIconSuccess: '#1ba23d',
+      selectInputImagePlaceholder: '#4f367a',
+      selectInputScrollbar: '#ff7733',
+      selectInputScrollbarHover: 'rgba(255, 119, 51, 0.8)',
+      selectInputScrollbarActive: 'rgba(255, 119, 51, 0.5)',
+      textInput: '#1a1726',
+      switchInput: '#53056f',
+      switchInputActiveTab: '#64e8f5',
+      switchInputInactiveTab: '#53056f',
+      pill: '#2b2640',
+      checkboxInputInactive: '#665c99',
+      dropdownHoverColor: '#45005f',
+      selectInputExpandedHover: '#443d66',
+      walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
+      walletChainDropdown: '#1a1726',
+      walletChainButtonActive: '#443d66',
+      blockParagraphBorder: 'linear-gradient(to bottom,#2e8d96,#610384)',
+      listItemQuickButtonPrimary: '#eb860b',
+      listItemQuickButtonSecondary: '#4f367a',
+      deployButton: '#ff884d',
+      settingMenuMain: 'linear-gradient(to bottom,#fdb754,#f18214)',
+      settingsModalBorder: '#b6b1d2',
+      settingsModal: '#610384',
+    },
+    text: {
+      selectInput: '#64e8f5',
+      selectInputOption: '#ffeee6',
+      selectInputOptionSecondary: '#ffeee6',
+      searchInput: '#998ae6',
+      searchIcon: '#998ae6',
+      searchInputSecondary: '#998ae6',
+      outerLabel: '#64e8f5',
+      innerLabel: '#64e8f5',
+      topMenu: '#998ae6',
+      topMenuWallet: '#cab3f5',
+      main: '#64e8f5',
+      topBar: '#998ae6',
+      buttonSecondary: '#fbae49',
+      card: '#ffeee6',
+      cardTitle: '#ffeee6',
+      button: '#fff',
+      errorMessage: '#ff4d6a',
+      textInput: '#ffeee6',
+      tokenTotal: '#ff0065',
+      tokenValue: '#57c2d6',
+      textInputSecondary: '#9466e6',
+      switchInputActiveTab: '#000',
+      transactionStatusLink: '#ff7733',
+      switchInputInactiveTab: '#64e8f5',
+      selectInputImagePlaceholder: '#ffeee6',
+      cardDisabled: '#605e5e',
+      pill: '#bbb8cc',
+      pillValue: '#ffeee6',
+      walletDropdownIcon: '#ff884d',
+      blockParagraphHighlight: '#e333e8',
+      blockParagraphHighlightSecondary: '#77e7f6',
+      settingsIcon: '#ee6723',
+      selectAllButton: '#ff884d',
+      settingsModalSubHeader: '#b6b1d2',
+      settingsMenuItem: '#64e8f5',
+      settingsMenuItemHover: '#64e8f599',
+    },
+  },
+};
+
+export const THEME_TYPES = {
+  DARK: 'Dark',
+  LIGHT: 'Light',
+  SYNTH: 'Synth',
+};
+
+export const getTheme = (themeType: string) => {
+  switch (themeType) {
+    case 'DARK':
+      return darkTheme;
+    case 'SYNTH':
+      return synthTheme;
+    default:
+      return defaultTheme;
+  }
+};
