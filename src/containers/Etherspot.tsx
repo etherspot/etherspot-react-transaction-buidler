@@ -10,7 +10,7 @@ import {
   TransactionsDispatcherContextProvider,
 } from '../providers';
 
-import { darkTheme, getTheme, Theme } from '../utils/theme';
+import { darkTheme, getTheme, Theme, ThemeType } from '../utils/theme';
 import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
 
 interface EtherspotProps {
@@ -66,15 +66,15 @@ const Etherspot = ({
   hideWalletBlock = false,
   onLogout,
 }: EtherspotProps) => {
-  const [activeTheme, setActiveTheme] = useState(darkTheme);
+  const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));
 
   useEffect(() => {
     const currentTheme = localStorage.getItem("current-theme");
     if(!currentTheme){
-      localStorage.setItem("current-theme", 'DARK');
+      localStorage.setItem("current-theme", ThemeType.DARK);
       return;
     }
-    setActiveTheme(getTheme(currentTheme));
+    setActiveTheme(getTheme(currentTheme as ThemeType));
   }, []);
 
   return (
@@ -88,9 +88,9 @@ const Etherspot = ({
         changeTheme={setActiveTheme}
       >
         <style>
-          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css'); @import
-          url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css'); @import
-          url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
+          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
+          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
+          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
         </style>
         <ComponentWrapper>
           <TransactionBuilderModalContextProvider>

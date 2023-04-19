@@ -147,7 +147,7 @@ export const defaultTheme: Theme = {
       cardTitle: '#191726',
       card: '#000',
       cardDisabled: '#ddd',
-      tokenBalance: '#fefefe',
+      tokenBalance: '#000',
       tokenValue: '#57c2d6',
       tokenTotal: '#ff0065',
       innerLabel: '#6e6b6a',
@@ -255,6 +255,7 @@ export const darkTheme: Theme = {
       switchInputInactiveTab: '#9466e6',
       selectInputImagePlaceholder: '#ffeee6',
       cardDisabled: '#605e5e',
+      tokenBalance: '#fefefe',
       pill: '#bbb8cc',
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
@@ -279,7 +280,7 @@ export const synthTheme: Theme = {
       topMenuWallet: 'rgba(111, 76, 172, 0.54)',
       topMenuButton: '#ffffff',
       card: '#320145',
-      button: 'linear-gradient(to bottom, #fdb754, #f18214)',
+      button: '#890df8',
       closeButton: '#ffffff',
       selectInputToggleButton: '#998ae6',
       selectInput: '#610384',
@@ -287,8 +288,8 @@ export const synthTheme: Theme = {
       statusIconPending: '#ff6b35',
       statusIconFailed: '#ff0000',
       statusIconSuccess: '#1ba23d',
-      selectInputImagePlaceholder: '#4f367a',
-      selectInputScrollbar: '#ff7733',
+      selectInputImagePlaceholder: '#53056f',
+      selectInputScrollbar: '#660581',
       selectInputScrollbarHover: 'rgba(255, 119, 51, 0.8)',
       selectInputScrollbarActive: 'rgba(255, 119, 51, 0.5)',
       textInput: '#1a1726',
@@ -298,20 +299,20 @@ export const synthTheme: Theme = {
       pill: '#2b2640',
       checkboxInputInactive: '#665c99',
       dropdownHoverColor: '#45005f',
-      selectInputExpandedHover: '#443d66',
+      selectInputExpandedHover: '#380241',
       walletButton: 'linear-gradient(to bottom, #6154a3, #292246)',
       walletChainDropdown: '#1a1726',
       walletChainButtonActive: '#443d66',
       blockParagraphBorder: 'linear-gradient(to bottom,#2e8d96,#610384)',
       listItemQuickButtonPrimary: '#eb860b',
-      listItemQuickButtonSecondary: '#4f367a',
+      listItemQuickButtonSecondary: '#53056f',
       deployButton: '#ff884d',
       settingMenuMain: 'linear-gradient(to bottom,#fdb754,#f18214)',
       settingsModalBorder: '#b6b1d2',
       settingsModal: '#610384',
     },
     text: {
-      selectInput: '#64e8f5',
+      selectInput: '#fff',
       selectInputOption: '#ffeee6',
       selectInputOptionSecondary: '#ffeee6',
       searchInput: '#998ae6',
@@ -323,7 +324,7 @@ export const synthTheme: Theme = {
       topMenuWallet: '#cab3f5',
       main: '#64e8f5',
       topBar: '#998ae6',
-      buttonSecondary: '#fbae49',
+      buttonSecondary: '#77e7f6',
       card: '#ffeee6',
       cardTitle: '#ffeee6',
       button: '#fff',
@@ -331,12 +332,13 @@ export const synthTheme: Theme = {
       textInput: '#ffeee6',
       tokenTotal: '#ff0065',
       tokenValue: '#57c2d6',
-      textInputSecondary: '#9466e6',
+      textInputSecondary: '#77e7f6',
       switchInputActiveTab: '#000',
-      transactionStatusLink: '#ff7733',
-      switchInputInactiveTab: '#64e8f5',
+      transactionStatusLink: '#660581',
+      switchInputInactiveTab: '#77e7f6',
       selectInputImagePlaceholder: '#ffeee6',
       cardDisabled: '#605e5e',
+      tokenBalance: '#fefefe',
       pill: '#bbb8cc',
       pillValue: '#ffeee6',
       walletDropdownIcon: '#ff884d',
@@ -345,23 +347,23 @@ export const synthTheme: Theme = {
       settingsIcon: '#ee6723',
       selectAllButton: '#ff884d',
       settingsModalSubHeader: '#b6b1d2',
-      settingsMenuItem: '#64e8f5',
-      settingsMenuItemHover: '#64e8f599',
+      settingsMenuItem: '#77e7f6',
+      settingsMenuItemHover: '#64e8f5bd',
     },
   },
 };
 
-export const THEME_TYPES = {
-  DARK: 'Dark',
-  LIGHT: 'Light',
-  SYNTH: 'Synth',
-};
+export enum ThemeType {
+  DARK = 'DARK',
+  LIGHT = 'LIGHT',
+  SYNTH = 'SYNTH',
+}
 
-export const getTheme = (themeType: string) => {
+export const getTheme = (themeType: ThemeType) => {
   switch (themeType) {
-    case 'DARK':
+    case ThemeType.DARK:
       return darkTheme;
-    case 'SYNTH':
+    case ThemeType.SYNTH:
       return synthTheme;
     default:
       return defaultTheme;

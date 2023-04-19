@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
+import { startCase, lowerCase } from 'lodash';
 
 // Components
 import { BackButton, HeaderTitle, ModalHeader } from '../Menu/MenuModalWrapper';
@@ -12,24 +13,29 @@ import { IoMdCheckmark } from 'react-icons/io';
 import { CloseButton } from '../Button';
 
 // Utils
-import { THEME_TYPES, Theme, getTheme } from '../../utils/theme';
+import { ThemeType, Theme, getTheme } from '../../utils/theme';
 
-const ThemeModal = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
-  const [appliedTheme, setAppliedTheme] = useState<string>('');
+const ThemeModal = ({
+  onBackButtonClick,
+  onSubMenuCloseClick,
+}: {
+  onBackButtonClick: () => void;
+  onSubMenuCloseClick: () => void;
+}) => {
+  const [appliedTheme, setAppliedTheme] = useState<ThemeType>(ThemeType.DARK);
   const theme: Theme = useTheme();
   const { changeTheme } = useEtherspot();
-  const themeOptions = Object.keys(THEME_TYPES);
 
   useEffect(() => {
     const activeTheme = localStorage.getItem('current-theme');
     if (activeTheme) {
-      setAppliedTheme(activeTheme);
+      setAppliedTheme(activeTheme as ThemeType);
       return;
     }
-    setAppliedTheme(THEME_TYPES.DARK);
+    setAppliedTheme(ThemeType.DARK);
   }, []);
 
-  const onThemeSelection = (themeValue: string) => {
+  const onThemeSelection = (themeValue: ThemeType) => {
     setAppliedTheme(themeValue);
     localStorage.setItem('current-theme', themeValue);
     changeTheme(getTheme(themeValue));
@@ -42,12 +48,12 @@ const ThemeModal = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
           <BackButton color={theme?.color?.background?.settingMenuMain} onClick={onBackButtonClick} />
         )}
         <HeaderTitle>Theme</HeaderTitle>
-        <CloseButtonWrapper onClick={onBackButtonClick} />
+        <CloseButtonWrapper onClick={onSubMenuCloseClick} />
       </ModalHeader>
-      {themeOptions.map((value, index) => (
-        <ThemeTextWrapper key={index} onClick={() => onThemeSelection(value)}>
-          <span>{THEME_TYPES[value]}</span>
-          {appliedTheme == value && <IoMdCheckmark size={16} style={{ marginRight: '2px' }} />}
+      {Object.keys(ThemeType).map((value, index) => (
+        <ThemeTextWrapper key={index} onClick={() => onThemeSelection(value as ThemeType)}>
+          <span>{startCase(lowerCase(value))}</span>
+          {appliedTheme == value && <IoMdCheckmark size={16} style={{ marginRight: '2' }} />}
         </ThemeTextWrapper>
       ))}
     </SubMenuWrapper>

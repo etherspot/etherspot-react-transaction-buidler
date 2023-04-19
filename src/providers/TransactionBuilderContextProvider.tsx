@@ -256,7 +256,7 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
-    title: 'PLR Staking',
+    title: 'Pillar DAO NFT Membership',
     type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
   },
   {

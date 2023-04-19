@@ -1,4 +1,4 @@
-import React, { Children } from 'react';
+import React from 'react';
 import styled, { useTheme } from 'styled-components';
 
 // Icons
