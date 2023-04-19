@@ -43,7 +43,7 @@ const ThemeModal = ({
 
   return (
     <SubMenuWrapper>
-      <ModalHeader style={{ marginBottom: '8px' }}>
+      <ModalHeader style={{ marginBottom: 8 }}>
         {onBackButtonClick && (
           <BackButton color={theme?.color?.background?.settingMenuMain} onClick={onBackButtonClick} />
         )}
@@ -53,7 +53,7 @@ const ThemeModal = ({
       {Object.keys(ThemeType).map((value, index) => (
         <ThemeTextWrapper key={index} onClick={() => onThemeSelection(value as ThemeType)}>
           <span>{startCase(lowerCase(value))}</span>
-          {appliedTheme === value && <IoMdCheckmark size={16} style={{ marginRight: '2' }} />}
+          {appliedTheme === value && <IoMdCheckmark size={16} style={{ marginRight: 2 }} />}
         </ThemeTextWrapper>
       ))}
     </SubMenuWrapper>
