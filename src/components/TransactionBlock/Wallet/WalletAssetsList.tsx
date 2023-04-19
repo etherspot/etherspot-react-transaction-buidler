@@ -194,17 +194,50 @@ const ChainHeaderCopyIcon = styled.span`
 
 // Chain Assets
 const ChainBlockList = styled.div`
-  padding: 1px 12px;
+  padding: 1px 6px;
   max-height: 320px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  row-gap: 2px;
+
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: none;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.color.background.settingMenuMain};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    opacity: 0.7;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    opacity: 0.7;
+  }
 `;
 
 const ListItem = styled.div`
-  margin-top: 12px;
   display: flex;
   flex: 1;
   flex-direction: row;
   align-items: center;
+  border-radius: 8px;
+  padding: 5px 8px;
+
+  &:first-child {
+    margin-top: 12px;
+  }
+
+  &:hover {
+    ${({ theme }) => `background-color: ${theme.color.background.selectInputExpandedHover};`}
+  }
 `;
 
 const ListItemDetails = styled.div`

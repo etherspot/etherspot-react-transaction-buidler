@@ -214,6 +214,7 @@ const TransactionStatus = ({
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [prevStatus, setPrevStatus] = useState<{ [id: string]: string }>({});
+  const [isTokenApproved, setIsTokenApproved] = useState(false)
 
   const { chainId, batchHash: transactionsBatchHash } = crossChainAction;
 
@@ -287,7 +288,12 @@ const TransactionStatus = ({
   }, []);
 
   // only show first on sdk batch transactions
-  const statusPreviewTransactions = [crossChainAction.transactions[0]];
+  const statusPreviewTransactions = crossChainAction.useWeb3Provider
+    ? crossChainAction.transactions
+    : [crossChainAction.transactions[0]];
+
+    const hasApprovalTransaction =
+      crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(statusPreviewTransactions[0].data as string);
 
   return (
     <>
@@ -376,12 +382,17 @@ const TransactionStatus = ({
             setIsTransactionDone
           ){
             setIsTransactionDone(true)
+            setIsTokenApproved(true);
           }
             if (timeout) {
               //@ts-ignore
               return () => clearTimeout(timeout);
             }
         }, [transactionStatus]);
+
+        if (hasApprovalTransaction && !showAsApproval && !isTokenApproved) {
+          return null;
+        }
 
         return (
           <TransactionStatusAction

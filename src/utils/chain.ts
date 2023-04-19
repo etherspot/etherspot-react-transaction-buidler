@@ -249,6 +249,5 @@ export const changeToChain = async (chainId: number): Promise<boolean> => {
     }
   }
 
-  alert(`Please manually switch to ${supportedChain.title}.`);
   return false;
 };
