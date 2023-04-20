@@ -261,6 +261,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
+    title: 'PLR Staking',
+    type: TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2,
+  },
+  {
+    id: getTimeBasedUniqueId(),
     title: 'LI.FI staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
