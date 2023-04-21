@@ -48,6 +48,8 @@ export default [
       replace({
         __ETHERSPOT_PROJECT_KEY__: process.env.ETHERSPOT_PROJECT_KEY ?? '',
         preventAssignment: true,
+        __ETHERSPOT_BUILDER_VERSION__: packageJson.version,
+        __ETHERSPOT_SDK_VERSION__: packageJson.dependencies.etherspot,
       }),
       postcss({
         plugins: [autoprefixer()],

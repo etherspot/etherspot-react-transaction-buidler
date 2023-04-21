@@ -334,7 +334,7 @@ export const synthTheme: Theme = {
       tokenValue: '#57c2d6',
       textInputSecondary: '#77e7f6',
       switchInputActiveTab: '#000',
-      transactionStatusLink: '#660581',
+      transactionStatusLink: '#77e7f6',
       switchInputInactiveTab: '#77e7f6',
       selectInputImagePlaceholder: '#ffeee6',
       cardDisabled: '#605e5e',
