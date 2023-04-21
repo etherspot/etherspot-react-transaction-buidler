@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { HiChevronDown } from 'react-icons/hi';
+import { HiChevronDown, HiChevronUp } from 'react-icons/hi';
 
 import { useEtherspot, useTransactionBuilder } from '../../../hooks';
 import { CHAIN_ID, Chain, supportedChains } from '../../../utils/chain';
@@ -23,12 +23,13 @@ import { Text } from '../../Text';
 import SwitchInput from '../../SwitchInput/SwitchInput';
 import { TRANSACTION_BLOCK_TYPE, TRANSACTION_BLOCK_TYPE_KEY } from '../../../constants/transactionBuilderConstants';
 import { ISendAssetTransactionBlockValues } from '../SendAssetTransactionBlock';
-import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../../utils/common';
+import { formatAmountDisplay, copyToClipboard, sumAssetsBalanceWorth } from '../../../utils/common';
 import { sortAssetsByValue } from '../../../utils/sort';
 
 // Local
 import WalletNftsList, { IChainNfts, INft } from './WalletNftsList';
 import WalletAssetsList, { IChainAssets } from './WalletAssetsList';
+import { AiOutlineSearch } from 'react-icons/ai';
 
 const tabOptions = {
   tokens: {
@@ -349,13 +350,8 @@ const WalletTransactionBlock = ({
     setTab(tab);
   };
 
-  const onCopy = async (valueToCopy: string) => {
-    try {
-      await navigator.clipboard.writeText(valueToCopy);
-      alert('Copied!');
-    } catch (e) {
-      alert('Unable to copy!');
-    }
+  const selectAllChain = () => {
+    setSelectedChains(supportedChains.map(({ chainId }) => chainId));
   };
 
   return (
@@ -399,7 +395,9 @@ const WalletTransactionBlock = ({
 
       <ButtonRow>
         <SearchWrapper>
-          <SearchIcon>{WalletAssetSearchIcon}</SearchIcon>
+          <SearchIcon>
+            <AiOutlineSearch color={theme?.color?.text?.searchIcon} size={20} />
+          </SearchIcon>
           <SearchInput
             placeholder="Search"
             value={searchValue}
@@ -443,23 +441,28 @@ const WalletTransactionBlock = ({
 
           {showChainDropdown && (
             <ChainDropdownModal>
-              <ChainDropdownList>
-                {supportedChains?.map((chain, i) => {
-                  return (
-                    <ChainDropdownButton
-                      key={`chain-dropdown-button-${i}`}
-                      onClick={() => toggleChainDropdownOption(chain.chainId)}
-                      selected={selectedChains.includes(chain.chainId)}
-                    >
-                      <RoundedImage url={chain.iconUrl} title={chain.title} size={34} marginRight={0} />
-                    </ChainDropdownButton>
-                  );
-                })}
+              <ChainDropdownListWrapper>
+                <ChainDropdownList>
+                  {supportedChains?.map((chain, i) => {
+                    return (
+                      <ChainDropdownButton
+                        key={`chain-dropdown-button-${i}`}
+                        onClick={() => toggleChainDropdownOption(chain.chainId)}
+                        selected={selectedChains.includes(chain.chainId)}
+                      >
+                        <RoundedImage url={chain.iconUrl} title={chain.title} size={34} marginRight={0} />
+                      </ChainDropdownButton>
+                    );
+                  })}
 
-                <ChainDropdownIcon onClick={hideDropdown}>
-                  <HiChevronDown size={18} color={theme.color?.text?.walletDropdownIcon} />
-                </ChainDropdownIcon>
-              </ChainDropdownList>
+                  <ChainDropdownIcon onClick={hideDropdown}>
+                    <HiChevronUp size={18} color={theme.color?.text?.walletDropdownIcon} />
+                  </ChainDropdownIcon>
+                </ChainDropdownList>
+                <SelectAllWrapper onClick={selectAllChain}>
+                  <Text>Select All</Text>
+                </SelectAllWrapper>
+              </ChainDropdownListWrapper>
             </ChainDropdownModal>
           )}
         </ChainDropdownWrapper>
@@ -473,7 +476,7 @@ const WalletTransactionBlock = ({
         selectedChains={selectedChains}
         hideChainList={hideChainList}
         displayAssets={displayAssets}
-        onCopy={onCopy}
+        onCopy={copyToClipboard}
         toggleChainBlock={toggleChainBlock}
       />
 
@@ -484,7 +487,7 @@ const WalletTransactionBlock = ({
         selectedChains={selectedChains}
         hideChainList={hideChainList}
         displayNfts={displayNfts}
-        onCopy={onCopy}
+        onCopy={copyToClipboard}
         toggleChainBlock={toggleChainBlock}
       />
     </>
@@ -614,13 +617,15 @@ const ChainDropdownList = styled.div`
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 5px;
+`;
 
+const ChainDropdownListWrapper = styled.div`
   border-radius: 8px;
   margin: 0 0 18px;
   padding: 4px 48px 4px 4px;
   background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
 
-  box-shadow: 0 2px 4px 0 rgba(255, 210, 187, 0.4), 0 2px 8px 0 rgba(201, 201, 200, 0.55);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.44), 0 3px 5px 0 #000;
 `;
 
 const ChainDropdownButton = styled.div<{ selected?: boolean }>`
@@ -689,7 +694,7 @@ const SearchInput = styled.input`
 `;
 
 const SearchIcon = styled.span`
-  margin-top -3px;
+  margin-top: -3px;
 
   ${({ onClick }) =>
     !!onClick &&
@@ -698,4 +703,12 @@ const SearchIcon = styled.span`
       opacity: 0.5;
     }
   `};
+`;
+
+const SelectAllWrapper = styled.div`
+  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: ${({ theme }) => theme.color.text.selectAllButton};
 `;

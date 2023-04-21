@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, ExchangeOffer } from 'etherspot';
+import { AccountStates, AccountTypes, ExchangeOffer } from 'etherspot';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
@@ -20,6 +20,8 @@ import AccountSwitchInput from '../AccountSwitchInput';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import Text from '../Text/Text';
 import { IAssetSwapTransactionBlock, IMultiCallData } from '../../types/transactionBlock';
+import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
+import { OfferRoute } from '../OfferRoute/OfferRoute';
 
 export interface ISwapAssetTransactionBlockValues {
   chain?: Chain;
@@ -40,11 +42,15 @@ const Title = styled.h3`
   font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
-const OfferDetails = styled.div`
+const ToOptionContainer = styled.div`
   display: flex;
-  flex-direction: row;
   align-items: center;
-  font-family: 'PTRootUIWebMedium', sans-serif;
+`;
+
+const ToOptionChainAsset = styled.div`
+  display: flex;
+  flex-direction: column;
+  row-gap: 5px;
 `;
 
 const mapOfferToOption = (offer: ExchangeOffer) => {
@@ -82,7 +88,10 @@ const AssetSwapTransactionBlock = ({
   const [showReceiverInput] = useState<boolean>(!!values?.receiverAddress);
   const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
   const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
+  const [exchangeRateByChainId, setExchangeRateByChainId] = useState<number>(0);
   const fixed = multiCallData?.fixed ?? false;
+
+  const targetAssetPriceUsd = useAssetPriceUsd(selectedNetwork?.chainId, selectedToAsset?.address);
 
   const { setTransactionBlockValues, resetTransactionBlockFieldValidationError } = useTransactionBuilder();
   const {
@@ -93,6 +102,8 @@ const AssetSwapTransactionBlock = ({
     providerAddress,
     smartWalletOnly,
     updateWalletBalances,
+    getRatesByNativeChainId,
+    getSdkForChainId,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -152,6 +163,35 @@ const AssetSwapTransactionBlock = ({
     [sdk, selectedFromAsset, selectedToAsset, amount, selectedNetwork, accountAddress]
   );
 
+  const getGasSwapUsdValue = async (offer: ExchangeOffer) => {
+    if (!selectedNetwork?.chainId) return;
+
+    const sdkByChain = getSdkForChainId(selectedNetwork?.chainId);
+
+    if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
+      if (sdkByChain.state.account.type !== AccountTypes.Contract) {
+        await sdkByChain.computeContractAccount();
+      }
+
+      sdkByChain.clearGatewayBatch();
+
+      if (sdkByChain.state.account.state === AccountStates.UnDeployed) {
+        await sdkByChain.batchDeployAccount();
+      }
+
+      await Promise.all(
+        offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
+      );
+
+      try {
+        const estimation = await sdkByChain.estimateGatewayBatch();
+        return +ethers.utils.formatUnits(estimation.estimation.feeAmount) * exchangeRateByChainId;
+      } catch (error) {
+        //
+      }
+    }
+  };
+
   useEffect(() => {
     updateWalletBalances();
   }, [sdk, accountAddress]);
@@ -165,8 +205,35 @@ const AssetSwapTransactionBlock = ({
         const offers = await updateAvailableOffers();
         if (!active || !offers) return;
 
+        const usdValuesGas = await Promise.all(offers.map((offer) => getGasSwapUsdValue(offer)));
+
+        let minAmount = Number.MIN_SAFE_INTEGER;
+
+        let offerNotLifi = offers.find((offer) => mapOfferToOption(offer).title !== 'LiFi');
+
+        let bestOffer = offerNotLifi ? offerNotLifi : offers[0];
+
+        offers.forEach((offer, index) => {
+          const toAsset = availableToAssets
+            ? availableToAssets?.find((availableAsset) =>
+                addressesEqual(availableAsset.address, selectedToAsset?.address)
+              )
+            : null;
+
+          const valueToRecieve =
+            +ethers.utils.formatUnits(offer.receiveAmount, toAsset?.decimals) * (targetAssetPriceUsd ?? 1);
+
+          const gasPrice = usdValuesGas[index];
+
+          if (mapOfferToOption(offer).title !== 'LiFi' && gasPrice && valueToRecieve - gasPrice > minAmount) {
+            minAmount = valueToRecieve - gasPrice;
+            bestOffer = offer;
+          }
+        });
+
         setAvailableOffers(offers);
-        if (offers.length === 1) setSelectedOffer(mapOfferToOption(offers[0]));
+        setSelectedOffer(mapOfferToOption(bestOffer));
+
         setIsLoadingAvailableOffers(false);
       } catch (e) {
         //
@@ -257,28 +324,51 @@ const AssetSwapTransactionBlock = ({
     );
   }, [amount, selectedFromAsset]);
 
-  const RenderOption = (option: SelectOption) => {
-    const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
-    const toAsset = availableToAssets?.find((availableAsset) =>
-      addressesEqual(availableAsset.address, selectedToAsset?.address)
-    );
-    const valueToReceive =
-      availableOffer && formatAmountDisplay(ethers.utils.formatUnits(availableOffer.receiveAmount, toAsset?.decimals));
-    return (
-      <OfferDetails>
-        <RoundedImage title={option.title} url={option.iconUrl} size={24} />
-        <div>
-          <Text size={12} marginBottom={2} medium block>
-            {option.title}
-          </Text>
-          {!!valueToReceive && (
-            <Text size={16} medium>
-              {valueToReceive} {toAsset?.symbol}
-            </Text>
-          )}
-        </div>
-      </OfferDetails>
-    );
+  useEffect(() => {
+    if (selectedNetwork?.chainId) {
+      getRatesByNativeChainId(selectedNetwork?.chainId).then((res) => {
+        if (res) {
+          setExchangeRateByChainId(res);
+        }
+      });
+    }
+  }, [selectedNetwork]);
+
+  const renderOfferOption = (option: SelectOption) => (
+    <OfferRoute
+      isChecked={selectedOffer?.value && selectedOffer.value === option.value}
+      option={option}
+      availableOffers={availableOffers}
+      availableToAssets={availableToAssets}
+      selectedToAsset={selectedToAsset}
+      targetAssetPriceUsd={targetAssetPriceUsd}
+      selectedAccountType={selectedAccountType}
+      selectedFromAsset={selectedFromAsset}
+      selectedNetwork={selectedNetwork}
+      exchnageRate={exchangeRateByChainId}
+    />
+  );
+
+  const renderToAssetOption = (option: SelectOption) => {
+    if (selectedFromAsset && selectedNetwork && selectedNetwork) {
+      return (
+        <ToOptionContainer>
+          <CombinedRoundedImages
+            url={option.iconUrl}
+            smallImageUrl={selectedNetwork.iconUrl}
+            title={selectedFromAsset.symbol}
+            smallImageTitle={selectedNetwork.title}
+            borderColor={theme?.color?.background?.textInput}
+          />
+          <ToOptionChainAsset>
+            <Text>{option.title}</Text>
+            <Text size={12}>On {selectedNetwork.title}</Text>
+          </ToOptionChainAsset>
+        </ToOptionContainer>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -341,6 +431,8 @@ const AssetSwapTransactionBlock = ({
             }}
             errorMessage={errorMessages?.toAsset}
             disabled={!!fixed}
+            renderSelectedOptionContent={renderToAssetOption}
+            renderOptionListItemContent={renderToAssetOption}
           />
           {!!selectedFromAsset && (
             <TextInput
@@ -359,6 +451,7 @@ const AssetSwapTransactionBlock = ({
                   smallImageUrl={selectedNetwork.iconUrl}
                   title={selectedFromAsset.symbol}
                   smallImageTitle={selectedNetwork.title}
+                  borderColor={theme?.color?.background?.textInput}
                 />
               }
               inputTopRightComponent={
@@ -410,12 +503,13 @@ const AssetSwapTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
             setSelectedOffer(option);
           }}
-          renderOptionListItemContent={RenderOption}
-          renderSelectedOptionContent={RenderOption}
+          renderOptionListItemContent={renderOfferOption}
+          renderSelectedOptionContent={renderOfferOption}
           placeholder="Select offer"
           errorMessage={errorMessages?.offer}
           noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
-          forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1}
+          forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1 && !selectedOffer}
+          isOffer
         />
       )}
     </>

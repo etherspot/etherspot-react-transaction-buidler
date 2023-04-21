@@ -1,6 +1,6 @@
 import React, { createContext } from 'react';
 import { Sdk as EtherspotSdk } from 'etherspot/dist/sdk/sdk';
-import { AccountBalance, NftCollection, WalletProviderLike, Web3WalletProvider } from 'etherspot';
+import { AccountBalance, ENSNode, NftCollection, WalletProviderLike, Web3WalletProvider } from 'etherspot';
 
 import {
   IAssetWithBalance,
@@ -9,6 +9,7 @@ import {
   IBalanceByChain,
 } from '../providers/EtherspotContextProvider';
 import { Chain } from '../utils/chain';
+import { Theme } from '../utils/theme';
 
 export interface EtherspotContextData {
   data: {
@@ -21,7 +22,7 @@ export interface EtherspotContextData {
     isConnecting: boolean;
     sdk: EtherspotSdk | null;
     smartWalletBalanceByChain: IBalanceByChain[] | null;
-    keybasedWalletBalanceByChain: IBalanceByChain[] | null;
+    keyBasedWalletBalanceByChain: IBalanceByChain[] | null;
     getSupportedAssetsForChainId: (chainId: number) => Promise<IAsset[]>;
     getAssetsBalancesForChainId: (
       assets: IAsset[],
@@ -35,18 +36,20 @@ export interface EtherspotContextData {
       address?: string | null,
       recompute?: boolean
     ) => Promise<IAssetWithBalance[]>;
-    getSmartWalletBalancesByChain: (walletAddress: string, supportedChains: Chain[]) => Promise<any>;
-    getKeybasedWalletBalancesPerChain: (walletAddress: string, supportedChains: Chain[]) => Promise<any>;
-    getAccountBalanceByChainId: (chainId: number, address?: string | null) => Promise<any>;
+    loadSmartWalletBalancesByChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
+    loadKeyBasedWalletBalancesPerChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
     getNftsForChainId: (chainId: number, address?: string | null, recompute?: boolean) => Promise<NftCollection[]>;
+    getEnsNode: (chainId: number, address?: string | null, recompute?: boolean) => Promise<ENSNode>;
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
     totalWorthPerAddress: ITotalWorthPerAddress;
     logout: () => void;
     smartWalletOnly: boolean;
     setSmartWalletBalanceByChain: React.Dispatch<React.SetStateAction<IBalanceByChain[]>>;
-    setKeybasedWalletBalanceByChain: React.Dispatch<React.SetStateAction<IBalanceByChain[]>>;
+    setKeyBasedWalletBalanceByChain: React.Dispatch<React.SetStateAction<IBalanceByChain[]>>;
     getGasAssetsForChainId: (chainId: number, sender?: string) => Promise<IAssetWithBalance[]>;
     updateWalletBalances: (force?: boolean) => void;
+    getRatesByNativeChainId: (chainId: number) => Promise<number | null>;
+    changeTheme: (theme: Theme) => void;
   };
 }
 

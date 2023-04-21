@@ -57,8 +57,11 @@ You can set up BUIDLER locally and develop new features for it. Please follow th
 - Then, checkout this repository
 - In this repository directory: run `npm install && npm link`
 - In this repository directory:: run `npm run rollup:watch` - this project is now being watched for code changes
-- In this the Example dapp directory: run `npm install && npm link @etherspot/react-transaction-buidler`
-- In this the Example dapp directory: run `npm run start`
+- In the Example dapp directory: run `npm install && npm link @etherspot/react-transaction-buidler`
+- In the Example dapp directory: add a file called ".env"
+- To this file add this line: REACT_APP_WEB3AUTH_CLIENT_ID = "fake_id"
+- Replace fake_id with a real client ID from https://dashboard.web3auth.io/home/web3auth if you want social logins to work. Otherwise continue without it and login with a keybased wallet
+- In the Example dapp directory: run `npm run start`
 
 You can now make code changes in this repository and changes will be reflected in the Example dapp.
 

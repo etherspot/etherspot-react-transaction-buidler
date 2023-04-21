@@ -11,12 +11,11 @@ const MenuItemStyled = styled.div`
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  margin-bottom: 10px;
-  margin-right: 12px;
+  padding: 8px 0px;
   cursor: pointer;
-
+  color: ${({ theme }) => theme.color.text.settingsMenuItem};
   :hover {
-    color: ${({ theme }) => theme.color.text.settingsIcon};
+    color: ${({ theme }) => theme.color.text.settingsMenuItemHover};
   }
 `;
 
