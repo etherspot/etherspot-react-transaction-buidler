@@ -40,7 +40,8 @@ const ComponentWrapper = styled.div`
   box-sizing: content-box;
 
   @media (max-width: 500px) {
-    width: calc(100% - 40px);
+    width: calc(100% - 60px);
+    min-width: 350px;
   }
 
   img,
