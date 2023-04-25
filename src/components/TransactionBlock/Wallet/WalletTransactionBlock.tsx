@@ -603,6 +603,10 @@ const ChainDropdownSelect = styled.div`
   margin-bottom: 18px;
   padding: 4px 48px 4px 4px;
   background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
+
+  @media (max-width: 420px) {
+    gap: 4px;
+  }
 `;
 
 const ChainDropdownModal = styled.div`
@@ -617,6 +621,10 @@ const ChainDropdownList = styled.div`
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 5px;
+
+  @media (max-width: 420px) {
+    gap: 4px;
+  }
 `;
 
 const ChainDropdownListWrapper = styled.div`
@@ -637,6 +645,11 @@ const ChainDropdownButton = styled.div<{ selected?: boolean }>`
   border-radius: 8px;
   background-color: ${({ theme, selected }) =>
     selected ? theme.color.background.walletChainButtonActive : 'transparent'};
+
+  @media (max-width: 500px) {
+    width: 40px;
+    height: 40px;
+  }
 `;
 
 const ChainDropdownIcon = styled.div`
@@ -651,6 +664,11 @@ const ChainDropdownIcon = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 8px;
+
+  @media (max-width: 500px) {
+    width: 40px;
+    height: 40px;
+  }
 
   &:hover {
     background: ${({ theme }) => theme.color.background.walletChainButtonActive};
