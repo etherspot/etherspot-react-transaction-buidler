@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 
 // Components
@@ -10,17 +10,18 @@ import MenuItemAnchor from '../Menu/MenuItemAnchor';
 import MenuItem from '../Menu/MenuItem';
 import EtherspotLogo from '../Image/EtherspotLogo';
 import { CloseButton } from '../Button';
+import ThemeModal from '../ThemeModal';
+import SystemVersion from '../SystemVersion';
 
 // Hooks
 import { useTransactionBuilderModal } from '../../hooks';
 
 // Icons
 import { BsClockHistory } from 'react-icons/bs';
-import { MdOutlineSettings, MdOutlineDashboardCustomize } from 'react-icons/md';
+import { MdOutlineSettings, MdOutlineDashboardCustomize, MdOutlineInfo } from 'react-icons/md';
 import { IoColorPaletteOutline, IoWalletOutline } from 'react-icons/io5';
 import { TbLogout } from 'react-icons/tb';
 import { HiOutlineUser } from 'react-icons/hi';
-import ThemeModal from '../ThemeModal';
 
 export interface SettingMenuProps {
   showLogout?: boolean;
@@ -54,6 +55,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             icon={<HiOutlineUser size={16} style={{ marginRight: 12 }} />}
             title="Profile"
             onClick={() => {
+              setShowMenu(false);
               showModal(
                 <UserProfile
                   onBackButtonClick={() => {
@@ -68,6 +70,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             icon={<BsClockHistory size={16} style={{ marginRight: 12 }} />}
             title="History"
             onClick={() => {
+              setShowMenu(false);
               showModal(<History />);
             }}
           />
@@ -75,6 +78,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             icon={<IoWalletOutline size={16} style={{ marginRight: 12 }} />}
             title="Deployments"
             onClick={() => {
+              setShowMenu(false);
               showModal(
                 <Deployment
                   onBackButtonClick={() => {
@@ -91,6 +95,21 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             onClick={() => {
               setShowSubMenu(true);
               setShowMenu(false);
+            }}
+          />
+          <MenuItem
+            icon={<MdOutlineInfo size={16} style={{ marginRight: 12 }} />}
+            title="System Info"
+            onClick={() => {
+              setShowMenu(false);
+              showModal(
+                <SystemVersion
+                  onBackButtonClick={() => {
+                    hideModal();
+                    setShowMenu(true);
+                  }}
+                />,
+              );
             }}
           />
           <MenuItemAnchor
