@@ -391,7 +391,6 @@ export const klimaDaoStaking = async (
   }
 };
 
-
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
   transactionBlock: ITransactionBlock
@@ -712,7 +711,7 @@ export const buildCrossChainAction = async (
         };
 
         const result = await buildBridgeAssetToPlrTransactions(fromChainId, route, sdk);
-        
+
         if (result?.errorMessage) return { errorMessage: result.errorMessage };
         const crossChainAction: ICrossChainAction = {
           id: crossChainActionId,
@@ -1153,12 +1152,7 @@ export const buildCrossChainAction = async (
           decimals: fromAssetDecimals,
           logoURI: fromAssetIconUrl,
         },
-        toAsset: {
-          address: toAssetAddress,
-          symbol: toAssetSymbol,
-          decimals: toAssetDecimals,
-          logoURI: toAssetIconUrl,
-        },
+        toAsset: { address: toAssetAddress, symbol: toAssetSymbol, decimals: toAssetDecimals, logoURI: toAssetIconUrl },
         swap,
         receiverAddress,
         accountType,
@@ -1167,9 +1161,7 @@ export const buildCrossChainAction = async (
 
     const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-    let toAssetAmount = addressesEqual(toAssetAddress, plrStakedAssetEthereumMainnet.address)
-      ? fromAmountBN
-      : '0';
+    let toAssetAmount = addressesEqual(toAssetAddress, plrStakedAssetEthereumMainnet.address) ? fromAmountBN : '0';
 
     let providerName;
     let providerIconUrl;
@@ -1199,7 +1191,7 @@ export const buildCrossChainAction = async (
           fromAmountBN,
           fromAssetAddress,
           toAssetAddress,
-          receiverAddress,
+          receiverAddress
         );
 
         if (routeData.errorMessage) return { errorMessage: routeData.errorMessage };
@@ -1215,7 +1207,7 @@ export const buildCrossChainAction = async (
         const plrV2StakingContract = sdk.registerContract<PlrV2StakingContract>(
           'plrV2StakingContract',
           ['function stake(uint256)'],
-          PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
+          PLR_STAKING_ADDRESS_ETHEREUM_MAINNET
         );
         const stakeTransactionRequest = plrV2StakingContract?.encodeStake?.(toAssetAmount);
         if (!stakeTransactionRequest || !stakeTransactionRequest.to) {
@@ -1749,7 +1741,7 @@ export const updateCrossChainActionTransactionsStatus = (
   ...crossChainAction,
   transactions: crossChainAction.transactions.map((transaction) => ({
     ...transaction,
-    status,
+    status: transaction.status === CROSS_CHAIN_ACTION_STATUS.CONFIRMED ? CROSS_CHAIN_ACTION_STATUS.CONFIRMED : status,
   })),
 });
 

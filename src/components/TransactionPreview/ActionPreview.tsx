@@ -18,7 +18,7 @@ import {
   getTransactionExplorerLink,
   isERC20ApprovalTransactionData,
 } from "../../utils/transaction";
-import { formatAmountDisplay, humanizeHexString, copyToClipboard } from '../../utils/common';
+import { formatAmountDisplay, humanizeHexString, copyToClipboard, getTypeOfAddress } from '../../utils/common';
 import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
 import { Theme } from "../../utils/theme";
 
@@ -36,8 +36,8 @@ import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } fro
 const TransactionAction = styled.div`
   position: relative;
   margin-bottom: 18px;
-  background: ${({ theme }) => theme.color.background.selectInput};
-  color: ${({ theme }) => theme.color.text.selectInput};
+  background: ${({ theme }) => theme.color.background.selectInputExpanded};
+  color: ${({ theme }) => theme.color.text.selectInputExpanded};
   border-radius: 8px;
   padding: 8px 14px;
   word-break: break-all;
@@ -494,7 +494,7 @@ const ActionPreview = ({
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
   const { accountAddress, providerAddress } = useEtherspot();
-
+  console.log("addresses", accountAddress, providerAddress)
   const theme: Theme = useTheme();
 
   const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
@@ -576,98 +576,104 @@ const ActionPreview = ({
 		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
 		return (
-			<Card
-				title='Klima Staking'
-				marginBottom={20}
-				onCloseButtonClick={onRemove}
-				showCloseButton={showCloseButton}
-				additionalTopButtons={additionalTopButtons}
-			>
-				<DoubleTransactionActionsInSingleRow>
-					<TransactionAction>
-						<Label>You send</Label>
-						<ValueWrapper>
-							<CombinedRoundedImages
-								title={fromAsset.symbol}
-								url={fromAsset.iconUrl}
-								smallImageTitle={fromChainTitle}
-								smallImageUrl={fromNetwork?.iconUrl}
-							/>
-							<div>
-								<Text size={16} marginBottom={1} medium block>
-									{fromAmount} {fromAsset.symbol}
-								</Text>
-								<Text size={12}>On {fromChainTitle}</Text>
-							</div>
-						</ValueWrapper>
-					</TransactionAction>
-					<TransactionAction>
-						<Label>You receive</Label>
-						<ValueWrapper>
-							<CombinedRoundedImages
-								title={toAsset.symbol}
-								url={toAsset.iconUrl}
-								smallImageTitle={toChainTitle}
-								smallImageUrl={toNetwork?.iconUrl}
-							/>
-							<div>
-								<Text size={16} marginBottom={3} medium block>
-									{toAmount} {toAsset.symbol}
-								</Text>
-								<Text size={12}>On {toChainTitle}</Text>
-							</div>
-						</ValueWrapper>
-					</TransactionAction>
-				</DoubleTransactionActionsInSingleRow>
-				{!!senderAddress && !!receiverAddress && (
-					<TransactionAction>
-						<Text size={16} medium>
-							<>
-								From &nbsp;
-								<ClickableText onClick={() => copyToClipboard(senderAddress)}>
-									{humanizeHexString(senderAddress)}
-								</ClickableText>
-								&nbsp;
-							</>
-							to &nbsp;
-							<ClickableText onClick={() => copyToClipboard(receiverAddress)}>
-								{humanizeHexString(receiverAddress)}
-							</ClickableText>
-						</Text>
-					</TransactionAction>
-				)}
-				<TransactionAction>
-					<Label>Route</Label>
-					<ValueWrapper>
-						<RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
-						<ValueBlock>
-							<Text size={12} marginBottom={2} medium block>
-								{providerName}
-							</Text>
-							<Text size={16} medium>
-								{toAmount} {toAsset.symbol}{' '}
-							</Text>
-						</ValueBlock>
-						{!!cost && (
-							<ValueBlock>
-								<Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
-									Gas price
-								</Text>
-								<Text size={16} medium>
-									{cost}
-								</Text>
-							</ValueBlock>
-						)}
-					</ValueWrapper>
-				</TransactionAction>
+      <Card
+        title="Klima Staking"
+        marginBottom={20}
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
+        <DoubleTransactionActionsInSingleRow>
+          <TransactionAction>
+            <Label>You send</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={fromAsset.symbol}
+                url={fromAsset.iconUrl}
+                smallImageTitle={fromChainTitle}
+                smallImageUrl={fromNetwork?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={1} medium block>
+                  {fromAmount} {fromAsset.symbol}
+                </Text>
+                <Text size={12}>On {fromChainTitle}</Text>
+              </div>
+            </ValueWrapper>
+          </TransactionAction>
+          <TransactionAction>
+            <Label>You receive</Label>
+            <ValueWrapper>
+              <CombinedRoundedImages
+                title={toAsset.symbol}
+                url={toAsset.iconUrl}
+                smallImageTitle={toChainTitle}
+                smallImageUrl={toNetwork?.iconUrl}
+              />
+              <div>
+                <Text size={16} marginBottom={3} medium block>
+                  {toAmount} {toAsset.symbol}
+                </Text>
+                <Text size={12}>On {toChainTitle}</Text>
+              </div>
+            </ValueWrapper>
+          </TransactionAction>
+        </DoubleTransactionActionsInSingleRow>
+        {!!senderAddress && !!receiverAddress && (
+          <TransactionAction>
+            <Text size={16} medium>
+              <>
+                From &nbsp;
+                <ClickableText onClick={() => copyToClipboard(senderAddress)}>
+                  {getTypeOfAddress(senderAddress, accountAddress, providerAddress)}
+                </ClickableText>
+                &nbsp;
+              </>
+              to &nbsp;
+              <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
+                {getTypeOfAddress(receiverAddress, accountAddress, providerAddress)}
+              </ClickableText>
+            </Text>
+          </TransactionAction>
+        )}
+        <TransactionAction>
+          <Label>Route</Label>
+          <ValueWrapper>
+            <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
+            <ValueBlock>
+              <Text size={12} marginBottom={2} medium block>
+                {providerName}
+              </Text>
+              <Text size={16} medium>
+                {toAmount} {toAsset.symbol}{' '}
+              </Text>
+            </ValueBlock>
+            {!!cost && (
+              <ValueBlock>
+                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
+                  Gas price
+                </Text>
+                <Text size={16} medium>
+                  {cost}
+                </Text>
+              </ValueBlock>
+            )}
+          </ValueWrapper>
+        </TransactionAction>
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
-				<TransactionStatus
+        <TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
         />
-        <TransactionStatus crossChainAction={crossChainAction.destinationCrossChainAction[0]} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />
-			</Card>
-		);
+        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
+          CROSS_CHAIN_ACTION_STATUS.CONFIRMED && (
+          <TransactionStatus
+            crossChainAction={crossChainAction.destinationCrossChainAction[0]}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+          />
+        )}
+      </Card>
+    );
 	}
 
 	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
@@ -746,13 +752,13 @@ const ActionPreview = ({
               <>
                 From &nbsp;
                 <ClickableText onClick={() => copyToClipboard(senderAddress)}>
-                  {humanizeHexString(senderAddress)}
+                  {getTypeOfAddress(senderAddress, accountAddress, providerAddress)}
                 </ClickableText>
                 &nbsp;
               </>
               to &nbsp;
               <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
-                {humanizeHexString(receiverAddress)}
+                {getTypeOfAddress(receiverAddress, accountAddress, providerAddress)}
               </ClickableText>
             </Text>
           </TransactionAction>
@@ -814,7 +820,7 @@ const ActionPreview = ({
                 <>
                   From &nbsp;
                   <ClickableText onClick={() => copyToClipboard(fromAddress)}>
-                    {humanizeHexString(fromAddress)}
+                    {getTypeOfAddress(fromAddress, accountAddress, providerAddress)}
                   </ClickableText>
                   &nbsp;
                 </>
@@ -822,7 +828,7 @@ const ActionPreview = ({
               {fromAddress ? "to" : "To"}
               &nbsp;
               <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
-                {humanizeHexString(receiverAddress)}
+                {getTypeOfAddress(receiverAddress, accountAddress, providerAddress)}
               </ClickableText>
             </Text>
           </ValueWrapper>
