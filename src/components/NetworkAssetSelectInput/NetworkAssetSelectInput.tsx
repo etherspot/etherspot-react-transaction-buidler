@@ -74,7 +74,7 @@ const SearchInputWrapper = styled.label`
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  border-bottom: 1px solid #ffd2bb;
+  border-bottom: 1px solid ${({ theme }) => theme.color.background.selectInputBorder};
   margin-bottom: 17px;
   padding: 0 0 5px;
 `;
@@ -104,7 +104,7 @@ const OptionList = styled.div``;
 const LargeOptionList = styled.div`
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #ffeee6;
+  border-top: 1px solid ${({ theme }) => theme.color.background.selectInputBorder};
 `;
 
 const SelectedOption = styled.div<{ disabled?: boolean }>`
