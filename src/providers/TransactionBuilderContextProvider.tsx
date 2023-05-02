@@ -947,6 +947,16 @@ const TransactionBuilderContextProvider = ({
     openMtPelerinTab(maticSdk, account, deployingAccount, setDeployingAccount, showAlertModal);
   };
 
+  useEffect(() => {
+    if (
+      transactionBlocks?.length === 0 &&
+      crossChainActionsInProcessing?.length !== 0 &&
+      crossChainActions.length !== 0
+    ) {
+      setShowWalletBlock(true);
+    }
+  }, [transactionBlocks, crossChainActionsInProcessing, crossChainActions]);
+
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
