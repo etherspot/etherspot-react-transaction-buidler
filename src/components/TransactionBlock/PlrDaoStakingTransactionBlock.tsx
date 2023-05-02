@@ -92,7 +92,7 @@ const OfferDetails = styled.div`
 const ContainerWrapper = styled.div`
   background: ${({ theme }) => theme.color.background.horizontalLine};
   margin: 12px 0 14px 0;
-  padding: 2px;
+  padding: 1px;
   border-radius: 5px;
 `;
 
@@ -121,7 +121,7 @@ const Total = styled.div`
 const HorizontalLine = styled.div`
   margin: 9px 0;
   width: 100%;
-  height: 2px;
+  height: 1px;
   background: ${({ theme }) => theme.color.background.horizontalLine};
 `;
 

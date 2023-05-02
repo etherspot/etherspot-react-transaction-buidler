@@ -246,7 +246,7 @@ const Body = styled.div`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.color.background.settingMenuMain};
+    background: ${({ theme }) => theme.color.background.scrollbar};
     border-radius: 4px;
   }
 
