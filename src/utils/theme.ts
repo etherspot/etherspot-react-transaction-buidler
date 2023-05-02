@@ -44,6 +44,8 @@ export interface Theme {
       settingMenuMain?: string;
       settingsModalBorder?: string;
       settingsModal?: string;
+      loadingAnimationBackground?: string;
+      loadingAnimationForeground?: string;
     };
     text?: {
       main?: string;
@@ -138,6 +140,8 @@ export const defaultTheme: Theme = {
       settingMenuMain: 'linear-gradient(rgb(253, 146, 80), rgb(255, 85, 72))',
       settingsModalBorder: '#d9d9d940',
       settingsModal: '#fff',
+      loadingAnimationBackground: '#FCEADF',
+      loadingAnimationForeground: '#FBF7F5',
     },
     text: {
       main: '#fff',
@@ -227,6 +231,8 @@ export const darkTheme: Theme = {
       settingMenuMain: 'linear-gradient(to bottom,#fdb754,#f18214)',
       settingsModalBorder: '#b6b1d2',
       settingsModal: '#474078',
+      loadingAnimationBackground: '#ededed33',
+      loadingAnimationForeground: '#6C6C6F',
     },
     text: {
       selectInput: '#ffeee6',

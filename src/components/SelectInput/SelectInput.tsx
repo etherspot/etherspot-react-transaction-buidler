@@ -213,8 +213,11 @@ const SelectInput = ({
   const selectedOptionTitle = useMemo(() => {
     if (isLoading && !selectedOption?.title)
       return (
-        <ContentLoader viewBox="0 0 380 60">
-          {/* Only SVG shapes */}
+        <ContentLoader
+          viewBox="0 0 380 60"
+          foregroundColor={theme.color?.background?.loadingAnimationForeground}
+          backgroundColor={theme.color?.background?.loadingAnimationBackground}
+        >
           <circle cx="25" cy="25" r="25" />
           <rect x="60" y="10" rx="4" ry="4" width="310" height="13" />
           <rect x="60" y="30" rx="4" ry="4" width="310" height="13" />
