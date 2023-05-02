@@ -670,6 +670,7 @@ const ChainDropdownIcon = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 8px;
+  cursor: pointer;
 
   @media (max-width: 500px) {
     width: 40px;
@@ -738,5 +739,6 @@ const SelectAllWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
   color: ${({ theme }) => theme.color.text.selectAllButton};
 `;
