@@ -171,6 +171,10 @@ const TransactionBlocksWrapper = styled.div.attrs((props: { highlight: boolean }
     !!highlight &&
     `margin: -10px; padding: 10px; border-radius: 18px; background-color: ${theme.color.background.secondary};`};
   margin-bottom: 20px;
+
+  background: ${({ theme }) => theme.color.background.cardBorder};
+  padding: 1px;
+  border-radius: 12px;
 `;
 
 const TransactionBlocksWrapperIcon = styled.div`
@@ -942,6 +946,16 @@ const TransactionBuilderContextProvider = ({
 
     openMtPelerinTab(maticSdk, account, deployingAccount, setDeployingAccount, showAlertModal);
   };
+
+  useEffect(() => {
+    if (
+      transactionBlocks?.length === 0 &&
+      crossChainActionsInProcessing?.length !== 0 &&
+      crossChainActions.length !== 0
+    ) {
+      setShowWalletBlock(true);
+    }
+  }, [transactionBlocks, crossChainActionsInProcessing, crossChainActions]);
 
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>

@@ -89,9 +89,9 @@ const Container = styled.div`
 `;
 
 const ContainerWrapper = styled.div`
-  background: ${({ theme }) => theme.color.background.blockParagraphBorder};
+  background: ${({ theme }) => theme.color.background.horizontalLine};
   margin: 12px 0 14px 0;
-  padding: 2px;
+  padding: 1px;
   border-radius: 8px;
 `;
 
@@ -103,7 +103,7 @@ const HorizontalLine = styled.div`
   margin: 11px 0;
   width: 100%;
   height: 1px;
-  background: ${({ theme }) => theme.color.background.blockParagraphBorder};
+  background: ${({ theme }) => theme.color.background.horizontalLine};
 `;
 
 const mapOfferToOption = (offer: ExchangeOffer) => {

@@ -39,7 +39,7 @@ const TransactionAction = styled.div`
   background: ${({ theme }) => theme.color.background.selectInputExpanded};
   color: ${({ theme }) => theme.color.text.selectInputExpanded};
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 12px;
   word-break: break-all;
 `;
 
@@ -94,6 +94,7 @@ const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
     opacity: 0.5;
   }
 
+  ${({ color }) => color && `color: ${color};`}
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
@@ -103,9 +104,10 @@ const EditButton = styled(HiOutlinePencilAlt) <{ disabled?: boolean }>`
 	cursor: pointer;
 
   &:hover {
-    opacity: 0.5;
+    opacity: 0.8;
   }
 
+  ${({ color }) => color && `color: ${color};`}
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
@@ -552,10 +554,10 @@ const ActionPreview = ({
 
   const additionalTopButtons = [
     showSignButton && (
-      <SignButton disabled={signButtonDisabled} onClick={onSignButtonClick} />
+      <SignButton color={theme?.color?.background?.closeButton} disabled={signButtonDisabled} onClick={onSignButtonClick} />
     ),
     showEditButton && (
-      <EditButton disabled={editButtonDisabled} onClick={onEditButtonClick} />
+      <EditButton color={theme?.color?.background?.closeButton} disabled={editButtonDisabled} onClick={onEditButtonClick} />
     ),
   ];
 
@@ -705,7 +707,6 @@ const ActionPreview = ({
     return (
       <Card
         title="Asset bridge"
-        marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
@@ -926,7 +927,6 @@ const ActionPreview = ({
     return (
       <Card
         title="PLR Dao Staking"
-        marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
@@ -1138,7 +1138,6 @@ const ActionPreview = ({
     return (
       <Card
         title="Send asset"
-        marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
@@ -1176,7 +1175,6 @@ const ActionPreview = ({
     return (
       <Card
         title="Swap asset"
-        marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
@@ -1291,7 +1289,6 @@ const ActionPreview = ({
     return (
       <Card
         title={cardTitle}
-        marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
