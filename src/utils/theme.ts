@@ -316,6 +316,8 @@ export const synthTheme: Theme = {
       settingMenuMain: 'linear-gradient(to bottom,#fdb754,#f18214)',
       settingsModalBorder: '#b6b1d2',
       settingsModal: '#610384',
+      loadingAnimationBackground: '#ededed33',
+      loadingAnimationForeground: '#6C6C6F',
     },
     text: {
       selectInput: '#fff',
