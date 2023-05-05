@@ -214,7 +214,7 @@ const EtherspotContextProvider = ({
 
       try {
         assets = await sdk.getTokenListTokens({
-          name: assetsChainId === CHAIN_ID.XDAI ? 'HoneyswapTokens' : 'EtherspotPopularTokens',
+          name: 'EtherspotPopularTokens',
         });
       } catch (e) {
         //
