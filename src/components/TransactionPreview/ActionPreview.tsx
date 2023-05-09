@@ -379,11 +379,13 @@ const TransactionStatus = ({
           }
           if (
             (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED ||
-            transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED ||
-            transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER) &&
+              transactionStatus === CROSS_CHAIN_ACTION_STATUS.FAILED ||
+              transactionStatus === CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER) &&
             setIsTransactionDone
-          ){
-            setIsTransactionDone(true)
+          ) {
+            setIsTransactionDone(true);
+          }
+          else if (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED) {
             setIsTokenApproved(true);
           }
             if (timeout) {
