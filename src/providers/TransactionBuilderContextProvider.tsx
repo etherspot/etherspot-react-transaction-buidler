@@ -341,6 +341,7 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [crossChainActionClick, setCrossChainActionClick] = useState<boolean>(false);
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
@@ -949,13 +950,24 @@ const TransactionBuilderContextProvider = ({
 
   useEffect(() => {
     if (
-      transactionBlocks?.length === 0 &&
-      crossChainActionsInProcessing?.length !== 0 &&
-      crossChainActions.length !== 0
+      (crossChainActionsInProcessing === undefined || crossChainActionsInProcessing?.length === 0) &&
+      !isSubmitting &&
+      !crossChainActionClick
     ) {
-      setShowWalletBlock(true);
+      if (transactionBlocks?.length === 0 && crossChainActions.length === 0) {
+        setShowWalletBlock(true);
+      }
     }
-  }, [transactionBlocks, crossChainActionsInProcessing, crossChainActions]);
+
+    setCrossChainActionClick(false);
+  }, [
+    transactionBlocks,
+    crossChainActionsInProcessing,
+    crossChainActions,
+    isSubmitting,
+    isEstimatingCrossChainActions,
+    crossChainActionClick,
+  ]);
 
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
@@ -1518,7 +1530,10 @@ const TransactionBuilderContextProvider = ({
             })}
             <PrimaryButton
               marginTop={30}
-              onClick={onSubmitClick}
+              onClick={() => {
+                setCrossChainActionClick(true);
+                onSubmitClick();
+              }}
               disabled={isSubmitting || isEstimatingCrossChainActions || isEstimationFailing}
             >
               {isSubmitting && !isEstimatingCrossChainActions && 'Executing...'}

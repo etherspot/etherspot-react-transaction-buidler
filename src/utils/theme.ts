@@ -46,6 +46,8 @@ export interface Theme {
       settingMenuMain?: string;
       settingsModalBorder?: string;
       settingsModal?: string;
+      loadingAnimationBackground?: string;
+      loadingAnimationForeground?: string;
       scrollbar?: string;
       walletAssetCopyIcon?: string;
     };
@@ -143,6 +145,8 @@ export const defaultTheme: Theme = {
       settingMenuMain: 'linear-gradient(rgb(253, 146, 80), rgb(255, 85, 72))',
       settingsModalBorder: '#d9d9d940',
       settingsModal: '#fff',
+      loadingAnimationBackground: '#FCEADF',
+      loadingAnimationForeground: '#FBF7F5',
       scrollbar: '#ff7733',
       walletAssetCopyIcon: '#ff7733',
     },
@@ -236,6 +240,8 @@ export const darkTheme: Theme = {
       settingMenuMain: 'linear-gradient(to bottom,#fdb754,#f18214)',
       settingsModalBorder: '#b6b1d2',
       settingsModal: '#474078',
+      loadingAnimationBackground: '#ededed33',
+      loadingAnimationForeground: '#6C6C6F',
       scrollbar: '#fbae49',
       walletAssetCopyIcon: '#ff9c1b',
     },
@@ -322,6 +328,8 @@ export const synthTheme: Theme = {
       deployButton: '#ff884d',
       settingMenuMain: 'linear-gradient(to bottom,#fdb754,#f18214)',
       settingsModalBorder: '#b6b1d2',
+      loadingAnimationBackground: '#ededed33',
+      loadingAnimationForeground: '#6C6C6F',
       settingsModal: '#5c0088',
       scrollbar: '#78e8f6',
       walletAssetCopyIcon: '#fff',

@@ -29,6 +29,7 @@ import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
+import { BulletList } from "react-content-loader";
 
 const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
   position: relative;
@@ -491,7 +492,7 @@ const NetworkAssetSelectInput = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (onNetworkSelect) onNetworkSelect(supportedChain);
-                  setPreselectedNetwork(supportedChain)
+                  setPreselectedNetwork(supportedChain);
                 }}
               >
                 <>
@@ -506,7 +507,12 @@ const NetworkAssetSelectInput = ({
       )}
       {showSelectModal && preselectedNetwork && (
         <LargeOptionList>
-          {isLoadingAssets && <small>Loading assets...</small>}
+          {isLoadingAssets && (
+            <BulletList
+              foregroundColor={theme.color?.background?.loadingAnimationForeground}
+              backgroundColor={theme.color?.background?.loadingAnimationBackground}
+            />
+          )}
           {!isLoadingAssets && !selectedNetworkAssets?.length && <small>No assets found.</small>}
           {!isLoadingAssets && !!selectedNetworkAssets?.length && (
             <>
