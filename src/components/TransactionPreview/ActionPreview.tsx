@@ -385,7 +385,7 @@ const TransactionStatus = ({
           ) {
             setIsTransactionDone(true);
           }
-          else if (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED) {
+          if (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED) {
             setIsTokenApproved(true);
           }
             if (timeout) {
