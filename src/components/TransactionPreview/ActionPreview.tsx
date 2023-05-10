@@ -582,7 +582,6 @@ const ActionPreview = ({
 		return (
       <Card
         title="Klima Staking"
-        marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
