@@ -140,7 +140,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Optimism',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/avalanche.svg',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
   },
   [CHAIN_ID.AURORA]: {
     chainId: CHAIN_ID.AURORA,
@@ -156,7 +156,7 @@ export const nativeAssetPerChainId: { [chainId: number]: TokenListToken } = {
     name: 'Arbitrum',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/arbitrum.svg',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
   },
   [CHAIN_ID.FANTOM]: {
     chainId: CHAIN_ID.FANTOM,
