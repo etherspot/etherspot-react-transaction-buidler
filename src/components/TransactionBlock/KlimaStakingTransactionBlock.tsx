@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, BridgingQuote, CrossChainServiceProvider } from 'etherspot';
-import { BigNumber, ethers } from 'ethers';
+import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider } from 'etherspot';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
@@ -34,6 +34,7 @@ import { DestinationWalletEnum } from '../../enums/wallet.enum';
 // hooks
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import { BiCheck } from "react-icons/bi";
+import { getAssetPriceInUsd } from '../../services/coingecko';
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -105,7 +106,7 @@ const KlimaStakingTransactionBlock = ({
   errorMessages,
   values,
 }: IKlimaStakingTransactionBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk } = useEtherspot();
+  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
@@ -279,10 +280,39 @@ const KlimaStakingTransactionBlock = ({
           return;
         }
 
+        const sdkChain = getSdkForChainId(CHAIN_ID.POLYGON);
+        const gasInfo = await sdkChain?.getGatewayGasInfo();
+
+        let priceUsd = await getAssetPriceInUsd(CHAIN_ID.POLYGON,ethers.constants.AddressZero,sdk);
+        if (!gasInfo || !priceUsd) {
+          setTransactionBlockFieldValidationError(transactionBlockId, 'amount', `No Offer found`);
+          resetRoutes();
+          return;
+        }
+
+        let estimatedGas: BigNumberish = 850000;
+        let currentGasPrice = gasInfo?.fast;
+
+        if (sdk.state.account.state === AccountStates.UnDeployed) {
+          estimatedGas += 330000;
+        }          
+     
+        let gasFees = currentGasPrice.mul(estimatedGas);
+        gasFees = gasFees.add(gasFees.mul(40).div(100));
+        
+        const gasFeesUSD = (Number(ethers.utils.formatEther(gasFees.toString())) * priceUsd) + 0.1
+        const gasFeesUSDC = ethers.utils.parseUnits(gasFeesUSD.toFixed(6), 6);
+
+        if (BigNumber.from(routeToUsdc.items[0].estimate.toAmount).lt(gasFeesUSDC.add("500000"))) {
+          setTransactionBlockFieldValidationError(transactionBlockId, 'amount', `Minimum amount ${gasFeesUSD + 0.5} USD`);
+          resetRoutes();
+          return;
+        }
+
         const routeToKlima = await sdk.getCrossChainQuotes({
           fromChainId: CHAIN_ID.POLYGON,
           toChainId: CHAIN_ID.POLYGON,
-          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('250000'),
+          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub(gasFeesUSDC),
           fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
           toAddress: receiverAddress ?? undefined,
