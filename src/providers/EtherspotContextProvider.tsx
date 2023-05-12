@@ -212,9 +212,18 @@ const EtherspotContextProvider = ({
 
       let assets: TokenListToken[] = [];
 
+      const chainsToUseNewAssets = [
+        CHAIN_ID.OPTIMISM,
+        CHAIN_ID.ARBITRUM,
+        CHAIN_ID.XDAI,
+        CHAIN_ID.BINANCE,
+        CHAIN_ID.ETHEREUM_MAINNET,
+        CHAIN_ID.POLYGON,
+      ];
+
       try {
         assets = await sdk.getTokenListTokens({
-          name: 'EtherspotPopularTokens',
+          name: chainsToUseNewAssets.includes(assetsChainId) ? 'EtherspotPopularTokens' : 'PillarTokens',
         });
       } catch (e) {
         //
