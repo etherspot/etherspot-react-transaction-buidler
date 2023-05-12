@@ -385,7 +385,7 @@ const TransactionStatus = ({
           ) {
             setIsTransactionDone(true);
           }
-          else if (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED) {
+          if (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED) {
             setIsTokenApproved(true);
           }
             if (timeout) {
@@ -582,7 +582,6 @@ const ActionPreview = ({
 		return (
       <Card
         title="Klima Staking"
-        marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
