@@ -6,6 +6,10 @@ import { SelectOption } from '../SelectInput/SelectInput';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 import { useEtherspot } from '../../hooks';
+import Tooltip from '../Tooltip';
+import { AiOutlineInfoCircle } from 'react-icons/ai';
+import { tooltipPositionType } from '../Tooltip/QTooltip';
+// import { Tooltip } from 'react-tooltip'
 
 const Label = styled.div`
   display: inline-block;
@@ -51,6 +55,8 @@ const InputWrapper = styled.div`
 `;
 
 const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percentageWidth: number }>`
+  display: flex;
+  justify-content: center;
   font-family: 'PTRootUIWebMedium', sans-serif;
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
@@ -87,6 +93,7 @@ interface TextInputProps {
   inlineLabel?: boolean;
   disabled?: boolean;
   showTotals?: boolean;
+  showHelperText?: boolean;
 }
 
 const SwitchInput = ({
@@ -98,6 +105,7 @@ const SwitchInput = ({
   inlineLabel = false,
   disabled = false,
   showTotals = false,
+  showHelperText = false,
 }: TextInputProps) => {
   const { smartWalletBalanceByChain, keyBasedWalletBalanceByChain } = useEtherspot()
 
@@ -138,7 +146,14 @@ const SwitchInput = ({
             onClick={() => !disabled && onChange && onChange(option)}
             percentageWidth={100 / options.length}
           >
-            {option.title} {showTotals && showTotalByWalletType(option.value)}
+            {option.title} {showTotals && showTotalByWalletType(option.value)}{' '}
+            {showHelperText && option.helperTooltip && (
+              <Tooltip
+                text={<AiOutlineInfoCircle style={{ marginLeft: 2 }} />}
+                content={option.helperTooltip}
+                position={option.title === 'Wallet' ? tooltipPositionType.bottomCenter : tooltipPositionType.bottomLeft}
+              />
+            )}
           </SwitchOption>
         ))}
       </InputWrapper>

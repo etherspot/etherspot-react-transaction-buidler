@@ -13,6 +13,7 @@ interface AccountSwitchInputProps {
   showCustom?: boolean;
   hideKeyBased?: boolean;
   showTotals?: boolean;
+  showHelperText?: boolean;
 }
 
 const AccountSwitchInput = ({
@@ -25,11 +26,25 @@ const AccountSwitchInput = ({
   showCustom = false,
   hideKeyBased = false,
   showTotals = false,
+  showHelperText = false,
 }: AccountSwitchInputProps) => {
-  let walletOptions = [{ title: 'Smart Wallet', value: DestinationWalletEnum.Contract }];
+  let walletOptions = [
+    {
+      title: 'Smart Wallet',
+      value: DestinationWalletEnum.Contract,
+      helperTooltip: `This is your Smart Wallet balance and doesn't reflect your wallet balance (on Metamask)`,
+    },
+  ];
 
   if (!hideKeyBased) {
-    walletOptions = [{ title: 'Key based', value: DestinationWalletEnum.Key }, ...walletOptions];
+    walletOptions = [
+      {
+        title: 'Wallet',
+        value: DestinationWalletEnum.Key,
+        helperTooltip: 'This is your Wallet balance (from Metamask)',
+      },
+      ...walletOptions,
+    ];
   }
 
   if (showCustom) {
@@ -50,6 +65,7 @@ const AccountSwitchInput = ({
       inlineLabel={inlineLabel}
       disabled={disabled}
       showTotals={showTotals}
+      showHelperText={showHelperText}
     />
   );
 }
