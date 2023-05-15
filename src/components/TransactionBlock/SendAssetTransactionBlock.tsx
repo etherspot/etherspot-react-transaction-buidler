@@ -147,6 +147,7 @@ const SendAssetTransactionBlock = ({
         errorMessage={errorMessages?.accountType}
         disabled={!!fixed || !!multiCallData}
         showTotals
+        showHelperText
       />
       <NetworkAssetSelectInput
         label="From"

@@ -315,7 +315,7 @@ const AssetBridgeTransactionBlock = ({
         hideKeyBased={smartWalletOnly}
         disabled={!!fixed || !!multiCallData}
         showTotals
-        showHelperText={true}
+        showHelperText
       />
       <NetworkAssetSelectInput
         label="From"

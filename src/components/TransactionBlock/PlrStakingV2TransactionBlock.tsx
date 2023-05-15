@@ -641,6 +641,7 @@ const PlrStakingV2TransactionBlock = ({
         errorMessage={errorMessages?.accountType}
         hideKeyBased={smartWalletOnly}
         showTotals
+        showHelperText
       />
       <NetworkAssetSelectInput
         label="From"

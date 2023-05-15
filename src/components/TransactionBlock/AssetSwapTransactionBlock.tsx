@@ -392,6 +392,7 @@ const AssetSwapTransactionBlock = ({
           errorMessage={errorMessages?.accountType}
           disabled={!!fixed || !!multiCallData}
           showTotals
+          showHelperText
         />
       )}
       <NetworkAssetSelectInput
