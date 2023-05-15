@@ -152,8 +152,8 @@ export const defaultTheme: Theme = {
       loadingAnimationForeground: '#FBF7F5',
       scrollbar: '#ff7733',
       walletAssetCopyIcon: '#ff7733',
-      tooltip: '#281d6d',
-      tooltipBorder: '#281d6d',
+      tooltip: '#393f4a',
+      tooltipBorder: '#393f4a',
     },
     text: {
       main: '#fff',

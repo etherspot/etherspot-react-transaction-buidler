@@ -149,7 +149,7 @@ const SwitchInput = ({
             {option.title} {showTotals && showTotalByWalletType(option.value)}{' '}
             {showHelperText && option.helperTooltip && (
               <Tooltip
-                text={<BsInfoCircle size={14} style={{ marginLeft: 8 }} />}
+                text={<BsInfoCircle size={14} style={{ marginLeft: 8, marginTop: -2 }} />}
                 content={option.helperTooltip}
                 position={option.title === 'Wallet' ? tooltipPositionType.bottomCenter : tooltipPositionType.bottomLeft}
               />
