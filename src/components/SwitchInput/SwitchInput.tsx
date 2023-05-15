@@ -6,9 +6,10 @@ import { SelectOption } from '../SelectInput/SelectInput';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 import { useEtherspot } from '../../hooks';
+
 import Tooltip from '../Tooltip';
-import { AiOutlineInfoCircle } from 'react-icons/ai';
 import { tooltipPositionType } from '../Tooltip/Tooltip';
+import { BsInfoCircle } from 'react-icons/bs';
 
 const Label = styled.div`
   display: inline-block;
@@ -148,7 +149,7 @@ const SwitchInput = ({
             {option.title} {showTotals && showTotalByWalletType(option.value)}{' '}
             {showHelperText && option.helperTooltip && (
               <Tooltip
-                text={<AiOutlineInfoCircle style={{ marginLeft: 2 }} />}
+                text={<BsInfoCircle size={14} style={{ marginLeft: 8 }} />}
                 content={option.helperTooltip}
                 position={option.title === 'Wallet' ? tooltipPositionType.bottomCenter : tooltipPositionType.bottomLeft}
               />
