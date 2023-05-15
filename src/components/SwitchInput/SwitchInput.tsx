@@ -8,8 +8,7 @@ import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import { useEtherspot } from '../../hooks';
 import Tooltip from '../Tooltip';
 import { AiOutlineInfoCircle } from 'react-icons/ai';
-import { tooltipPositionType } from '../Tooltip/QTooltip';
-// import { Tooltip } from 'react-tooltip'
+import { tooltipPositionType } from '../Tooltip/Tooltip';
 
 const Label = styled.div`
   display: inline-block;
