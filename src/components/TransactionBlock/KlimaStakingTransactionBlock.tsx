@@ -291,7 +291,7 @@ const KlimaStakingTransactionBlock = ({
         }
 
         let estimatedGas: BigNumberish = 850000;
-        let currentGasPrice = gasInfo?.fast;
+        let currentGasPrice = gasInfo.fast;
 
         if (sdk.state.account.state === AccountStates.UnDeployed) {
           estimatedGas += 330000;
