@@ -357,6 +357,16 @@ const TransactionBuilderContextProvider = ({
 
   const theme: Theme = useTheme();
 
+  const { environment } = useEtherspot();
+
+  useEffect(() => {
+    setShowWalletBlock(false);
+    setTransactionBlocks([]);
+    setTimeout(() => {
+      setShowWalletBlock(true);
+    }, 2000);
+  }, [environment]);
+
   // Change copy icon back
   useInterval(() => {
     setCopiedAddress(false);

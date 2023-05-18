@@ -12,6 +12,7 @@ import EtherspotLogo from '../Image/EtherspotLogo';
 import { CloseButton } from '../Button';
 import ThemeModal from '../ThemeModal';
 import SystemVersion from '../SystemVersion';
+import EnvironmentModal from '../Environment';
 
 // Hooks
 import { useTransactionBuilderModal } from '../../hooks';
@@ -19,7 +20,7 @@ import { useTransactionBuilderModal } from '../../hooks';
 // Icons
 import { BsClockHistory } from 'react-icons/bs';
 import { MdOutlineSettings, MdOutlineDashboardCustomize, MdOutlineInfo } from 'react-icons/md';
-import { IoColorPaletteOutline, IoWalletOutline } from 'react-icons/io5';
+import { IoColorPaletteOutline, IoGlobeOutline, IoWalletOutline } from 'react-icons/io5';
 import { TbLogout } from 'react-icons/tb';
 import { HiOutlineUser } from 'react-icons/hi';
 
@@ -28,12 +29,50 @@ export interface SettingMenuProps {
   logout: Function;
 }
 
+enum SettingsSubMenuOptions {
+  THEME = 'THEME',
+  ENVIRONMENT = 'ENVIRONMENT',
+}
+
 const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
   const [showMenu, setShowMenu] = useState<boolean>(false);
-  const [showSubMenu, setShowSubMenu] = useState<boolean>(false);
+  const [showSubMenu, setShowSubMenu] = useState<string>('');
 
   const theme: Theme = useTheme();
   const { showModal, hideModal } = useTransactionBuilderModal();
+
+  const subMenuContent = () => {
+    switch (showSubMenu) {
+      case SettingsSubMenuOptions.THEME:
+        return (
+          <ThemeModal
+            onBackButtonClick={() => {
+              setShowMenu(true);
+              setShowSubMenu('');
+            }}
+            onSubMenuCloseClick={() => {
+              setShowMenu(false);
+              setShowSubMenu('');
+            }}
+          />
+        );
+      case SettingsSubMenuOptions.ENVIRONMENT:
+        return (
+          <EnvironmentModal
+            onBackButtonClick={() => {
+              setShowMenu(true);
+              setShowSubMenu('');
+            }}
+            onSubMenuCloseClick={() => {
+              setShowMenu(false);
+              setShowSubMenu('');
+            }}
+          />
+        );
+      default:
+        return;
+    }
+  };
 
   return (
     <>
@@ -93,7 +132,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
             icon={<IoColorPaletteOutline size={16} style={{ marginRight: 12 }} />}
             title="Theme"
             onClick={() => {
-              setShowSubMenu(true);
+              setShowSubMenu(SettingsSubMenuOptions.THEME);
               setShowMenu(false);
             }}
           />
@@ -112,6 +151,14 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
               );
             }}
           />
+          <MenuItem
+            icon={<IoGlobeOutline size={16} style={{ marginRight: 12 }} />}
+            title="Environment"
+            onClick={() => {
+              setShowSubMenu(SettingsSubMenuOptions.ENVIRONMENT);
+              setShowMenu(false);
+            }}
+          />
           <MenuItemAnchor
             title="About Etherspot"
             link="https://etherspot.io/"
@@ -128,20 +175,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
           )}
         </MenuWrapper>
       )}
-      {showSubMenu && (
-        <>
-          <ThemeModal
-            onBackButtonClick={() => {
-              setShowMenu(true);
-              setShowSubMenu(false);
-            }}
-            onSubMenuCloseClick={() => {
-              setShowMenu(false);
-              setShowSubMenu(false);
-            }}
-          />
-        </>
-      )}
+      {subMenuContent()}
     </>
   );
 };
