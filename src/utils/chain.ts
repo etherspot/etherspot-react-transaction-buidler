@@ -22,14 +22,20 @@ export const TESTNET_CHAIN_ID = {
   ETHEREUM_MAINNET: 5,
   POLYGON: 80001,
   BINANCE: 97,
-  XDAI: 77,
+  XDAI: 10200,
   AVALANCHE: 43113,
   OPTIMISM: 420,
-  ARBITRUM: 421611,
+  ARBITRUM: 421613,
   AURORA: 1313161555,
   FANTOM: 4002,
   CELO: 44787,
   MOONBEAM: 1287,
+  ETHERSPOT: 4386,
+  BASEGOERLI: 84531,
+  FUSESPARKNET: 123,
+  NEONDEVNET: 245022926,
+  KLAYTNBAOBAB: 1001,
+  OKTCTEST: 65,
 };
 
 export interface Chain {
@@ -123,15 +129,15 @@ export const testnetSupportedChains: Chain[] = [
   },
   {
     chainId: TESTNET_CHAIN_ID.BINANCE,
-    title: 'BNB Chain Testnet',
+    title: 'BscTest',
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/binance.svg',
     explorerUrl: 'https://testnet.bscscan.com/tx/',
   },
   {
     chainId: TESTNET_CHAIN_ID.XDAI,
-    title: 'POA Network Sokol',
+    title: 'Chiado',
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/gnosis.png',
-    explorerUrl: 'https://blockscout.com/poa/sokol/tx/',
+    explorerUrl: 'https://blockscout.chiadochain.net/tx/',
   },
   {
     chainId: TESTNET_CHAIN_ID.AVALANCHE,
@@ -147,9 +153,9 @@ export const testnetSupportedChains: Chain[] = [
   },
   {
     chainId: TESTNET_CHAIN_ID.ARBITRUM,
-    title: 'Arbitrum Rinkeby',
+    title: 'ArbitrumNitro',
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/arbitrum.svg',
-    explorerUrl: 'https://testnet.arbiscan.io/tx/',
+    explorerUrl: 'https://goerli-rollup-explorer.arbitrum.io/tx/',
   },
   {
     chainId: TESTNET_CHAIN_ID.AURORA,
@@ -175,6 +181,42 @@ export const testnetSupportedChains: Chain[] = [
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
     explorerUrl: 'https://explorer.celo.org/alfajores/tx/',
   },
+  {
+    chainId: TESTNET_CHAIN_ID.ETHERSPOT,
+    title: 'Etherspot',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/etherspot.png',
+    explorerUrl: 'https://explorer.etherspot.dev/tx/',
+  },
+  {
+    chainId: TESTNET_CHAIN_ID.BASEGOERLI,
+    title: 'BaseGoerli',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
+    explorerUrl: 'https://goerli.basescan.org/tx/',
+  },
+  {
+    chainId: TESTNET_CHAIN_ID.FUSESPARKNET,
+    title: 'FuseSparknet',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/fuse.png',
+    explorerUrl: 'https://explorer.fusespark.io/tx/',
+  },
+  {
+    chainId: TESTNET_CHAIN_ID.NEONDEVNET,
+    title: 'NeonDevnet',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/neon.png',
+    explorerUrl: 'https://devnet.explorer.neon-labs.org/tx/',
+  },
+  {
+    chainId: TESTNET_CHAIN_ID.KLAYTNBAOBAB,
+    title: 'KlaytnBaobab',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/klaytn.png',
+    explorerUrl: 'https://baobab.scope.klaytn.com/tx/',
+  },
+  {
+    chainId: TESTNET_CHAIN_ID.OKTCTEST,
+    title: 'OktcTest',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/oktc.png',
+    explorerUrl: 'https://www.oklink.com/okexchain-test/tx/',
+  }
 ];
 
 export const mainnetNativeAssets: { [chainId: number]: TokenListToken } = {
@@ -320,8 +362,8 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
   [TESTNET_CHAIN_ID.ARBITRUM]: {
     chainId: TESTNET_CHAIN_ID.ARBITRUM,
     address: ethers.constants.AddressZero,
-    name: 'Arbitrum',
-    symbol: 'ETH',
+    name: 'ArbitrumNitro',
+    symbol: 'AGOR',
     decimals: 18,
     logoURI: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
   },
@@ -346,6 +388,54 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     address: ethers.constants.AddressZero,
     name: 'Celo',
     symbol: 'CELO',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+  },
+  [TESTNET_CHAIN_ID.ETHERSPOT]: {
+    chainId: TESTNET_CHAIN_ID.ETHERSPOT,
+    address: ethers.constants.AddressZero,
+    name: 'Etherspot',
+    symbol: 'ETH',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+  },
+  [TESTNET_CHAIN_ID.BASEGOERLI]: {
+    chainId: TESTNET_CHAIN_ID.BASEGOERLI,
+    address: ethers.constants.AddressZero,
+    name: 'BaseGoerli',
+    symbol: 'ETH',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+  },
+  [TESTNET_CHAIN_ID.FUSESPARKNET]: {
+    chainId: TESTNET_CHAIN_ID.FUSESPARKNET,
+    address: ethers.constants.AddressZero,
+    name: 'FuseSparknet',
+    symbol: 'SPARK',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+  },
+  [TESTNET_CHAIN_ID.NEONDEVNET]: {
+    chainId: TESTNET_CHAIN_ID.NEONDEVNET,
+    address: ethers.constants.AddressZero,
+    name: 'NeonDevnet',
+    symbol: 'NEON',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+  },
+  [TESTNET_CHAIN_ID.KLAYTNBAOBAB]: {
+    chainId: TESTNET_CHAIN_ID.KLAYTNBAOBAB,
+    address: ethers.constants.AddressZero,
+    name: 'KlaytnBaobab',
+    symbol: 'KLAY',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+  },
+  [TESTNET_CHAIN_ID.OKTCTEST]: {
+    chainId: TESTNET_CHAIN_ID.OKTCTEST,
+    address: ethers.constants.AddressZero,
+    name: 'OktcTest',
+    symbol: 'OKT',
     decimals: 18,
     logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
   },
@@ -380,15 +470,28 @@ export const klimaAsset: IAssetWithBalance = {
 };
 
 export const plrDaoMemberNft = {
-  address: '0x267c85113BAfbBe829918fB4c23135af72c9C472',
-  chainId: CHAIN_ID.POLYGON,
-  name: 'DekuDAO NFT',
-  symbol: 'Dekunft',
-  decimals: 18,
-  logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
-  balance: BigNumber.from(0),
-  assetPriceUsd: null,
-  balanceWorthUsd: null,
+  [MAINNET_CHAIN_ID.POLYGON]: {
+    address: '0x267c85113BAfbBe829918fB4c23135af72c9C472',
+    chainId: MAINNET_CHAIN_ID.POLYGON,
+    name: 'DekuDAO NFT',
+    symbol: 'Dekunft',
+    decimals: 18,
+    logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
+    balance: BigNumber.from(0),
+    assetPriceUsd: null,
+    balanceWorthUsd: null,
+  },
+  [TESTNET_CHAIN_ID.POLYGON]: {
+    address: '0x47B718400d680681ad399E013132118bb8942641',
+    chainId: TESTNET_CHAIN_ID.POLYGON,
+    name: 'PLR NFT',
+    symbol: 'PLR NFT',
+    decimals: 18,
+    logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
+    balance: BigNumber.from(0),
+    assetPriceUsd: null,
+    balanceWorthUsd: null,
+  },
 };
 
 export const changeToChain = async (chainId: number): Promise<boolean> => {

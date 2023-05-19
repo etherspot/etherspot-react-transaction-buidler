@@ -225,12 +225,13 @@ const EtherspotContextProvider = ({
 
       const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
       try {
-        assets = await sdk.getTokenListTokens({
-          name:
-            MainnetIDs.includes(assetsChainId) && chainsToUseNewAssets.includes(assetsChainId)
-              ? 'EtherspotPopularTokens'
-              : 'PillarTokens',
-        });
+        if (MainnetIDs.includes(assetsChainId)) {
+          assets = await sdk.getTokenListTokens({
+            name: chainsToUseNewAssets.includes(assetsChainId) ? 'EtherspotPopularTokens' : 'PillarTokens',
+          });
+        } else {
+          assets = await sdk.getTokenListTokens();
+        }
       } catch (e) {
         //
       }
@@ -242,7 +243,8 @@ const EtherspotContextProvider = ({
       // TODO: to be added back when DKU token is no longer needed. This is for the DKU testing.
       // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
       supportedAssetsPerChainId[assetsChainId] =
-        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset];
+        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset[MAINNET_CHAIN_ID.POLYGON]];
+
       return supportedAssetsPerChainId[assetsChainId];
     },
     [sdk]
