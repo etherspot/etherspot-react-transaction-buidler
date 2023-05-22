@@ -241,6 +241,7 @@ interface SelectInputProps {
   showQuickInputButtons?: boolean;
   accountType?: string;
   hideAssets?: { chainId: number, address: string }[];
+  customMessage?: string;
 }
 
 const NetworkAssetSelectInput = ({
@@ -257,6 +258,7 @@ const NetworkAssetSelectInput = ({
   showQuickInputButtons,
   accountType,
   hideAssets,
+  customMessage
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -449,7 +451,9 @@ const NetworkAssetSelectInput = ({
       </SelectWrapper>
       {!showSelectModal && (!selectedAsset || !selectedNetwork) && (
         <SelectedOption onClick={onSelectClick} disabled={disabled}>
-          Select chain and token
+          {
+            customMessage ?? "Select chain and token"
+          }
         </SelectedOption>
       )}
       {!showSelectModal && !!selectedNetwork && !!selectedAsset && (

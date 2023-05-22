@@ -270,6 +270,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
+    title: 'HoneySwap LP',
+    type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+  },
+  {
+    id: getTimeBasedUniqueId(),
     title: 'LI.FI staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
@@ -408,7 +413,8 @@ const TransactionBuilderContextProvider = ({
         [transactionBlock.id]: transactionBlockErrors,
       };
     });
-
+    console.log(validationErrors, "validfff");
+    
     return validationErrors;
   };
 
@@ -422,6 +428,7 @@ const TransactionBuilderContextProvider = ({
 
   const isBlockValid = useMemo(() => {
     const validationErrors = getValidationErrors();
+    console.log("Something", validationErrors)
 
     return isEmpty(validationErrors);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
@@ -448,7 +455,10 @@ const TransactionBuilderContextProvider = ({
       // keep blocks in order
       let multiCallList: string[] = [];
       for (const transactionBlock of transactionBlocks) {
+        console.log("transactionBlock", transactionBlock)
         const result = await buildCrossChainAction(sdk, transactionBlock);
+        console.log("resultblock", result);
+        
         if (!result?.crossChainAction || result?.errorMessage) {
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
@@ -503,11 +513,11 @@ const TransactionBuilderContextProvider = ({
     }
 
     setIsChecking(false);
-
+    console.log("newCrossChainActions",newCrossChainActions)
     if (!errorMessage && !newCrossChainActions?.length) {
       errorMessage = `Failed to proceed with selected actions!`;
     }
-
+  
     if (errorMessage) {
       return;
     }
@@ -764,6 +774,7 @@ const TransactionBuilderContextProvider = ({
   };
 
   const resetTransactionBlockFieldValidationError = (transactionBlockId: string, field: string) => {
+    console.log("transactionBlockId",transactionBlockId)
     setTransactionBlockValidationErrors((current) => ({
       ...current,
       [transactionBlockId]: { ...current?.[transactionBlockId], [field]: '' },
@@ -1347,7 +1358,7 @@ const TransactionBuilderContextProvider = ({
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br />
-                {!isChecking && isBlockValid && (
+                {/* {!isChecking && isBlockValid && ( */}
                   <PrimaryButton
                     marginTop={editingTransactionBlock ? 0 : 30}
                     onClick={onContinueClick}
@@ -1356,7 +1367,7 @@ const TransactionBuilderContextProvider = ({
                     {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
                     {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
                   </PrimaryButton>
-                )}
+                {/* )} */}
               </>
             )}
             {!!editingTransactionBlock && (

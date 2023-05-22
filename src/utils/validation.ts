@@ -9,6 +9,7 @@ import { ITransactionBlock } from '../types/transactionBlock';
 import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
 import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { IHoneySwapLPTransactionBlockValues } from "../components/TransactionBlock/HoneySwapLPTransactionBlock";
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {
   if (!address) return false;
@@ -109,6 +110,22 @@ export const validateTransactionBlockValues = (
       errors.receiverAddress = 'Invalid receiver address!';
     }
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
+  }
+
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+    const transactionBlockValues: IHoneySwapLPTransactionBlockValues | undefined = transactionBlock.values;
+    console.log("shshssddhs", transactionBlockValues)
+    if (!transactionBlockValues?.fromChainId) errors.fromChainId = 'No source chain selected!';
+    if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
+    // if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
+    if (!transactionBlockValues?.fromAssetAddress) errors.fromAssetAddress = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.fromAssetSymbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.fromAssetSymbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.toToken1) errors.toToken1 = 'Select the first token';
+    if (!transactionBlockValues?.toToken2) errors.toToken2 = 'Select the second token';
+    if (!transactionBlockValues?.offer1) errors.offer1 = 'Select the second token';
+    if (!transactionBlockValues?.offer2) errors.offer2 = 'Select the second token';
+    // if (!transactionBlockValues?.route) errors.route = 'No route selected!';
   }
 
   return errors;

@@ -920,6 +920,147 @@ export const buildCrossChainAction = async (
   }
 
   if (
+    transactionBlock.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP &&
+    !!transactionBlock?.values?.fromChainId &&
+    !!transactionBlock?.values?.toToken1 &&
+    !!transactionBlock?.values?.toToken2 &&
+    !!transactionBlock?.values?.fromAssetAddress &&
+    !!transactionBlock?.values?.amount &&
+    !!transactionBlock?.values?.routeToUSDC &&
+    !!transactionBlock?.values?.offer1 &&
+    !!transactionBlock?.values?.offer2
+  ) {
+    try {
+      const {
+        values: {
+          fromChainId,
+          fromAssetAddress,
+          fromAssetDecimals,
+          fromAssetSymbol,
+          fromAssetIconUrl,
+          amount,
+          accountType,
+          routeToUSDC,
+          receiverAddress,
+          offer1,
+          offer2
+        },
+      } = transactionBlock;
+
+
+      if (fromChainId !== CHAIN_ID.XDAI) {
+        try {
+          let destinationTxns: ICrossChainActionTransaction[] = [];
+          let transactions: ICrossChainActionTransaction[] = [];
+          const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+          transactions = [
+            {
+              to: routeToUSDC.transaction.to,
+              value: routeToUSDC.transaction.value as string,
+              data: routeToUSDC.transaction.data as string,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            },
+          ];
+
+          if (
+            ethers.utils.isAddress(fromAssetAddress) &&
+            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address) &&
+            routeToUSDC.approvalData?.approvalAddress
+          ) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+              routeToUSDC.approvalData.approvalAddress,
+              routeToUSDC.approvalData.amount
+            );
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed build bridge approval transaction!' };
+            }
+
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              value: '0',
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+
+            transactions = [approvalTransaction, ...transactions];
+          }
+
+
+          // Swap 1 Start
+          transactions = offer1.transactions.map((transaction) => ({
+            ...transaction,
+            chainId: CHAIN_ID.XDAI,
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          }));
+    
+          // not native asset and no erc20 approval transaction included
+          if (
+            fromAssetAddress &&
+            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+            transactions.length === 1
+          ) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, fromAmountBN);
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed build bridge approval transaction!' };
+            }
+    
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              chainId: CHAIN_ID.XDAI,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+    
+            transactions = [approvalTransaction, ...transactions];
+          }
+    
+          if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, offer1.receiveAmount);
+            if (!transferTransactionRequest || !transferTransactionRequest.to) {
+              return { errorMessage: 'Failed build transfer transaction!' };
+            }
+    
+            const transferTransaction = {
+              to: transferTransactionRequest.to,
+              data: transferTransactionRequest.data,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+    
+            transactions = [...transactions, transferTransaction];
+          }
+          // SWAP 1 ENDS
+
+
+
+          return { crossChainAction: undefined };
+        } catch (e) {
+          return { errorMessage: 'Failed to get bridge route!' };
+        }
+      } else {
+        return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
+      }
+
+      return { crossChainAction: undefined };
+    } catch (e) {
+      return { errorMessage: 'Failed to get bridge route!' };
+    }
+  }
+
+  if (
     transactionBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
     !!transactionBlock?.values?.chain &&
     !!transactionBlock?.values?.selectedAsset &&
@@ -1039,6 +1180,8 @@ export const buildCrossChainAction = async (
       } = transactionBlock;
 
       const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      console.log("skshaj", amount, fromAmountBN);
 
       const swapServiceDetails = swapServiceIdToDetails[offer.provider];
 
