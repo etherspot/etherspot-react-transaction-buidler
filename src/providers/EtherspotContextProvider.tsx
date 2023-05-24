@@ -243,7 +243,7 @@ const EtherspotContextProvider = ({
       // TODO: to be added back when DKU token is no longer needed. This is for the DKU testing.
       // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
       supportedAssetsPerChainId[assetsChainId] =
-        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset[MAINNET_CHAIN_ID.POLYGON]];
+        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset[CHAIN_ID.POLYGON]];
 
       return supportedAssetsPerChainId[assetsChainId];
     },

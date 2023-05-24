@@ -482,7 +482,7 @@ export const plrDaoMemberNft = {
     balanceWorthUsd: null,
   },
   [TESTNET_CHAIN_ID.POLYGON]: {
-    address: '0x47B718400d680681ad399E013132118bb8942641',
+    address: '0xF2367C021b1f7E1E96E4d9F1B8eB07C13AFb0526',
     chainId: TESTNET_CHAIN_ID.POLYGON,
     name: 'PLR NFT',
     symbol: 'PLR NFT',

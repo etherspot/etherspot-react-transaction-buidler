@@ -28,7 +28,7 @@ export const testPlrDaoAsset: { [chianId: number]: IAssetWithBalance } = {
     balanceWorthUsd: null,
   },
   [TESTNET_CHAIN_ID.POLYGON]: {
-    address: '0x92334318FB7f002c2ca3a6A146250133108f462b',
+    address: '0xca7a2484614bf67f6F0577d6431945e136A4b8bb',
     chainId: TESTNET_CHAIN_ID.POLYGON,
     name: 'Pillar (PLR)',
     symbol: 'PLR',
