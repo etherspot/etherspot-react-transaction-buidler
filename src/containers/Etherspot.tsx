@@ -92,6 +92,8 @@ const Etherspot = ({
           @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css');
           @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css');
           @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css');
+          @import url('https://unpkg.com/tippy.js@6.3.7/dist/tippy.css');
+          @import url('https://unpkg.com/tippy.js@6.3.7/dist/border.css');
         </style>
         <ComponentWrapper>
           <TransactionBuilderModalContextProvider>

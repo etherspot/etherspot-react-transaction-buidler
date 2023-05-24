@@ -48,7 +48,7 @@ const AccountSwitchInput = ({
   }
 
   if (showCustom) {
-    walletOptions = [...walletOptions, { title: 'Custom', value: DestinationWalletEnum.Custom }];
+    walletOptions = [...walletOptions, { title: 'Custom', value: DestinationWalletEnum.Custom, helperTooltip: '' }];
   }
 
   const selectedOption = walletOptions.find((option) => option.value === selectedAccountType) as SelectOption;

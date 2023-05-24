@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import styled from 'styled-components';
+import Tippy from '@tippyjs/react';
 
 import { SelectOption } from '../SelectInput/SelectInput';
 
@@ -7,8 +8,6 @@ import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 import { useEtherspot } from '../../hooks';
 
-import Tooltip from '../Tooltip';
-import { tooltipPositionType } from '../Tooltip/Tooltip';
 import { BsInfoCircle } from 'react-icons/bs';
 
 const Label = styled.div`
@@ -148,11 +147,17 @@ const SwitchInput = ({
           >
             {option.title} {showTotals && showTotalByWalletType(option.value)}{' '}
             {showHelperText && option.helperTooltip && (
-              <Tooltip
-                text={<BsInfoCircle size={14} style={{ marginLeft: 8, marginTop: -2 }} />}
+              <TippyWrapper
+                className='tippy-tooltip'
                 content={option.helperTooltip}
-                position={option.title === 'Wallet' ? tooltipPositionType.bottomCenter : tooltipPositionType.bottomLeft}
-              />
+                arrow={true}
+                maxWidth={'280px'}
+                placement={option.title === 'Wallet' ? 'bottom' : 'bottom-end'}
+              >
+                <button style={{ marginLeft: 8, border: 'none', background: 'transparent', color: 'inherit' }}>
+                  <BsInfoCircle type="button" size={14} />
+                </button>
+              </TippyWrapper>
             )}
           </SwitchOption>
         ))}
@@ -163,3 +168,29 @@ const SwitchInput = ({
 };
 
 export default SwitchInput;
+
+const TippyWrapper = styled(Tippy)`
+  border-radius: 16px !important;
+  color: ${({ theme }) => theme.color.text.tooltip} !important;
+  background-color: ${({ theme }) => theme.color.background.tooltip} !important;
+  border: 1px solid ${({ theme }) => theme.color.background.tooltipBorder} !important;
+  .tippy-arrow {
+    color: ${({ theme }) => theme.color.background.tooltip} !important;
+  }
+
+  &[data-placement^='bottom'] {
+    .tippy-arrow:before {
+      border-width: 1px 8px 8px !important;
+    }
+  }
+
+  &[data-placement^='bottom-end'] {
+    margin-right: -25px !important;
+    .tippy-arrow {
+      left: -15px !important;
+    }
+    .tippy-arrow:before {
+      border-width: 1px 8px 8px !important;
+    }
+  }
+`;
