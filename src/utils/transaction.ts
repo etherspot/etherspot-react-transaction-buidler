@@ -39,7 +39,7 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { PLR_DAO_CONTRACT_PER_CHAIN, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 
 interface IPillarDao {
@@ -578,7 +578,7 @@ export const buildCrossChainAction = async (
           },
         } = transactionBlock;
         let transactions: IPlrTransaction[] = [];
-        let contractAddress = '0xdf5cFefc1CE077Fc468E3CFF130f955421D9B95a';
+        let contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[fromChainId];
         const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
         if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address)) {
@@ -641,9 +641,9 @@ export const buildCrossChainAction = async (
           },
           amount: 1,
           toAsset: {
-            address: plrDaoMemberNft.address,
+            address: plrDaoMemberNft[fromChainId].address,
             decimals: toAssetDecimals,
-            symbol: plrDaoMemberNft.name,
+            symbol: plrDaoMemberNft[fromChainId].name,
             amount: '1',
             iconUrl: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
           },
@@ -685,7 +685,7 @@ export const buildCrossChainAction = async (
 
         const preview = {
           fromChainId,
-          toChainId: testPlrDaoAsset.chainId,
+          toChainId: testPlrDaoAsset[fromChainId].chainId,
           providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
           providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
           hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,
