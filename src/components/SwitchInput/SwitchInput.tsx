@@ -1,11 +1,14 @@
 import React, { useCallback } from 'react';
 import styled from 'styled-components';
+import Tippy from '@tippyjs/react';
 
 import { SelectOption } from '../SelectInput/SelectInput';
 
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 import { useEtherspot } from '../../hooks';
+
+import { BsInfoCircle } from 'react-icons/bs';
 
 const Label = styled.div`
   display: inline-block;
@@ -51,6 +54,8 @@ const InputWrapper = styled.div`
 `;
 
 const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percentageWidth: number }>`
+  display: flex;
+  justify-content: center;
   font-family: 'PTRootUIWebMedium', sans-serif;
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.switchInputInactiveTab};
@@ -87,6 +92,7 @@ interface TextInputProps {
   inlineLabel?: boolean;
   disabled?: boolean;
   showTotals?: boolean;
+  showHelperText?: boolean;
 }
 
 const SwitchInput = ({
@@ -98,6 +104,7 @@ const SwitchInput = ({
   inlineLabel = false,
   disabled = false,
   showTotals = false,
+  showHelperText = false,
 }: TextInputProps) => {
   const { smartWalletBalanceByChain, keyBasedWalletBalanceByChain } = useEtherspot()
 
@@ -138,7 +145,20 @@ const SwitchInput = ({
             onClick={() => !disabled && onChange && onChange(option)}
             percentageWidth={100 / options.length}
           >
-            {option.title} {showTotals && showTotalByWalletType(option.value)}
+            {option.title} {showTotals && showTotalByWalletType(option.value)}{' '}
+            {showHelperText && option.helperTooltip && (
+              <TippyWrapper
+                className='tippy-tooltip'
+                content={option.helperTooltip}
+                arrow={true}
+                maxWidth={'280px'}
+                placement={option.title === 'Wallet' ? 'bottom' : 'bottom-end'}
+              >
+                <TooltipIconWrapper>
+                  <BsInfoCircle type="button" size={14} />
+                </TooltipIconWrapper>
+              </TippyWrapper>
+            )}
           </SwitchOption>
         ))}
       </InputWrapper>
@@ -148,3 +168,39 @@ const SwitchInput = ({
 };
 
 export default SwitchInput;
+
+const TippyWrapper = styled(Tippy)`
+  border-radius: 16px !important;
+  color: ${({ theme }) => theme.color.text.tooltip} !important;
+  background-color: ${({ theme }) => theme.color.background.tooltip} !important;
+  border: 1px solid ${({ theme }) => theme.color.background.tooltipBorder} !important;
+  .tippy-arrow {
+    color: ${({ theme }) => theme.color.background.tooltip} !important;
+  }
+
+  &[data-placement^='bottom'] {
+    .tippy-arrow:before {
+      border-width: 1px 8px 8px !important;
+    }
+  }
+
+  &[data-placement^='bottom-end'] {
+    margin-right: -25px !important;
+    .tippy-arrow {
+      left: -15px !important;
+    }
+    .tippy-arrow:before {
+      border-width: 1px 8px 8px !important;
+    }
+  }
+`;
+
+const TooltipIconWrapper = styled.button`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  margin-left: 8px;
+`;
