@@ -154,9 +154,9 @@ const SwitchInput = ({
                 maxWidth={'280px'}
                 placement={option.title === 'Wallet' ? 'bottom' : 'bottom-end'}
               >
-                <button style={{ marginLeft: 8, border: 'none', background: 'transparent', color: 'inherit' }}>
+                <TooltipIconWrapper>
                   <BsInfoCircle type="button" size={14} />
-                </button>
+                </TooltipIconWrapper>
               </TippyWrapper>
             )}
           </SwitchOption>
@@ -193,4 +193,14 @@ const TippyWrapper = styled(Tippy)`
       border-width: 1px 8px 8px !important;
     }
   }
+`;
+
+const TooltipIconWrapper = styled.button`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  margin-left: 8px;
 `;
