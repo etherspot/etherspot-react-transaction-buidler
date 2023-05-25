@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 
 // Components
@@ -16,6 +16,7 @@ import EnvironmentModal from '../Environment';
 
 // Hooks
 import { useTransactionBuilderModal } from '../../hooks';
+import useOnClickOutside from '../../hooks/useOnClickOutside';
 
 // Icons
 import { BsClockHistory } from 'react-icons/bs';
@@ -37,50 +38,44 @@ enum SettingsSubMenuOptions {
 const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [showSubMenu, setShowSubMenu] = useState<string>('');
+  const menuRef = useRef<null | HTMLDivElement>(null);
 
   const theme: Theme = useTheme();
   const { showModal, hideModal } = useTransactionBuilderModal();
 
+  const onBackButtonClick = () => {
+    setShowMenu(true);
+    setShowSubMenu('');
+  };
+
+  const closeSettingsMenu = () => {
+    setShowMenu(false);
+    setShowSubMenu('');
+  };
+
+  useOnClickOutside(menuRef, closeSettingsMenu);
+
   const subMenuContent = () => {
     switch (showSubMenu) {
       case SettingsSubMenuOptions.THEME:
-        return (
-          <ThemeModal
-            onBackButtonClick={() => {
-              setShowMenu(true);
-              setShowSubMenu('');
-            }}
-            onSubMenuCloseClick={() => {
-              setShowMenu(false);
-              setShowSubMenu('');
-            }}
-          />
-        );
+        return <ThemeModal onBackButtonClick={onBackButtonClick} onSubMenuCloseClick={closeSettingsMenu} />;
       case SettingsSubMenuOptions.ENVIRONMENT:
-        return (
-          <EnvironmentModal
-            onBackButtonClick={() => {
-              setShowMenu(true);
-              setShowSubMenu('');
-            }}
-            onSubMenuCloseClick={() => {
-              setShowMenu(false);
-              setShowSubMenu('');
-            }}
-          />
-        );
+        return <EnvironmentModal onBackButtonClick={onBackButtonClick} onSubMenuCloseClick={closeSettingsMenu} />;
       default:
         return;
     }
   };
 
   return (
-    <>
+    <div ref={menuRef}>
       <MenuButton
         data-testid="builder-setting-menu"
         color={theme?.color?.background?.topMenuButton}
         size={18}
-        onClick={() => setShowMenu(!showMenu)}
+        onClick={() => {
+          setShowMenu(!showMenu);
+          setShowSubMenu('');
+        }}
       />
       {showMenu && (
         <MenuWrapper>
@@ -176,7 +171,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
         </MenuWrapper>
       )}
       {subMenuContent()}
-    </>
+    </div>
   );
 };
 
