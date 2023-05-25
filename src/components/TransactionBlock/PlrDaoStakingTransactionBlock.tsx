@@ -13,6 +13,7 @@ import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import { Pill, Text } from '../Text';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
+import NetworkAssetInfoCard from '../NetworkAssetSelectInput/NetworkAssetInfoCard';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
@@ -665,7 +666,10 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
-            if (selectedFromNetwork?.chainId === CHAIN_ID.POLYGON && asset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol) {
+            if (
+              selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
+              asset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol
+            ) {
               setAmount(formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, asset.decimals));
               return;
             }
@@ -687,13 +691,7 @@ const PlrDaoStakingTransactionBlock = ({
           showPositiveBalanceAssets
           showQuickInputButtons
         />
-        <NetworkAssetSelectInput
-          label="To"
-          selectedNetwork={selectedToChain}
-          selectedAsset={toAsset}
-          disabled={true}
-          walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        />
+        {selectedToChain && <NetworkAssetInfoCard label="To" networkDetails={selectedToChain} assetDetails={toAsset} />}
         {!!selectedFromAsset && !!selectedFromNetwork && (enableAssetBridge || enableAssetSwap) && (
           <TextInput
             label="You swap"
