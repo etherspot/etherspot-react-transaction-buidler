@@ -11,6 +11,7 @@ import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
+import NetworkAssetInfoCard from '../NetworkAssetSelectInput/NetworkAssetInfoCard';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import TextInput from '../TextInput';
 import { Pill } from '../Text';
@@ -78,11 +79,12 @@ const OfferGasPriceContainer = styled.div`
   justify-content: flex-start;
   gap: 1rem;
   align-items: flex-end;
+  font-size: 14px;
 `;
 
 const OfferChecked = styled.div`
   position: absolute;
-  top: -10px;
+  top: 2px;
   right: 5px;
   background: ${({ theme }) => theme.color.background.statusIconSuccess};
   width: 14px;
@@ -90,6 +92,14 @@ const OfferChecked = styled.div`
   font-size: 4px;
   border-radius: 7px;
   color: #fff;
+`;
+
+const OfferText = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 3px;
 `;
 
 const mapRouteToOption = (route: BridgingQuote): SelectOption => {
@@ -378,24 +388,22 @@ const KlimaStakingTransactionBlock = ({
     <OfferDetails>
       <RoundedImage title={option.title} url={option.iconUrl} size={24} />
       <div>
-        <Text size={12} marginBottom={2} medium block>
-          {option.title}
-        </Text>
+        <OfferText>
+          {receiveAmount} {klimaAsset.symbol}
+          <Text color={theme.color?.text?.innerLabel} marginLeft={6} medium block>
+            {`via ${option.title}`}
+          </Text>
+        </OfferText>
         <OfferGasPriceContainer>
           <div>
-            <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
+            {targetAssetPriceUsd && `${formatAmountDisplay(+receiveAmount * targetAssetPriceUsd, '$')}`}
+            <Text size={12} marginLeft={8} marginRight={4} color={theme.color?.text?.innerLabel} medium>
               Gas price:&nbsp;
             </Text>
-            <Text size={14} marginRight={22} medium inline>
+            <Text size={14} medium inline>
               {option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
             </Text>
           </div>
-          {!!receiveAmount && (
-            <Text size={16} medium>
-              {receiveAmount} {klimaAsset.symbol}
-              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+receiveAmount * targetAssetPriceUsd, '$')}`}
-            </Text>
-          )}
         </OfferGasPriceContainer>
       </div>
       <OfferChecked>
@@ -406,7 +414,7 @@ const KlimaStakingTransactionBlock = ({
 
   return (
     <>
-      <Title>Stake into sKlima</Title>
+      <Title>Klima DAO Staking</Title>
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}
@@ -446,14 +454,7 @@ const KlimaStakingTransactionBlock = ({
         showQuickInputButtons
         accountType={selectedAccountType}
       />
-      <NetworkAssetSelectInput
-        label="To"
-        selectedNetwork={supportedChains[1]}
-        selectedAsset={klimaAsset}
-        disabled={true}
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        accountType={selectedAccountType}
-      />
+      <NetworkAssetInfoCard label="To" networkDetails={supportedChains[1]} assetDetails={klimaAsset} />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
           label="You stake"

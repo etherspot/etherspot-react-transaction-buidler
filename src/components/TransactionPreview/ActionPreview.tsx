@@ -19,7 +19,7 @@ import {
   isERC20ApprovalTransactionData,
 } from "../../utils/transaction";
 import { formatAmountDisplay, humanizeHexString, copyToClipboard, getTypeOfAddress } from '../../utils/common';
-import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
+import { Chain, CHAIN_ID, klimaAsset, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
 import { Theme } from "../../utils/theme";
 
 // Constants
@@ -32,6 +32,7 @@ import { useEtherspot } from "../../hooks";
 
 // Types
 import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from "../../types/crossChainAction";
+import useAssetPriceUsd from "../../hooks/useAssetPriceUsd";
 
 const TransactionAction = styled.div`
   position: relative;
@@ -83,6 +84,13 @@ const ValueWrapper = styled.div<{ marginTop?: number }>`
 
 const ValueBlock = styled.div`
   margin-right: 20px;
+`;
+
+const ValueText = styled.div`
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 3px;
 `;
 
 const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
@@ -578,17 +586,19 @@ const ActionPreview = ({
 		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
 		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
+    const fromAssetPriceUsd = useAssetPriceUsd(fromChainId, fromAsset.address);
 
 		return (
       <Card
-        title="Klima Staking"
+        title="Klima DAO Staking"
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
-            <Label>You send</Label>
+            <Label>You send {fromAssetPriceUsd && formatAmountDisplay(+fromAmount * fromAssetPriceUsd, '$')}</Label>
             <ValueWrapper>
               <CombinedRoundedImages
                 title={fromAsset.symbol}
@@ -605,7 +615,7 @@ const ActionPreview = ({
             </ValueWrapper>
           </TransactionAction>
           <TransactionAction>
-            <Label>You receive</Label>
+            <Label>You receive {targetAssetPriceUsd && formatAmountDisplay(+toAmount * targetAssetPriceUsd, '$')}</Label>
             <ValueWrapper>
               <CombinedRoundedImages
                 title={toAsset.symbol}
@@ -644,23 +654,26 @@ const ActionPreview = ({
           <ValueWrapper>
             <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
             <ValueBlock>
-              <Text size={12} marginBottom={2} medium block>
-                {providerName}
-              </Text>
-              <Text size={16} medium>
-                {toAmount} {toAsset.symbol}{' '}
-              </Text>
+              <ValueText>
+                <span>{toAmount} {toAsset.symbol}</span>
+                <Text color={theme.color?.text?.innerLabel} marginLeft={6} medium block>
+                  via {providerName}
+                </Text>
+              </ValueText>
+              <ValueText>
+                <span>{targetAssetPriceUsd && formatAmountDisplay(+toAmount * targetAssetPriceUsd, '$')}</span>
+                {!!cost && (
+                  <>
+                    <Text size={12} marginLeft={8} color={theme.color?.text?.innerLabel} medium block>
+                      Gas price
+                    </Text>
+                    <Text marginLeft={4} medium>
+                      {cost}
+                    </Text>
+                  </>
+                )}
+              </ValueText>
             </ValueBlock>
-            {!!cost && (
-              <ValueBlock>
-                <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
-                  Gas price
-                </Text>
-                <Text size={16} medium>
-                  {cost}
-                </Text>
-              </ValueBlock>
-            )}
           </ValueWrapper>
         </TransactionAction>
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}

@@ -275,7 +275,10 @@ export const klimaDaoStaking = async (
   sdk?: EtherspotSdk | null,
   flag?: Boolean,
   amount?: string
-): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[]; provider?: string } }> => {
+): Promise<{
+  errorMessage?: string;
+  result?: { transactions: ICrossChainActionTransaction[]; provider?: string; iconUrl?: string };
+}> => {
   if (!sdk) return { errorMessage: 'No sdk found' };
 
   if (!routeToKlima) {
@@ -309,7 +312,13 @@ export const klimaDaoStaking = async (
     ];
 
     if (flag) {
-      return { result: { transactions, provider: 'LiFi' } };
+      return {
+        result: {
+          transactions,
+          provider: bridgeServiceIdToDetails['lifi'].title,
+          iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
+        },
+      };
     }
 
     // not native asset and no erc20 approval transaction included
@@ -385,7 +394,13 @@ export const klimaDaoStaking = async (
 
     transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
 
-    return { result: { transactions, provider: 'LiFi' } };
+    return {
+      result: {
+        transactions,
+        provider: bridgeServiceIdToDetails['lifi'].title,
+        iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
+      },
+    };
   } catch (e) {
     return { errorMessage: 'Failed to get staking exchange transaction' };
   }
@@ -500,7 +515,7 @@ export const buildCrossChainAction = async (
             },
             receiverAddress: transactionBlock?.values?.receiverAddress,
             providerName: result.result?.provider ?? 'Unknown provider',
-            providerIconUrl: result.result?.provider ?? '',
+            providerIconUrl: result.result?.iconUrl ?? result.result?.provider ?? '',
           };
 
           const crossChainAction: ICrossChainAction = {
