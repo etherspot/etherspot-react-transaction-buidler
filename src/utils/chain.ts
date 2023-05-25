@@ -397,7 +397,7 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     name: 'Etherspot',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/etherspot.png',
   },
   [TESTNET_CHAIN_ID.BASEGOERLI]: {
     chainId: TESTNET_CHAIN_ID.BASEGOERLI,
@@ -405,7 +405,7 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     name: 'BaseGoerli',
     symbol: 'ETH',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
   },
   [TESTNET_CHAIN_ID.FUSESPARKNET]: {
     chainId: TESTNET_CHAIN_ID.FUSESPARKNET,
@@ -413,7 +413,7 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     name: 'FuseSparknet',
     symbol: 'SPARK',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/fuse.png',
   },
   [TESTNET_CHAIN_ID.NEONDEVNET]: {
     chainId: TESTNET_CHAIN_ID.NEONDEVNET,
@@ -421,7 +421,7 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     name: 'NeonDevnet',
     symbol: 'NEON',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/neon.png',
   },
   [TESTNET_CHAIN_ID.KLAYTNBAOBAB]: {
     chainId: TESTNET_CHAIN_ID.KLAYTNBAOBAB,
@@ -429,7 +429,7 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     name: 'KlaytnBaobab',
     symbol: 'KLAY',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/klaytn.png',
   },
   [TESTNET_CHAIN_ID.OKTCTEST]: {
     chainId: TESTNET_CHAIN_ID.OKTCTEST,
@@ -437,7 +437,7 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     name: 'OktcTest',
     symbol: 'OKT',
     decimals: 18,
-    logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/oktc.png',
   },
 };
 
