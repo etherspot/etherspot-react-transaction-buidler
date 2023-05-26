@@ -90,7 +90,7 @@ const ValueText = styled.div`
   display: flex;
   align-items: center;
   font-size: 14px;
-  margin-bottom: 3px;
+  margin-top: 3px;
 `;
 
 const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
@@ -652,7 +652,7 @@ const ActionPreview = ({
         <TransactionAction>
           <Label>Route</Label>
           <ValueWrapper>
-            <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
+            <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} size={24} marginTop={-5} />
             <ValueBlock>
               <ValueText>
                 <span>{toAmount} {toAsset.symbol}</span>
