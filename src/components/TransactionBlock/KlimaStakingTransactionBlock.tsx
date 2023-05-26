@@ -11,7 +11,6 @@ import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import NetworkAssetInfoCard from '../NetworkAssetSelectInput/NetworkAssetInfoCard';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import TextInput from '../TextInput';
 import { Pill } from '../Text';
@@ -454,7 +453,14 @@ const KlimaStakingTransactionBlock = ({
         showQuickInputButtons
         accountType={selectedAccountType}
       />
-      <NetworkAssetInfoCard label="To" networkDetails={supportedChains[1]} assetDetails={klimaAsset} />
+      <NetworkAssetSelectInput
+        label="To"
+        selectedNetwork={supportedChains[1]}
+        selectedAsset={klimaAsset}
+        readOnly={true}
+        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+        accountType={selectedAccountType}
+      />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
           label="You stake"

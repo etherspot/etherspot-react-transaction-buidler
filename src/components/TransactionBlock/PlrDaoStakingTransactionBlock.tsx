@@ -13,7 +13,6 @@ import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import { Pill, Text } from '../Text';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import NetworkAssetInfoCard from '../NetworkAssetSelectInput/NetworkAssetInfoCard';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
@@ -691,7 +690,13 @@ const PlrDaoStakingTransactionBlock = ({
           showPositiveBalanceAssets
           showQuickInputButtons
         />
-        {selectedToChain && <NetworkAssetInfoCard label="To" networkDetails={selectedToChain} assetDetails={toAsset} />}
+        <NetworkAssetSelectInput
+          label="To"
+          selectedNetwork={selectedToChain}
+          selectedAsset={toAsset}
+          readOnly={true}
+          walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+        />
         {!!selectedFromAsset && !!selectedFromNetwork && (enableAssetBridge || enableAssetSwap) && (
           <TextInput
             label="You swap"

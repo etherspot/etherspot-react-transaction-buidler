@@ -31,7 +31,7 @@ import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import { BulletList } from "react-content-loader";
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean, readOnly: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
@@ -39,7 +39,7 @@ const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: bool
   border-radius: 8px;
   padding: 8px 14px 14px;
   cursor: pointer;
-  ${({ disabled }) => disabled && `opacity: 0.3;`}
+  ${({ disabled, readOnly }) => !readOnly && disabled && `opacity: 0.3;`}
   &:hover {
     ${({ theme, hover }) => hover && `background-color: ${ theme.color.background.dropdownHoverColor };`}
   }
@@ -241,6 +241,7 @@ interface SelectInputProps {
   showQuickInputButtons?: boolean;
   accountType?: string;
   hideAssets?: { chainId: number, address: string }[];
+  readOnly?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -257,6 +258,7 @@ const NetworkAssetSelectInput = ({
   showQuickInputButtons,
   accountType,
   hideAssets,
+  readOnly = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -280,6 +282,7 @@ const NetworkAssetSelectInput = ({
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
+    if(readOnly) return;
     if (selectedNetwork) setPreselectedNetwork(selectedNetwork);
     setShowSelectModal(!showSelectModal);
   }, [disabled, showSelectModal, selectedNetwork]);
@@ -437,16 +440,24 @@ const NetworkAssetSelectInput = ({
   };
 
   return (
-    <Wrapper hover={!showSelectModal} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
+    <Wrapper
+      hover={!showSelectModal}
+      readOnly={readOnly}
+      disabled={disabled}
+      onClick={onSelectClick}
+      expanded={showSelectModal}
+    >
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
-      <SelectWrapper onClick={onSelectClick} disabled={disabled}>
-        {!showSelectModal && (
-          <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />
-        )}
-        {showSelectModal && (
-          <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />
-        )}
-      </SelectWrapper>
+      {!readOnly && (
+        <SelectWrapper onClick={onSelectClick} disabled={disabled}>
+          {!showSelectModal && (
+            <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />
+          )}
+          {showSelectModal && (
+            <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />
+          )}
+        </SelectWrapper>
+      )}
       {!showSelectModal && (!selectedAsset || !selectedNetwork) && (
         <SelectedOption onClick={onSelectClick} disabled={disabled}>
           Select chain and token
