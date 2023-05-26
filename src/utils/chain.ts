@@ -16,6 +16,7 @@ export const MAINNET_CHAIN_ID = {
   FANTOM: 250,
   CELO: 42220,
   MOONBEAM: 1284,
+  OKX: 66,
 };
 
 export const TESTNET_CHAIN_ID = {
@@ -35,7 +36,7 @@ export const TESTNET_CHAIN_ID = {
   FUSESPARKNET: 123,
   NEONDEVNET: 245022926,
   KLAYTNBAOBAB: 1001,
-  OKTCTEST: 65,
+  OKX: 65,
 };
 
 export interface Chain {
@@ -111,6 +112,12 @@ export const mainnetSupportedChains: Chain[] = [
     title: 'CELO',
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
     explorerUrl: 'https://explorer.celo.org/mainnet/tx/',
+  },
+  {
+    chainId: MAINNET_CHAIN_ID.OKX,
+    title: 'OKX',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/oktc.png',
+    explorerUrl: 'https://www.oklink.com/en/okc/tx/',
   },
 ];
 
@@ -212,7 +219,7 @@ export const testnetSupportedChains: Chain[] = [
     explorerUrl: 'https://baobab.scope.klaytn.com/tx/',
   },
   {
-    chainId: TESTNET_CHAIN_ID.OKTCTEST,
+    chainId: TESTNET_CHAIN_ID.OKX,
     title: 'OktcTest',
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/oktc.png',
     explorerUrl: 'https://www.oklink.com/okexchain-test/tx/',
@@ -307,6 +314,14 @@ export const mainnetNativeAssets: { [chainId: number]: TokenListToken } = {
     symbol: 'CELO',
     decimals: 18,
     logoURI: 'https://public.etherspot.io/buidler/chain_logos/celo.png',
+  },
+  [MAINNET_CHAIN_ID.OKX]: {
+    chainId: MAINNET_CHAIN_ID.OKX,
+    address: ethers.constants.AddressZero,
+    name: 'OKX',
+    symbol: 'OKT',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/oktc.png',
   },
 };
 
@@ -431,8 +446,8 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
     decimals: 18,
     logoURI: 'https://public.etherspot.io/buidler/chain_logos/klaytn.png',
   },
-  [TESTNET_CHAIN_ID.OKTCTEST]: {
-    chainId: TESTNET_CHAIN_ID.OKTCTEST,
+  [TESTNET_CHAIN_ID.OKX]: {
+    chainId: TESTNET_CHAIN_ID.OKX,
     address: ethers.constants.AddressZero,
     name: 'OktcTest',
     symbol: 'OKT',
