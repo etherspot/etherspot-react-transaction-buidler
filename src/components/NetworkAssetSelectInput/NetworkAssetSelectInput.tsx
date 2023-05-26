@@ -31,7 +31,7 @@ import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import { BulletList } from "react-content-loader";
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean, readOnly: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean, readOnly?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
