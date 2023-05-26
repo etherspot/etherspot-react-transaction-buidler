@@ -665,7 +665,10 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
-            if (selectedFromNetwork?.chainId === CHAIN_ID.POLYGON && asset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol) {
+            if (
+              selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
+              asset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol
+            ) {
               setAmount(formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, asset.decimals));
               return;
             }
@@ -691,7 +694,7 @@ const PlrDaoStakingTransactionBlock = ({
           label="To"
           selectedNetwork={selectedToChain}
           selectedAsset={toAsset}
-          disabled={true}
+          readOnly={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         />
         {!!selectedFromAsset && !!selectedFromNetwork && (enableAssetBridge || enableAssetSwap) && (

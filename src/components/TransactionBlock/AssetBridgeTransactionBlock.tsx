@@ -291,6 +291,7 @@ const AssetBridgeTransactionBlock = ({
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
       cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
+      showActions
     />
   );
 
