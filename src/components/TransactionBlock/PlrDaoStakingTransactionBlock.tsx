@@ -575,7 +575,7 @@ const PlrDaoStakingTransactionBlock = ({
     totalKeyBasedPLRTokens > 0 && totalSmartWalletPLRTokens > 0
       ? '2 wallets'
       : totalKeyBasedPLRTokens > 0
-      ? 'Key Based'
+      ? 'Wallet'
       : 'Smart Wallet';
   const selectedToChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
 
@@ -623,7 +623,7 @@ const PlrDaoStakingTransactionBlock = ({
                 >
                   {`\u25CF`}
                   <Bold>{formatAmountDisplay(keyBasedWallet)} PLR</Bold> on <Bold>{chainName}</Bold> on{' '}
-                  <Bold> Keybased Wallet</Bold>
+                  <Bold>Wallet</Bold>
                 </Block>
               )}
               {smartWallet > 0 && (

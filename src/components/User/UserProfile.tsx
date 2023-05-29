@@ -71,7 +71,7 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
       )}
       {isWeb3Login && (
         <Wrapper>
-          <FieldHeader color={theme?.color?.text?.settingsModalSubHeader}>Keybased Address</FieldHeader>
+          <FieldHeader color={theme?.color?.text?.settingsModalSubHeader}>Wallet Address</FieldHeader>
           <Value>
             {providerAddress ? (
               <AddressCopyButtonWrapper>
