@@ -31,18 +31,20 @@ import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 import { BulletList } from "react-content-loader";
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean, border?: boolean, wFull?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 8px 14px 14px;
   cursor: pointer;
+  ${({ border = false}) => border && 'border: 1px solid #46464e;'}
   ${({ disabled }) => disabled && `opacity: 0.3;`}
   &:hover {
     ${({ theme, hover }) => hover && `background-color: ${ theme.color.background.dropdownHoverColor };`}
   }
+  ${({wFull = false}) => wFull && 'width: 100%;'}
 `;
 
 const SelectWrapper = styled.div<{ disabled: boolean }>`
@@ -242,6 +244,7 @@ interface SelectInputProps {
   accountType?: string;
   hideAssets?: { chainId: number, address: string }[];
   customMessage?: string;
+  wFull?: boolean
 }
 
 const NetworkAssetSelectInput = ({
@@ -258,7 +261,8 @@ const NetworkAssetSelectInput = ({
   showQuickInputButtons,
   accountType,
   hideAssets,
-  customMessage
+  customMessage,
+  wFull
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -439,7 +443,7 @@ const NetworkAssetSelectInput = ({
   };
 
   return (
-    <Wrapper hover={!showSelectModal} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal}>
+    <Wrapper hover={!showSelectModal} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal} border wFull={wFull}>
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
       <SelectWrapper onClick={onSelectClick} disabled={disabled}>
         {!showSelectModal && (

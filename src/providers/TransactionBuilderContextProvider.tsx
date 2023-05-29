@@ -31,6 +31,7 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
+  honeyswapLP,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -90,7 +91,7 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
 const TopNavigation = styled.div`
   padding: 0px 5px 25px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   flex-direction: row;
   color: ${({ theme }) => theme.color.text.topBar};
@@ -398,10 +399,10 @@ const TransactionBuilderContextProvider = ({
     [crossChainActions]
   );
 
-  const isEstimationFailing = useMemo(
-    () => crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage),
-    [crossChainActions]
-  );
+  const isEstimationFailing = useMemo(() => {
+    console.log('crossChainActions2', crossChainActions);
+    return crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage);
+  }, [crossChainActions]);
 
   const getValidationErrors = () => {
     let validationErrors: IValidationErrors = {};
@@ -413,8 +414,8 @@ const TransactionBuilderContextProvider = ({
         [transactionBlock.id]: transactionBlockErrors,
       };
     });
-    console.log(validationErrors, "validfff");
-    
+    console.log(validationErrors, 'validfff');
+
     return validationErrors;
   };
 
@@ -428,7 +429,7 @@ const TransactionBuilderContextProvider = ({
 
   const isBlockValid = useMemo(() => {
     const validationErrors = getValidationErrors();
-    console.log("Something", validationErrors)
+    console.log('Something', validationErrors);
 
     return isEmpty(validationErrors);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
@@ -455,10 +456,10 @@ const TransactionBuilderContextProvider = ({
       // keep blocks in order
       let multiCallList: string[] = [];
       for (const transactionBlock of transactionBlocks) {
-        console.log("transactionBlock", transactionBlock)
+        console.log('transactionBlock', transactionBlock);
         const result = await buildCrossChainAction(sdk, transactionBlock);
-        console.log("resultblock", result);
-        
+        console.log('resultblock', result);
+
         if (!result?.crossChainAction || result?.errorMessage) {
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
@@ -513,15 +514,15 @@ const TransactionBuilderContextProvider = ({
     }
 
     setIsChecking(false);
-    console.log("newCrossChainActions",newCrossChainActions)
+    console.log('newCrossChainActions', newCrossChainActions);
     if (!errorMessage && !newCrossChainActions?.length) {
       errorMessage = `Failed to proceed with selected actions!`;
     }
-  
+
     if (errorMessage) {
       return;
     }
-
+    console.log('newCrossChainActions', newCrossChainActions);
     setCrossChainActions(newCrossChainActions);
     setEditingTransactionBlock(null);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
@@ -741,6 +742,133 @@ const TransactionBuilderContextProvider = ({
       setTransactionBlocks([]);
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
+    } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+      let crossChainAction = crossChainActions[0];
+
+      let result: {
+        transactionHash?: string;
+        errorMessage?: string;
+      };
+
+      result = crossChainAction.useWeb3Provider
+        ? await submitWeb3ProviderTransactions(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            web3Provider,
+            crossChainAction.transactions,
+            crossChainAction.chainId,
+            providerAddress
+          )
+        : await submitEtherspotAndWaitForTransactionHash(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            crossChainAction.transactions,
+            crossChainAction.gasTokenAddress ?? undefined
+          );
+
+      if (result?.errorMessage || !result?.transactionHash?.length) {
+        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        setIsSubmitting(false);
+        crossChainAction.transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        });
+        return;
+      }
+
+      crossChainAction.transactions.map((transaction) => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+        transaction.submitTimestamp = Date.now();
+        transaction.transactionHash = result.transactionHash;
+      });
+
+      crossChainAction.transactionHash = result.transactionHash;
+
+      const USDC_GNOSIS_CONTRACT_ADDRESS = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
+
+      let flag = 1,
+        errorOnLiFi;
+      while (flag) {
+        try {
+          const status = await getCrossChainStatusByHash(
+            getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
+            crossChainAction.chainId,
+            CHAIN_ID.XDAI,
+            result.transactionHash,
+            crossChainAction.bridgeUsed
+          );
+          if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
+            flag = 0;
+            crossChainAction.transactions.map((transaction) => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+            });
+            crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+            });
+          } else if (status?.status === 'FAILED') {
+            errorOnLiFi = 'Transaction Failed on LiFi';
+            flag = 0;
+          }
+          await sleep(30);
+        } catch (err) {
+          errorOnLiFi = 'Transaction Failed on LiFi';
+          flag = 0;
+        }
+      }
+
+      if (errorOnLiFi) {
+        showAlertModal(errorOnLiFi);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const estimateGas = await estimateCrossChainAction(
+        getSdkForChainId(CHAIN_ID.XDAI),
+        web3Provider,
+        crossChainAction.destinationCrossChainAction[0],
+        providerAddress,
+        accountAddress
+      );
+
+      const fromAssetDecimals =
+        transactionBlocks[0].type === 'HONEY_SWAP_LP' ? transactionBlocks[0].values?.fromAssetDecimals : 6;
+
+      const fromTokenOneAmountBN =
+        transactionBlocks[0].type === 'HONEY_SWAP_LP'
+          ? ethers.utils.parseUnits(transactionBlocks[0].values?.tokenOneAmount ?? '0', fromAssetDecimals)
+          : '0';
+      const fromTokenTwoAmountBN =
+        transactionBlocks[0].type === 'HONEY_SWAP_LP'
+          ? ethers.utils.parseUnits(transactionBlocks[0].values?.tokenTwoAmount ?? '0', fromAssetDecimals)
+          : '0';
+
+      const token1Address =
+        transactionBlocks[0].type === 'HONEY_SWAP_LP' ? transactionBlocks[0].values?.toToken1?.address ?? '0x0' : '0x0';
+      const token2Address =
+        transactionBlocks[0].type === 'HONEY_SWAP_LP' ? transactionBlocks[0].values?.toToken2?.address ?? '0x0' : '0x0';
+
+      const honeySwapTransactions = await honeyswapLP(
+        getSdkForChainId(CHAIN_ID.XDAI),
+        fromTokenOneAmountBN,
+        token1Address,
+        fromTokenTwoAmountBN,
+        token2Address
+      );
+
+      if (honeySwapTransactions.errorMessage) {
+        showAlertModal(honeySwapTransactions.errorMessage);
+        setIsSubmitting(false);
+        return;
+      }
+
+      result = await submitEtherspotAndWaitForTransactionHash(
+        getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
+        crossChainAction.transactions,
+        USDC_GNOSIS_CONTRACT_ADDRESS
+      );
+
+      console.log('RESULTHASH', result);
+
+      setCrossChainActions([]);
+      setTransactionBlocks([]);
+      setIsSubmitting(false);
     } else {
       setCrossChainActions([]);
       setTransactionBlocks([]);
@@ -774,7 +902,7 @@ const TransactionBuilderContextProvider = ({
   };
 
   const resetTransactionBlockFieldValidationError = (transactionBlockId: string, field: string) => {
-    console.log("transactionBlockId",transactionBlockId)
+    console.log('transactionBlockId', transactionBlockId);
     setTransactionBlockValidationErrors((current) => ({
       ...current,
       [transactionBlockId]: { ...current?.[transactionBlockId], [field]: '' },
@@ -983,7 +1111,7 @@ const TransactionBuilderContextProvider = ({
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
-        <WalletAddressesWrapper>
+        {/* <WalletAddressesWrapper>
           <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
             <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
               <TbWallet size={16} />
@@ -1010,7 +1138,7 @@ const TransactionBuilderContextProvider = ({
               {deployingAccount ? 'Deploying...' : 'Buy'}
             </WalletAddress>
           )}
-        </WalletAddressesWrapper>
+        </WalletAddressesWrapper> */}
         <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>
         <SettingsWrapper>
           <ConnectionIcon isConnected={!!accountAddress} />
@@ -1349,24 +1477,28 @@ const TransactionBuilderContextProvider = ({
                 </TransactionBlocksWrapper>
               );
             })}
-            {!showTransactionBlockSelect && !hideAddTransactionButton && !editingTransactionBlock && (
-              <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
-                <AiOutlinePlusCircle size={24} />
-                <span>Add transaction</span>
-              </AddTransactionButton>
-            )}
+            {!showTransactionBlockSelect &&
+              !hideAddTransactionButton &&
+              !editingTransactionBlock &&
+              !showWalletBlock &&
+              transactionBlocks.length === 0 && (
+                <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
+                  <AiOutlinePlusCircle size={24} />
+                  <span>Add transaction</span>
+                </AddTransactionButton>
+              )}
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br />
                 {/* {!isChecking && isBlockValid && ( */}
-                  <PrimaryButton
-                    marginTop={editingTransactionBlock ? 0 : 30}
-                    onClick={onContinueClick}
-                    disabled={isChecking || !isBlockValid}
-                  >
-                    {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
-                    {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
-                  </PrimaryButton>
+                <PrimaryButton
+                  marginTop={editingTransactionBlock ? 0 : 30}
+                  onClick={onContinueClick}
+                  disabled={isChecking || !isBlockValid}
+                >
+                  {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
+                  {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
+                </PrimaryButton>
                 {/* )} */}
               </>
             )}

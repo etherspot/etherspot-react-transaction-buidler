@@ -230,7 +230,10 @@ const TransactionStatus = ({
       return;
     }
 
+    console.log("transactionHash", transactionHash);
+    
     const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
+    
     if (!explorerLink) {
       alert("The transaction hash is not yet available. Please try again later.");
       return;
@@ -529,14 +532,15 @@ const ActionPreview = ({
 	const showCloseButton = !!onRemove;
 
   const cost = useMemo(() => {
+    console.log("BROKE3");
     if (isEstimating) return "Estimating...";
     if (!estimated || !estimated?.gasCost) {
       if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && crossChainAction.useWeb3Provider && crossChainAction.gasCost) {
         return formatAmountDisplay(crossChainAction.gasCost, '$');
       }
       return estimated?.errorMessage;
-    }
-
+    } 
+    console.log("BROKE2");
     const gasCostNumericString = estimated.feeAmount && crossChainAction.gasTokenDecimals
       ? ethers.utils.formatUnits(estimated.feeAmount, crossChainAction.gasTokenDecimals)
       : ethers.utils.formatUnits(estimated.gasCost, nativeAssetPerChainId[chainId].decimals);
@@ -1363,6 +1367,60 @@ const ActionPreview = ({
       </Card>
     );
   }
+
+  if (type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+		const { fromAsset, fromChainId, toAsset, receiverAddress } = preview;
+
+		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+
+		const toNetwork = supportedChains[1];
+
+		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+
+		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+
+		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    console.log("BROKE")
+		return (
+      <Card
+        title="Honeyswap Liquidity Pool"
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
+        <TransactionAction>
+          <Label>You send</Label>
+          <ValueWrapper>
+            <CombinedRoundedImages
+              title={fromAsset.symbol}
+              url={fromAsset.iconUrl}
+              smallImageTitle={fromChainTitle}
+              smallImageUrl={fromNetwork?.iconUrl}
+            />
+            <div>
+              <Text size={16} marginBottom={1} medium block>
+                {fromAsset.amount} {fromAsset.symbol}
+              </Text>
+              <Text size={12}>On {fromChainTitle}</Text>
+            </div>
+          </ValueWrapper>
+        </TransactionAction>
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
+        <TransactionStatus
+          crossChainAction={crossChainAction}
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+        />
+        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
+          CROSS_CHAIN_ACTION_STATUS.CONFIRMED && (
+          <TransactionStatus
+            crossChainAction={crossChainAction.destinationCrossChainAction[0]}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+          />
+        )}
+      </Card>
+    );
+	}
 
   return null;
 };

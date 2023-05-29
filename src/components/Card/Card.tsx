@@ -10,7 +10,6 @@ const Wrapper = styled.div<{ marginBottom?: number; color?: string }>`
   padding: 16px 20px;
   ${({ marginBottom }) => marginBottom && `margin-bottom: ${marginBottom}px;`};
   position: relative;
-  box-shadow: 0 2px 8px 0 rgba(26, 23, 38, 0.3);
   text-align: left;
   user-select: none;
 `;

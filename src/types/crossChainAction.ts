@@ -75,6 +75,13 @@ export interface AssetSwapActionPreview {
   receiverAddress?: string;
 }
 
+interface HoneySwapLPActionPreview {
+	fromChainId: number;
+	fromAsset: AssetTransfer;
+	toAsset: AssetTransfer;
+	receiverAddress?: string;
+}
+
 interface AssetBridgeAction {
   type: typeof TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
   preview: AssetBridgeActionPreview;
@@ -93,6 +100,17 @@ interface AssetSwapAction {
 interface KlimaStakingAction {
 	type: typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
 	preview: KlimaStakingActionPreview;
+	destinationCrossChainAction: ICrossChainAction[];
+	containsSwitchChain?: boolean;
+	receiveAmount?: string;
+	bridgeUsed?: string;
+  gasCost?: string;
+  transactionHash?: string;
+}
+
+interface HoneySwapLPAction {
+	type: typeof TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP;
+	preview: HoneySwapLPActionPreview;
 	destinationCrossChainAction: ICrossChainAction[];
 	containsSwitchChain?: boolean;
 	receiveAmount?: string;
@@ -151,4 +169,5 @@ export type ICrossChainAction = {
   | KlimaStakingAction
   | PlrStakingAction
   | PlrStakingV2Action
+  | HoneySwapLPAction
 );

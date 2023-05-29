@@ -20,6 +20,7 @@ export interface Theme {
       switchInputActiveTab?: string;
       switchInputInactiveTab?: string;
       button?: string;
+      buttonDisabled?: string;
       closeButton?: string;
       pill?: string;
       roundedImageFallback?: string;
@@ -201,19 +202,20 @@ export const darkTheme: Theme = {
   ...defaultTheme,
   color: {
     background: {
-      main: 'linear-gradient(169deg, #3e3869 5%, #241938 98%)',
+      main: '#232429',
       horizontalLine: 'linear-gradient(245deg, #e332e8, #75eef6)',
       topMenu: 'rgb(68, 61, 102)',
       topMenuWallet: 'rgba(111, 76, 172, 0.54)',
       topMenuButton: '#ffffff',
-      card: '#262240',
-      cardBorder: '#3d3767',
-      button: 'linear-gradient(to bottom, #fdb754, #f18214)',
+      card: 'transparent',
+      cardBorder: 'transparent',
+      button: '#2ebbac',
+      buttonDisabled: '#2ebbac',
       closeButton: '#fff',
       selectInputToggleButton: '#998ae6',
       selectInputBorder: '#00b1c7',
-      selectInput: '#474078',
-      selectInputExpanded: '#130c1d',
+      selectInput: '#232429',
+      selectInputExpanded: '#232429',
       statusIconPending: '#ff6b35',
       statusIconFailed: '#ff0000',
       statusIconSuccess: '#1ba23d',
@@ -221,7 +223,7 @@ export const darkTheme: Theme = {
       selectInputScrollbar: '#494076',
       selectInputScrollbarHover: '#2d2457',
       selectInputScrollbarActive: '#2d2457',
-      textInput: '#1a1726',
+      textInput: '#232429',
       switchInput: '#1a1726',
       switchInputActiveTab:
         'linear-gradient(to bottom, #734fb3, #422d66), linear-gradient(to bottom, #3d265c, #222130)',
@@ -252,8 +254,8 @@ export const darkTheme: Theme = {
       searchInput: '#9466e6',
       searchIcon: '#9466e6',
       searchInputSecondary: '#998ae6',
-      outerLabel: '#998ae6',
-      innerLabel: '#998ae6',
+      outerLabel: '#bebfc4',
+      innerLabel: '#bebfc4',
       topMenu: '#998ae6',
       topMenuWallet: '#cab3f5',
       main: '#ffeee6',

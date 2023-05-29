@@ -49,9 +49,11 @@ export interface IHoneySwapLPTransactionBlockValues {
   toToken2?: IAssetWithBalance;
   accountType: AccountTypes;
   receiverAddress?: string;
-  routeToUSDC?: BridgingQuote;
+  routeToUSDC?: Route;
   offer1?: ExchangeOffer;
   offer2?: ExchangeOffer;
+  tokenOneAmount?: string;
+  tokenTwoAmount?: string;
 }
 
 const Title = styled.h3`
@@ -60,54 +62,6 @@ const Title = styled.h3`
   font-size: 16px;
   color: ${({ theme }) => theme.color.text.cardTitle};
   font-family: 'PTRootUIWebBold', sans-serif;
-`;
-
-const WalletReceiveWrapper = styled.div`
-  display: flex;
-  flex-direction: row;
-`;
-
-const TokenRow = styled.div`
-  display: flex;
-  flex-direction: row;
-  position: relative;
-  width: 100%;
-  gap-x: 10px;
-`;
-
-const SelectTokenContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  position: relative;
-  width: 50%;
-`;
-
-const OfferDetails = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  font-family: 'PTRootUIWebMedium', sans-serif;
-  width: 100%;
-`;
-
-const OfferGasPriceContainer = styled.div`
-  display: flex;
-  justify-content: flex-start;
-  gap: 1rem;
-  align-items: flex-end;
-`;
-
-const OfferChecked = styled.div`
-  position: absolute;
-  top: -10px;
-  right: 5px;
-  background: ${({ theme }) => theme.color.background.statusIconSuccess};
-  width: 14px;
-  height: 14px;
-  font-size: 4px;
-  border-radius: 7px;
-  color: #fff;
 `;
 
 const mapRouteToOption = (route: Route) => {
@@ -131,6 +85,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
   const [routeToUSDC, setRouteToUSDC] = useState<Route[]>([]);
   const [selectedOffer1, setSelectedOffer1] = useState<ExchangeOffer | null>();
   const [selectedOffer2, setSelectedOffer2] = useState<ExchangeOffer | null>();
+  const [tokenOneAmount, setTokenOneAmount] = useState<string | null>(null);
+  const [tokenTwoAmount, setTokenTwoAmount] = useState<string | null>(null);
   const [routeToKlima, setRouteToKlima] = useState<BridgingQuote[]>([]);
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
@@ -227,6 +183,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       toToken2: selectedToken2Asset ?? undefined,
       offer1: selectedOffer1,
       offer2: selectedOffer2,
+      tokenOneAmount,
+      tokenTwoAmount,
     });
   }, [
     selectedFromNetwork,
@@ -238,6 +196,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     receiveAmount,
     selectedOffer1,
     selectedOffer2,
+    tokenOneAmount,
+    tokenTwoAmount,
   ]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -323,16 +283,12 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           toAddress: receiverAddress ?? undefined,
         });
 
-        // setAvailableRoutes(routes);
-
         console.log('hshshsgg', routes);
         const bestRoute = getBestRouteItem(routes);
 
         remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
 
         setRouteToUSDC(routes);
-
-        // const bestRoute = getBestRouteItem(routes);
 
         setSelectedRoute(mapRouteToOption(bestRoute));
       } catch (e) {
@@ -344,6 +300,10 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
       console.log('remainingAmount', String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
+
+      setTokenOneAmount(String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
+      setTokenTwoAmount(String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
+
       try {
         // needed computed account address before calling getExchangeOffers
         await skdOnXdai.computeContractAccount();
@@ -445,33 +405,43 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         showQuickInputButtons
         accountType={selectedAccountType}
       />
-      <NetworkAssetSelectInput
-        label="Token 1"
-        selectedNetwork={supportedChains.filter((chain) => chain.chainId === CHAIN_ID.XDAI)[0]}
-        selectedAsset={selectedToken1Asset}
-        onAssetSelect={(asset) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toToken1');
-          setSelectedToken1Asset(asset);
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 13
         }}
-        customMessage="Select token"
-        // disabled={true}
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        accountType={selectedAccountType}
-      />
+      >
+        <NetworkAssetSelectInput
+          wFull
+          label="Token 1"
+          selectedNetwork={supportedChains.filter((chain) => chain.chainId === CHAIN_ID.XDAI)[0]}
+          selectedAsset={selectedToken1Asset}
+          onAssetSelect={(asset) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'toToken1');
+            setSelectedToken1Asset(asset);
+          }}
+          customMessage="Select token"
+          // disabled={true}
+          walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+          accountType={selectedAccountType}
+        />
 
-      <NetworkAssetSelectInput
-        label="Token 2"
-        selectedNetwork={supportedChains.filter((chain) => chain.chainId === CHAIN_ID.XDAI)[0]}
-        selectedAsset={selectedToken2Asset}
-        onAssetSelect={(asset) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toToken2');
-          setSelectedToken2Asset(asset);
-        }}
-        customMessage="Select token"
-        // disabled={true}
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        accountType={selectedAccountType}
-      />
+        <NetworkAssetSelectInput
+          wFull
+          label="Token 2"
+          selectedNetwork={supportedChains.filter((chain) => chain.chainId === CHAIN_ID.XDAI)[0]}
+          selectedAsset={selectedToken2Asset}
+          onAssetSelect={(asset) => {
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'toToken2');
+            setSelectedToken2Asset(asset);
+          }}
+          customMessage="Select token"
+          // disabled={true}
+          walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+          accountType={selectedAccountType}
+        />
+      </div>
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
           label="You add"

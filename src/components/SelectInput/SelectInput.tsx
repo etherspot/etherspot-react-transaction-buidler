@@ -14,7 +14,7 @@ import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import ContentLoader from "react-content-loader";
 
-const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: boolean; border?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded, isOffer }) =>
@@ -23,6 +23,7 @@ const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: bo
   border-radius: 8px;
   padding: 8px 14px 14px;
   cursor: pointer;
+  ${({ border = false}) => border && 'border: 1px solid #46464e;'}
   ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
@@ -240,7 +241,7 @@ const SelectInput = ({
   return (
     <>
       {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
-      <Wrapper isOffer={isOffer} disabled={disabled} expanded={showSelectModal} onClick={onSelectClick}>
+      <Wrapper isOffer={isOffer} disabled={disabled} expanded={showSelectModal} onClick={onSelectClick} border>
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         {!isLoading && options?.length > 1 && (
           <SelectButtonWrapper onClick={onSelectClick} disabled={disabled}>

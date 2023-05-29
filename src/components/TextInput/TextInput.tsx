@@ -12,6 +12,7 @@ const Wrapper = styled.div<{ disabled: boolean }>`
   color: ${({ theme }) => theme.color.text.textInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
+  border: 1px solid #46464e;
   ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
