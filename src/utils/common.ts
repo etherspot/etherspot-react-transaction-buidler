@@ -125,6 +125,6 @@ export const getTypeOfAddress = (
   return address === smartWalletAddress
     ? 'Smart Wallet'
     : address === keybasedAddress
-    ? 'Keybased Wallet'
+    ? 'Wallet'
     : humanizeHexString(address);
 };

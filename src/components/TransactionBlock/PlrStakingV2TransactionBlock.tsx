@@ -606,7 +606,7 @@ const PlrStakingV2TransactionBlock = ({
                     <>
                       {plrOnKeyBased && (
                         <Text size={12} marginTop={4} color={plrOnKeyBased.textColor} block>
-                          • {plrOnKeyBased.amount} PLR on {chain.title} on Key Based
+                          • {plrOnKeyBased.amount} PLR on {chain.title} on Wallet
                         </Text>
                       )}
                       {plrOnSmartWallet && (
