@@ -114,7 +114,6 @@ export const validateTransactionBlockValues = (
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
     const transactionBlockValues: IHoneySwapLPTransactionBlockValues | undefined = transactionBlock.values;
-    console.log("shshssddhs", transactionBlockValues)
     if (!transactionBlockValues?.fromChainId) errors.fromChainId = 'No source chain selected!';
     if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
     // if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';

@@ -660,6 +660,7 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
             });
+
             crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
             });
@@ -743,7 +744,29 @@ const TransactionBuilderContextProvider = ({
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
     } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+      const sdkForXdai = getSdkForChainId(CHAIN_ID.XDAI);
+
+      if (!sdkForXdai) return;
+
       let crossChainAction = crossChainActions[0];
+      const USDC_GNOSIS = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
+
+      const res = await sdkForXdai.getAccountBalances({
+        tokens: [USDC_GNOSIS],
+      });
+
+      const balance = res.items.filter((item) => item.token === USDC_GNOSIS)[0].balance ?? '0';
+      // const amt = ethers.utils.parseUnits(crossChainAction.receiveAmount ?? '0', 6);
+
+      console.log(
+        'reshsgsg',
+        res.items.filter((item) => item.token === USDC_GNOSIS)[0],
+        // ethers.utils.formatEther(amt),
+        ethers.utils.formatEther(balance),
+        crossChainAction.destinationCrossChainAction
+      );
+
+      // return;
 
       let result: {
         transactionHash?: string;
@@ -773,6 +796,8 @@ const TransactionBuilderContextProvider = ({
         return;
       }
 
+      console.log('jshgsg', result?.transactionHash);
+
       crossChainAction.transactions.map((transaction) => {
         transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
         transaction.submitTimestamp = Date.now();
@@ -787,14 +812,17 @@ const TransactionBuilderContextProvider = ({
         errorOnLiFi;
       while (flag) {
         try {
-          const status = await getCrossChainStatusByHash(
-            getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
-            crossChainAction.chainId,
-            CHAIN_ID.XDAI,
-            result.transactionHash,
-            crossChainAction.bridgeUsed
-          );
-          if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
+          const res = await sdkForXdai.getAccountBalances({
+            tokens: [USDC_GNOSIS],
+          });
+
+          const balanceUpdated = res.items.filter((item) => item.token === USDC_GNOSIS)[0].balance ?? '0';
+          const amt1 = ethers.utils.parseUnits(balance.toString() ?? '0', 6);
+          const amt2 = ethers.utils.parseUnits(balanceUpdated.toString() ?? '0', 6);
+
+          console.log('balancePP', !balance.eq(balanceUpdated), balance, balanceUpdated);
+
+          if (!balance.eq(balanceUpdated)) {
             flag = 0;
             crossChainAction.transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
@@ -802,9 +830,6 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
             });
-          } else if (status?.status === 'FAILED') {
-            errorOnLiFi = 'Transaction Failed on LiFi';
-            flag = 0;
           }
           await sleep(30);
         } catch (err) {
@@ -827,36 +852,18 @@ const TransactionBuilderContextProvider = ({
         accountAddress
       );
 
-      const fromAssetDecimals =
-        transactionBlocks[0].type === 'HONEY_SWAP_LP' ? transactionBlocks[0].values?.fromAssetDecimals : 6;
+      console.log('RESULTHASH2', estimateGas);
 
-      const fromTokenOneAmountBN =
-        transactionBlocks[0].type === 'HONEY_SWAP_LP'
-          ? ethers.utils.parseUnits(transactionBlocks[0].values?.tokenOneAmount ?? '0', fromAssetDecimals)
-          : '0';
-      const fromTokenTwoAmountBN =
-        transactionBlocks[0].type === 'HONEY_SWAP_LP'
-          ? ethers.utils.parseUnits(transactionBlocks[0].values?.tokenTwoAmount ?? '0', fromAssetDecimals)
-          : '0';
+      crossChainAction = {
+        ...crossChainAction,
+        estimated: estimateGas,
+        transactions: crossChainAction.destinationCrossChainAction[0].transactions ?? [],
+        chainId: CHAIN_ID.XDAI,
+      };
 
-      const token1Address =
-        transactionBlocks[0].type === 'HONEY_SWAP_LP' ? transactionBlocks[0].values?.toToken1?.address ?? '0x0' : '0x0';
-      const token2Address =
-        transactionBlocks[0].type === 'HONEY_SWAP_LP' ? transactionBlocks[0].values?.toToken2?.address ?? '0x0' : '0x0';
-
-      const honeySwapTransactions = await honeyswapLP(
-        getSdkForChainId(CHAIN_ID.XDAI),
-        fromTokenOneAmountBN,
-        token1Address,
-        fromTokenTwoAmountBN,
-        token2Address
-      );
-
-      if (honeySwapTransactions.errorMessage) {
-        showAlertModal(honeySwapTransactions.errorMessage);
-        setIsSubmitting(false);
-        return;
-      }
+      crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
+      });
 
       result = await submitEtherspotAndWaitForTransactionHash(
         getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
@@ -866,6 +873,16 @@ const TransactionBuilderContextProvider = ({
 
       console.log('RESULTHASH', result);
 
+      if (result?.errorMessage || !result?.transactionHash?.length) {
+        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      showAlertModal('Transaction sent');
       setCrossChainActions([]);
       setTransactionBlocks([]);
       setIsSubmitting(false);

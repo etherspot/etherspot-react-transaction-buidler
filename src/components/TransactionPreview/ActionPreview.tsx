@@ -230,7 +230,6 @@ const TransactionStatus = ({
       return;
     }
 
-    console.log("transactionHash", transactionHash);
     
     const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
     
@@ -501,7 +500,6 @@ const ActionPreview = ({
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
   const { accountAddress, providerAddress } = useEtherspot();
-  console.log("addresses", accountAddress, providerAddress)
   const theme: Theme = useTheme();
 
   const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
@@ -532,7 +530,6 @@ const ActionPreview = ({
 	const showCloseButton = !!onRemove;
 
   const cost = useMemo(() => {
-    console.log("BROKE3");
     if (isEstimating) return "Estimating...";
     if (!estimated || !estimated?.gasCost) {
       if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && crossChainAction.useWeb3Provider && crossChainAction.gasCost) {
@@ -540,7 +537,6 @@ const ActionPreview = ({
       }
       return estimated?.errorMessage;
     } 
-    console.log("BROKE2");
     const gasCostNumericString = estimated.feeAmount && crossChainAction.gasTokenDecimals
       ? ethers.utils.formatUnits(estimated.feeAmount, crossChainAction.gasTokenDecimals)
       : ethers.utils.formatUnits(estimated.gasCost, nativeAssetPerChainId[chainId].decimals);
@@ -1377,11 +1373,8 @@ const ActionPreview = ({
 
 		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
-		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
 		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
-    console.log("BROKE")
 		return (
       <Card
         title="Honeyswap Liquidity Pool"

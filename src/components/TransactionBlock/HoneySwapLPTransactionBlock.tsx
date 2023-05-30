@@ -154,19 +154,16 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
       return;
     }
-    console.log('POINT1');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
     if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress', 'Invalid receiver address');
       return;
     }
-    console.log('POINT2', routeToUSDC.length == 0, isRouteFetching);
 
     if (routeToUSDC.length == 0) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       return;
     }
-    console.log('POINT3');
 
     // resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     setTransactionBlockValues(transactionBlockId, {
@@ -271,7 +268,6 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         .parseUnits((Number(convertedData) * Number(nativePrice) * 1.3).toFixed(6), 6)
         .toString();
       let remainingAmount: any = null;
-      console.log('EstimateGas', data.fast.toString(), gasAmountUSD);
 
       try {
         const { items: routes } = await sdk.getAdvanceRoutesLiFi({
@@ -283,7 +279,6 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           toAddress: receiverAddress ?? undefined,
         });
 
-        console.log('hshshsgg', routes);
         const bestRoute = getBestRouteItem(routes);
 
         remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
@@ -299,7 +294,6 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
-      console.log('remainingAmount', String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
 
       setTokenOneAmount(String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
       setTokenTwoAmount(String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
