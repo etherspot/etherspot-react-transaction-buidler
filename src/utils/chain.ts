@@ -115,7 +115,7 @@ export const mainnetSupportedChains: Chain[] = [
   },
   {
     chainId: MAINNET_CHAIN_ID.OKX,
-    title: 'OKX',
+    title: 'OKTC',
     iconUrl: 'https://public.etherspot.io/buidler/chain_logos/oktc.png',
     explorerUrl: 'https://www.oklink.com/en/okc/tx/',
   },
@@ -318,7 +318,7 @@ export const mainnetNativeAssets: { [chainId: number]: TokenListToken } = {
   [MAINNET_CHAIN_ID.OKX]: {
     chainId: MAINNET_CHAIN_ID.OKX,
     address: ethers.constants.AddressZero,
-    name: 'OKX',
+    name: 'OKTC',
     symbol: 'OKT',
     decimals: 18,
     logoURI: 'https://public.etherspot.io/buidler/chain_logos/oktc.png',
