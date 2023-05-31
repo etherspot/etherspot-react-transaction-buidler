@@ -217,7 +217,7 @@ export const darkTheme: Theme = {
       button: 'linear-gradient(to bottom, #fdb754, #f18214)',
       closeButton: '#fff',
       selectInputToggleButton: '#998ae6',
-      selectInputBorder: '#00b1c7',
+      selectInputBorder: '#3d366d',
       selectInput: '#474078',
       selectInputExpanded: '#130c1d',
       statusIconPending: '#ff6b35',
