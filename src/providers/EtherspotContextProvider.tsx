@@ -221,6 +221,7 @@ const EtherspotContextProvider = ({
         CHAIN_ID.BINANCE,
         CHAIN_ID.ETHEREUM_MAINNET,
         CHAIN_ID.POLYGON,
+        CHAIN_ID.OKX
       ];
 
       const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
