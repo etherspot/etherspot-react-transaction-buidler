@@ -215,9 +215,11 @@ interface TransactionPreviewInterface {
 const TransactionStatus = ({
   crossChainAction,
   setIsTransactionDone,
+  web3ProviderChainId
 }: {
   crossChainAction: ICrossChainAction;
   setIsTransactionDone?: (value: boolean) => void;
+  web3ProviderChainId?: number;
 }) => {
   const theme: Theme = useTheme();
   const { getSdkForChainId } = useEtherspot();
@@ -308,26 +310,44 @@ const TransactionStatus = ({
   return (
     <>
       {statusPreviewTransactions.map((transaction, index) => {
-        const transactionStatus =
-          transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
+        const isNetworkSwitchRequired =
+          web3ProviderChainId &&
+          (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE ||
+            crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) &&
+          crossChainAction.useWeb3Provider &&
+          web3ProviderChainId !== crossChainAction.chainId &&
+          transaction.status === CROSS_CHAIN_ACTION_STATUS.UNSENT;
+
+        const transactionStatus = isNetworkSwitchRequired
+          ? CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK
+          : transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
         const showAsApproval = crossChainAction.useWeb3Provider
           && isERC20ApprovalTransactionData(transaction.data as string)
           && index === 0; // show first tx approval only, bridge tx that are index > 0 can include approval method too
 
+        let switchNetworkName;  
+        if(isNetworkSwitchRequired) {
+          const network = supportedChains.find((supportedChain) => supportedChain.chainId === crossChainAction.chainId);
+          switchNetworkName = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[crossChainAction.chainId].toUpperCase();
+        };
+
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? "Submit transaction" : "Sign message",
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]: "Waiting for transaction",
-          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]: "Waiting for funds from Bridge",
-          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]: "Estimating second transaction",
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]: "Transaction failed",
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: "Rejected by user",
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: showAsApproval ? "Transaction approved" : "Transaction completed",
+          [CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK]: `Switch Network to ${switchNetworkName}`,
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: crossChainAction.useWeb3Provider ? 'Submit transaction' : 'Sign message',
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]: 'Waiting for transaction',
+          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]: 'Waiting for funds from Bridge',
+          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]: 'Estimating second transaction',
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]: 'Transaction failed',
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: 'Rejected by user',
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: showAsApproval ? 'Transaction approved' : 'Transaction completed',
         };
 
         const actionStatusToIconBackgroundColor: {
           [transactionStatus: string]: string | undefined;
         } = {
+          [CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK]:
+            theme?.color?.background?.statusIconPending,
           [CROSS_CHAIN_ACTION_STATUS.UNSENT]:
             theme?.color?.background?.statusIconPending,
           [CROSS_CHAIN_ACTION_STATUS.PENDING]:
@@ -366,6 +386,8 @@ const TransactionStatus = ({
               return <IoClose size={15} />;
             case CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER:
               return <IoClose size={15} />;
+            case CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK:
+              return <BsClockHistory size={14} />;
             default:
               return null;
           }
@@ -505,7 +527,7 @@ const ActionPreview = ({
   showGasAssetSelect = false,
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
-  const { accountAddress, providerAddress } = useEtherspot();
+  const { accountAddress, providerAddress, web3Provider } = useEtherspot();
   console.log("addresses", accountAddress, providerAddress)
   const theme: Theme = useTheme();
 
@@ -785,7 +807,13 @@ const ActionPreview = ({
           </TransactionAction>
         )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
+        {showStatus && (
+          <TransactionStatus
+            crossChainAction={crossChainAction}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            web3ProviderChainId={web3Provider?.web3?.networkVersion && Number(web3Provider?.web3?.networkVersion)}
+          />
+        )}
       </Card>
     );
   }
@@ -1234,23 +1262,13 @@ const ActionPreview = ({
             {previewList.map((preview) => {
               if (!preview) return null;
               if (!('toAsset' in preview)) return null;
-              const { fromAsset, toAsset, providerName, providerIconUrl } =
-                preview;
+              const { fromAsset, toAsset, providerName, providerIconUrl } = preview;
 
-              const fromAmount = formatAmountDisplay(
-                ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
-              );
-              const toAmount = formatAmountDisplay(
-                ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
-              );
+              const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+              const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
               return (
                 <Row>
-                  <RoundedImage
-                    style={{ marginTop: 2 }}
-                    title={providerName}
-                    url={providerIconUrl}
-                    size={10}
-                  />
+                  <RoundedImage style={{ marginTop: 2 }} title={providerName} url={providerIconUrl} size={10} />
                   <ValueBlock>
                     <Text size={12} marginBottom={2} regular block>
                       {`Swap on ${chainTitle} via ${providerName}`}
@@ -1265,7 +1283,13 @@ const ActionPreview = ({
           </RouteWrapper>
         </TransactionAction>
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
+        {showStatus && (
+          <TransactionStatus
+            crossChainAction={crossChainAction}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            web3ProviderChainId={web3Provider?.web3?.networkVersion && Number(web3Provider?.web3?.networkVersion)}
+          />
+        )}
       </Card>
     );
   }
