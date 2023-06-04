@@ -12,7 +12,7 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 import { Route } from '@lifi/sdk';
-import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { BigNumber, BigNumberish, ethers, utils } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
@@ -395,85 +395,120 @@ export const klimaDaoStaking = async (
 
 export const honeyswapLP = async (
   sdk: EtherspotSdk | null,
-  amount1: BigNumberish,
+  amount1: BigNumber,
   tokenAddress1: string,
-  amount2: BigNumberish,
-  tokenAddress2: string
+  amount2: BigNumber,
+  tokenAddress2: string,
+  offer1: ExchangeOffer,
+  offer2: ExchangeOffer
 ) => {
   if (!sdk) return { errorMessage: 'No sdk found' };
+
+  console.log('INFOLPP', amount1, amount2, tokenAddress1, tokenAddress2);
 
   // this is USDC on XDAI
   const fromAssetAddress = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
 
   const contractAddress = '0x1C232F01118CB8B424793ae03F870aa7D0ac7f77';
 
-  const createTimestamp = +new Date() + 30;
+  const createTimestamp = Date.now() + 100;
 
-  const uniswapV2Contract = new UniswapV2RouterContract(fromAssetAddress);
+  // const uniswapV2Contract = new UniswapV2RouterContract(fromAssetAddress);
 
   try {
-    if (!uniswapV2Contract.encodeAddLiquidity) {
-      return { errorMessage: 'Failed build transaction!' };
-    }
 
-    const abi = getContractAbi(ContractNames.ERC20Token);
-    
-    const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, tokenAddress1);
-    const approvalTransactionRequest1 = erc20Contract?.encodeApprove?.(contractAddress, amount1);
+    const amountMin1 = (amount1.toNumber() - amount1.toNumber() * 0.05).toFixed(0);
+    const amountMin2 = (amount2.toNumber() - amount2.toNumber() * 0.05).toFixed(0);
 
-    if (!approvalTransactionRequest1 || !approvalTransactionRequest1.to) {
-      return { errorMessage: 'Failed to build approval transaction!' };
-    }
+    const uniswapV2Abi = [
+      {
+        inputs: [
+          { internalType: 'address', name: 'tokenA', type: 'address' },
+          { internalType: 'address', name: 'tokenB', type: 'address' },
+          { internalType: 'uint256', name: 'amountADesired', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountBDesired', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountAMin', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountBMin', type: 'uint256' },
+          { internalType: 'address', name: 'to', type: 'address' },
+          { internalType: 'uint256', name: 'deadline', type: 'uint256' },
+        ],
+        name: 'addLiquidity',
+        outputs: [
+          { internalType: 'uint256', name: 'amountA', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountB', type: 'uint256' },
+          { internalType: 'uint256', name: 'liquidity', type: 'uint256' },
+        ],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ];
 
-    const approvalTransaction1 = {
-      to: approvalTransactionRequest1.to,
-      data: approvalTransactionRequest1.data,
-      chainId: CHAIN_ID.XDAI,
-      value: 0,
-      createTimestamp,
-      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-    };
+    const ContractInterface = new ethers.utils.Interface(uniswapV2Abi);
 
-    const erc20Contract2 = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, tokenAddress2);
-    const approvalTransactionRequest2 = erc20Contract2?.encodeApprove?.(contractAddress, amount2);
-
-    if (!approvalTransactionRequest2 || !approvalTransactionRequest2.to) {
-      return { errorMessage: 'Failed to build approval transaction!' };
-    }
-
-    const approvalTransaction2 = {
-      to: approvalTransactionRequest2.to,
-      data: approvalTransactionRequest2.data,
-      chainId: CHAIN_ID.XDAI,
-      value: 0,
-      createTimestamp,
-      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-    };
-
-    const encodedAddLiquidity = uniswapV2Contract.encodeAddLiquidity(
+    const encodedData = ContractInterface.encodeFunctionData('addLiquidity', [
       tokenAddress1,
       tokenAddress2,
       amount1,
       amount2,
-      amount1,
-      amount2,
-      contractAddress,
-      createTimestamp
-    );
+      amountMin1,
+      amountMin2,
+      sdk.state.accountAddress,
+      createTimestamp,
+    ]);
 
-    const encodeAddLiquidityTransactions = {
-      to: encodedAddLiquidity.to,
-      data: encodedAddLiquidity.data,
+    const approveAbi = [
+      {
+        constant: false,
+        inputs: [
+          { name: '_to', type: 'address' },
+          { name: '_value', type: 'uint256' },
+        ],
+        name: 'approve',
+        outputs: [{ name: 'result', type: 'bool' }],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ];
+
+    const ERC20Intance = new ethers.utils.Interface(approveAbi);
+
+    const approvalData1 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount1]);
+
+    const approvalData2 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount2]);
+
+    const newEncodeAddLiquidityTransactions = {
+      to: contractAddress,
+      data: encodedData,
       chainId: CHAIN_ID.XDAI,
       value: '0',
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    let transactions = [approvalTransaction1, approvalTransaction2, encodeAddLiquidityTransactions];
+    const newApprovalTransaction1 = {
+      to: tokenAddress1,
+      data: approvalData1,
+      chainId: CHAIN_ID.XDAI,
+      value: '0',
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    };
+
+    const newApprovalTransaction2 = {
+      to: tokenAddress2,
+      data: approvalData2,
+      chainId: CHAIN_ID.XDAI,
+      value: '0',
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    };
+
+    let transactions = [newApprovalTransaction1, newApprovalTransaction2, newEncodeAddLiquidityTransactions];
 
     return { result: { transactions, provider: 'LiFi' } };
   } catch (error) {
+    console.log('errorPPP', error instanceof Error ? error.message : error);
     return { errorMessage: 'Failed build transaction 2!' };
   }
 };
@@ -1048,8 +1083,9 @@ export const buildCrossChainAction = async (
         try {
           let destinationTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
-          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, fromAssetDecimals);
-          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, fromAssetDecimals);
+          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
+          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, 6);
+          console.log('fromTokenTwoAmountBN', fromTokenOneAmountBN, fromTokenTwoAmountBN);
 
           const [firstStep] = routeToUSDC.steps;
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
@@ -1096,6 +1132,55 @@ export const buildCrossChainAction = async (
             transactions = [approvalTransaction, ...transactions];
           }
           console.log('sksksk', offer1, offer2);
+
+          // not native asset and no erc20 approval transaction included SWAP 1
+          // if (toToken1.address && !addressesEqual(toToken1.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address)) {
+          //   const abi = getContractAbi(ContractNames.ERC20Token);
+          //   const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
+          //   const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+          //     offer1.transactions[0].to,
+          //     fromTokenOneAmountBN
+          //   );
+          //   if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          //     return { errorMessage: 'Failed build bridge approval transaction!' };
+          //   }
+
+          //   const approvalTransaction = {
+          //     to: approvalTransactionRequest.to,
+          //     data: approvalTransactionRequest.data,
+          //     chainId: CHAIN_ID.XDAI,
+          //     value: 0,
+          //     createTimestamp,
+          //     status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          //   };
+
+          //   destinationTxns = [approvalTransaction, ...destinationTxns];
+          // }
+
+          // not native asset and no erc20 approval transaction included SWAP 2
+          // if (toToken2.address && !addressesEqual(toToken2.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address)) {
+          //   const abi = getContractAbi(ContractNames.ERC20Token);
+          //   const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
+          //   const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+          //     offer2.transactions[0].to,
+          //     fromTokenTwoAmountBN
+          //   );
+          //   if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          //     return { errorMessage: 'Failed build bridge approval transaction!' };
+          //   }
+
+          //   const approvalTransaction = {
+          //     to: approvalTransactionRequest.to,
+          //     data: approvalTransactionRequest.data,
+          //     chainId: CHAIN_ID.XDAI,
+          //     value: 0,
+          //     createTimestamp,
+          //     status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          //   };
+
+          //   destinationTxns = [approvalTransaction, ...destinationTxns];
+          // }
+
           // Swap 1 Start //
           destinationTxns = [
             ...destinationTxns,
@@ -1107,51 +1192,28 @@ export const buildCrossChainAction = async (
             })),
           ];
 
-          // not native asset and no erc20 approval transaction included
-          if (toToken1.address && !addressesEqual(toToken1.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address)) {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
-              offer1.transactions[0].to,
-              fromTokenOneAmountBN
-            );
-            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-              return { errorMessage: 'Failed build bridge approval transaction!' };
-            }
+          // if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
+          //   const abi = getContractAbi(ContractNames.ERC20Token);
+          //   const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
+          //   const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, offer1.receiveAmount);
+          //   if (!transferTransactionRequest || !transferTransactionRequest.to) {
+          //     return { errorMessage: 'Failed build transfer transaction!' };
+          //   }
 
-            const approvalTransaction = {
-              to: approvalTransactionRequest.to,
-              data: approvalTransactionRequest.data,
-              chainId: CHAIN_ID.XDAI,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
+          //   const transferTransaction = {
+          //     to: transferTransactionRequest.to,
+          //     data: transferTransactionRequest.data,
+          //     value: 0,
+          //     createTimestamp,
+          //     status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          //   };
 
-            destinationTxns = [approvalTransaction, ...destinationTxns];
-          }
-
-          if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
-            const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, offer1.receiveAmount);
-            if (!transferTransactionRequest || !transferTransactionRequest.to) {
-              return { errorMessage: 'Failed build transfer transaction!' };
-            }
-
-            const transferTransaction = {
-              to: transferTransactionRequest.to,
-              data: transferTransactionRequest.data,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
-
-            destinationTxns = [...destinationTxns, transferTransaction];
-          }
+          //   destinationTxns = [...destinationTxns, transferTransaction];
+          // }
           // SWAP 1 ENDS
 
           // Swap 2 Start
+
           destinationTxns = [
             ...destinationTxns,
             ...offer2.transactions.map((transaction) => ({
@@ -1162,65 +1224,49 @@ export const buildCrossChainAction = async (
             })),
           ];
 
-          // not native asset and no erc20 approval transaction included
-          if (toToken2.address && !addressesEqual(toToken2.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address)) {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
-              offer2.transactions[0].to,
-              fromTokenTwoAmountBN
-            );
-            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-              return { errorMessage: 'Failed build bridge approval transaction!' };
-            }
+          // if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
+          //   const abi = getContractAbi(ContractNames.ERC20Token);
+          //   const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
+          //   const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, offer2.receiveAmount);
+          //   if (!transferTransactionRequest || !transferTransactionRequest.to) {
+          //     return { errorMessage: 'Failed build transfer transaction!' };
+          //   }
 
-            const approvalTransaction = {
-              to: approvalTransactionRequest.to,
-              data: approvalTransactionRequest.data,
-              chainId: CHAIN_ID.XDAI,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
+          //   const transferTransaction = {
+          //     to: transferTransactionRequest.to,
+          //     data: transferTransactionRequest.data,
+          //     value: 0,
+          //     createTimestamp,
+          //     status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          //   };
 
-            destinationTxns = [approvalTransaction, ...destinationTxns];
-          }
-
-          if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, USDC_GNOSIS);
-            const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, offer2.receiveAmount);
-            if (!transferTransactionRequest || !transferTransactionRequest.to) {
-              return { errorMessage: 'Failed build transfer transaction!' };
-            }
-
-            const transferTransaction = {
-              to: transferTransactionRequest.to,
-              data: transferTransactionRequest.data,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
-
-            destinationTxns = [...destinationTxns, transferTransaction];
-          }
+          //   destinationTxns = [...destinationTxns, transferTransaction];
+          // }
           // SWAP 2 ENDS
+
+          console.log("destinationTxnsSwap", destinationTxns);
 
           const honeySwapTransaction = await honeyswapLP(
             sdk,
-            fromTokenOneAmountBN,
+            offer1.receiveAmount,
             toToken1.address,
-            fromTokenTwoAmountBN,
-            toToken2.address
+            offer2.receiveAmount,
+            toToken2.address,
+            offer1,
+            offer2
           );
 
           if (honeySwapTransaction.errorMessage) return { errorMessage: honeySwapTransaction.errorMessage };
 
+          console.log('destinationTxns1Swap+', destinationTxns);
+
           if (honeySwapTransaction.result?.transactions?.length) {
-            honeySwapTransaction.result?.transactions.forEach((element) => {
-              // destinationTxns.push(element);
-            });
+            // honeySwapTransaction.result?.transactions.forEach((element) => {
+            destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
+            // });
           }
+
+          console.log('destinationTxns2', destinationTxns);
 
           const preview = {
             fromChainId,
@@ -1268,6 +1314,7 @@ export const buildCrossChainAction = async (
                 isEstimating: false,
                 estimated: null,
                 useWeb3Provider: false,
+                gasTokenAddress: USDC_GNOSIS,
                 destinationCrossChainAction: [],
               },
             ],
@@ -1732,7 +1779,7 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     }
 
     sdk.clearGatewayBatch();
-    console.log('RESULT_0');
+    console.log('RESULT_0', transactions);
 
     // sequential
     for (const transaction of transactions) {
@@ -1741,7 +1788,7 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     }
 
     const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
-    await sdk.estimateGatewayBatch({ feeToken });
+    await sdk.estimateGatewayBatch({ feeToken: feeToken });
     const result = await sdk.submitGatewayBatch();
     console.log('RESULT_1', result);
     let temporaryBatchSubscription: Subscription;
@@ -1930,7 +1977,7 @@ export const estimateCrossChainAction = async (
   if (!sdk || (crossChainAction.useWeb3Provider && !web3Provider)) {
     return { errorMessage: 'Failed to estimate!' };
   }
-
+  console.log('gasTokenUsed', crossChainAction.gasTokenAddress);
   let feeAssetBalanceBN = ethers.BigNumber.from(0);
   try {
     const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
@@ -2019,6 +2066,7 @@ export const estimateCrossChainAction = async (
           : crossChainAction.gasTokenAddress;
 
       const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
+      console.log('ESTIMATION__', gatewayBatchEstimation);
       gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
       feeAmount = feeToken ? gatewayBatchEstimation.feeAmount : null;
     } catch (e) {

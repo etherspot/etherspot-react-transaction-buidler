@@ -155,6 +155,8 @@ const AssetSwapTransactionBlock = ({
           toTokenAddress: selectedToAsset.address,
         });
 
+        console.log("gsgsgs", offers)
+
         return offers;
       } catch (e) {
         //

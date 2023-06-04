@@ -280,7 +280,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         });
 
         const bestRoute = getBestRouteItem(routes);
-
+        console.log("REMAININGAMOUNT", Number(bestRoute.toAmount), Number(gasAmountUSD));
         remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
 
         setRouteToUSDC(routes);
@@ -294,9 +294,10 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
-
-      setTokenOneAmount(String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
-      setTokenTwoAmount(String(Number(Math.floor(remainingAmount / 2).toFixed(0)) / 1000000));
+      const tknAmt = String(Number(halfOfRemainingAmount) / 1000000);
+      console.log("TOKENAMOUNT", tknAmt);
+      setTokenOneAmount(tknAmt);
+      setTokenTwoAmount(tknAmt);
 
       try {
         // needed computed account address before calling getExchangeOffers
@@ -309,7 +310,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           toTokenAddress: selectedToken1Asset.address,
         });
 
-        console.log('Offers1', offers);
+        console.log('Offers1', offers[0]);
         setSelectedOffer1(offers[0]);
         // return offers;
       } catch (e) {

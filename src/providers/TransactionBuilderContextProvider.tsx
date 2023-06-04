@@ -788,7 +788,7 @@ const TransactionBuilderContextProvider = ({
           );
 
       if (result?.errorMessage || !result?.transactionHash?.length) {
-        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
         setIsSubmitting(false);
         crossChainAction.transactions.map((transaction) => {
           transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
@@ -810,6 +810,9 @@ const TransactionBuilderContextProvider = ({
 
       let flag = 1,
         errorOnLiFi;
+
+      //   // setTimeout
+
       while (flag) {
         try {
           const res = await sdkForXdai.getAccountBalances({
