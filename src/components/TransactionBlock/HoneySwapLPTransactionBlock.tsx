@@ -280,7 +280,6 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         });
 
         const bestRoute = getBestRouteItem(routes);
-        console.log("REMAININGAMOUNT", Number(bestRoute.toAmount), Number(gasAmountUSD));
         remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
 
         setRouteToUSDC(routes);

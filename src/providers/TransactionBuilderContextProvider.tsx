@@ -756,17 +756,13 @@ const TransactionBuilderContextProvider = ({
       });
 
       const balance = res.items.filter((item) => item.token === USDC_GNOSIS)[0].balance ?? '0';
-      // const amt = ethers.utils.parseUnits(crossChainAction.receiveAmount ?? '0', 6);
 
       console.log(
         'reshsgsg',
         res.items.filter((item) => item.token === USDC_GNOSIS)[0],
-        // ethers.utils.formatEther(amt),
         ethers.utils.formatEther(balance),
         crossChainAction.destinationCrossChainAction
       );
-
-      // return;
 
       let result: {
         transactionHash?: string;
@@ -810,8 +806,6 @@ const TransactionBuilderContextProvider = ({
 
       let flag = 1,
         errorOnLiFi;
-
-      //   // setTimeout
 
       while (flag) {
         try {
