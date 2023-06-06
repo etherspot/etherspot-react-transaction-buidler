@@ -687,7 +687,7 @@ const ActionPreview = ({
                 {!!cost && (
                   <>
                     <Text size={12} marginLeft={8} color={theme.color?.text?.innerLabel} medium block>
-                      Gas price
+                      Gas price1
                     </Text>
                     <Text marginLeft={4} medium>
                       {cost}

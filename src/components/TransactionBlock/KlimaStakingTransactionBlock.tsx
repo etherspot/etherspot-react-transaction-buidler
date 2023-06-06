@@ -129,7 +129,9 @@ const KlimaStakingTransactionBlock = ({
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const [toolUsed, setToolUsed] = useState<string>('');
+  const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(null);
   const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
+  const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
 
   const defaultCustomReceiverAddress =
     values?.receiverAddress &&
@@ -212,7 +214,7 @@ const KlimaStakingTransactionBlock = ({
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
 
     if (routeToUSDC == null || routeToKlima == null || isRouteFetching) {
-      setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount1');
+      setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       return;
     }
 
@@ -242,6 +244,8 @@ const KlimaStakingTransactionBlock = ({
     receiveAmount,
     toolUsed,
   ]);
+
+  const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
@@ -285,8 +289,9 @@ const KlimaStakingTransactionBlock = ({
         }
       }
 
+      setIsLoadingAvailableRoutes(true);
       try {
-        
+
         const { items: routesUSDC } = await sdk.getAdvanceRoutesLiFi({
           fromChainId: selectedFromNetwork.chainId,
           toChainId: CHAIN_ID.POLYGON,
@@ -299,6 +304,7 @@ const KlimaStakingTransactionBlock = ({
         const bestRoutetoUSDC = getBestRouteItem(routesUSDC);
 
         setRouteToUSDC(routesUSDC);
+        setAvailableRoutes(routesUSDC);
 
         if (routesUSDC === null) {
           setIsRouteFetching(false);
@@ -343,7 +349,6 @@ const KlimaStakingTransactionBlock = ({
           toAddress: receiverAddress ?? undefined,
         });
         
-        // Advanced routes 
         let remainingAmount: any = null;
 
         const bestRoute = getBestRouteItem(routesKLIMA);
@@ -352,40 +357,21 @@ const KlimaStakingTransactionBlock = ({
         setRouteToKlima(routesKLIMA);
         setSelectedRoute(mapRouteToOption(bestRoute));
 
-        // need to check this
-        //setToolUsed(routeToUsdc.items[bestRoute].LiFiBridgeUsed ?? '');
+        setToolUsed('');
+
         setReceiveAmount(
           ethers.utils.formatUnits(bestRoute.toAmount, klimaAsset.decimals)
         );
         resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
         setIsRouteFetching(false);
 
-        // cross chain quotes
-        /*
-        if (routes !=  null) {
-          const bestRouteIndex = getBestRouteIndex(routeToKlima.items);
-
-          setSelectedRoute(mapRouteToOption(routeToKlima.items[bestRouteIndex]));
-          setToolUsed(routeToUsdc.items[bestRouteIndex].LiFiBridgeUsed ?? '');
-          setRouteToKlima(routeToKlima.items);
-          setReceiveAmount(
-            ethers.utils.formatUnits(routeToKlima.items[bestRouteIndex].estimate.toAmount, klimaAsset.decimals)
-          );
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
-          setIsRouteFetching(false);
-        } else {
-          resetRoutes();
-          setTransactionBlockFieldValidationError(
-            transactionBlockId,
-            'route',
-            'Please try with different inputs/amount'
-          );
-        } */
       } catch (err) {
         console.log(err);
         resetRoutes();
-        setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount3');
+        setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       }
+      setIsLoadingAvailableRoutes(false);
+
     }, 200),
     [selectedFromNetwork, selectedFromAsset, amount, selectedAccountType, receiverAddress]
   );
@@ -559,17 +545,23 @@ const KlimaStakingTransactionBlock = ({
       )}
       {!!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
         <SelectInput
-          label={`Offer`}
-          options={selectedRoute ? [selectedRoute] : []}
-          isLoading={isRouteFetching}
-          selectedOption={selectedRoute}
-          renderOptionListItemContent={renderOption}
-          renderSelectedOptionContent={renderOption}
-          placeholder="Offer"
-          errorMessage={!isRouteFetching ? errorMessages?.route : ''}
-          noOpen={true}
-          isOffer
-        />
+        label={`Route`}
+        options={availableRoutesOptions ?? []}
+        isLoading={isLoadingAvailableRoutes}
+        selectedOption={selectedRoute}
+        onOptionSelect={(option) => {
+          resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
+          setSelectedRoute(option);
+        }}
+        placeholder="Select route"
+        renderOptionListItemContent={renderOption}
+        renderSelectedOptionContent={renderOption}
+        errorMessage={errorMessages?.route}
+        disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
+        noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
+        forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
+        isOffer
+      />
       )}
     </>
   );
