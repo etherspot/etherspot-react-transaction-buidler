@@ -39,7 +39,7 @@ const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: bool
   border-radius: 16px;
   padding: 8px 14px 14px;
   cursor: pointer;
-  ${({ border = false}) => border && 'border: 1px solid #46464e;'}
+  ${({ border = false, theme}) => border && `border: 1px solid ${theme.color.background.selectInputExpandedBorder};`}
   ${({ disabled }) => disabled && `opacity: 0.3;`}
   &:hover {
     ${({ theme, hover }) => hover && `background-color: ${ theme.color.background.dropdownHoverColor };`}

@@ -91,7 +91,7 @@ const TransactionBlockListItemWrapper = styled.div<{ disabled?: boolean }>`
 const TopNavigation = styled.div`
   padding: 0px 5px 25px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   flex-direction: row;
   color: ${({ theme }) => theme.color.text.topBar};
@@ -400,7 +400,6 @@ const TransactionBuilderContextProvider = ({
   );
 
   const isEstimationFailing = useMemo(() => {
-    console.log('crossChainActions2', crossChainActions);
     return crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage);
   }, [crossChainActions]);
 
@@ -414,7 +413,6 @@ const TransactionBuilderContextProvider = ({
         [transactionBlock.id]: transactionBlockErrors,
       };
     });
-    console.log(validationErrors, 'validfff');
 
     return validationErrors;
   };
@@ -456,9 +454,7 @@ const TransactionBuilderContextProvider = ({
       // keep blocks in order
       let multiCallList: string[] = [];
       for (const transactionBlock of transactionBlocks) {
-        console.log('transactionBlock', transactionBlock);
         const result = await buildCrossChainAction(sdk, transactionBlock);
-        console.log('resultblock', result);
 
         if (!result?.crossChainAction || result?.errorMessage) {
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
@@ -514,7 +510,6 @@ const TransactionBuilderContextProvider = ({
     }
 
     setIsChecking(false);
-    console.log('newCrossChainActions', newCrossChainActions);
     if (!errorMessage && !newCrossChainActions?.length) {
       errorMessage = `Failed to proceed with selected actions!`;
     }
@@ -522,7 +517,7 @@ const TransactionBuilderContextProvider = ({
     if (errorMessage) {
       return;
     }
-    console.log('newCrossChainActions', newCrossChainActions);
+
     setCrossChainActions(newCrossChainActions);
     setEditingTransactionBlock(null);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
@@ -1125,7 +1120,7 @@ const TransactionBuilderContextProvider = ({
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
       <TopNavigation>
-        {/* <WalletAddressesWrapper>
+        <WalletAddressesWrapper>
           <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
             <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
               <TbWallet size={16} />
@@ -1152,7 +1147,7 @@ const TransactionBuilderContextProvider = ({
               {deployingAccount ? 'Deploying...' : 'Buy'}
             </WalletAddress>
           )}
-        </WalletAddressesWrapper> */}
+        </WalletAddressesWrapper>
         <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>
         <SettingsWrapper>
           <ConnectionIcon isConnected={!!accountAddress} />
@@ -1495,7 +1490,7 @@ const TransactionBuilderContextProvider = ({
               !hideAddTransactionButton &&
               !editingTransactionBlock &&
               !showWalletBlock &&
-              transactionBlocks.length === 0 && (
+              (
                 <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
                   <AiOutlinePlusCircle size={24} />
                   <span>Add transaction</span>
@@ -1504,7 +1499,7 @@ const TransactionBuilderContextProvider = ({
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br />
-                {/* {!isChecking && isBlockValid && ( */}
+                {!isChecking && isBlockValid && (
                 <PrimaryButton
                   marginTop={editingTransactionBlock ? 0 : 30}
                   onClick={onContinueClick}
@@ -1513,7 +1508,7 @@ const TransactionBuilderContextProvider = ({
                   {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
                   {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
                 </PrimaryButton>
-                {/* )} */}
+              )}
               </>
             )}
             {!!editingTransactionBlock && (

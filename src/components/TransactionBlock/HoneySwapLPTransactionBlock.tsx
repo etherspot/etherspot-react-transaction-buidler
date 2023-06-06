@@ -276,7 +276,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
           fromTokenAddress: selectedFromAsset.address,
           toTokenAddress: USDC_GNOSIS,
-          toAddress: receiverAddress ?? undefined,
+          toAddress: sdk.state.accountAddress ?? undefined,
         });
 
         const bestRoute = getBestRouteItem(routes);

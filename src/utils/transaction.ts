@@ -420,7 +420,7 @@ export const honeyswapLP = async (
     const amountMin1 = (amount1.toNumber() - amount1.toNumber() * 0.05).toFixed(0);
     const amountMin2 = (amount2.toNumber() - amount2.toNumber() * 0.05).toFixed(0);
 
-    const uniswapV2Abi = [
+    const uniswapV2AbiAddLiquidity = [
       {
         inputs: [
           { internalType: 'address', name: 'tokenA', type: 'address' },
@@ -443,7 +443,9 @@ export const honeyswapLP = async (
       },
     ];
 
-    const ContractInterface = new ethers.utils.Interface(uniswapV2Abi);
+
+
+    const ContractInterface = new ethers.utils.Interface(uniswapV2AbiAddLiquidity);
 
     const encodedData = ContractInterface.encodeFunctionData('addLiquidity', [
       tokenAddress1,

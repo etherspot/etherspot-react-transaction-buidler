@@ -5,14 +5,15 @@ import React, {
 import styled from 'styled-components';
 import { uniqueId } from 'lodash';
 
-const Wrapper = styled.div<{ disabled: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean, border?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme }) => theme.color.background.textInput};
   color: ${({ theme }) => theme.color.text.textInput};
   border-radius: 8px;
   padding: 8px 14px 14px;
-  border: 1px solid #46464e;
+  
+  ${({ border = false, theme }) => border && `border: 1px solid ${theme.color.background.textInputBorder};`}
   ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
