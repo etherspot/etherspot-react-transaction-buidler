@@ -417,8 +417,11 @@ export const honeyswapLP = async (
   // const uniswapV2Contract = new UniswapV2RouterContract(fromAssetAddress);
 
   try {
-    const amountMin1 = (amount1.toNumber() - amount1.toNumber() * 0.05).toFixed(0);
-    const amountMin2 = (amount2.toNumber() - amount2.toNumber() * 0.05).toFixed(0);
+    console.log("ETHERSPOT::1")
+    const amountMin1 = (Number(amount1) - Number(amount1) * 0.05).toFixed(0);
+    console.log("ETHERSPOT::X", Number(amount2), Number(amount1), amount1.toNumber())
+    const amountMin2 = (Number(amount2) - Number(amount2) * 0.05).toFixed(0);
+    console.log("ETHERSPOT::1")
 
     const uniswapV2AbiAddLiquidity = [
       {
@@ -443,9 +446,60 @@ export const honeyswapLP = async (
       },
     ];
 
-
+    const uniswapV2AbiAddLiquidityETH = [
+      {
+        inputs: [
+          { internalType: 'address', name: 'token', type: 'address' },
+          { internalType: 'uint256', name: 'amountTokenDesired', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountTokenMin', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountETHMin', type: 'uint256' },
+          { internalType: 'address', name: 'to', type: 'address' },
+          { internalType: 'uint256', name: 'deadline', type: 'uint256' },
+        ],
+        name: 'addLiquidityETH',
+        outputs: [
+          { internalType: 'uint256', name: 'amountToken', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountETH', type: 'uint256' },
+          { internalType: 'uint256', name: 'liquidity', type: 'uint256' },
+        ],
+        stateMutability: 'payable',
+        type: 'function',
+      },
+    ];
 
     const ContractInterface = new ethers.utils.Interface(uniswapV2AbiAddLiquidity);
+
+    const ContractInterfaceEth = new ethers.utils.Interface(uniswapV2AbiAddLiquidityETH);
+
+    console.log("ETHERSPOT::2")
+
+    let encodedEthData = null;
+
+    if (isZeroAddress(tokenAddress1)) {
+      encodedEthData = ContractInterfaceEth.encodeFunctionData('addLiquidityETH', [
+        tokenAddress2,
+        amount2,
+        amountMin2,
+        amountMin1,
+        receiverAddress,
+        createTimestamp,
+      ]);
+    }
+
+    console.log("ETHERSPOT::3")
+
+    if (isZeroAddress(tokenAddress2)) {
+      encodedEthData = ContractInterfaceEth.encodeFunctionData('addLiquidityETH', [
+        tokenAddress1,
+        amount1,
+        amountMin1,
+        amountMin2,
+        receiverAddress,
+        createTimestamp,
+      ]);
+    }
+
+    console.log("ETHERSPOT::4")
 
     const encodedData = ContractInterface.encodeFunctionData('addLiquidity', [
       tokenAddress1,
@@ -472,6 +526,7 @@ export const honeyswapLP = async (
         type: 'function',
       },
     ];
+    console.log("ETHERSPOT::5")
 
     const ERC20Intance = new ethers.utils.Interface(approveAbi);
 
@@ -506,7 +561,34 @@ export const honeyswapLP = async (
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    let transactions = [newApprovalTransaction1, newApprovalTransaction2, newEncodeAddLiquidityTransactions];
+    let newNativeTokenEndodedData = encodedEthData
+      ? {
+          to: contractAddress,
+          data: encodedEthData,
+          chainId: CHAIN_ID.XDAI,
+          value: '0',
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        }
+      : null;
+
+    const isAnyTokenAddressZero = isZeroAddress(tokenAddress1) || isZeroAddress(tokenAddress2);
+
+    let transactions : any[] = [];
+
+    if (isZeroAddress(tokenAddress1)) {
+      transactions = [newApprovalTransaction2];
+    } else if (isZeroAddress(tokenAddress2)) {
+      transactions = [newApprovalTransaction1];
+    }
+
+    console.log("transactionsXXX", transactions)
+
+    if (isAnyTokenAddressZero && newNativeTokenEndodedData) {
+      transactions = [...transactions, newNativeTokenEndodedData];
+    } else {
+      transactions = [...transactions, newEncodeAddLiquidityTransactions];
+    }
 
     return { result: { transactions, provider: 'LiFi' } };
   } catch (error) {
@@ -1085,8 +1167,8 @@ export const buildCrossChainAction = async (
         try {
           let destinationTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
-          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
-          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, 6);
+
+          console.log("ETHERSPOT:::8")
 
           const [firstStep] = routeToUSDC.steps;
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
@@ -1162,7 +1244,7 @@ export const buildCrossChainAction = async (
 
           // SWAP 2 ENDS
 
-          const addressToSendTo = receiverAddress ?? sdk.state.accountAddress
+          const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
 
           const honeySwapTransaction = await honeyswapLP(
             sdk,
@@ -1180,7 +1262,7 @@ export const buildCrossChainAction = async (
           console.log('destinationTxns1Swap+', destinationTxns);
 
           if (honeySwapTransaction.result?.transactions?.length) {
-          destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
+            destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
           }
 
           const preview = {
