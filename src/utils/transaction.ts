@@ -417,11 +417,8 @@ export const honeyswapLP = async (
   // const uniswapV2Contract = new UniswapV2RouterContract(fromAssetAddress);
 
   try {
-    console.log("ETHERSPOT::1")
     const amountMin1 = (Number(amount1) - Number(amount1) * 0.05).toFixed(0);
-    console.log("ETHERSPOT::X", Number(amount2), Number(amount1), amount1.toNumber())
     const amountMin2 = (Number(amount2) - Number(amount2) * 0.05).toFixed(0);
-    console.log("ETHERSPOT::1")
 
     const uniswapV2AbiAddLiquidity = [
       {
