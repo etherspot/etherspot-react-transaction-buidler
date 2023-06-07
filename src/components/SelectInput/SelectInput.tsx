@@ -61,7 +61,7 @@ const SearchInputWrapper = styled.label`
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  border-bottom: 1px solid #ffd2bb;
+  border-bottom: 1px solid ${({ theme }) => theme.color.background.selectInputBorder};;
   margin-bottom: 17px;
   padding: 0 0 5px;
 `;
@@ -157,6 +157,7 @@ export interface SelectOption {
   value: any;
   iconUrl?: string;
   extension?: string;
+  helperTooltip?: string;
 }
 
 interface SelectInputProps {

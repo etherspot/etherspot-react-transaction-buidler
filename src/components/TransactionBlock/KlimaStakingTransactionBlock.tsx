@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, BridgingQuote, CrossChainServiceProvider } from 'etherspot';
-import { BigNumber, ethers } from 'ethers';
+import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider } from 'etherspot';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
@@ -34,6 +34,7 @@ import { DestinationWalletEnum } from '../../enums/wallet.enum';
 // hooks
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import { BiCheck } from "react-icons/bi";
+import { getAssetPriceInUsd } from '../../services/coingecko';
 
 export interface IKlimaStakingTransactionBlockValues {
   fromChainId?: number;
@@ -77,11 +78,12 @@ const OfferGasPriceContainer = styled.div`
   justify-content: flex-start;
   gap: 1rem;
   align-items: flex-end;
+  font-size: 14px;
 `;
 
 const OfferChecked = styled.div`
   position: absolute;
-  top: -10px;
+  top: 2px;
   right: 5px;
   background: ${({ theme }) => theme.color.background.statusIconSuccess};
   width: 14px;
@@ -89,6 +91,14 @@ const OfferChecked = styled.div`
   font-size: 4px;
   border-radius: 7px;
   color: #fff;
+`;
+
+const OfferText = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 3px;
 `;
 
 const mapRouteToOption = (route: BridgingQuote): SelectOption => {
@@ -105,7 +115,7 @@ const KlimaStakingTransactionBlock = ({
   errorMessages,
   values,
 }: IKlimaStakingTransactionBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk } = useEtherspot();
+  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
@@ -279,10 +289,39 @@ const KlimaStakingTransactionBlock = ({
           return;
         }
 
+        const sdkChain = getSdkForChainId(CHAIN_ID.POLYGON);
+        const gasInfo = await sdkChain?.getGatewayGasInfo();
+
+        let priceUsd = await getAssetPriceInUsd(CHAIN_ID.POLYGON,ethers.constants.AddressZero,sdk);
+        if (!gasInfo || !priceUsd) {
+          setTransactionBlockFieldValidationError(transactionBlockId, 'amount', `No Offer found`);
+          resetRoutes();
+          return;
+        }
+
+        let estimatedGas: BigNumberish = 850000;
+        let currentGasPrice = gasInfo.fast;
+
+        if (sdk.state.account.state === AccountStates.UnDeployed) {
+          estimatedGas += 330000;
+        }          
+     
+        let gasFees = currentGasPrice.mul(estimatedGas);
+        gasFees = gasFees.add(gasFees.mul(40).div(100));
+        
+        const gasFeesUSD = (Number(ethers.utils.formatEther(gasFees.toString())) * priceUsd) + 0.1
+        const gasFeesUSDC = ethers.utils.parseUnits(gasFeesUSD.toFixed(6), 6);
+
+        if (BigNumber.from(routeToUsdc.items[0].estimate.toAmount).lt(gasFeesUSDC.add("500000"))) {
+          setTransactionBlockFieldValidationError(transactionBlockId, 'amount', `Minimum amount ${gasFeesUSD + 0.5} USD`);
+          resetRoutes();
+          return;
+        }
+
         const routeToKlima = await sdk.getCrossChainQuotes({
           fromChainId: CHAIN_ID.POLYGON,
           toChainId: CHAIN_ID.POLYGON,
-          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('250000'),
+          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub(gasFeesUSDC),
           fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
           toAddress: receiverAddress ?? undefined,
@@ -348,24 +387,22 @@ const KlimaStakingTransactionBlock = ({
     <OfferDetails>
       <RoundedImage title={option.title} url={option.iconUrl} size={24} />
       <div>
-        <Text size={12} marginBottom={2} medium block>
-          {option.title}
-        </Text>
+        <OfferText>
+          {receiveAmount} {klimaAsset.symbol}
+          <Text color={theme.color?.text?.innerLabel} marginLeft={6} medium block>
+            {`via ${option.title}`}
+          </Text>
+        </OfferText>
         <OfferGasPriceContainer>
           <div>
-            <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
+            {targetAssetPriceUsd && `${formatAmountDisplay(+receiveAmount * targetAssetPriceUsd, '$')}`}
+            <Text size={12} marginLeft={8} marginRight={4} color={theme.color?.text?.innerLabel} medium>
               Gas price:&nbsp;
             </Text>
-            <Text size={14} marginRight={22} medium inline>
+            <Text size={14} medium inline>
               {option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
             </Text>
           </div>
-          {!!receiveAmount && (
-            <Text size={16} medium>
-              {receiveAmount} {klimaAsset.symbol}
-              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+receiveAmount * targetAssetPriceUsd, '$')}`}
-            </Text>
-          )}
         </OfferGasPriceContainer>
       </div>
       <OfferChecked>
@@ -376,7 +413,7 @@ const KlimaStakingTransactionBlock = ({
 
   return (
     <>
-      <Title>Stake into sKlima</Title>
+      <Title>Klima DAO Staking</Title>
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}
@@ -386,6 +423,7 @@ const KlimaStakingTransactionBlock = ({
         hideKeyBased={smartWalletOnly}
         errorMessage={errorMessages?.accountType}
         showTotals
+        showHelperText
       />
       <NetworkAssetSelectInput
         label="From"
@@ -419,7 +457,7 @@ const KlimaStakingTransactionBlock = ({
         label="To"
         selectedNetwork={supportedChains[1]}
         selectedAsset={klimaAsset}
-        disabled={true}
+        readOnly={true}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         accountType={selectedAccountType}
       />

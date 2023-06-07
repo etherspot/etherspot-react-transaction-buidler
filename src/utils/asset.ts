@@ -1,6 +1,6 @@
 import { BigNumber } from 'ethers';
 import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
-import { CHAIN_ID } from './chain';
+import { CHAIN_ID, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID } from './chain';
 import { PLR_ADDRESS_PER_CHAIN } from '../constants/assetConstants';
 
 export const plrDaoAsset: IAssetWithBalance = {
@@ -15,16 +15,29 @@ export const plrDaoAsset: IAssetWithBalance = {
   balanceWorthUsd: null,
 };
 
-export const testPlrDaoAsset: IAssetWithBalance = {
-  address: '0x6D5862a18C6a169D44d02a8B726a02A5B707B484',
-  chainId: CHAIN_ID.POLYGON,
-  name: 'Deku (DKU)',
-  symbol: 'DKU',
-  decimals: 18,
-  logoURI: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
-  balance: BigNumber.from(0),
-  assetPriceUsd: null,
-  balanceWorthUsd: null,
+export const testPlrDaoAsset: { [chianId: number]: IAssetWithBalance } = {
+  [MAINNET_CHAIN_ID.POLYGON]: {
+    address: '0x6D5862a18C6a169D44d02a8B726a02A5B707B484',
+    chainId: MAINNET_CHAIN_ID.POLYGON,
+    name: 'Deku (DKU)',
+    symbol: 'DKU',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
+    balance: BigNumber.from(0),
+    assetPriceUsd: null,
+    balanceWorthUsd: null,
+  },
+  [TESTNET_CHAIN_ID.POLYGON]: {
+    address: '0xca7a2484614bf67f6F0577d6431945e136A4b8bb',
+    chainId: TESTNET_CHAIN_ID.POLYGON,
+    name: 'Pillar (PLR)',
+    symbol: 'PLR',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
+    balance: BigNumber.from(0),
+    assetPriceUsd: null,
+    balanceWorthUsd: null,
+  },
 };
 
 export const getPlrAssetForChainId = (

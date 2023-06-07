@@ -53,6 +53,8 @@ export interface Theme {
       loadingAnimationForeground?: string;
       scrollbar?: string;
       walletAssetCopyIcon?: string;
+      tooltip?: string;
+      tooltipBorder?: string;
     };
     text?: {
       main?: string;
@@ -97,6 +99,7 @@ export interface Theme {
       settingsModalSubHeader?: string;
       settingsMenuItem?: string;
       settingsMenuItemHover?: string;
+      tooltip?: string;
     };
   };
 }
@@ -152,6 +155,8 @@ export const defaultTheme: Theme = {
       loadingAnimationForeground: '#FBF7F5',
       scrollbar: '#ff7733',
       walletAssetCopyIcon: '#ff7733',
+      tooltip: '#393f4a',
+      tooltipBorder: '#393f4a',
     },
     text: {
       main: '#fff',
@@ -196,6 +201,7 @@ export const defaultTheme: Theme = {
       settingsModalSubHeader: '#6e6b6a',
       settingsMenuItem: '#191726',
       settingsMenuItemHover: '#ee6723',
+      tooltip: '#fff',
     },
   },
 };
@@ -215,7 +221,7 @@ export const darkTheme: Theme = {
       buttonDisabled: '#2ebbac',
       closeButton: '#fff',
       selectInputToggleButton: '#998ae6',
-      selectInputBorder: '#00b1c7',
+      selectInputBorder: '#3d366d',
       selectInput: '#474078',
       selectInputExpanded: '#130c1d',
       selectInputExpandedBorder: '#46464e',
@@ -250,6 +256,8 @@ export const darkTheme: Theme = {
       loadingAnimationForeground: '#6C6C6F',
       scrollbar: '#fbae49',
       walletAssetCopyIcon: '#ff9c1b',
+      tooltip: '#2f274d',
+      tooltipBorder: '#b5afaf',
     },
     text: {
       selectInput: '#ffeee6',
@@ -289,6 +297,7 @@ export const darkTheme: Theme = {
       settingsModalSubHeader: '#b6b1d2',
       settingsMenuItem: '#fff',
       settingsMenuItemHover: '#f4973a',
+      tooltip: '#fff',
     },
   },
 };
@@ -339,6 +348,8 @@ export const synthTheme: Theme = {
       settingsModal: '#5c0088',
       scrollbar: '#78e8f6',
       walletAssetCopyIcon: '#fff',
+      tooltip: 'rgba(70, 0, 104)',
+      tooltipBorder: '#78e8f6',
     },
     text: {
       selectInput: '#fff',
@@ -379,6 +390,7 @@ export const synthTheme: Theme = {
       settingsModalSubHeader: '#b6b1d2',
       settingsMenuItem: '#78e8f6',
       settingsMenuItemHover: '#78e8f6bd',
+      tooltip: '#fff',
     },
   },
 };

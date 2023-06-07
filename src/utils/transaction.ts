@@ -39,7 +39,7 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { PLR_DAO_CONTRACT_PER_CHAIN, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 import { UNISWAP_ROUTER_ABI } from '../constants/uniswapRouterAbi';
 import { UniswapV2RouterContract } from '../contracts/UniswapV2Router';
@@ -277,7 +277,10 @@ export const klimaDaoStaking = async (
   sdk?: EtherspotSdk | null,
   flag?: Boolean,
   amount?: string
-): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[]; provider?: string } }> => {
+): Promise<{
+  errorMessage?: string;
+  result?: { transactions: ICrossChainActionTransaction[]; provider?: string; iconUrl?: string };
+}> => {
   if (!sdk) return { errorMessage: 'No sdk found' };
 
   if (!routeToKlima) {
@@ -311,7 +314,13 @@ export const klimaDaoStaking = async (
     ];
 
     if (flag) {
-      return { result: { transactions, provider: 'LiFi' } };
+      return {
+        result: {
+          transactions,
+          provider: bridgeServiceIdToDetails['lifi'].title,
+          iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
+        },
+      };
     }
 
     // not native asset and no erc20 approval transaction included
@@ -387,7 +396,13 @@ export const klimaDaoStaking = async (
 
     transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
 
-    return { result: { transactions, provider: 'LiFi' } };
+    return {
+      result: {
+        transactions,
+        provider: bridgeServiceIdToDetails['lifi'].title,
+        iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
+      },
+    };
   } catch (e) {
     return { errorMessage: 'Failed to get staking exchange transaction' };
   }
@@ -703,7 +718,7 @@ export const buildCrossChainAction = async (
             },
             receiverAddress: transactionBlock?.values?.receiverAddress,
             providerName: result.result?.provider ?? 'Unknown provider',
-            providerIconUrl: result.result?.provider ?? '',
+            providerIconUrl: result.result?.iconUrl ?? result.result?.provider ?? '',
           };
 
           const crossChainAction: ICrossChainAction = {
@@ -781,7 +796,7 @@ export const buildCrossChainAction = async (
           },
         } = transactionBlock;
         let transactions: IPlrTransaction[] = [];
-        let contractAddress = '0xdf5cFefc1CE077Fc468E3CFF130f955421D9B95a';
+        let contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[fromChainId];
         const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
         if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address)) {
@@ -844,9 +859,9 @@ export const buildCrossChainAction = async (
           },
           amount: 1,
           toAsset: {
-            address: plrDaoMemberNft.address,
+            address: plrDaoMemberNft[fromChainId].address,
             decimals: toAssetDecimals,
-            symbol: plrDaoMemberNft.name,
+            symbol: plrDaoMemberNft[fromChainId].name,
             amount: '1',
             iconUrl: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
           },
@@ -888,7 +903,7 @@ export const buildCrossChainAction = async (
 
         const preview = {
           fromChainId,
-          toChainId: testPlrDaoAsset.chainId,
+          toChainId: testPlrDaoAsset[fromChainId].chainId,
           providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
           providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
           hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,

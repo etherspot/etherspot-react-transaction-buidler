@@ -1,27 +1,12 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { AiOutlineSearch } from 'react-icons/ai';
 import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icons/md';
-import {
-  orderBy,
-  uniqueId,
-} from 'lodash';
-import {
-  BigNumber,
-  ethers,
-} from 'ethers';
+import { orderBy, uniqueId } from 'lodash';
+import { BigNumber, ethers } from 'ethers';
 
 import { useEtherspot } from '../../hooks';
-import {
-  Chain,
-  CHAIN_ID,
-  supportedChains,
-} from '../../utils/chain';
+import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { addressesEqual, containsText } from '../../utils/validation';
 import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../utils/common';
@@ -29,22 +14,30 @@ import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
 import CombinedRoundedImages from '../Image/CombinedRoundedImages';
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
-import { BulletList } from "react-content-loader";
+import { BulletList } from 'react-content-loader';
 
-const Wrapper = styled.div<{ disabled: boolean, expanded?: boolean, hover?: boolean, border?: boolean, wFull?: boolean }>`
+const Wrapper = styled.div<{
+  disabled: boolean;
+  expanded?: boolean;
+  hover?: boolean;
+  border?: boolean;
+  wFull?: boolean;
+  readOnly?: boolean;
+}>`
   position: relative;
   margin-bottom: 18px;
-  background: ${({ theme, expanded }) => expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
+  background: ${({ theme, expanded }) =>
+    expanded ? theme.color.background.selectInputExpanded : theme.color.background.selectInput};
   color: ${({ theme }) => theme.color.text.selectInput};
   border-radius: 16px;
   padding: 8px 14px 14px;
   cursor: pointer;
-  ${({ border = false, theme}) => border && `border: 1px solid ${theme.color.background.selectInputExpandedBorder};`}
-  ${({ disabled }) => disabled && `opacity: 0.3;`}
+  ${({ border = false, theme }) => border && `border: 1px solid ${theme.color.background.selectInputExpandedBorder};`}
+  ${({ disabled, readOnly }) => !readOnly && disabled && `opacity: 0.3;`}
   &:hover {
-    ${({ theme, hover }) => hover && `background-color: ${ theme.color.background.dropdownHoverColor };`}
+    ${({ theme, hover }) => hover && `background-color: ${theme.color.background.dropdownHoverColor};`}
   }
-  ${({wFull = false}) => wFull && 'width: 100%;'}
+  ${({ wFull = false }) => wFull && 'width: 100%;'}
 `;
 
 const SelectWrapper = styled.div<{ disabled: boolean }>`
@@ -53,8 +46,10 @@ const SelectWrapper = styled.div<{ disabled: boolean }>`
   right: 8px;
   width: 50px;
   text-align: right;
-  
-  ${({ disabled }) => !disabled && `
+
+  ${({ disabled }) =>
+    !disabled &&
+    `
     cursor: pointer;
   `}
 `;
@@ -90,9 +85,9 @@ const SearchInput = styled.input`
   border: none;
   margin: 0;
   padding: 0 8px;
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   color: ${({ theme }) => theme.color.text.searchInput};
-  
+
   &::placeholder {
     color: ${({ theme }) => theme.color.text.searchInputSecondary};
   }
@@ -113,13 +108,15 @@ const LargeOptionList = styled.div`
 const SelectedOption = styled.div<{ disabled?: boolean }>`
   color: ${({ theme }) => theme.color.text.selectInputOption};
   font-size: 16px;
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
 
-  ${({ disabled }) => !disabled && `
+  ${({ disabled }) =>
+    !disabled &&
+    `
     cursor: pointer;
   `}
 `;
@@ -137,7 +134,7 @@ const OptionListItem = styled(SelectedOption)`
   padding: 7.5px 3px;
   border-radius: 10px;
   &:hover {
-    ${({ theme }) => `background-color: ${ theme.color.background.selectInputExpandedHover };`}
+    ${({ theme }) => `background-color: ${theme.color.background.selectInputExpandedHover};`}
   }
 `;
 
@@ -147,7 +144,7 @@ const LargeOptionListItem = styled(OptionListItem)`
   align-items: center;
   justify-content: flex-start;
   cursor: inherit;
-  
+
   &:hover {
     opacity: 1;
   }
@@ -159,10 +156,9 @@ const LargeOptionListItemLeft = styled.div`
   align-items: center;
   justify-content: flex-start;
   cursor: pointer;
-
 `;
 
-const LargeOptionListItemRight = styled.div<{ paddingRight?: boolean; }>`
+const LargeOptionListItemRight = styled.div<{ paddingRight?: boolean }>`
   flex: 1;
   display: flex;
   flex-direction: row;
@@ -177,15 +173,17 @@ const QuickAmountButton = styled.div<{ primary?: boolean }>`
   margin-right: 4px;
   line-height: 16px;
   font-size: 12px;
-  font-family: "PTRootUIWebMedium", sans-serif;
-  color: ${({ theme, primary }) => primary ? theme.color.text.listItemQuickButtonPrimary : theme.color.text.listItemQuickButtonSecondary};
-  background-color: ${({ theme, primary }) => primary ? theme.color.background.listItemQuickButtonPrimary : theme.color.background.listItemQuickButtonSecondary};
+  font-family: 'PTRootUIWebMedium', sans-serif;
+  color: ${({ theme, primary }) =>
+    primary ? theme.color.text.listItemQuickButtonPrimary : theme.color.text.listItemQuickButtonSecondary};
+  background-color: ${({ theme, primary }) =>
+    primary ? theme.color.background.listItemQuickButtonPrimary : theme.color.background.listItemQuickButtonSecondary};
   cursor: pointer;
 
   &:last-child {
     margin-right: 0;
   }
-  
+
   &:hover {
     opacity: 0.5;
   }
@@ -199,14 +197,14 @@ const LargeOptionDetailsBottom = styled.div`
   margin-top: 5px;
   font-size: 12px;
   color: ${({ theme }) => theme.color.text.selectInputOptionSecondary};
-  font-family: "PTRootUIWebRegular", sans-serif;
+  font-family: 'PTRootUIWebRegular', sans-serif;
 `;
 
 const OptionsScroll = styled.div`
   max-height: 210px;
   overflow-x: hidden;
   overflow-y: scroll;
-  
+
   ::-webkit-scrollbar {
     width: 8px;
   }
@@ -242,9 +240,10 @@ interface SelectInputProps {
   walletAddress?: string | null;
   showQuickInputButtons?: boolean;
   accountType?: string;
-  hideAssets?: { chainId: number, address: string }[];
+  hideAssets?: { chainId: number; address: string }[];
   customMessage?: string;
-  wFull?: boolean
+  wFull?: boolean;
+  readOnly?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -262,7 +261,8 @@ const NetworkAssetSelectInput = ({
   accountType,
   hideAssets,
   customMessage,
-  wFull
+  wFull,
+  readOnly = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -286,6 +286,7 @@ const NetworkAssetSelectInput = ({
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
+    if (readOnly) return;
     if (selectedNetwork) setPreselectedNetwork(selectedNetwork);
     setShowSelectModal(!showSelectModal);
   }, [disabled, showSelectModal, selectedNetwork]);
@@ -302,7 +303,7 @@ const NetworkAssetSelectInput = ({
         supportedAssets = await getSupportedAssetsWithBalancesForChainId(
           preselectedNetwork.chainId,
           showPositiveBalanceAssets,
-          walletAddress,
+          walletAddress
         );
       } catch (e) {
         //
@@ -312,18 +313,21 @@ const NetworkAssetSelectInput = ({
 
       supportedAssets = supportedAssets.filter((supportedAsset) => {
         if (!hideAssets) return supportedAsset;
-        return !hideAssets.some((
-          hidden,
-        ) => hidden.chainId === preselectedNetwork.chainId && addressesEqual(hidden.address, supportedAsset.address));
+        return !hideAssets.some(
+          (hidden) =>
+            hidden.chainId === preselectedNetwork.chainId && addressesEqual(hidden.address, supportedAsset.address)
+        );
       });
 
       setSelectedNetworkAssets(supportedAssets);
       setIsLoadingAssets(false);
-    }
+    };
 
     updateSelectedNetworkAssets();
 
-    return () => { shouldUpdate = false; }
+    return () => {
+      shouldUpdate = false;
+    };
   }, [
     sdk,
     preselectedNetwork,
@@ -334,13 +338,16 @@ const NetworkAssetSelectInput = ({
   ]);
 
   const filteredSelectedNetworkAssets = useMemo(() => {
-    const filtered = selectedNetworkAssets.filter((asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery));
+    const filtered = selectedNetworkAssets.filter(
+      (asset) => containsText(asset.name, assetSearchQuery) || containsText(asset.symbol, assetSearchQuery)
+    );
     return orderBy(filtered, [(asset) => asset.balanceWorthUsd ?? 0, 'name'], ['desc', 'asc']);
   }, [selectedNetworkAssets, assetSearchQuery]);
 
   useEffect(() => {
     const updateAvalancheSmartWalletBalance = () => {
-      if (!preselectedNetwork ||
+      if (
+        !preselectedNetwork ||
         preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
         !filteredSelectedNetworkAssets.length ||
         isLoadingAssets
@@ -351,26 +358,18 @@ const NetworkAssetSelectInput = ({
         ...prev?.filter((element) => element.chain !== CHAIN_ID.AVALANCHE),
         {
           total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
-          title: supportedChains.filter(
-            (element) => element.chainId === CHAIN_ID.AVALANCHE
-          )[0].title,
+          title: supportedChains.filter((element) => element.chainId === CHAIN_ID.AVALANCHE)[0].title,
           chain: CHAIN_ID.AVALANCHE,
         },
       ]);
     };
     updateAvalancheSmartWalletBalance();
-  }, [
-    sdk,
-    supportedChains,
-    accountAddress,
-    preselectedNetwork,
-    filteredSelectedNetworkAssets,
-    isLoadingAssets,
-  ]);
+  }, [sdk, supportedChains, accountAddress, preselectedNetwork, filteredSelectedNetworkAssets, isLoadingAssets]);
 
   useEffect(() => {
     const updateAvalancheKeybasedBalance = () => {
-      if (!walletAddress ||
+      if (
+        !walletAddress ||
         !preselectedNetwork ||
         preselectedNetwork.chainId !== CHAIN_ID.AVALANCHE ||
         !filteredSelectedNetworkAssets.length ||
@@ -383,21 +382,13 @@ const NetworkAssetSelectInput = ({
         ...prev?.filter((element) => element.chain !== CHAIN_ID.AVALANCHE),
         {
           total: sumAssetsBalanceWorth(filteredSelectedNetworkAssets),
-          title: supportedChains.filter(
-            (element) => element.chainId === CHAIN_ID.AVALANCHE
-          )[0].title,
+          title: supportedChains.filter((element) => element.chainId === CHAIN_ID.AVALANCHE)[0].title,
           chain: CHAIN_ID.AVALANCHE,
         },
       ]);
     };
     updateAvalancheKeybasedBalance();
-  }, [
-    sdk,
-    supportedChains,
-    providerAddress,
-    preselectedNetwork,
-    filteredSelectedNetworkAssets,
-  ]);
+  }, [sdk, supportedChains, providerAddress, preselectedNetwork, filteredSelectedNetworkAssets]);
 
   const onListItemClick = (asset: IAssetWithBalance, amountBN?: BigNumber) => {
     if (onAssetSelect) onAssetSelect(asset, amountBN);
@@ -405,59 +396,52 @@ const NetworkAssetSelectInput = ({
     setShowSelectModal(false);
     setPreselectedNetwork(null);
     setAssetSearchQuery('');
-  }
+  };
 
-  const formatBalanceByChainByAccountType = (
-    supportedChain: Chain,
-    accType?: string
-  ) => {
-    if (
-      accType === DestinationWalletEnum.Contract &&
-      label === 'From' &&
-      smartWalletBalanceByChain?.length
-    ) {
-      let balanceByChain = smartWalletBalanceByChain.filter(
-        (item: any) => item.chain === supportedChain.chainId
-      );
+  const formatBalanceByChainByAccountType = (supportedChain: Chain, accType?: string) => {
+    if (accType === DestinationWalletEnum.Contract && label === 'From' && smartWalletBalanceByChain?.length) {
+      let balanceByChain = smartWalletBalanceByChain.filter((item: any) => item.chain === supportedChain.chainId);
       let displayBalance =
         smartWalletBalanceByChain?.length && balanceByChain.length
           ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
           : '';
       return displayBalance === ' · $0' ? '' : displayBalance;
-    } 
-    if (
-      accType === DestinationWalletEnum.Key &&
-      label === 'From' &&
-      keyBasedWalletBalanceByChain?.length
-    ) {
-      let balanceByChain = keyBasedWalletBalanceByChain.filter(
-        (item) => item.chain === supportedChain.chainId
-      );
+    }
+    if (accType === DestinationWalletEnum.Key && label === 'From' && keyBasedWalletBalanceByChain?.length) {
+      let balanceByChain = keyBasedWalletBalanceByChain.filter((item) => item.chain === supportedChain.chainId);
       let displayBalance =
         keyBasedWalletBalanceByChain?.length && balanceByChain.length
           ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
           : '';
       return displayBalance === ' · $0' ? '' : displayBalance;
     }
-    return ''
+    return '';
   };
 
   return (
-    <Wrapper hover={!showSelectModal} disabled={disabled} onClick={onSelectClick} expanded={showSelectModal} border wFull={wFull}>
+    <Wrapper
+      hover={!showSelectModal}
+      readOnly={readOnly}
+      disabled={disabled}
+      onClick={onSelectClick}
+      expanded={showSelectModal}
+      border
+      wFull={wFull}
+    >
       {!!label && <Label htmlFor={inputId}>{label}</Label>}
-      <SelectWrapper onClick={onSelectClick} disabled={disabled}>
-        {!showSelectModal && (
-          <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />
-        )}
-        {showSelectModal && (
-          <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />
-        )}
-      </SelectWrapper>
+      {!readOnly && (
+        <SelectWrapper onClick={onSelectClick} disabled={disabled}>
+          {!showSelectModal && (
+            <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />
+          )}
+          {showSelectModal && (
+            <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />
+          )}
+        </SelectWrapper>
+      )}
       {!showSelectModal && (!selectedAsset || !selectedNetwork) && (
         <SelectedOption onClick={onSelectClick} disabled={disabled}>
-          {
-            customMessage ?? "Select chain and token"
-          }
+          {customMessage ?? 'Select chain and token'}
         </SelectedOption>
       )}
       {!showSelectModal && !!selectedNetwork && !!selectedAsset && (
@@ -587,6 +571,6 @@ const NetworkAssetSelectInput = ({
       {!!errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
     </Wrapper>
   );
-}
+};
 
 export default NetworkAssetSelectInput;

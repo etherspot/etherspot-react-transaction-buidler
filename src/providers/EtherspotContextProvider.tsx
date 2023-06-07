@@ -16,7 +16,7 @@ import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { BigNumber, ethers } from 'ethers';
 
 import { EtherspotContext } from '../contexts';
-import { Chain, CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../utils/chain';
+import { Chain, CHAIN_ID, MAINNET_CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../utils/chain';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
@@ -83,6 +83,7 @@ const EtherspotContextProvider = ({
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
   const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
   const [keyBasedWalletBalanceByChain, setKeyBasedWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
+  const [environment, setEnvironment] = useState<string>(EtherspotEnvNames.MainNets);
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -117,7 +118,8 @@ const EtherspotContextProvider = ({
       if (!provider) return null;
 
       const networkName = CHAIN_ID_TO_NETWORK_NAME[sdkChainId];
-      const envName = EtherspotEnvNames.MainNets; // TODO: add testnet support
+      const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
+      const envName = MainnetIDs.includes(sdkChainId) ? EtherspotEnvNames.MainNets : EtherspotEnvNames.TestNets;
 
       if (!networkName) return null;
 
@@ -143,7 +145,7 @@ const EtherspotContextProvider = ({
     if (!chainId) return null;
 
     return getSdkForChainId(chainId);
-  }, [getSdkForChainId, chainId]);
+  }, [getSdkForChainId, chainId, environment]);
 
   const connect = useCallback(async () => {
     if (!sdk || isConnecting) return;
@@ -219,12 +221,18 @@ const EtherspotContextProvider = ({
         CHAIN_ID.BINANCE,
         CHAIN_ID.ETHEREUM_MAINNET,
         CHAIN_ID.POLYGON,
+        CHAIN_ID.OKTC
       ];
 
+      const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
       try {
-        assets = await sdk.getTokenListTokens({
-          name: chainsToUseNewAssets.includes(assetsChainId) ? 'EtherspotPopularTokens' : 'PillarTokens',
-        });
+        if (MainnetIDs.includes(assetsChainId)) {
+          assets = await sdk.getTokenListTokens({
+            name: chainsToUseNewAssets.includes(assetsChainId) ? 'EtherspotPopularTokens' : 'PillarTokens',
+          });
+        } else {
+          assets = await sdk.getTokenListTokens();
+        }
       } catch (e) {
         //
       }
@@ -236,7 +244,8 @@ const EtherspotContextProvider = ({
       // TODO: to be added back when DKU token is no longer needed. This is for the DKU testing.
       // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
       supportedAssetsPerChainId[assetsChainId] =
-        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset];
+        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset[CHAIN_ID.POLYGON]];
+
       return supportedAssetsPerChainId[assetsChainId];
     },
     [sdk]
@@ -614,6 +623,8 @@ const EtherspotContextProvider = ({
       updateWalletBalances,
       getRatesByNativeChainId,
       changeTheme,
+      environment,
+      setEnvironment
     }),
     [
       connect,
@@ -643,6 +654,8 @@ const EtherspotContextProvider = ({
       updateWalletBalances,
       getRatesByNativeChainId,
       changeTheme,
+      environment,
+      setEnvironment
     ]
   );
 
