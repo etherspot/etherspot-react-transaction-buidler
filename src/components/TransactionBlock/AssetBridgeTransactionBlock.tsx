@@ -62,6 +62,8 @@ const AssetBridgeTransactionBlock = ({
   errorMessages,
   values,
   multiCallData,
+  hideTitle = false,
+  hideWalletSwitch = false,
 }: IAssetBridgeTransactionBlock) => {
   const {
     sdk,
@@ -297,27 +299,29 @@ const AssetBridgeTransactionBlock = ({
 
   return (
     <>
-      <Title>Asset bridge</Title>
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          if (accountType !== selectedAccountType) {
-            setSelectedFromNetwork(null);
-            setSelectedFromAsset(null);
-            setSelectedToNetwork(null);
-            setSelectedToAsset(null);
-            setAvailableRoutes(null);
-            setSelectedRoute(null);
-          }
-          setSelectedAccountType(accountType);
-        }}
-        errorMessage={errorMessages?.accountType}
-        hideKeyBased={smartWalletOnly}
-        disabled={!!fixed || !!multiCallData}
-        showTotals
-        showHelperText
-      />
+      {!hideTitle && <Title>Asset bridge</Title>}
+      {!hideWalletSwitch && (
+        <AccountSwitchInput
+          label="From wallet"
+          selectedAccountType={selectedAccountType}
+          onChange={(accountType) => {
+            if (accountType !== selectedAccountType) {
+              setSelectedFromNetwork(null);
+              setSelectedFromAsset(null);
+              setSelectedToNetwork(null);
+              setSelectedToAsset(null);
+              setAvailableRoutes(null);
+              setSelectedRoute(null);
+            }
+            setSelectedAccountType(accountType);
+          }}
+          errorMessage={errorMessages?.accountType}
+          hideKeyBased={smartWalletOnly}
+          disabled={!!fixed || !!multiCallData}
+          showTotals
+          showHelperText
+        />
+      )}
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {

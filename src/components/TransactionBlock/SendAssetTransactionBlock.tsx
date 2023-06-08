@@ -38,6 +38,8 @@ const SendAssetTransactionBlock = ({
   errorMessages,
   values,
   multiCallData,
+  hideTitle = false,
+  hideWalletSwitch = false,
 }: ISendAssetTransactionBlock) => {
   const [receiverAddress, setReceiverAddress] = useState<string>(values?.receiverAddress ?? '');
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
@@ -130,25 +132,27 @@ const SendAssetTransactionBlock = ({
 
   return (
     <>
-      <Title>Send asset</Title>
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          if (accountType !== selectedAccountType) {
-            setSelectedNetwork(null);
-            setSelectedAsset(null);
-          }
-          setIsFromEtherspotWallet(accountType === AccountTypes.Contract);
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
-          setSelectedAccountType(accountType);
-        }}
-        hideKeyBased={smartWalletOnly}
-        errorMessage={errorMessages?.accountType}
-        disabled={!!fixed || !!multiCallData}
-        showTotals
-        showHelperText
-      />
+      {!hideTitle && <Title>Send asset</Title>}
+      {!hideWalletSwitch && (
+        <AccountSwitchInput
+          label="From wallet"
+          selectedAccountType={selectedAccountType}
+          onChange={(accountType) => {
+            if (accountType !== selectedAccountType) {
+              setSelectedNetwork(null);
+              setSelectedAsset(null);
+            }
+            setIsFromEtherspotWallet(accountType === AccountTypes.Contract);
+            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
+            setSelectedAccountType(accountType);
+          }}
+          hideKeyBased={smartWalletOnly}
+          errorMessage={errorMessages?.accountType}
+          disabled={!!fixed || !!multiCallData}
+          showTotals
+          showHelperText
+        />
+      )}
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {

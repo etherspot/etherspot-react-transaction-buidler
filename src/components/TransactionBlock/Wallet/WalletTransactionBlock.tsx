@@ -135,7 +135,6 @@ const WalletTransactionBlock = ({
         if (chain.chainId === CHAIN_ID.AVALANCHE) return;
 
         let collections = await getNftsForChainId(chain.chainId);
-        console.log(chain.title, collections);
 
         if (collections?.length) {
           const nfts: INft[] = [];
@@ -403,7 +402,11 @@ const WalletTransactionBlock = ({
             value={searchValue}
             onChange={({ target }) => setSearchValue(target.value)}
           />
-          {searchValue && <SearchIcon color={theme?.color?.background?.closeButton} onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchIcon>}
+          {searchValue && (
+            <SearchIcon color={theme?.color?.background?.closeButton} onClick={hideSearchBar}>
+              {WalletCloseSearchIcon}
+            </SearchIcon>
+          )}
         </SearchWrapper>
 
         <ChainButtonRow>

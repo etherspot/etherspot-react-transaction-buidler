@@ -143,6 +143,7 @@ const PlrStakingV2TransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
   values,
+  hideTitle = false,
 }: IPlrStakingV2Block) => {
   const {
     sdk,
@@ -550,7 +551,7 @@ const PlrStakingV2TransactionBlock = ({
 
   return (
     <>
-      <Title>Pillar Validator Staking</Title>
+    {!hideTitle && <Title>Pillar Validator Staking</Title>}
       <ContainerWrapper>
         <Container>
           <Text size={14}>
