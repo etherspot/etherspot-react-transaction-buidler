@@ -25,6 +25,8 @@ export type ITransactionBlockBase = {
   title?: string;
   errorMessages?: ErrorMessages;
   multiCallData?: IMultiCallData | null;
+  hideTitle?: boolean;
+  hideWalletSwitch?: boolean;
 };
 
 export type ITransactionBlockType =

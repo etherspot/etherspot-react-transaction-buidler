@@ -66,7 +66,19 @@ export interface TransactionBuilderContextProps {
   hiddenTransactionBlockTypes?: ITransactionBlockType[];
   hideAddTransactionButton?: boolean;
   showMenuLogout?: boolean;
+
+  removeTransactionBlockContainer?: boolean;
   hideWalletBlock?: boolean;
+  hideWalletBlockNavigation?: boolean;
+  hideTopNavigation?: boolean;
+  hideWalletToggle?: boolean;
+  hideBuyButton?: boolean;
+  hideStatus?: boolean;
+  hideSettingsButton?: boolean;
+  hideAddButton?: boolean;
+  hideCloseTransactionBlockButton?: boolean;
+  hideTransactionBlockTitle?: boolean;
+  hideWalletSwitch?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -167,13 +179,15 @@ const MultiCallButton = styled(PrimaryButton)`
   color: #fff;
 `;
 
-const TransactionBlocksWrapper = styled.div.attrs((props: { highlight: boolean }) => props)`
+const TransactionBlocksWrapper = styled.div.attrs(
+  (props: { highlight?: boolean; transparentBackground?: boolean }) => props
+)`
   ${({ theme, highlight }) =>
     !!highlight &&
     `margin: -10px; padding: 10px; border-radius: 18px; background-color: ${theme.color.background.secondary};`};
   margin-bottom: 20px;
 
-  background: ${({ theme }) => theme.color.background.cardBorder};
+  ${({ theme, transparentBackground }) => !transparentBackground && `background: ${theme.color.background.cardBorder}`};
   padding: 1px;
   border-radius: 12px;
 `;
@@ -329,7 +343,18 @@ const TransactionBuilderContextProvider = ({
   hiddenTransactionBlockTypes,
   hideAddTransactionButton,
   showMenuLogout,
+  removeTransactionBlockContainer = false,
   hideWalletBlock = false,
+  hideWalletBlockNavigation = false,
+  hideTopNavigation = false,
+  hideWalletToggle = false,
+  hideBuyButton = false,
+  hideStatus = false,
+  hideSettingsButton = false,
+  hideAddButton = false,
+  hideCloseTransactionBlockButton = false,
+  hideTransactionBlockTitle = false,
+  hideWalletSwitch = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -367,11 +392,19 @@ const TransactionBuilderContextProvider = ({
 
   useEffect(() => {
     setShowWalletBlock(false);
-    setTransactionBlocks([]);
     setTimeout(() => {
-      setShowWalletBlock(true);
+      if (defaultShowWallet) setShowWalletBlock(true);
     }, 2000);
   }, [environment]);
+
+  // Check for dynamic changes from parent
+  useEffect(() => {
+    const mappedDefaultTransactionBlocks = defaultTransactionBlocks
+      ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
+      : [];
+    setShowWalletBlock(!mappedDefaultTransactionBlocks?.length);
+    setTransactionBlocks(mappedDefaultTransactionBlocks);
+  }, [hideWalletBlock, defaultTransactionBlocks]);
 
   // Change copy icon back
   useInterval(() => {
@@ -1118,51 +1151,63 @@ const TransactionBuilderContextProvider = ({
 
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
-      <TopNavigation>
-        <WalletAddressesWrapper>
-          <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
-            <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
-              <TbWallet size={16} />
-            </Text>
-            {accountAddress ? (
-              <>
-                <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
-                  Wallet
+      {!hideTopNavigation && (
+        <TopNavigation>
+          <WalletAddressesWrapper>
+            {!hideWalletToggle && (
+              <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
+                <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
+                  <TbWallet size={16} />
                 </Text>
-                <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)}>
-                  {copiedAddress ? (
-                    <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
-                  ) : (
-                    <TbCopy size={16} color={theme.color?.text?.topMenuWallet} />
-                  )}
-                </Text>
-              </>
-            ) : (
-              <Text onClick={connect}>Wallet</Text>
+                {accountAddress ? (
+                  <>
+                    <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
+                      Wallet
+                    </Text>
+                    <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)}>
+                      {copiedAddress ? (
+                        <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
+                      ) : (
+                        <TbCopy size={16} color={theme.color?.text?.topMenuWallet} />
+                      )}
+                    </Text>
+                  </>
+                ) : (
+                  <Text onClick={connect}>Wallet</Text>
+                )}
+              </WalletAddress>
             )}
-          </WalletAddress>
-          {accountAddress && (
-            <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
-              {deployingAccount ? 'Deploying...' : 'Buy'}
-            </WalletAddress>
+            {!hideBuyButton && accountAddress && (
+              <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
+                {deployingAccount ? 'Deploying...' : 'Buy'}
+              </WalletAddress>
+            )}
+          </WalletAddressesWrapper>
+          {!hideStatus && <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>}
+          {!hideSettingsButton && (
+            <SettingsWrapper>
+              <ConnectionIcon isConnected={!!accountAddress} />
+              <SettingMenu showLogout={showMenuLogout} logout={logout} />
+            </SettingsWrapper>
           )}
-        </WalletAddressesWrapper>
-        <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>
-        <SettingsWrapper>
-          <ConnectionIcon isConnected={!!accountAddress} />
-          <SettingMenu showLogout={showMenuLogout} logout={logout} />
-        </SettingsWrapper>
-      </TopNavigation>
+        </TopNavigation>
+      )}
       <div>
         {/* Wallet */}
         {showWalletBlock && accountAddress && (
-          <TransactionBlocksWrapper>
-            <Card onCloseButtonClick={() => setShowWalletBlock(false)} showCloseButton>
+          <TransactionBlocksWrapper transparentBackground={removeTransactionBlockContainer}>
+            <Card
+              onCloseButtonClick={() => setShowWalletBlock(false)}
+              showCloseButton={!hideCloseTransactionBlockButton}
+              removeContainer={removeTransactionBlockContainer}
+            >
               <WalletTransactionBlock
                 availableTransactionBlocks={availableTransactionBlocks}
                 hasTransactionBlockAdded={hasTransactionBlockAdded}
                 addTransactionBlock={addTransactionBlock}
                 hideWalletBlock={() => setShowWalletBlock(false)}
+                hideWalletBlockNavigation={hideWalletBlockNavigation}
+                hideTransactionBlockTitle={hideTransactionBlockTitle}
               />
             </Card>
           </TransactionBlocksWrapper>
@@ -1176,6 +1221,7 @@ const TransactionBuilderContextProvider = ({
                   !!crossChainActionInProcessing?.batchTransactions?.length &&
                   !!crossChainActionInProcessing.multiCallData
                 }
+                transparentBackground={removeTransactionBlockContainer}
               >
                 {!!crossChainActionInProcessing?.batchTransactions?.length &&
                   !!crossChainActionInProcessing.multiCallData && (
@@ -1226,7 +1272,8 @@ const TransactionBuilderContextProvider = ({
                     onCloseButtonClick={() => {
                       setShowMulticallOptions(null);
                     }}
-                    showCloseButton
+                    showCloseButton={!hideCloseTransactionBlockButton}
+                    removeContainer={removeTransactionBlockContainer}
                   >
                     {availableMulticallBlocks
                       .filter((block) => !block.hideFor?.includes(lastTxType.type))
@@ -1393,7 +1440,10 @@ const TransactionBuilderContextProvider = ({
               };
 
               return (
-                <TransactionBlocksWrapper highlight={!!multiCallBlocks?.length}>
+                <TransactionBlocksWrapper
+                  highlight={!!multiCallBlocks?.length}
+                  transparentBackground={removeTransactionBlockContainer}
+                >
                   {!!multiCallBlocks?.length ? (
                     multiCallBlocks?.map((multiCallBlock, j) => {
                       return (
@@ -1409,14 +1459,18 @@ const TransactionBuilderContextProvider = ({
                           }
                           // Should only have the option to delete last multicall, any change mid structure should reset the entire block
                           showCloseButton={
-                            (multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) ||
-                            (multiCallBlocks.length === 1 && !editingTransactionBlock)
+                            !hideCloseTransactionBlockButton &&
+                            ((multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) ||
+                              (multiCallBlocks.length === 1 && !editingTransactionBlock))
                           }
+                          removeContainer={removeTransactionBlockContainer}
                         >
                           <TransactionBlock
                             key={`block-${multiCallBlock.id}`}
                             {...multiCallBlock}
                             errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                            hideTitle={hideTransactionBlockTitle}
+                            hideWalletSwitch={hideWalletSwitch}
                           />
                           {j === multiCallBlocks.length - 1 &&
                             multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
@@ -1450,12 +1504,15 @@ const TransactionBuilderContextProvider = ({
                           current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
                         )
                       }
-                      showCloseButton={!editingTransactionBlock}
+                      showCloseButton={!hideCloseTransactionBlockButton && !editingTransactionBlock}
+                      removeContainer={removeTransactionBlockContainer}
                     >
                       <TransactionBlock
                         key={`block-${transactionBlock.id}`}
                         {...transactionBlock}
                         errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                        hideTitle={hideTransactionBlockTitle}
+                        hideWalletSwitch={hideWalletSwitch}
                       />
                       {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                         transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
@@ -1485,15 +1542,12 @@ const TransactionBuilderContextProvider = ({
                 </TransactionBlocksWrapper>
               );
             })}
-            {!showTransactionBlockSelect &&
-              !hideAddTransactionButton &&
-              !editingTransactionBlock &&
-              !showWalletBlock && (
-                <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
-                  <AiOutlinePlusCircle size={24} />
-                  <span>Add transaction</span>
-                </AddTransactionButton>
-              )}
+            {!hideAddButton && !showTransactionBlockSelect && !hideAddTransactionButton && !editingTransactionBlock && (
+              <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
+                <AiOutlinePlusCircle size={24} />
+                <span>Add transaction</span>
+              </AddTransactionButton>
+            )}
             {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
               <>
                 <br />
@@ -1529,7 +1583,11 @@ const TransactionBuilderContextProvider = ({
               </SecondaryButton>
             )}
             {showTransactionBlockSelect && (
-              <Card onCloseButtonClick={() => setShowTransactionBlockSelect(false)} showCloseButton>
+              <Card
+                onCloseButtonClick={() => setShowTransactionBlockSelect(false)}
+                showCloseButton={!hideCloseTransactionBlockButton}
+                removeContainer={removeTransactionBlockContainer}
+              >
                 {availableTransactionBlocks
                   .filter(
                     (availableTransactionBlock) =>
@@ -1672,7 +1730,10 @@ const TransactionBuilderContextProvider = ({
               };
 
               return (
-                <TransactionBlocksWrapper highlight={!!multiCallBlocks.length}>
+                <TransactionBlocksWrapper
+                  highlight={!!multiCallBlocks.length}
+                  transparentBackground={removeTransactionBlockContainer}
+                >
                   {!!multiCallBlocks.length && <TransactionBlocksWrapperIcon>{ChainIcon}</TransactionBlocksWrapperIcon>}
                   {actionPreview(crossChainAction)}
                 </TransactionBlocksWrapper>

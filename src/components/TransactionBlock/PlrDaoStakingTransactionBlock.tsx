@@ -25,7 +25,14 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 // utils
 import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
-import { Chain, supportedChains, plrDaoMemberNft, CHAIN_ID, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID } from '../../utils/chain';
+import {
+  Chain,
+  supportedChains,
+  plrDaoMemberNft,
+  CHAIN_ID,
+  MAINNET_CHAIN_ID,
+  TESTNET_CHAIN_ID,
+} from '../../utils/chain';
 import { plrDaoAsset, testPlrDaoAsset } from '../../utils/asset';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
@@ -164,6 +171,7 @@ const PlrDaoStakingTransactionBlock = ({
   errorMessages,
   values,
   multiCallData,
+  hideTitle = false,
 }: IPlrDaoStakingMembershipBlock) => {
   const {
     smartWalletOnly,
@@ -173,7 +181,7 @@ const PlrDaoStakingTransactionBlock = ({
     getSupportedAssetsWithBalancesForChainId,
     getRatesByNativeChainId,
     getNftsForChainId,
-    environment
+    environment,
   } = useEtherspot();
 
   const [amount, setAmount] = useState<string>('');
@@ -200,15 +208,17 @@ const PlrDaoStakingTransactionBlock = ({
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
   const STAKING_CHAIN_ID =
-  environment === EtherspotEnvNames.MainNets ? MAINNET_CHAIN_ID.POLYGON : TESTNET_CHAIN_ID.POLYGON;
+    environment === EtherspotEnvNames.MainNets ? MAINNET_CHAIN_ID.POLYGON : TESTNET_CHAIN_ID.POLYGON;
 
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
   const enableAssetBridge =
-    selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON && selectedFromAsset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol;
+    selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON &&
+    selectedFromAsset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol;
   const enableAssetSwap = selectedFromAsset?.symbol !== testPlrDaoAsset[STAKING_CHAIN_ID].symbol;
-  
-  const toAsset = enableAssetBridge || enableAssetSwap ? testPlrDaoAsset[STAKING_CHAIN_ID] : plrDaoMemberNft[STAKING_CHAIN_ID];
+
+  const toAsset =
+    enableAssetBridge || enableAssetSwap ? testPlrDaoAsset[STAKING_CHAIN_ID] : plrDaoMemberNft[STAKING_CHAIN_ID];
 
   const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
 
@@ -258,7 +268,7 @@ const PlrDaoStakingTransactionBlock = ({
       });
     }
   }, [selectedFromNetwork]);
-  
+
   const updateAvailableRoutes = useCallback(
     debounce(async () => {
       setSelectedRoute(null);
@@ -406,7 +416,9 @@ const PlrDaoStakingTransactionBlock = ({
         getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
       ]);
       const nftCollection = [...providerAddressNfts, ...accountAddressNfts];
-      setIsNFTMember(nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)));
+      setIsNFTMember(
+        nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address))
+      );
     } catch (error) {
       //
     }
@@ -554,7 +566,7 @@ const PlrDaoStakingTransactionBlock = ({
   if (isNFTMember) {
     return (
       <>
-        <Title>Pillar DAO Staking</Title>
+        {!hideTitle && <Title>Pillar DAO Staking</Title>}
         <ContainerWrapper>
           <Container>
             <Text size={18} color={theme?.color?.text?.tokenValue}>
@@ -594,7 +606,7 @@ const PlrDaoStakingTransactionBlock = ({
 
   return (
     <>
-      <Title>Stake into Pillar DAO</Title>
+      {!hideTitle && <Title>Stake into Pillar DAO</Title>}
       <ContainerWrapper>
         <Container>
           <Text size={16}>
