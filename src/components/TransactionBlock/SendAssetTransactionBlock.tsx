@@ -23,6 +23,7 @@ export interface ISendAssetTransactionBlockValues {
   amount?: string;
   isFromEtherspotWallet?: boolean;
   accountType?: string;
+  disableReceiverAddressInput?: boolean;
 }
 
 const Title = styled.h3`
@@ -45,6 +46,9 @@ const SendAssetTransactionBlock = ({
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedAsset, setSelectedAsset] = useState<IAssetWithBalance | null>(values?.selectedAsset ?? null);
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
+  const [disableReceiverAddressInput, setDisableReceiverAddressInput] = useState<boolean>(
+    values?.disableReceiverAddressInput ?? false
+  );
   const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(values?.isFromEtherspotWallet ?? true);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(
     values?.isFromEtherspotWallet ?? true ? AccountTypes.Contract : AccountTypes.Key
@@ -111,6 +115,7 @@ const SendAssetTransactionBlock = ({
         isFromEtherspotWallet,
         fromAddress: (isFromEtherspotWallet ? accountAddress : providerAddress) as string,
         accountType: selectedAccountType,
+        disableReceiverAddressInput,
       },
       multiCallData || undefined
     );
@@ -214,7 +219,7 @@ const SendAssetTransactionBlock = ({
         displayLabelOutside
         smallerInput
         showPasteButton
-        disabled={!!fixed}
+        disabled={!!fixed || disableReceiverAddressInput}
       />
     </>
   );

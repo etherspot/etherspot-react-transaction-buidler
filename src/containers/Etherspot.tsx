@@ -29,6 +29,7 @@ interface EtherspotProps {
   removeOuterContainer?: boolean;
   removeTransactionBlockContainer?: boolean;
   hideWalletBlock?: boolean;
+  hideWalletBlockNavigation?: boolean;
   hideTopNavigation?: boolean;
   hideWalletToggle?: boolean;
   hideBuyButton?: boolean;
@@ -89,6 +90,7 @@ const Etherspot = ({
   removeOuterContainer = false,
   removeTransactionBlockContainer = false,
   hideWalletBlock = false,
+  hideWalletBlockNavigation = false,
   hideTopNavigation = false,
   hideWalletToggle = false,
   hideBuyButton = false,
@@ -138,6 +140,7 @@ const Etherspot = ({
                 hideAddTransactionButton={hideAddTransactionButton}
                 showMenuLogout={showMenuLogout}
                 hideWalletBlock={hideWalletBlock}
+                hideWalletBlockNavigation={hideWalletBlockNavigation}
                 hideTopNavigation={hideTopNavigation}
                 hideWalletToggle={hideWalletToggle}
                 hideBuyButton={hideBuyButton}

@@ -68,6 +68,7 @@ export interface TransactionBuilderContextProps {
 
   removeTransactionBlockContainer?: boolean;
   hideWalletBlock?: boolean;
+  hideWalletBlockNavigation?: boolean;
   hideTopNavigation?: boolean;
   hideWalletToggle?: boolean;
   hideBuyButton?: boolean;
@@ -338,6 +339,7 @@ const TransactionBuilderContextProvider = ({
   showMenuLogout,
   removeTransactionBlockContainer = false,
   hideWalletBlock = false,
+  hideWalletBlockNavigation = false,
   hideTopNavigation = false,
   hideWalletToggle = false,
   hideBuyButton = false,
@@ -388,6 +390,15 @@ const TransactionBuilderContextProvider = ({
       if (defaultShowWallet) setShowWalletBlock(true);
     }, 2000);
   }, [environment]);
+
+  // Check for dynamic changes from parent
+  useEffect(() => {
+    const mappedDefaultTransactionBlocks = defaultTransactionBlocks
+      ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
+      : [];
+    setShowWalletBlock(!mappedDefaultTransactionBlocks?.length);
+    setTransactionBlocks(mappedDefaultTransactionBlocks);
+  }, [hideWalletBlock, defaultTransactionBlocks]);
 
   // Change copy icon back
   useInterval(() => {
@@ -1058,6 +1069,8 @@ const TransactionBuilderContextProvider = ({
                 hasTransactionBlockAdded={hasTransactionBlockAdded}
                 addTransactionBlock={addTransactionBlock}
                 hideWalletBlock={() => setShowWalletBlock(false)}
+                hideWalletBlockNavigation={hideWalletBlockNavigation}
+                hideTransactionBlockTitle={hideTransactionBlockTitle}
               />
             </Card>
           </TransactionBlocksWrapper>
@@ -1319,6 +1332,8 @@ const TransactionBuilderContextProvider = ({
                             key={`block-${multiCallBlock.id}`}
                             {...multiCallBlock}
                             errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                            hideTitle={hideTransactionBlockTitle}
+                            hideWalletSwitch={hideWalletSwitch}
                           />
                           {j === multiCallBlocks.length - 1 &&
                             multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
