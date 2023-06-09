@@ -796,8 +796,6 @@ const TransactionBuilderContextProvider = ({
         return;
       }
 
-      console.log('jshgsg', result?.transactionHash);
-
       crossChainAction.transactions.map((transaction) => {
         transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
         transaction.submitTimestamp = Date.now();
@@ -867,8 +865,6 @@ const TransactionBuilderContextProvider = ({
         GNOSIS_USDC_CONTRACT_ADDRESS
       );
 
-      console.log('RESULTHASH', result);
-
       if (result?.errorMessage || !result?.transactionHash?.length) {
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
@@ -915,7 +911,6 @@ const TransactionBuilderContextProvider = ({
   };
 
   const resetTransactionBlockFieldValidationError = (transactionBlockId: string, field: string) => {
-    console.log('transactionBlockId', transactionBlockId);
     setTransactionBlockValidationErrors((current) => ({
       ...current,
       [transactionBlockId]: { ...current?.[transactionBlockId], [field]: '' },

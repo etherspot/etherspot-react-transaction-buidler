@@ -596,7 +596,7 @@ export const honeyswapLP = async (
     return { result: { transactions, provider: 'LiFi' } };
   } catch (error) {
     console.log('errorPPP', error instanceof Error ? error.message : error);
-    return { errorMessage: 'Failed build transaction 2!' };
+    return { errorMessage: 'Failed to build transaction!' };
   }
 };
 
@@ -1200,7 +1200,7 @@ export const buildCrossChainAction = async (
               routeToUSDC.fromAmount
             );
             if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-              return { errorMessage: 'Failed build bridge approval transaction!' };
+              return { errorMessage: 'Failed to build bridge approval transaction!' };
             }
 
             const approvalTransaction = {
@@ -1213,8 +1213,6 @@ export const buildCrossChainAction = async (
 
             transactions = [approvalTransaction, ...transactions];
           }
-
-          console.log('sksksk', offer1, offer2);
 
           // Swap 1 Start //
           destinationTxns = [
@@ -1257,8 +1255,6 @@ export const buildCrossChainAction = async (
           );
 
           if (honeySwapTransaction.errorMessage) return { errorMessage: honeySwapTransaction.errorMessage };
-
-          console.log('destinationTxns1Swap+', destinationTxns);
 
           if (honeySwapTransaction.result?.transactions?.length) {
             destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
@@ -1776,7 +1772,6 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     }
 
     sdk.clearGatewayBatch();
-    console.log('RESULT_0', transactions);
 
     // sequential
     for (const transaction of transactions) {
@@ -1799,7 +1794,6 @@ export const submitEtherspotAndWaitForTransactionHash = async (
           rxjsMap(async (notification) => {
             if (notification.type === NotificationTypes.GatewayBatchUpdated) {
               const submittedBatch = await sdk.getGatewaySubmittedBatch({ hash: result.hash });
-              console.log('RESULT_2', submittedBatch);
 
               const failedStates = [
                 GatewayTransactionStates.Canceling,
@@ -1974,7 +1968,6 @@ export const estimateCrossChainAction = async (
   if (!sdk || (crossChainAction.useWeb3Provider && !web3Provider)) {
     return { errorMessage: 'Failed to estimate!' };
   }
-  console.log('gasTokenUsed', crossChainAction.gasTokenAddress);
   let feeAssetBalanceBN = ethers.BigNumber.from(0);
   try {
     const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
@@ -2063,7 +2056,6 @@ export const estimateCrossChainAction = async (
           : crossChainAction.gasTokenAddress;
 
       const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
-      console.log('ESTIMATION__', gatewayBatchEstimation);
       gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
       feeAmount = feeToken ? gatewayBatchEstimation.feeAmount : null;
     } catch (e) {

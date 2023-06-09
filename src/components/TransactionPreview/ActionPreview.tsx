@@ -259,6 +259,12 @@ const TransactionStatus = ({
       return;
     }
 
+    if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP && !approvalTransaction) {
+      setIsGettingExplorerLink(false);
+      previewTransaction(crossChainAction.transactionHash, approvalTransaction);
+      return;
+    }
+
     const sdk = getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
       alert('The transaction hash is not yet available. Please try again later.');

@@ -256,11 +256,11 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         }
       }
 
-      const skdOnXdai = getSdkForChainId(CHAIN_ID.XDAI);
+      const sdkOnXdai = getSdkForChainId(CHAIN_ID.XDAI);
 
-      if (!skdOnXdai) return;
+      if (!sdkOnXdai) return;
 
-      const data = await skdOnXdai.getGatewayGasInfo();
+      const data = await sdkOnXdai.getGatewayGasInfo();
 
       const convertedData = utils.formatEther(data.fast.mul('1000000'));
       const nativePrice = await getNativeAssetPriceInUsd(CHAIN_ID.XDAI);
@@ -295,45 +295,39 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
       const tknAmt = String(Number(halfOfRemainingAmount) / 1000000);
-      console.log('TOKENAMOUNT', tknAmt);
       setTokenOneAmount(tknAmt);
       setTokenTwoAmount(tknAmt);
 
       try {
         // needed computed account address before calling getExchangeOffers
-        await skdOnXdai.computeContractAccount();
+        await sdkOnXdai.computeContractAccount();
 
-        const offers = await skdOnXdai.getExchangeOffers({
+        const offers = await sdkOnXdai.getExchangeOffers({
           fromChainId: CHAIN_ID.XDAI,
           fromAmount: halfOfRemainingAmount,
           fromTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
           toTokenAddress: selectedToken1Asset.address,
         });
 
-        console.log('Offers1', offers[0]);
         setSelectedOffer1(offers[0]);
-        // return offers;
-      } catch (e) {
-        console.log('Offers1', e);
+      } catch {
         //
       }
 
       try {
         // needed computed account address before calling getExchangeOffers
-        if (!accountAddress) await skdOnXdai.computeContractAccount();
+        if (!accountAddress) await sdkOnXdai.computeContractAccount();
 
-        const offers = await skdOnXdai.getExchangeOffers({
+        const offers = await sdkOnXdai.getExchangeOffers({
           fromChainId: CHAIN_ID.XDAI,
           fromAmount: halfOfRemainingAmount,
           fromTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
           toTokenAddress: selectedToken2Asset.address,
         });
 
-        console.log('Offers2', offers);
         setSelectedOffer2(offers[0]);
         // return offers;
-      } catch (e) {
-        console.log('Offers2', e);
+      } catch {
         //
       }
     }, 200),
@@ -414,7 +408,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         <NetworkAssetSelectInput
           wFull
           label="Token 1"
-          selectedNetwork={supportedChains.filter((chain) => chain.chainId === CHAIN_ID.XDAI)[0]}
+          selectedNetwork={supportedChains.find((chain) => chain.chainId === CHAIN_ID.XDAI)}
           selectedAsset={selectedToken1Asset}
           onAssetSelect={(asset) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'toToken1');
@@ -429,7 +423,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         <NetworkAssetSelectInput
           wFull
           label="Token 2"
-          selectedNetwork={supportedChains.filter((chain) => chain.chainId === CHAIN_ID.XDAI)[0]}
+          selectedNetwork={supportedChains.find((chain) => chain.chainId === CHAIN_ID.XDAI)}
           selectedAsset={selectedToken2Asset}
           onAssetSelect={(asset) => {
             resetTransactionBlockFieldValidationError(transactionBlockId, 'toToken2');

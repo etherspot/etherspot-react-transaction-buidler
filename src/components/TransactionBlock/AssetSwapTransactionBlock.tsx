@@ -155,8 +155,6 @@ const AssetSwapTransactionBlock = ({
           toTokenAddress: selectedToAsset.address,
         });
 
-        console.log("gsgsgs", offers)
-
         return offers;
       } catch (e) {
         //
@@ -405,7 +403,7 @@ const AssetSwapTransactionBlock = ({
           setSelectedFromAsset(asset);
 
           const amountTo = amountBN ? formatMaxAmount(amountBN, asset.decimals) : '';
-          
+
           setAmount(amountTo);
         }}
         onNetworkSelect={(network) => {
