@@ -50,6 +50,8 @@ export interface IWalletTransactionBlock {
   hasTransactionBlockAdded: boolean;
   addTransactionBlock: (block: ITransactionBlock, isBridgeDisabled: boolean, isKlimaIncluded: boolean) => void;
   hideWalletBlock: () => void;
+  hideTransactionBlockTitle?: boolean;
+  hideWalletBlockNavigation?: boolean;
 }
 
 const WalletTransactionBlock = ({
@@ -58,6 +60,8 @@ const WalletTransactionBlock = ({
   hasTransactionBlockAdded,
   addTransactionBlock,
   hideWalletBlock,
+  hideTransactionBlockTitle = false,
+  hideWalletBlockNavigation = false,
 }: IWalletTransactionBlock) => {
   const [refreshCount, setRefreshCount] = useState(0);
 
@@ -355,36 +359,38 @@ const WalletTransactionBlock = ({
 
   return (
     <>
-      <Title>{`$${formatAmountDisplay(walletTotal)}`}</Title>
-      <ButtonRow>
-        <ActionButtonWrapper onClick={handleDepositButton}>
-          <ActionButton>{WalletDepositIcon}</ActionButton>
-          <ActionButtonText>Deposit</ActionButtonText>
-        </ActionButtonWrapper>
+      {!hideTransactionBlockTitle && <Title>{`$${formatAmountDisplay(walletTotal)}`}</Title>}
+      {!hideWalletBlockNavigation && (
+        <ButtonRow>
+          <ActionButtonWrapper onClick={handleDepositButton}>
+            <ActionButton>{WalletDepositIcon}</ActionButton>
+            <ActionButtonText>Deposit</ActionButtonText>
+          </ActionButtonWrapper>
 
-        <ActionButtonWrapper onClick={handleSendButton}>
-          <ActionButton>{WalletSendIcon}</ActionButton>
-          <ActionButtonText>Send</ActionButtonText>
-        </ActionButtonWrapper>
+          <ActionButtonWrapper onClick={handleSendButton}>
+            <ActionButton>{WalletSendIcon}</ActionButton>
+            <ActionButtonText>Send</ActionButtonText>
+          </ActionButtonWrapper>
 
-        <ActionButtonWrapper onClick={handleWithdrawButton}>
-          <ActionButton>{WalletWithdrawIcon}</ActionButton>
-          <ActionButtonText>Withdraw</ActionButtonText>
-        </ActionButtonWrapper>
+          <ActionButtonWrapper onClick={handleWithdrawButton}>
+            <ActionButton>{WalletWithdrawIcon}</ActionButton>
+            <ActionButtonText>Withdraw</ActionButtonText>
+          </ActionButtonWrapper>
 
-        <ActionButtonWrapper onClick={() => handleActionButton(TRANSACTION_BLOCK_TYPE.ASSET_SWAP)}>
-          <ActionButton>{WalletSwapIcon}</ActionButton>
-          <ActionButtonText>Swap</ActionButtonText>
-        </ActionButtonWrapper>
+          <ActionButtonWrapper onClick={() => handleActionButton(TRANSACTION_BLOCK_TYPE.ASSET_SWAP)}>
+            <ActionButton>{WalletSwapIcon}</ActionButton>
+            <ActionButtonText>Swap</ActionButtonText>
+          </ActionButtonWrapper>
 
-        <ActionButtonWrapper
-          disabled={!!hasTransactionBlockAdded}
-          onClick={() => handleActionButton(TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE)}
-        >
-          <ActionButton>{WalletBridgeIcon}</ActionButton>
-          <ActionButtonText>Bridge</ActionButtonText>
-        </ActionButtonWrapper>
-      </ButtonRow>
+          <ActionButtonWrapper
+            disabled={!!hasTransactionBlockAdded}
+            onClick={() => handleActionButton(TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE)}
+          >
+            <ActionButton>{WalletBridgeIcon}</ActionButton>
+            <ActionButtonText>Bridge</ActionButtonText>
+          </ActionButtonWrapper>
+        </ButtonRow>
+      )}
 
       <SwitchInput
         options={Object.values(tabOptions).map((tabs) => tabs)}
