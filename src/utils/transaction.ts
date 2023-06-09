@@ -39,7 +39,11 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { PLR_DAO_CONTRACT_PER_CHAIN, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import {
+  PLR_DAO_CONTRACT_PER_CHAIN,
+  PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
+  POLYGON_USDC_CONTRACT_ADDRESS,
+} from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 import { UNISWAP_ROUTER_ABI } from '../constants/uniswapRouterAbi';
 import { UniswapV2RouterContract } from '../contracts/UniswapV2Router';
@@ -420,8 +424,6 @@ export const honeyswapLP = async (
 ) => {
   if (!sdk) return { errorMessage: 'No sdk found' };
 
-  console.log('INFOLPP', amount1, amount2, tokenAddress1, tokenAddress2);
-
   // this is USDC on XDAI
   const fromAssetAddress = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
 
@@ -483,7 +485,7 @@ export const honeyswapLP = async (
 
     const ContractInterfaceEth = new ethers.utils.Interface(uniswapV2AbiAddLiquidityETH);
 
-    console.log("ETHERSPOT::2")
+    console.log('ETHERSPOT::2', amountMin2, amountMin1);
 
     let encodedEthData = null;
 
@@ -498,7 +500,7 @@ export const honeyswapLP = async (
       ]);
     }
 
-    console.log("ETHERSPOT::3")
+    console.log('ETHERSPOT::3');
 
     if (isZeroAddress(tokenAddress2)) {
       encodedEthData = ContractInterfaceEth.encodeFunctionData('addLiquidityETH', [
@@ -510,8 +512,6 @@ export const honeyswapLP = async (
         createTimestamp,
       ]);
     }
-
-    console.log("ETHERSPOT::4")
 
     const encodedData = ContractInterface.encodeFunctionData('addLiquidity', [
       tokenAddress1,
@@ -538,7 +538,7 @@ export const honeyswapLP = async (
         type: 'function',
       },
     ];
-    console.log("ETHERSPOT::5")
+    console.log('ETHERSPOT::5');
 
     const ERC20Intance = new ethers.utils.Interface(approveAbi);
 
@@ -578,7 +578,7 @@ export const honeyswapLP = async (
           to: contractAddress,
           data: encodedEthData,
           chainId: CHAIN_ID.XDAI,
-          value: '0',
+          value: isZeroAddress(tokenAddress1) ? amount1 : amount2,
           createTimestamp,
           status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
         }
@@ -586,15 +586,15 @@ export const honeyswapLP = async (
 
     const isAnyTokenAddressZero = isZeroAddress(tokenAddress1) || isZeroAddress(tokenAddress2);
 
-    let transactions : any[] = [];
+    let transactions: any[] = [];
 
     if (isZeroAddress(tokenAddress1)) {
       transactions = [newApprovalTransaction2];
     } else if (isZeroAddress(tokenAddress2)) {
       transactions = [newApprovalTransaction1];
+    } else {
+      transactions = [newApprovalTransaction1, newApprovalTransaction2];
     }
-
-    console.log("transactionsXXX", transactions)
 
     if (isAnyTokenAddressZero && newNativeTokenEndodedData) {
       transactions = [...transactions, newNativeTokenEndodedData];
@@ -1179,8 +1179,6 @@ export const buildCrossChainAction = async (
         try {
           let destinationTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
-
-          console.log("ETHERSPOT:::8")
 
           const [firstStep] = routeToUSDC.steps;
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
