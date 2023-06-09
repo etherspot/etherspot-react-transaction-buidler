@@ -40,6 +40,7 @@ import {
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
 import {
+  GNOSIS_USDC_CONTRACT_ADDRESS,
   PLR_DAO_CONTRACT_PER_CHAIN,
   PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
   POLYGON_USDC_CONTRACT_ADDRESS,
@@ -424,14 +425,9 @@ export const honeyswapLP = async (
 ) => {
   if (!sdk) return { errorMessage: 'No sdk found' };
 
-  // this is USDC on XDAI
-  const fromAssetAddress = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
-
   const contractAddress = '0x1C232F01118CB8B424793ae03F870aa7D0ac7f77';
 
   const createTimestamp = Date.now() + 100;
-
-  // const uniswapV2Contract = new UniswapV2RouterContract(fromAssetAddress);
 
   try {
     const amountMin1 = (Number(amount1) - Number(amount1) * 0.05).toFixed(0);
@@ -485,8 +481,6 @@ export const honeyswapLP = async (
 
     const ContractInterfaceEth = new ethers.utils.Interface(uniswapV2AbiAddLiquidityETH);
 
-    console.log('ETHERSPOT::2', amountMin2, amountMin1);
-
     let encodedEthData = null;
 
     if (isZeroAddress(tokenAddress1)) {
@@ -499,8 +493,6 @@ export const honeyswapLP = async (
         createTimestamp,
       ]);
     }
-
-    console.log('ETHERSPOT::3');
 
     if (isZeroAddress(tokenAddress2)) {
       encodedEthData = ContractInterfaceEth.encodeFunctionData('addLiquidityETH', [
@@ -538,7 +530,6 @@ export const honeyswapLP = async (
         type: 'function',
       },
     ];
-    console.log('ETHERSPOT::5');
 
     const ERC20Intance = new ethers.utils.Interface(approveAbi);
 
@@ -1173,8 +1164,6 @@ export const buildCrossChainAction = async (
         },
       } = transactionBlock;
 
-      const USDC_GNOSIS = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
-
       if (fromChainId !== CHAIN_ID.XDAI) {
         try {
           let destinationTxns: ICrossChainActionTransaction[] = [];
@@ -1287,12 +1276,13 @@ export const buildCrossChainAction = async (
             },
             amount: ethers.utils.parseUnits(amount ?? '0', 6),
             toAsset: {
-              address: '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83',
+              address: GNOSIS_USDC_CONTRACT_ADDRESS,
               decimals: 6,
               symbol: 'usdc',
               amount: ethers.utils.parseUnits(amount ?? '0', 6).toString(),
               iconUrl: 'https://polygonscan.com/token/images/klimadao_32.png',
             },
+            route: routeToUSDC,
             receiverAddress: transactionBlock?.values?.receiverAddress,
             providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
             providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
@@ -1321,7 +1311,7 @@ export const buildCrossChainAction = async (
                 isEstimating: false,
                 estimated: null,
                 useWeb3Provider: false,
-                gasTokenAddress: USDC_GNOSIS,
+                gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
                 destinationCrossChainAction: [],
               },
             ],

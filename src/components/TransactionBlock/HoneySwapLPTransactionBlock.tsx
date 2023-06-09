@@ -37,6 +37,8 @@ import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import { BiCheck } from 'react-icons/bi';
 import { getNativeAssetPriceInUsd } from '../../services/coingecko';
 import RouteOption from '../RouteOption/RouteOption';
+import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
+import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 
 export interface IHoneySwapLPTransactionBlockValues {
   fromChainId?: number;
@@ -254,7 +256,6 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         }
       }
 
-      const USDC_GNOSIS = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
       const skdOnXdai = getSdkForChainId(CHAIN_ID.XDAI);
 
       if (!skdOnXdai) return;
@@ -275,7 +276,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           toChainId: CHAIN_ID.XDAI,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
           fromTokenAddress: selectedFromAsset.address,
-          toTokenAddress: USDC_GNOSIS,
+          toTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
           toAddress: sdk.state.accountAddress ?? undefined,
         });
 
@@ -294,7 +295,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
       const tknAmt = String(Number(halfOfRemainingAmount) / 1000000);
-      console.log("TOKENAMOUNT", tknAmt);
+      console.log('TOKENAMOUNT', tknAmt);
       setTokenOneAmount(tknAmt);
       setTokenTwoAmount(tknAmt);
 
@@ -305,7 +306,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         const offers = await skdOnXdai.getExchangeOffers({
           fromChainId: CHAIN_ID.XDAI,
           fromAmount: halfOfRemainingAmount,
-          fromTokenAddress: USDC_GNOSIS,
+          fromTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
           toTokenAddress: selectedToken1Asset.address,
         });
 
@@ -324,7 +325,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         const offers = await skdOnXdai.getExchangeOffers({
           fromChainId: CHAIN_ID.XDAI,
           fromAmount: halfOfRemainingAmount,
-          fromTokenAddress: USDC_GNOSIS,
+          fromTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
           toTokenAddress: selectedToken2Asset.address,
         });
 
@@ -352,10 +353,14 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
   }, [computeReceiveAmount]);
 
   const renderOption = (option: SelectOption) => (
-    <RouteOption
+    <HoneySwapRoute
       route={routeToUSDC?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
       cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
+      token1={selectedToken1Asset}
+      token2={selectedToken2Asset}
+      offer1={selectedOffer1}
+      offer2={selectedOffer2}
     />
   );
 
@@ -403,7 +408,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          gap: 13
+          gap: 13,
         }}
       >
         <NetworkAssetSelectInput
@@ -477,8 +482,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             options={selectedRoute ? [selectedRoute] : []}
             isLoading={isRouteFetching}
             selectedOption={selectedRoute}
-            renderOptionListItemContent={renderOption}
-            renderSelectedOptionContent={renderOption}
+            renderOptionListItemContent={(option) => renderOption(option)}
+            renderSelectedOptionContent={(option) => renderOption(option)}
             placeholder="Route"
             errorMessage={!isRouteFetching ? errorMessages?.route : ''}
             noOpen={true}

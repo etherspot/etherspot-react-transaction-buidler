@@ -1330,7 +1330,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-    const { fromAsset, fromChainId, toAsset, receiverAddress } = preview;
+    const { fromAsset, fromChainId, toAsset, receiverAddress, route } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
@@ -1363,6 +1363,13 @@ const ActionPreview = ({
             </div>
           </ValueWrapper>
         </TransactionAction>
+        {!!route && (
+          <TransactionAction>
+            <Label>Route</Label>
+            <RouteOption route={route} cost={cost} showActions />
+          </TransactionAction>
+        )}
+
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         <TransactionStatus
           crossChainAction={crossChainAction}
