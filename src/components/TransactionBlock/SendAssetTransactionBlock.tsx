@@ -23,6 +23,7 @@ export interface ISendAssetTransactionBlockValues {
   amount?: string;
   isFromEtherspotWallet?: boolean;
   accountType?: string;
+  disableReceiverAddressInput?: boolean;
 }
 
 const Title = styled.h3`
@@ -214,7 +215,7 @@ const SendAssetTransactionBlock = ({
         displayLabelOutside
         smallerInput
         showPasteButton
-        disabled={!!fixed}
+        disabled={!!fixed || values?.disableReceiverAddressInput}
       />
     </>
   );
