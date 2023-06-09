@@ -12,6 +12,7 @@ import { uniqueId } from 'lodash';
 import { containsText } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
+import ContentLoader from "react-content-loader";
 
 const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: boolean }>`
   position: relative;
@@ -59,7 +60,7 @@ const SearchInputWrapper = styled.label`
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  border-bottom: 1px solid #ffd2bb;
+  border-bottom: 1px solid ${({ theme }) => theme.color.background.selectInputBorder};;
   margin-bottom: 17px;
   padding: 0 0 5px;
 `;
@@ -155,6 +156,7 @@ export interface SelectOption {
   value: any;
   iconUrl?: string;
   extension?: string;
+  helperTooltip?: string;
 }
 
 interface SelectInputProps {
@@ -210,7 +212,18 @@ const SelectInput = ({
     }, [forceShow])
 
   const selectedOptionTitle = useMemo(() => {
-    if (isLoading && !selectedOption?.title) return 'Loading options...';
+    if (isLoading && !selectedOption?.title)
+      return (
+        <ContentLoader
+          viewBox="0 0 380 60"
+          foregroundColor={theme.color?.background?.loadingAnimationForeground}
+          backgroundColor={theme.color?.background?.loadingAnimationBackground}
+        >
+          <circle cx="25" cy="25" r="25" />
+          <rect x="60" y="10" rx="4" ry="4" width="310" height="13" />
+          <rect x="60" y="30" rx="4" ry="4" width="310" height="13" />
+        </ContentLoader>
+      );
     if (!isLoading && !options?.length) return 'No options';
     return selectedOption?.title ?? placeholder;
   }, [

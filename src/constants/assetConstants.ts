@@ -1,4 +1,4 @@
-import { CHAIN_ID } from '../utils/chain';
+import { CHAIN_ID, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID } from '../utils/chain';
 
 export const POLYGON_USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 
@@ -12,6 +12,11 @@ export const PLR_ADDRESS_PER_CHAIN = {
   [CHAIN_ID.BINANCE]: PLR_ADDRESS_BNB,
   [CHAIN_ID.POLYGON]: PLR_ADDRESS_POLYGON,
   [CHAIN_ID.XDAI]: PLR_ADDRESS_GNOSIS_CHAIN,
+};
+
+export const PLR_DAO_CONTRACT_PER_CHAIN = {
+  [MAINNET_CHAIN_ID.POLYGON]: '0xdf5cFefc1CE077Fc468E3CFF130f955421D9B95a',
+  [TESTNET_CHAIN_ID.POLYGON]: '0x23690E5981996cDC5eFc1e126ce9377B9876C95e',
 };
 
 // TODO: to be added once available, contract said to be deployed once QA passes UI

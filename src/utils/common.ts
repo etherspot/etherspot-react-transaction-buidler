@@ -24,7 +24,7 @@ export const formatAssetAmountInput = (amount: string, decimals: number = 18): s
 export const formatAmountDisplay = (
   amountRaw: string | number,
   leftSymbol?: string,
-  minimumFractionDigits?: number,
+  minimumFractionDigits?: number
 ): string => {
   const amount = typeof amountRaw === 'number' ? `${amountRaw}` : amountRaw;
 
@@ -54,7 +54,7 @@ export const humanizeHexString = (
   hexString: string,
   startCharsCount: number = 5,
   endCharsCount: number = 4,
-  separator: string = '...',
+  separator: string = '...'
 ) => {
   const totalTruncatedSum = startCharsCount + endCharsCount + separator.length;
 
@@ -115,4 +115,16 @@ export const copyToClipboard = async (valueToCopy: string, onSuccess?: () => voi
   } catch {
     alert('Unable to copy');
   }
+};
+
+export const getTypeOfAddress = (
+  address: string,
+  smartWalletAddress: string | null,
+  keybasedAddress: string | null
+) => {
+  return address === smartWalletAddress
+    ? 'Smart Wallet'
+    : address === keybasedAddress
+    ? 'Wallet'
+    : humanizeHexString(address);
 };

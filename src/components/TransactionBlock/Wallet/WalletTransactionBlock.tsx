@@ -135,7 +135,6 @@ const WalletTransactionBlock = ({
         if (chain.chainId === CHAIN_ID.AVALANCHE) return;
 
         let collections = await getNftsForChainId(chain.chainId);
-        console.log(chain.title, collections);
 
         if (collections?.length) {
           const nfts: INft[] = [];
@@ -403,7 +402,11 @@ const WalletTransactionBlock = ({
             value={searchValue}
             onChange={({ target }) => setSearchValue(target.value)}
           />
-          {searchValue && <SearchIcon onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchIcon>}
+          {searchValue && (
+            <SearchIcon color={theme?.color?.background?.closeButton} onClick={hideSearchBar}>
+              {WalletCloseSearchIcon}
+            </SearchIcon>
+          )}
         </SearchWrapper>
 
         <ChainButtonRow>
@@ -643,8 +646,14 @@ const ChainDropdownButton = styled.div<{ selected?: boolean }>`
   height: 48px;
   width: 48px;
   border-radius: 8px;
+  cursor: pointer;
   background-color: ${({ theme, selected }) =>
     selected ? theme.color.background.walletChainButtonActive : 'transparent'};
+
+  &:hover {
+    background-color: ${({ theme }) => theme.color.background.walletChainButtonActive};
+    opacity: 0.8;
+  }
 
   @media (max-width: 500px) {
     width: 40px;
@@ -664,6 +673,7 @@ const ChainDropdownIcon = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 8px;
+  cursor: pointer;
 
   @media (max-width: 500px) {
     width: 40px;
@@ -721,6 +731,10 @@ const SearchIcon = styled.span`
       opacity: 0.5;
     }
   `};
+
+  svg g path:nth-child(2) {
+    stroke: ${({ color }) => color};
+  }
 `;
 
 const SelectAllWrapper = styled.div`
@@ -728,5 +742,6 @@ const SelectAllWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
   color: ${({ theme }) => theme.color.text.selectAllButton};
 `;

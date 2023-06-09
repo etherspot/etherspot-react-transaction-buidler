@@ -17,6 +17,7 @@ import { supportedChains } from '../../utils/chain';
 import { deployAccount } from '../../utils/transaction';
 import { Theme } from '../../utils/theme';
 import MenuModalWrapper from '../Menu/MenuModalWrapper';
+import ContentLoader from 'react-content-loader';
 
 interface IDeployChain {
   chainId: number;
@@ -77,7 +78,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
         }
         return acc;
       },
-      [[], []],
+      [[], []]
     );
     setIsLoadingChainsStatus(false);
     setUndeployedChains(undeployed);
@@ -144,7 +145,24 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
           <Label>Deployed</Label>
         </Header>
         <Body>
-          {deployedChains.length == 0 && <Section>{isLoadingChainsStatus ? 'Loading...' : 'No Chains'}</Section>}
+          {deployedChains.length == 0 && (
+            <Section>
+              {isLoadingChainsStatus ? (
+                <ContentLoader
+                  viewBox="0 0 380 70"
+                  foregroundColor={theme.color?.background?.loadingAnimationForeground}
+                  backgroundColor={theme.color?.background?.loadingAnimationBackground}
+                >
+                  {/* Only SVG shapes */}
+                  <circle cx="25" cy="35" r="20" />
+                  <rect x="80" y="17" rx="4" ry="4" width="300" height="13" />
+                  <rect x="80" y="40" rx="3" ry="3" width="250" height="10" />
+                </ContentLoader>
+              ) : (
+                'No Chains'
+              )}
+            </Section>
+          )}
           {deployedChains.map(({ iconUrl, title }) => (
             <Section>
               <RoundedImage url={iconUrl} title={title} size={20} />
@@ -159,7 +177,24 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
           <Label>Not deployed</Label>
         </Header>
         <Body>
-          {undeployedChains.length == 0 && <Section>{isLoadingChainsStatus ? 'Loading...' : 'No Chains'}</Section>}
+          {undeployedChains.length == 0 && (
+            <Section>
+              {isLoadingChainsStatus ? (
+                <ContentLoader
+                  viewBox="0 0 380 70"
+                  foregroundColor={theme.color?.background?.loadingAnimationForeground}
+                  backgroundColor={theme.color?.background?.loadingAnimationBackground}
+                >
+                  {/* Only SVG shapes */}
+                  <circle cx="25" cy="35" r="20" />
+                  <rect x="80" y="17" rx="4" ry="4" width="300" height="13" />
+                  <rect x="80" y="40" rx="3" ry="3" width="250" height="10" />
+                </ContentLoader>
+              ) : (
+                'No Chains'
+              )}
+            </Section>
+          )}
           {undeployedChains.map(({ chainId, iconUrl, title }) => (
             <Section>
               <RoundedImage url={iconUrl} title={title} size={20} />
@@ -246,7 +281,7 @@ const Body = styled.div`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.color.background.settingMenuMain};
+    background: ${({ theme }) => theme.color.background.scrollbar};
     border-radius: 4px;
   }
 

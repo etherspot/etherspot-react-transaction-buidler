@@ -62,6 +62,8 @@ const AssetBridgeTransactionBlock = ({
   errorMessages,
   values,
   multiCallData,
+  hideTitle = false,
+  hideWalletSwitch = false,
 }: IAssetBridgeTransactionBlock) => {
   const {
     sdk,
@@ -291,31 +293,35 @@ const AssetBridgeTransactionBlock = ({
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
       cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
+      showActions
     />
   );
 
   return (
     <>
-      <Title>Asset bridge</Title>
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          if (accountType !== selectedAccountType) {
-            setSelectedFromNetwork(null);
-            setSelectedFromAsset(null);
-            setSelectedToNetwork(null);
-            setSelectedToAsset(null);
-            setAvailableRoutes(null);
-            setSelectedRoute(null);
-          }
-          setSelectedAccountType(accountType);
-        }}
-        errorMessage={errorMessages?.accountType}
-        hideKeyBased={smartWalletOnly}
-        disabled={!!fixed || !!multiCallData}
-        showTotals
-      />
+      {!hideTitle && <Title>Asset bridge</Title>}
+      {!hideWalletSwitch && (
+        <AccountSwitchInput
+          label="From wallet"
+          selectedAccountType={selectedAccountType}
+          onChange={(accountType) => {
+            if (accountType !== selectedAccountType) {
+              setSelectedFromNetwork(null);
+              setSelectedFromAsset(null);
+              setSelectedToNetwork(null);
+              setSelectedToAsset(null);
+              setAvailableRoutes(null);
+              setSelectedRoute(null);
+            }
+            setSelectedAccountType(accountType);
+          }}
+          errorMessage={errorMessages?.accountType}
+          hideKeyBased={smartWalletOnly}
+          disabled={!!fixed || !!multiCallData}
+          showTotals
+          showHelperText
+        />
+      )}
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
