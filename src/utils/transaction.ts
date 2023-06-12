@@ -426,6 +426,7 @@ export const honeyswapLP = async (
   if (!sdk) return { errorMessage: 'No sdk found' };
 
   const contractAddress = '0x1C232F01118CB8B424793ae03F870aa7D0ac7f77';
+  const contractAddressProxy = '0xf8D1677c8a0c961938bf2f9aDc3F3CFDA759A9d9';
 
   const createTimestamp = Date.now() + 100;
 
@@ -533,9 +534,9 @@ export const honeyswapLP = async (
 
     const ERC20Intance = new ethers.utils.Interface(approveAbi);
 
-    const approvalData1 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount1]);
+    const approvalData1 = ERC20Intance.encodeFunctionData('approve', [contractAddressProxy, amount1]);
 
-    const approvalData2 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount2]);
+    const approvalData2 = ERC20Intance.encodeFunctionData('approve', [contractAddressProxy, amount2]);
 
     const newEncodeAddLiquidityTransactions = {
       to: contractAddress,
