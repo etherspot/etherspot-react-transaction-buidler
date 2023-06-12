@@ -244,6 +244,7 @@ interface SelectInputProps {
   customMessage?: string;
   wFull?: boolean;
   readOnly?: boolean;
+  allowNetworkSelection?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -263,6 +264,7 @@ const NetworkAssetSelectInput = ({
   customMessage,
   wFull,
   readOnly = false,
+  allowNetworkSelection = true,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -462,6 +464,7 @@ const NetworkAssetSelectInput = ({
       {showSelectModal && preselectedNetwork && (
         <SelectedOption
           onClick={(e) => {
+            if (!allowNetworkSelection) return;
             e.stopPropagation();
             setPreselectedNetwork(null);
           }}
@@ -473,7 +476,7 @@ const NetworkAssetSelectInput = ({
           {preselectedNetwork.title}
         </SelectedOption>
       )}
-      {showSelectModal && !preselectedNetwork && (
+      {showSelectModal && !preselectedNetwork && allowNetworkSelection && (
         <OptionList>
           {supportedChains
             .filter((supportedChain) => !hideChainIds?.length || !hideChainIds.includes(supportedChain.chainId))

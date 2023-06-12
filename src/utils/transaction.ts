@@ -419,8 +419,6 @@ export const honeyswapLP = async (
   tokenAddress1: string,
   amount2: BigNumber,
   tokenAddress2: string,
-  offer1: ExchangeOffer,
-  offer2: ExchangeOffer,
   receiverAddress: string
 ) => {
   if (!sdk) return { errorMessage: 'No sdk found' };
@@ -1139,8 +1137,6 @@ export const buildCrossChainAction = async (
     !!transactionBlock?.values?.fromAssetSymbol &&
     !!transactionBlock?.values?.amount &&
     !!transactionBlock?.values?.routeToUSDC &&
-    !!transactionBlock?.values?.offer1 &&
-    !!transactionBlock?.values?.offer2 &&
     !!transactionBlock?.values?.tokenOneAmount &&
     !!transactionBlock?.values?.tokenTwoAmount
   ) {
@@ -1169,6 +1165,12 @@ export const buildCrossChainAction = async (
         try {
           let destinationTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
+
+          // This is used in case token 1 is USDC
+          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
+
+          // This is used in case token 2 is USDC
+          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, 6);
 
           const [firstStep] = routeToUSDC.steps;
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
@@ -1216,29 +1218,33 @@ export const buildCrossChainAction = async (
           }
 
           // Swap 1 Start //
-          destinationTxns = [
-            ...destinationTxns,
-            ...offer1.transactions.map((transaction) => ({
-              ...transaction,
-              chainId: CHAIN_ID.XDAI,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            })),
-          ];
+          if (offer1 && toToken1.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer1.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
 
           // SWAP 1 ENDS
 
           // Swap 2 Start
 
-          destinationTxns = [
-            ...destinationTxns,
-            ...offer2.transactions.map((transaction) => ({
-              ...transaction,
-              chainId: CHAIN_ID.XDAI,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            })),
-          ];
+          if (offer2 && toToken2.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer2.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
 
           // SWAP 2 ENDS
 
@@ -1246,12 +1252,10 @@ export const buildCrossChainAction = async (
 
           const honeySwapTransaction = await honeyswapLP(
             sdk,
-            offer1.receiveAmount,
+            offer1 ? offer1.receiveAmount : fromTokenOneAmountBN,
             toToken1.address,
-            offer2.receiveAmount,
+            offer2 ? offer2.receiveAmount : fromTokenTwoAmountBN,
             toToken2.address,
-            offer1,
-            offer2,
             addressToSendTo
           );
 

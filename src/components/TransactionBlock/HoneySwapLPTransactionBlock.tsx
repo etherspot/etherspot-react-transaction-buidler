@@ -385,6 +385,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
           setSelectedFromNetwork(network);
         }}
+        hideChainIds={[CHAIN_ID.XDAI]}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
         errorMessage={
@@ -415,6 +416,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             setSelectedToken1Asset(asset);
           }}
           customMessage="Select token"
+          allowNetworkSelection={false}
           // disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
           accountType={selectedAccountType}
@@ -429,6 +431,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             resetTransactionBlockFieldValidationError(transactionBlockId, 'toToken2');
             setSelectedToken2Asset(asset);
           }}
+          allowNetworkSelection={false}
           customMessage="Select token"
           // disabled={true}
           walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
