@@ -9,6 +9,7 @@ export interface Theme {
       cardBorder?: string;
       selectInput?: string;
       selectInputExpanded?: string;
+      selectInputExpandedBorder?: string;
       selectInputScrollbar?: string;
       selectInputScrollbarHover?: string;
       selectInputScrollbarActive?: string;
@@ -16,10 +17,12 @@ export interface Theme {
       selectInputToggleButton?: string;
       selectInputBorder?: string;
       textInput?: string;
+      textInputBorder?: string;
       switchInput?: string;
       switchInputActiveTab?: string;
       switchInputInactiveTab?: string;
       button?: string;
+      buttonDisabled?: string;
       closeButton?: string;
       pill?: string;
       roundedImageFallback?: string;
@@ -215,11 +218,13 @@ export const darkTheme: Theme = {
       card: '#262240',
       cardBorder: '#3d3767',
       button: 'linear-gradient(to bottom, #fdb754, #f18214)',
+      buttonDisabled: '#2ebbac',
       closeButton: '#fff',
       selectInputToggleButton: '#998ae6',
       selectInputBorder: '#3d366d',
       selectInput: '#474078',
       selectInputExpanded: '#130c1d',
+      selectInputExpandedBorder: '#46464e',
       statusIconPending: '#ff6b35',
       statusIconFailed: '#ff0000',
       statusIconSuccess: '#1ba23d',
@@ -228,6 +233,7 @@ export const darkTheme: Theme = {
       selectInputScrollbarHover: '#2d2457',
       selectInputScrollbarActive: '#2d2457',
       textInput: '#1a1726',
+      textInputBorder:'#46464e',
       switchInput: '#1a1726',
       switchInputActiveTab:
         'linear-gradient(to bottom, #734fb3, #422d66), linear-gradient(to bottom, #3d265c, #222130)',

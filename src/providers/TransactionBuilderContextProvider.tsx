@@ -31,6 +31,7 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
+  honeyswapLP,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -50,7 +51,7 @@ import {
   WalletIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
-import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { GNOSIS_USDC_CONTRACT_ADDRESS, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
@@ -284,6 +285,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
+    title: 'HoneySwap LP',
+    type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+  },
+  {
+    id: getTimeBasedUniqueId(),
     title: 'LI.FI staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
@@ -436,10 +442,9 @@ const TransactionBuilderContextProvider = ({
     [crossChainActions]
   );
 
-  const isEstimationFailing = useMemo(
-    () => crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage),
-    [crossChainActions]
-  );
+  const isEstimationFailing = useMemo(() => {
+    return crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage);
+  }, [crossChainActions]);
 
   const getValidationErrors = () => {
     let validationErrors: IValidationErrors = {};
@@ -465,6 +470,7 @@ const TransactionBuilderContextProvider = ({
 
   const isBlockValid = useMemo(() => {
     const validationErrors = getValidationErrors();
+    console.log('Something', validationErrors);
 
     return isEmpty(validationErrors);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
@@ -492,6 +498,7 @@ const TransactionBuilderContextProvider = ({
       let multiCallList: string[] = [];
       for (const transactionBlock of transactionBlocks) {
         const result = await buildCrossChainAction(sdk, transactionBlock);
+
         if (!result?.crossChainAction || result?.errorMessage) {
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
@@ -546,7 +553,6 @@ const TransactionBuilderContextProvider = ({
     }
 
     setIsChecking(false);
-
     if (!errorMessage && !newCrossChainActions?.length) {
       errorMessage = `Failed to proceed with selected actions!`;
     }
@@ -692,6 +698,7 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
             });
+
             crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
             });
@@ -773,6 +780,136 @@ const TransactionBuilderContextProvider = ({
       setCrossChainActions([]);
       setTransactionBlocks([]);
       showAlertModal('Transaction sent');
+      setIsSubmitting(false);
+    } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+      const sdkForXdai = getSdkForChainId(CHAIN_ID.XDAI);
+
+      if (!sdkForXdai) return;
+
+      let crossChainAction = crossChainActions[0];
+
+      const res = await sdkForXdai.getAccountBalances({
+        tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
+      });
+
+      const balance = res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0].balance ?? '0';
+
+      console.log(
+        'reshsgsg',
+        res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0],
+        ethers.utils.formatEther(balance),
+        crossChainAction.destinationCrossChainAction
+      );
+
+      let result: {
+        transactionHash?: string;
+        errorMessage?: string;
+      };
+
+      result = crossChainAction.useWeb3Provider
+        ? await submitWeb3ProviderTransactions(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            web3Provider,
+            crossChainAction.transactions,
+            crossChainAction.chainId,
+            providerAddress
+          )
+        : await submitEtherspotAndWaitForTransactionHash(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            crossChainAction.transactions,
+            crossChainAction.gasTokenAddress ?? undefined
+          );
+
+      if (result?.errorMessage || !result?.transactionHash?.length) {
+        showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+        setIsSubmitting(false);
+        crossChainAction.transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        });
+        return;
+      }
+
+      crossChainAction.transactions.map((transaction) => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+        transaction.submitTimestamp = Date.now();
+        transaction.transactionHash = result.transactionHash;
+      });
+
+      crossChainAction.transactionHash = result.transactionHash;
+
+      let flag = 1,
+        errorOnLiFi;
+
+      while (flag) {
+        try {
+          const res = await sdkForXdai.getAccountBalances({
+            tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
+          });
+
+          const balanceUpdated =
+            res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0].balance ?? '0';
+
+          if (!balance.eq(balanceUpdated)) {
+            flag = 0;
+            crossChainAction.transactions.map((transaction) => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+            });
+            crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+            });
+          }
+          await sleep(30);
+        } catch (err) {
+          errorOnLiFi = 'Transaction Failed on LiFi';
+          flag = 0;
+        }
+      }
+
+      if (errorOnLiFi) {
+        showAlertModal(errorOnLiFi);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const estimateGas = await estimateCrossChainAction(
+        getSdkForChainId(CHAIN_ID.XDAI),
+        web3Provider,
+        crossChainAction.destinationCrossChainAction[0],
+        providerAddress,
+        accountAddress
+      );
+
+      console.log('RESULTHASH2', estimateGas);
+
+      crossChainAction = {
+        ...crossChainAction,
+        estimated: estimateGas,
+        transactions: crossChainAction.destinationCrossChainAction[0].transactions ?? [],
+        chainId: CHAIN_ID.XDAI,
+      };
+
+      crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
+      });
+
+      result = await submitEtherspotAndWaitForTransactionHash(
+        getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
+        crossChainAction.transactions,
+        GNOSIS_USDC_CONTRACT_ADDRESS
+      );
+
+      if (result?.errorMessage || !result?.transactionHash?.length) {
+        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      showAlertModal('Transaction sent');
+      setCrossChainActions([]);
+      setTransactionBlocks([]);
       setIsSubmitting(false);
     } else {
       setCrossChainActions([]);

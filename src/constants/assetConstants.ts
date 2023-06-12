@@ -2,6 +2,8 @@ import { CHAIN_ID, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID } from '../utils/chain';
 
 export const POLYGON_USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 
+export const GNOSIS_USDC_CONTRACT_ADDRESS = '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83';
+
 export const PLR_ADDRESS_ETHEREUM_MAINNET = '0xe3818504c1b32bf1557b16c238b2e01fd3149c17';
 export const PLR_ADDRESS_BNB = '0x790cfdc6ab2e0ee45a433aac5434f183be1f6a20';
 export const PLR_ADDRESS_POLYGON = '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774';
@@ -21,4 +23,3 @@ export const PLR_DAO_CONTRACT_PER_CHAIN = {
 
 // TODO: to be added once available, contract said to be deployed once QA passes UI
 export const PLR_STAKING_ADDRESS_ETHEREUM_MAINNET = '0x';
-

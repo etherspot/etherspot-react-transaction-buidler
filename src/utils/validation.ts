@@ -9,6 +9,8 @@ import { ITransactionBlock } from '../types/transactionBlock';
 import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
 import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { IHoneySwapLPTransactionBlockValues } from '../components/TransactionBlock/HoneySwapLPTransactionBlock';
+import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {
   if (!address) return false;
@@ -26,15 +28,13 @@ export const isValidAmount = (amount?: string): boolean => {
   if (!amount) return false;
   if (+amount <= 0) return false;
   return !isNaN(+amount);
-}
+};
 
 export interface ErrorMessages {
   [field: string]: string;
 }
 
-export const validateTransactionBlockValues = (
-  transactionBlock: ITransactionBlock,
-): ErrorMessages => {
+export const validateTransactionBlockValues = (transactionBlock: ITransactionBlock): ErrorMessages => {
   const errors: ErrorMessages = {};
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
@@ -44,7 +44,8 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.fromAssetAddress) errors.fromAssetAddress = 'Invalid source asset selected!';
     if (!transactionBlockValues?.fromAssetSymbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
     if (!transactionBlockValues?.fromAssetDecimals) errors.fromAssetDecimals = 'Invalid source asset selected!';
-    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
+    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress))
+      errors.receiverAddress = 'Invalid receiver address!';
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
     if (!transactionBlockValues?.routeToKlima) errors.route = 'No Offer selected';
   }
@@ -56,7 +57,8 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.fromAsset?.address) errors.fromAssetAddress = 'Invalid source asset selected!';
     if (!transactionBlockValues?.fromAsset?.symbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
     if (!transactionBlockValues?.fromAsset?.decimals) errors.fromAssetDecimals = 'Invalid source asset selected!';
-    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
+    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress))
+      errors.receiverAddress = 'Invalid receiver address!';
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
   }
 
@@ -68,7 +70,8 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.fromAsset) errors.fromAsset = 'Invalid source asset selected!';
     if (!transactionBlockValues?.toAsset) errors.toAsset = 'Invalid destination asset selected!';
     if (!transactionBlockValues?.route) errors.route = 'No route selected!';
-    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
+    if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress))
+      errors.receiverAddress = 'Invalid receiver address!';
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
   }
 
@@ -78,7 +81,8 @@ export const validateTransactionBlockValues = (
     if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
     if (!transactionBlockValues?.selectedAsset) errors.selectedAsset = 'Invalid asset selected!';
     if (!isValidEthereumAddress(transactionBlockValues?.fromAddress)) errors.fromAddress = 'Invalid source address!';
-    if (!isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
+    if (!isValidEthereumAddress(transactionBlockValues?.receiverAddress))
+      errors.receiverAddress = 'Invalid receiver address!';
   }
 
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
@@ -88,7 +92,11 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.fromAsset) errors.fromAsset = 'Invalid source asset selected!';
     if (!transactionBlockValues?.toAsset) errors.toAsset = 'Invalid destination asset selected!';
     if (!transactionBlockValues?.offer) errors.offer = 'No offer selected!';
-    if (transactionBlockValues?.isDifferentReceiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) errors.receiverAddress = 'Invalid receiver address!';
+    if (
+      transactionBlockValues?.isDifferentReceiverAddress &&
+      !isValidEthereumAddress(transactionBlockValues?.receiverAddress)
+    )
+      errors.receiverAddress = 'Invalid receiver address!';
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
   }
 
@@ -111,15 +119,30 @@ export const validateTransactionBlockValues = (
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
   }
 
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+    const transactionBlockValues: IHoneySwapLPTransactionBlockValues | undefined = transactionBlock.values;
+    if (!transactionBlockValues?.fromChainId) errors.fromChainId = 'No source chain selected!';
+    if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
+    // if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
+    if (!transactionBlockValues?.fromAssetAddress) errors.fromAssetAddress = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.fromAssetSymbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.fromAssetSymbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.toToken1) errors.toToken1 = 'Select the first token';
+    if (!transactionBlockValues?.toToken2) errors.toToken2 = 'Select the second token';
+    if (!transactionBlockValues?.offer1 && transactionBlockValues?.toToken1?.address !== GNOSIS_USDC_CONTRACT_ADDRESS)
+      errors.offer1 = 'Select the second token';
+    if (!transactionBlockValues?.offer2 && transactionBlockValues?.toToken2?.address !== GNOSIS_USDC_CONTRACT_ADDRESS)
+      errors.offer2 = 'Select the second token';
+  }
+
   return errors;
-}
+};
 
 export const isCaseInsensitiveMatch = (a: string | undefined, b: string | undefined): boolean => {
   if (a === b) return true;
   if (!a || !b) return false;
   return a.toLowerCase() === b.toLowerCase();
 };
-
 
 export const addressesEqual = (address1: string | undefined | null, address2: string | undefined | null): boolean => {
   if (address1 === address2) return true;
@@ -137,14 +160,11 @@ const zeroAddressConstants = [
   '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF',
 ];
 
-export const isZeroAddress = (
-  address: string | undefined | null,
-): boolean => !address || (!!address && zeroAddressConstants.some((zeroAddress) => addressesEqual(address, zeroAddress)));
+export const isZeroAddress = (address: string | undefined | null): boolean =>
+  !address || (!!address && zeroAddressConstants.some((zeroAddress) => addressesEqual(address, zeroAddress)));
 
-export const isNativeAssetAddress = (
-  address: string | undefined,
-  chainId: number,
-): boolean => !address || isZeroAddress(address) || addressesEqual(address, nativeAssetPerChainId[chainId]?.address);
+export const isNativeAssetAddress = (address: string | undefined, chainId: number): boolean =>
+  !address || isZeroAddress(address) || addressesEqual(address, nativeAssetPerChainId[chainId]?.address);
 
 export const containsText = (text: string | undefined, query: string): boolean => {
   try {
@@ -153,4 +173,4 @@ export const containsText = (text: string | undefined, query: string): boolean =
     //
   }
   return false;
-}
+};

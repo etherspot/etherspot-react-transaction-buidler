@@ -35,12 +35,12 @@ export interface SendAssetActionPreview {
 }
 
 interface KlimaStakingActionPreview {
-	fromChainId: number;
-	fromAsset: AssetTransfer;
-	toAsset: AssetTransfer;
-	providerName: string;
-	providerIconUrl: string | undefined;
-	receiverAddress?: string;
+  fromChainId: number;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  providerName: string;
+  providerIconUrl: string | undefined;
+  receiverAddress?: string;
 }
 
 interface PlrStakingActionPreview {
@@ -75,6 +75,14 @@ export interface AssetSwapActionPreview {
   receiverAddress?: string;
 }
 
+interface HoneySwapLPActionPreview {
+  fromChainId: number;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  receiverAddress?: string;
+  route: Route;
+}
+
 interface AssetBridgeAction {
   type: typeof TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
   preview: AssetBridgeActionPreview;
@@ -91,12 +99,23 @@ interface AssetSwapAction {
 }
 
 interface KlimaStakingAction {
-	type: typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
-	preview: KlimaStakingActionPreview;
-	destinationCrossChainAction: ICrossChainAction[];
-	containsSwitchChain?: boolean;
-	receiveAmount?: string;
-	bridgeUsed?: string;
+  type: typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
+  preview: KlimaStakingActionPreview;
+  destinationCrossChainAction: ICrossChainAction[];
+  containsSwitchChain?: boolean;
+  receiveAmount?: string;
+  bridgeUsed?: string;
+  gasCost?: string;
+  transactionHash?: string;
+}
+
+interface HoneySwapLPAction {
+  type: typeof TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP;
+  preview: HoneySwapLPActionPreview;
+  destinationCrossChainAction: ICrossChainAction[];
+  containsSwitchChain?: boolean;
+  receiveAmount?: string;
+  bridgeUsed?: string;
   gasCost?: string;
   transactionHash?: string;
 }
@@ -124,10 +143,10 @@ export interface ICrossChainActionTransaction extends ExecuteAccountTransactionD
 }
 
 export interface ICrossChainActionEstimation {
-	gasCost?: BigNumber | null;
-	usdPrice?: number | null;
-	errorMessage?: string;
-	feeAmount?: BigNumber | null;
+  gasCost?: BigNumber | null;
+  usdPrice?: number | null;
+  errorMessage?: string;
+  feeAmount?: BigNumber | null;
 }
 
 export type ICrossChainAction = {
@@ -145,10 +164,11 @@ export type ICrossChainAction = {
   batchHash?: string;
   multiCallData?: IMultiCallData | null;
 } & (
-  AssetBridgeAction
+  | AssetBridgeAction
   | SendAssetAction
   | AssetSwapAction
   | KlimaStakingAction
   | PlrStakingAction
   | PlrStakingV2Action
+  | HoneySwapLPAction
 );

@@ -8,12 +8,14 @@ import KlimaStakingTransactionBlock from './KlimaStakingTransactionBlock';
 import PlrDaoStakingTransactionBlock from './PlrDaoStakingTransactionBlock';
 import PlrStakingV2TransactionBlock from './PlrStakingV2TransactionBlock';
 import { ITransactionBlock } from '../../types/transactionBlock';
+import HoneySwapLPTransactionBlock from './HoneySwapLPTransactionBlock';
 
 const TransactionBlock = (props: ITransactionBlock) => {
   if (props.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) return <SendAssetTransactionBlock {...props} />;
   if (props.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) return <AssetBridgeTransactionBlock {...props} />;
   if (props.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) return <AssetSwapTransactionBlock {...props} />;
   if (props.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) return <KlimaStakingTransactionBlock {...props} />;
+  if (props.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) return <HoneySwapLPTransactionBlock {...props} />;
   if (props.type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) return <PlrDaoStakingTransactionBlock {...props} />;
   if (props.type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2) return <PlrStakingV2TransactionBlock {...props} />;
   return null;
