@@ -534,9 +534,9 @@ export const honeyswapLP = async (
 
     const ERC20Intance = new ethers.utils.Interface(approveAbi);
 
-    const approvalData1 = ERC20Intance.encodeFunctionData('approve', [contractAddressProxy, amount1]);
+    const approvalData1 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount1]);
 
-    const approvalData2 = ERC20Intance.encodeFunctionData('approve', [contractAddressProxy, amount2]);
+    const approvalData2 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount2]);
 
     const newEncodeAddLiquidityTransactions = {
       to: contractAddress,
