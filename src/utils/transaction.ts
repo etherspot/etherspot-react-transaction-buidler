@@ -1164,6 +1164,9 @@ export const buildCrossChainAction = async (
       if (fromChainId !== CHAIN_ID.XDAI) {
         try {
           let destinationTxns: ICrossChainActionTransaction[] = [];
+          let swapOneTxns: ICrossChainActionTransaction[] = [];
+          let swapTwoTxns: ICrossChainActionTransaction[] = [];
+          let honeySwapTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
 
           // This is used in case token 1 is USDC
@@ -1228,6 +1231,15 @@ export const buildCrossChainAction = async (
                 status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
               })),
             ];
+
+            swapOneTxns = [
+              ...offer1.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
           }
 
           // SWAP 1 ENDS
@@ -1237,6 +1249,15 @@ export const buildCrossChainAction = async (
           if (offer2 && toToken2.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
             destinationTxns = [
               ...destinationTxns,
+              ...offer2.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+
+            swapTwoTxns = [
               ...offer2.transactions.map((transaction) => ({
                 ...transaction,
                 chainId: CHAIN_ID.XDAI,
@@ -1263,6 +1284,7 @@ export const buildCrossChainAction = async (
 
           if (honeySwapTransaction.result?.transactions?.length) {
             destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
+            honeySwapTxns = [...honeySwapTransaction.result?.transactions];
           }
 
           const preview = {
@@ -1303,12 +1325,38 @@ export const buildCrossChainAction = async (
             receiveAmount: amount,
             destinationCrossChainAction: [
               {
-                id: uniqueId(`${createTimestamp}-`),
+                id: uniqueId(`${createTimestamp + 10}-`),
                 relatedTransactionBlockId: transactionBlock.id,
                 chainId: CHAIN_ID.XDAI,
                 type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
                 preview,
-                transactions: destinationTxns,
+                transactions: swapOneTxns,
+                isEstimating: false,
+                estimated: null,
+                useWeb3Provider: false,
+                gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                destinationCrossChainAction: [],
+              },
+              {
+                id: uniqueId(`${createTimestamp + 20}-`),
+                relatedTransactionBlockId: transactionBlock.id,
+                chainId: CHAIN_ID.XDAI,
+                type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                preview,
+                transactions: swapTwoTxns,
+                isEstimating: false,
+                estimated: null,
+                useWeb3Provider: false,
+                gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                destinationCrossChainAction: [],
+              },
+              {
+                id: uniqueId(`${createTimestamp + 30}-`),
+                relatedTransactionBlockId: transactionBlock.id,
+                chainId: CHAIN_ID.XDAI,
+                type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                preview,
+                transactions: honeySwapTxns,
                 isEstimating: false,
                 estimated: null,
                 useWeb3Provider: false,
@@ -1316,6 +1364,8 @@ export const buildCrossChainAction = async (
                 destinationCrossChainAction: [],
               },
             ],
+            swapTwoAction: [],
+            liquidityAction: [],
           };
 
           return { crossChainAction: crossChainAction };

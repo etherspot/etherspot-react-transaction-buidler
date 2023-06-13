@@ -118,6 +118,9 @@ interface HoneySwapLPAction {
   bridgeUsed?: string;
   gasCost?: string;
   transactionHash?: string;
+  swapOneAction?: ICrossChainAction[];
+  swapTwoAction?: ICrossChainAction[];
+  liquidityAction?: ICrossChainAction[];
 }
 
 interface PlrStakingAction {
