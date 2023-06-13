@@ -82,7 +82,7 @@ interface HoneySwapLPActionPreview {
   fromAsset: AssetTransfer;
   toAsset: AssetTransfer;
   receiverAddress?: string;
-  route: Route;
+  route?: Route;
   offer1?: ExchangeOffer;
   offer2?: ExchangeOffer;
   token1: IAssetWithBalance;
