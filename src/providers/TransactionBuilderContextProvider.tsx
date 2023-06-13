@@ -792,14 +792,9 @@ const TransactionBuilderContextProvider = ({
         tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
       });
 
-      const balance = res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0].balance ?? '0';
-
-      console.log(
-        'reshsgsg',
-        res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0],
-        ethers.utils.formatEther(balance),
-        crossChainAction.destinationCrossChainAction
-      );
+      const balance =
+        res.items.find((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)?.balance ??
+        ethers.utils.parseUnits('0', 6);
 
       let result: {
         transactionHash?: string;
@@ -848,7 +843,8 @@ const TransactionBuilderContextProvider = ({
             });
 
             const balanceUpdated =
-              res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0].balance ?? '0';
+              res.items.find((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)?.balance ??
+              ethers.utils.parseUnits('0', 6);
 
             if (!balance.eq(balanceUpdated)) {
               flag = 0;
