@@ -30,6 +30,7 @@ import { useEtherspot } from '../../hooks';
 // Types
 import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
+import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 
 const TransactionAction = styled.div`
   position: relative;
@@ -1336,7 +1337,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-    const { fromAsset, fromChainId, toAsset, receiverAddress, route } = preview;
+    const { fromAsset, fromChainId, toAsset, receiverAddress, route, token1, token2, offer1, offer2 } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
@@ -1372,7 +1373,7 @@ const ActionPreview = ({
         {!!route && (
           <TransactionAction>
             <Label>Route</Label>
-            <RouteOption route={route} cost={cost} showActions />
+            <HoneySwapRoute route={route} cost={cost} token1={token1} token2={token2} offer1={offer1} offer2={offer2} />
           </TransactionAction>
         )}
 

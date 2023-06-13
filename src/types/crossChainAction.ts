@@ -5,6 +5,8 @@ import { Route } from '@lifi/sdk';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { IMultiCallData } from './transactionBlock';
 import { IPlrStakingV2BlockSwap } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { ExchangeOffer } from 'etherspot';
+import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 
 interface AssetTransfer {
   address: string;
@@ -81,6 +83,10 @@ interface HoneySwapLPActionPreview {
   toAsset: AssetTransfer;
   receiverAddress?: string;
   route: Route;
+  offer1?: ExchangeOffer;
+  offer2?: ExchangeOffer;
+  token1: IAssetWithBalance;
+  token2: IAssetWithBalance;
 }
 
 interface AssetBridgeAction {

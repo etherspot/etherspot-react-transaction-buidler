@@ -1287,6 +1287,10 @@ export const buildCrossChainAction = async (
             receiverAddress: transactionBlock?.values?.receiverAddress,
             providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
             providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
+            offer1,
+            offer2,
+            token1: toToken1,
+            token2: toToken2,
           };
 
           const crossChainAction: ICrossChainAction = {
