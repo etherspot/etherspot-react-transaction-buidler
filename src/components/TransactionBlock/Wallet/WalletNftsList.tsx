@@ -123,7 +123,7 @@ export default WalletNftsList;
 const ChainBlock = styled.div`
   flex: 1;
   border-radius: 8px;
-  background-color: ${({ theme }) => theme.color.background.selectInput};
+  background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
   padding: 0 0 10px;
   margin-bottom: 12px;
 `;
