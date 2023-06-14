@@ -857,6 +857,7 @@ const TransactionBuilderContextProvider = ({
             }
             await sleep(30);
           } catch (err) {
+            console.log('errorOnlifi', err);
             errorOnLiFi = 'Transaction Failed on LiFi';
             flag = 0;
           }

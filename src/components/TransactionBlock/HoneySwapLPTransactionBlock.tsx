@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, BridgingQuote, CrossChainServiceProvider, ExchangeOffer } from 'etherspot';
+import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider, ExchangeOffer } from 'etherspot';
 import { Route } from '@lifi/sdk';
 import { BigNumber, ethers, utils } from 'ethers';
 
@@ -262,7 +262,12 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       const data = await sdkOnXdai.getGatewayGasInfo();
 
-      const convertedData = utils.formatEther(data.fast.mul('1000000'));
+      const account = await sdkOnXdai.computeContractAccount();
+
+      const convertedData = utils.formatEther(
+        data.fast.mul(account.state === AccountStates.UnDeployed ? '1350000' : '1000000')
+      );
+
       const nativePrice = await getNativeAssetPriceInUsd(CHAIN_ID.XDAI);
 
       const gasAmountUSD = utils
@@ -281,6 +286,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           });
 
           const bestRoute = getBestRouteItem(routes);
+
           remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
 
           setRouteToUSDC(routes);
