@@ -245,6 +245,7 @@ interface SelectInputProps {
   wFull?: boolean;
   readOnly?: boolean;
   allowNetworkSelection?: boolean;
+  assetIdsToSelectFrom?: string[];
 }
 
 const NetworkAssetSelectInput = ({
@@ -265,6 +266,7 @@ const NetworkAssetSelectInput = ({
   wFull,
   readOnly = false,
   allowNetworkSelection = true,
+  assetIdsToSelectFrom,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -526,46 +528,55 @@ const NetworkAssetSelectInput = ({
                 </SearchInputWrapper>
               )}
               <OptionsScroll>
-                {filteredSelectedNetworkAssets.map((asset, index) => (
-                  <LargeOptionListItem
-                    key={`${asset.address ?? '0x'}-${index}`}
-                    onClick={(e: any) => {
-                      e.stopPropagation();
-                      if (!showQuickInputButtons) {
-                        onListItemClick(asset);
-                      }
-                    }}
-                  >
-                    <LargeOptionListItemLeft onClick={() => onListItemClick(asset)}>
-                      <RoundedImage url={asset.logoURI} title={asset.name} />
-                      <LargeOptionDetails>
-                        <div>
-                          {asset.name}
-                          {asset?.assetPriceUsd && `・${formatAmountDisplay(asset.assetPriceUsd, '$')}`}
-                        </div>
-                        <LargeOptionDetailsBottom>
-                          {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))} {asset.symbol}
-                          {!asset.balance.isZero() &&
-                            asset?.balanceWorthUsd &&
-                            `・${formatAmountDisplay(asset.balanceWorthUsd, '$')}`}
-                        </LargeOptionDetailsBottom>
-                      </LargeOptionDetails>
-                    </LargeOptionListItemLeft>
-                    {showQuickInputButtons && BigNumber.isBigNumber(asset.balance) && !asset.balance.isZero() && (
-                      <LargeOptionListItemRight>
-                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(4))}>
-                          25%
-                        </QuickAmountButton>
-                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(2))}>
-                          50%
-                        </QuickAmountButton>
-                        <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance)} primary>
-                          Max
-                        </QuickAmountButton>
-                      </LargeOptionListItemRight>
-                    )}
-                  </LargeOptionListItem>
-                ))}
+                {filteredSelectedNetworkAssets
+                  .filter((asset) => {
+                    if (assetIdsToSelectFrom && assetIdsToSelectFrom.length) {
+                      return assetIdsToSelectFrom.includes(asset.address);
+                    }
+
+                    return true;
+                  })
+                  .map((asset, index) => (
+                    <LargeOptionListItem
+                      key={`${asset.address ?? '0x'}-${index}`}
+                      onClick={(e: any) => {
+                        e.stopPropagation();
+                        if (!showQuickInputButtons) {
+                          onListItemClick(asset);
+                        }
+                      }}
+                    >
+                      <LargeOptionListItemLeft onClick={() => onListItemClick(asset)}>
+                        <RoundedImage url={asset.logoURI} title={asset.name} />
+                        <LargeOptionDetails>
+                          <div>
+                            {asset.name}
+                            {asset?.assetPriceUsd && `・${formatAmountDisplay(asset.assetPriceUsd, '$')}`}
+                          </div>
+                          <LargeOptionDetailsBottom>
+                            {formatAmountDisplay(ethers.utils.formatUnits(asset.balance, asset.decimals))}{' '}
+                            {asset.symbol}
+                            {!asset.balance.isZero() &&
+                              asset?.balanceWorthUsd &&
+                              `・${formatAmountDisplay(asset.balanceWorthUsd, '$')}`}
+                          </LargeOptionDetailsBottom>
+                        </LargeOptionDetails>
+                      </LargeOptionListItemLeft>
+                      {showQuickInputButtons && BigNumber.isBigNumber(asset.balance) && !asset.balance.isZero() && (
+                        <LargeOptionListItemRight>
+                          <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(4))}>
+                            25%
+                          </QuickAmountButton>
+                          <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance.div(2))}>
+                            50%
+                          </QuickAmountButton>
+                          <QuickAmountButton onClick={() => onListItemClick(asset, asset.balance)} primary>
+                            Max
+                          </QuickAmountButton>
+                        </LargeOptionListItemRight>
+                      )}
+                    </LargeOptionListItem>
+                  ))}
               </OptionsScroll>
             </>
           )}
