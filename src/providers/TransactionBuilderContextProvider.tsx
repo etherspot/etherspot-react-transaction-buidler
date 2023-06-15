@@ -895,8 +895,6 @@ const TransactionBuilderContextProvider = ({
         GNOSIS_USDC_CONTRACT_ADDRESS
       );
 
-      console.log('RESULTHASH2', result);
-
       if (result?.errorMessage || !result?.transactionHash?.length) {
         showAlertModal(result.errorMessage ?? 'Unable to send Gnosis transaction!');
         crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
