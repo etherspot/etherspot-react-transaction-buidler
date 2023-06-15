@@ -788,83 +788,82 @@ const TransactionBuilderContextProvider = ({
         tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
       });
 
-      const balance = res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0].balance ?? '0';
-
-      console.log(
-        'reshsgsg',
-        res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0],
-        ethers.utils.formatEther(balance),
-        crossChainAction.destinationCrossChainAction
-      );
+      const balance =
+        res.items.find((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)?.balance ??
+        ethers.utils.parseUnits('0', 6);
 
       let result: {
         transactionHash?: string;
         errorMessage?: string;
       };
 
-      result = crossChainAction.useWeb3Provider
-        ? await submitWeb3ProviderTransactions(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
-            web3Provider,
-            crossChainAction.transactions,
-            crossChainAction.chainId,
-            providerAddress
-          )
-        : await submitEtherspotAndWaitForTransactionHash(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
-            crossChainAction.transactions,
-            crossChainAction.gasTokenAddress ?? undefined
-          );
+      if (crossChainAction.chainId !== CHAIN_ID.XDAI) {
+        result = crossChainAction.useWeb3Provider
+          ? await submitWeb3ProviderTransactions(
+              getSdkForChainId(crossChainAction.chainId) as Sdk,
+              web3Provider,
+              crossChainAction.transactions,
+              crossChainAction.chainId,
+              providerAddress
+            )
+          : await submitEtherspotAndWaitForTransactionHash(
+              getSdkForChainId(crossChainAction.chainId) as Sdk,
+              crossChainAction.transactions,
+              crossChainAction.gasTokenAddress ?? undefined
+            );
 
-      if (result?.errorMessage || !result?.transactionHash?.length) {
-        showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
-        setIsSubmitting(false);
-        crossChainAction.transactions.map((transaction) => {
-          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
-        });
-        return;
-      }
-
-      crossChainAction.transactions.map((transaction) => {
-        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
-        transaction.submitTimestamp = Date.now();
-        transaction.transactionHash = result.transactionHash;
-      });
-
-      crossChainAction.transactionHash = result.transactionHash;
-
-      let flag = 1,
-        errorOnLiFi;
-
-      while (flag) {
-        try {
-          const res = await sdkForXdai.getAccountBalances({
-            tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
+        if (result?.errorMessage || !result?.transactionHash?.length) {
+          showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+          setIsSubmitting(false);
+          crossChainAction.transactions.map((transaction) => {
+            transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
           });
-
-          const balanceUpdated =
-            res.items.filter((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)[0].balance ?? '0';
-
-          if (!balance.eq(balanceUpdated)) {
-            flag = 0;
-            crossChainAction.transactions.map((transaction) => {
-              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
-            });
-            crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
-              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
-            });
-          }
-          await sleep(30);
-        } catch (err) {
-          errorOnLiFi = 'Transaction Failed on LiFi';
-          flag = 0;
+          return;
         }
-      }
 
-      if (errorOnLiFi) {
-        showAlertModal(errorOnLiFi);
-        setIsSubmitting(false);
-        return;
+        crossChainAction.transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+          transaction.submitTimestamp = Date.now();
+          transaction.transactionHash = result.transactionHash;
+        });
+
+        crossChainAction.transactionHash = result.transactionHash;
+
+        let flag = 1,
+          errorOnLiFi;
+
+        while (flag) {
+          try {
+            const res = await sdkForXdai.getAccountBalances({
+              tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
+            });
+
+            const balanceUpdated =
+              res.items.find((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)?.balance ??
+              ethers.utils.parseUnits('0', 6);
+
+            if (!balance.eq(balanceUpdated)) {
+              flag = 0;
+              crossChainAction.transactions.map((transaction) => {
+                transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+              });
+              crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+                transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+              });
+            }
+            await sleep(30);
+          } catch (err) {
+            console.log('errorOnlifi', err);
+            errorOnLiFi = 'Transaction Failed on LiFi';
+            flag = 0;
+          }
+        }
+
+        if (errorOnLiFi) {
+          showAlertModal(errorOnLiFi);
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       const estimateGas = await estimateCrossChainAction(
@@ -874,8 +873,6 @@ const TransactionBuilderContextProvider = ({
         providerAddress,
         accountAddress
       );
-
-      console.log('RESULTHASH2', estimateGas);
 
       crossChainAction = {
         ...crossChainAction,
@@ -895,7 +892,7 @@ const TransactionBuilderContextProvider = ({
       );
 
       if (result?.errorMessage || !result?.transactionHash?.length) {
-        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+        showAlertModal(result.errorMessage ?? 'Unable to send Gnosis transaction!');
         crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
           transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
         });

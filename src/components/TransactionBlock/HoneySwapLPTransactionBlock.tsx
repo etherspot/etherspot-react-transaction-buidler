@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, BridgingQuote, CrossChainServiceProvider, ExchangeOffer } from 'etherspot';
+import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider, ExchangeOffer } from 'etherspot';
 import { Route } from '@lifi/sdk';
 import { BigNumber, ethers, utils } from 'ethers';
 
@@ -162,7 +162,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       return;
     }
 
-    if (routeToUSDC.length == 0) {
+    if (selectedFromAsset?.chainId !== CHAIN_ID.XDAI && routeToUSDC.length == 0) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       return;
     }
@@ -262,32 +262,42 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       const data = await sdkOnXdai.getGatewayGasInfo();
 
-      const convertedData = utils.formatEther(data.fast.mul('1000000'));
+      const account = await sdkOnXdai.computeContractAccount();
+
+      const convertedData = utils.formatEther(
+        data.fast.mul(account.state === AccountStates.UnDeployed ? '1350000' : '1000000')
+      );
+
       const nativePrice = await getNativeAssetPriceInUsd(CHAIN_ID.XDAI);
 
       const gasAmountUSD = utils
         .parseUnits((Number(convertedData) * Number(nativePrice) * 1.3).toFixed(6), 6)
         .toString();
       let remainingAmount: any = null;
+      if (selectedFromNetwork.chainId !== CHAIN_ID.XDAI) {
+        try {
+          const { items: routes } = await sdk.getAdvanceRoutesLiFi({
+            fromChainId: selectedFromNetwork.chainId,
+            toChainId: CHAIN_ID.XDAI,
+            fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+            fromTokenAddress: selectedFromAsset.address,
+            toTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+            toAddress: sdk.state.accountAddress ?? undefined,
+          });
 
-      try {
-        const { items: routes } = await sdk.getAdvanceRoutesLiFi({
-          fromChainId: selectedFromNetwork.chainId,
-          toChainId: CHAIN_ID.XDAI,
-          fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-          fromTokenAddress: selectedFromAsset.address,
-          toTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
-          toAddress: sdk.state.accountAddress ?? undefined,
-        });
+          const bestRoute = getBestRouteItem(routes);
 
-        const bestRoute = getBestRouteItem(routes);
-        remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
+          remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
 
-        setRouteToUSDC(routes);
+          setRouteToUSDC(routes);
 
-        setSelectedRoute(mapRouteToOption(bestRoute));
-      } catch (e) {
-        //
+          setSelectedRoute(mapRouteToOption(bestRoute));
+        } catch (e) {
+          //
+        }
+      } else {
+        remainingAmount =
+          Number(ethers.utils.parseUnits(amount, selectedFromAsset.decimals).toString()) - Number(gasAmountUSD);
       }
 
       setIsRouteFetching(false);
@@ -385,7 +395,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
           setSelectedFromNetwork(network);
         }}
-        hideChainIds={[CHAIN_ID.XDAI]}
+        assetIdsToSelectFrom={[GNOSIS_USDC_CONTRACT_ADDRESS]}
+        hideChainIds={selectedAccountType === AccountTypes.Key ? [CHAIN_ID.XDAI] : []}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
         errorMessage={
@@ -473,6 +484,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         !!selectedToken1Asset &&
         !!selectedToken2Asset &&
         !!amount &&
+        selectedFromAsset.chainId !== CHAIN_ID.XDAI &&
         (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
           <SelectInput
             label={`Route`}
@@ -485,6 +497,19 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             errorMessage={!isRouteFetching ? errorMessages?.route : ''}
             noOpen={true}
             isOffer
+          />
+        )}
+
+      {!!selectedFromAsset &&
+        !!selectedToken1Asset &&
+        !!selectedToken2Asset &&
+        !!amount &&
+        selectedFromAsset.chainId === CHAIN_ID.XDAI && (
+          <HoneySwapRoute
+            token1={selectedToken1Asset}
+            token2={selectedToken2Asset}
+            offer1={selectedOffer1}
+            offer2={selectedOffer2}
           />
         )}
     </>

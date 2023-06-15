@@ -123,120 +123,123 @@ const HoneySwapRoute = ({ route, isChecked, showActions, cost, offer1, offer2, t
           {token2 && token2.name}
         </OffersBlock>
       </OffersBlockWrapper>
-      <OfferDetails>
-        <CombinedRoundedImages
-          title={firstStep.toolDetails.name}
-          url={firstStep.toolDetails.logoURI}
-          smallImageTitle={bridgeServiceIdToDetails['lifi'].title}
-          smallImageUrl={bridgeServiceIdToDetails['lifi'].iconUrl}
-          size={24}
-        />
-        <OfferDetailsRowsWrapper>
-          <OfferDetailsRow>
-            {!!valueToReceive && (
-              <Text size={14} medium>
-                {valueToReceive} {route?.toToken?.symbol} · {formatAmountDisplay(route.toAmountUSD, '$', 2)}
-              </Text>
-            )}
-            <Text size={14} marginLeft={6} color={theme?.color?.text?.innerLabel} inline medium>
-              {firstStep.toolDetails.name}
-              {firstStepViaService?.name !== firstStep.toolDetails.name && ` via ${firstStepViaService?.name}`}
-            </Text>
-          </OfferDetailsRow>
-          {twoDetailsRows && (
+
+      {route && (
+        <OfferDetails>
+          <CombinedRoundedImages
+            title={firstStep.toolDetails.name}
+            url={firstStep.toolDetails.logoURI}
+            smallImageTitle={bridgeServiceIdToDetails['lifi'].title}
+            smallImageUrl={bridgeServiceIdToDetails['lifi'].iconUrl}
+            size={24}
+          />
+          <OfferDetailsRowsWrapper>
             <OfferDetailsRow>
-              {!!route?.gasCostUSD && (
-                <>
-                  <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
-                    Gas price
-                  </Text>
-                  <Text size={14} marginRight={22} medium inline>
-                    {cost}
-                  </Text>
-                </>
+              {!!valueToReceive && (
+                <Text size={14} medium>
+                  {valueToReceive} {route?.toToken?.symbol} · {formatAmountDisplay(route.toAmountUSD, '$', 2)}
+                </Text>
               )}
-              {!!firstStep?.estimate?.executionDuration && (
-                <>
-                  <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
-                    Time
-                  </Text>
-                  <Text size={14} medium inline>
-                    {Math.ceil(+firstStep.estimate.executionDuration / 60)} min
-                  </Text>
-                </>
-              )}
+              <Text size={14} marginLeft={6} color={theme?.color?.text?.innerLabel} inline medium>
+                {firstStep.toolDetails.name}
+                {firstStepViaService?.name !== firstStep.toolDetails.name && ` via ${firstStepViaService?.name}`}
+              </Text>
             </OfferDetailsRow>
+            {twoDetailsRows && (
+              <OfferDetailsRow>
+                {!!route?.gasCostUSD && (
+                  <>
+                    <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
+                      Gas price
+                    </Text>
+                    <Text size={14} marginRight={22} medium inline>
+                      {cost}
+                    </Text>
+                  </>
+                )}
+                {!!firstStep?.estimate?.executionDuration && (
+                  <>
+                    <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
+                      Time
+                    </Text>
+                    <Text size={14} medium inline>
+                      {Math.ceil(+firstStep.estimate.executionDuration / 60)} min
+                    </Text>
+                  </>
+                )}
+              </OfferDetailsRow>
+            )}
+            {/* Etherspot SDK typing fails */}
+            {/* @ts-ignore */}
+            {(isChecked || showActions) && !!firstStep?.includedSteps?.length && (
+              <OfferDetailsActionsWrapper>
+                {/* Etherspot SDK typing fails */}
+                {/* @ts-ignore */}
+                {firstStep?.includedSteps.map((includedStep) => {
+                  const { action: includedStepAction, toolDetails: includedToolDetails } = includedStep;
+
+                  const sourceChain = supportedChains.find(
+                    (supportedChain) => supportedChain.chainId === includedStepAction.fromChainId
+                  );
+                  const destinationChain = supportedChains.find(
+                    (supportedChain) => supportedChain.chainId === includedStepAction.toChainId
+                  );
+
+                  if (!sourceChain || !destinationChain) return null;
+
+                  if (includedStep.type === 'swap') {
+                    const fromAssetAmount = ethers.utils.formatUnits(
+                      includedStep.estimate.fromAmount,
+                      includedStepAction.fromToken.decimals
+                    );
+                    const toAssetAmount = ethers.utils.formatUnits(
+                      includedStep.estimate.toAmount,
+                      includedStepAction.toToken.decimals
+                    );
+                    return (
+                      <OfferDetailsActionRow id={includedStep.id}>
+                        <RoundedImage
+                          title={includedToolDetails.title}
+                          url={includedToolDetails.logoURI}
+                          size={10}
+                          marginTop={2}
+                        />
+                        <Text size={12}>
+                          Swap on {sourceChain.title} via {includedToolDetails.name}
+                          <br />
+                          {formatAmountDisplay(fromAssetAmount)} {includedStepAction.fromToken.symbol} →{' '}
+                          {formatAmountDisplay(toAssetAmount)} {includedStepAction.toToken.symbol}
+                        </Text>
+                      </OfferDetailsActionRow>
+                    );
+                  }
+
+                  if (includedStep.type === 'cross') {
+                    return (
+                      <OfferDetailsActionRow id={includedStep.id}>
+                        <RoundedImage
+                          title={includedToolDetails.title}
+                          url={includedToolDetails.logoURI}
+                          size={10}
+                          marginTop={2}
+                        />
+                        <Text size={12}>
+                          Bridge from {sourceChain.title} to {destinationChain.title} via {includedToolDetails.name}
+                        </Text>
+                      </OfferDetailsActionRow>
+                    );
+                  }
+                })}
+              </OfferDetailsActionsWrapper>
+            )}
+          </OfferDetailsRowsWrapper>
+          {isChecked && (
+            <OfferChecked>
+              <BiCheck size={14} />
+            </OfferChecked>
           )}
-          {/* Etherspot SDK typing fails */}
-          {/* @ts-ignore */}
-          {(isChecked || showActions) && !!firstStep?.includedSteps?.length && (
-            <OfferDetailsActionsWrapper>
-              {/* Etherspot SDK typing fails */}
-              {/* @ts-ignore */}
-              {firstStep?.includedSteps.map((includedStep) => {
-                const { action: includedStepAction, toolDetails: includedToolDetails } = includedStep;
-
-                const sourceChain = supportedChains.find(
-                  (supportedChain) => supportedChain.chainId === includedStepAction.fromChainId
-                );
-                const destinationChain = supportedChains.find(
-                  (supportedChain) => supportedChain.chainId === includedStepAction.toChainId
-                );
-
-                if (!sourceChain || !destinationChain) return null;
-
-                if (includedStep.type === 'swap') {
-                  const fromAssetAmount = ethers.utils.formatUnits(
-                    includedStep.estimate.fromAmount,
-                    includedStepAction.fromToken.decimals
-                  );
-                  const toAssetAmount = ethers.utils.formatUnits(
-                    includedStep.estimate.toAmount,
-                    includedStepAction.toToken.decimals
-                  );
-                  return (
-                    <OfferDetailsActionRow id={includedStep.id}>
-                      <RoundedImage
-                        title={includedToolDetails.title}
-                        url={includedToolDetails.logoURI}
-                        size={10}
-                        marginTop={2}
-                      />
-                      <Text size={12}>
-                        Swap on {sourceChain.title} via {includedToolDetails.name}
-                        <br />
-                        {formatAmountDisplay(fromAssetAmount)} {includedStepAction.fromToken.symbol} →{' '}
-                        {formatAmountDisplay(toAssetAmount)} {includedStepAction.toToken.symbol}
-                      </Text>
-                    </OfferDetailsActionRow>
-                  );
-                }
-
-                if (includedStep.type === 'cross') {
-                  return (
-                    <OfferDetailsActionRow id={includedStep.id}>
-                      <RoundedImage
-                        title={includedToolDetails.title}
-                        url={includedToolDetails.logoURI}
-                        size={10}
-                        marginTop={2}
-                      />
-                      <Text size={12}>
-                        Bridge from {sourceChain.title} to {destinationChain.title} via {includedToolDetails.name}
-                      </Text>
-                    </OfferDetailsActionRow>
-                  );
-                }
-              })}
-            </OfferDetailsActionsWrapper>
-          )}
-        </OfferDetailsRowsWrapper>
-        {isChecked && (
-          <OfferChecked>
-            <BiCheck size={14} />
-          </OfferChecked>
-        )}
-      </OfferDetails>
+        </OfferDetails>
+      )}
     </div>
   );
 };

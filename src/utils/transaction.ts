@@ -1136,7 +1136,7 @@ export const buildCrossChainAction = async (
     !!transactionBlock?.values?.fromAssetDecimals &&
     !!transactionBlock?.values?.fromAssetSymbol &&
     !!transactionBlock?.values?.amount &&
-    !!transactionBlock?.values?.routeToUSDC &&
+    // !!transactionBlock?.values?.routeToUSDC &&
     !!transactionBlock?.values?.tokenOneAmount &&
     !!transactionBlock?.values?.tokenTwoAmount
   ) {
@@ -1161,11 +1161,11 @@ export const buildCrossChainAction = async (
         },
       } = transactionBlock;
 
-      if (fromChainId !== CHAIN_ID.XDAI) {
-        try {
-          let destinationTxns: ICrossChainActionTransaction[] = [];
-          let transactions: ICrossChainActionTransaction[] = [];
+      let destinationTxns: ICrossChainActionTransaction[] = [];
+      let transactions: ICrossChainActionTransaction[] = [];
 
+      if (fromChainId !== CHAIN_ID.XDAI && routeToUSDC) {
+        try {
           // This is used in case token 1 is USDC
           const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
 
@@ -1287,6 +1287,10 @@ export const buildCrossChainAction = async (
             receiverAddress: transactionBlock?.values?.receiverAddress,
             providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
             providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
+            offer1,
+            offer2,
+            token1: toToken1,
+            token2: toToken2,
           };
 
           const crossChainAction: ICrossChainAction = {
@@ -1296,6 +1300,123 @@ export const buildCrossChainAction = async (
             type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
             preview,
             transactions,
+            isEstimating: false,
+            estimated: null,
+            useWeb3Provider: accountType === AccountTypes.Key,
+            multiCallData: transactionBlock?.multiCallData,
+            receiveAmount: amount,
+            destinationCrossChainAction: [
+              {
+                id: uniqueId(`${createTimestamp}-`),
+                relatedTransactionBlockId: transactionBlock.id,
+                chainId: CHAIN_ID.XDAI,
+                type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                preview,
+                transactions: destinationTxns,
+                isEstimating: false,
+                estimated: null,
+                useWeb3Provider: false,
+                gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                destinationCrossChainAction: [],
+              },
+            ],
+          };
+
+          return { crossChainAction: crossChainAction };
+        } catch (e) {
+          return { errorMessage: 'Failed to get bridge route!' };
+        }
+      } else if (fromChainId === CHAIN_ID.XDAI) {
+        try {
+          // This is used in case token 1 is USDC
+          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
+
+          // This is used in case token 2 is USDC
+          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, 6);
+
+          // Swap 1 Start //
+          if (offer1 && toToken1.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer1.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 1 ENDS
+
+          // Swap 2 Start
+
+          if (offer2 && toToken2.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer2.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 2 ENDS
+
+          const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
+
+          const honeySwapTransaction = await honeyswapLP(
+            sdk,
+            offer1 ? offer1.receiveAmount : fromTokenOneAmountBN,
+            toToken1.address,
+            offer2 ? offer2.receiveAmount : fromTokenTwoAmountBN,
+            toToken2.address,
+            addressToSendTo
+          );
+
+          if (honeySwapTransaction.errorMessage) return { errorMessage: honeySwapTransaction.errorMessage };
+
+          if (honeySwapTransaction.result?.transactions?.length) {
+            destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
+          }
+
+          const preview = {
+            fromChainId,
+            toChainId: CHAIN_ID.XDAI,
+            fromAsset: {
+              address: fromAssetAddress,
+              decimals: fromAssetDecimals,
+              symbol: fromAssetSymbol,
+              amount: amount,
+              iconUrl: fromAssetIconUrl,
+            },
+            amount: ethers.utils.parseUnits(amount ?? '0', 6),
+            toAsset: {
+              address: GNOSIS_USDC_CONTRACT_ADDRESS,
+              decimals: 6,
+              symbol: 'usdc',
+              amount: ethers.utils.parseUnits(amount ?? '0', 6).toString(),
+              iconUrl: 'https://polygonscan.com/token/images/klimadao_32.png',
+            },
+            route: routeToUSDC,
+            receiverAddress: transactionBlock?.values?.receiverAddress,
+            providerName: 'LiFi',
+            providerIconUrl: '',
+            offer1,
+            offer2,
+            token1: toToken1,
+            token2: toToken2,
+          };
+
+          const crossChainAction: ICrossChainAction = {
+            id: crossChainActionId,
+            relatedTransactionBlockId: transactionBlock.id,
+            chainId: fromChainId,
+            type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+            preview,
+            transactions: destinationTxns,
             isEstimating: false,
             estimated: null,
             useWeb3Provider: accountType === AccountTypes.Key,
