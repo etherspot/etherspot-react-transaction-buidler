@@ -227,6 +227,11 @@ const OptionsScroll = styled.div`
   }
 `;
 
+type AssetsToSelectByChainId = {
+  chainId: number;
+  assetIds: string[];
+};
+
 interface SelectInputProps {
   label?: string;
   errorMessage?: string;
@@ -245,7 +250,7 @@ interface SelectInputProps {
   wFull?: boolean;
   readOnly?: boolean;
   allowNetworkSelection?: boolean;
-  assetIdsToSelectFrom?: string[];
+  assetIdsToSelectFrom?: AssetsToSelectByChainId[];
 }
 
 const NetworkAssetSelectInput = ({
@@ -530,8 +535,16 @@ const NetworkAssetSelectInput = ({
               <OptionsScroll>
                 {filteredSelectedNetworkAssets
                   .filter((asset) => {
-                    if (assetIdsToSelectFrom && assetIdsToSelectFrom.length) {
-                      return assetIdsToSelectFrom.includes(asset.address);
+                    const currentNetwork = assetIdsToSelectFrom?.find(
+                      (item) => item.chainId === selectedNetwork?.chainId
+                    );
+
+                    if (
+                      assetIdsToSelectFrom &&
+                      assetIdsToSelectFrom.length &&
+                      currentNetwork?.chainId === selectedNetwork?.chainId
+                    ) {
+                      return currentNetwork?.assetIds.includes(asset.address);
                     }
 
                     return true;
