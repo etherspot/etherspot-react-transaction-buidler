@@ -395,7 +395,12 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
           setSelectedFromNetwork(network);
         }}
-        assetIdsToSelectFrom={[GNOSIS_USDC_CONTRACT_ADDRESS]}
+        assetIdsToSelectFrom={[
+          {
+            chainId: CHAIN_ID.XDAI,
+            assetIds: [GNOSIS_USDC_CONTRACT_ADDRESS],
+          },
+        ]}
         hideChainIds={selectedAccountType === AccountTypes.Key ? [CHAIN_ID.XDAI] : []}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
