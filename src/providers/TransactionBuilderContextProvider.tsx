@@ -399,12 +399,8 @@ const TransactionBuilderContextProvider = ({
 
   // Check for dynamic changes from parent
   useEffect(() => {
-    const mappedDefaultTransactionBlocks = defaultTransactionBlocks
-      ? defaultTransactionBlocks.map(addIdToDefaultTransactionBlock)
-      : [];
-    setShowWalletBlock(!mappedDefaultTransactionBlocks?.length);
-    setTransactionBlocks(mappedDefaultTransactionBlocks);
-  }, [hideWalletBlock, defaultTransactionBlocks]);
+    setShowWalletBlock(!mappedDefaultTransactionBlocks?.length && !hideWalletBlock);
+  }, [hideWalletBlock]);
 
   // Change copy icon back
   useInterval(() => {
