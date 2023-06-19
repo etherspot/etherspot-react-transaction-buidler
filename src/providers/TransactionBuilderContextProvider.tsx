@@ -1187,7 +1187,7 @@ const TransactionBuilderContextProvider = ({
       )}
       <div>
         {/* Wallet */}
-        {showWalletBlock && accountAddress && (
+        {showWalletBlock && (
           <TransactionBlocksWrapper transparentBackground={removeTransactionBlockContainer}>
             <Card
               onCloseButtonClick={() => setShowWalletBlock(false)}
