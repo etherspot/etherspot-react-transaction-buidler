@@ -15,12 +15,12 @@ export const plrDaoAsset: IAssetWithBalance = {
   balanceWorthUsd: null,
 };
 
-export const testPlrDaoAsset: { [chianId: number]: IAssetWithBalance } = {
+export const plrDaoAssetPerChainId: { [chianId: number]: IAssetWithBalance } = {
   [MAINNET_CHAIN_ID.POLYGON]: {
-    address: '0x6D5862a18C6a169D44d02a8B726a02A5B707B484',
+    address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
     chainId: MAINNET_CHAIN_ID.POLYGON,
-    name: 'Deku (DKU)',
-    symbol: 'DKU',
+    name: 'Pillar (PLR)',
+    symbol: 'PLR',
     decimals: 18,
     logoURI: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
     balance: BigNumber.from(0),
@@ -40,10 +40,7 @@ export const testPlrDaoAsset: { [chianId: number]: IAssetWithBalance } = {
   },
 };
 
-export const getPlrAssetForChainId = (
-  chainId: number,
-  balance: BigNumber = BigNumber.from(0),
-): IAssetWithBalance => ({
+export const getPlrAssetForChainId = (chainId: number, balance: BigNumber = BigNumber.from(0)): IAssetWithBalance => ({
   address: PLR_ADDRESS_PER_CHAIN[chainId],
   chainId,
   name: 'Pillar',

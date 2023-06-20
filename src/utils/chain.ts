@@ -486,10 +486,10 @@ export const klimaAsset: IAssetWithBalance = {
 
 export const plrDaoMemberNft = {
   [MAINNET_CHAIN_ID.POLYGON]: {
-    address: '0x267c85113BAfbBe829918fB4c23135af72c9C472',
+    address: '0xdC0C74Fb0faffFdB88b91cfa8493e6B06e02f01f',
     chainId: MAINNET_CHAIN_ID.POLYGON,
-    name: 'DekuDAO NFT',
-    symbol: 'Dekunft',
+    name: 'Pillar DAO NFT',
+    symbol: 'PLR DAO',
     decimals: 18,
     logoURI: 'https://public.pillar.fi/files/pillar-dao-member-badge.png',
     balance: BigNumber.from(0),

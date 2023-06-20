@@ -21,7 +21,7 @@ import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-tok
 import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
 import { sumAssetsBalanceWorth } from '../utils/common';
-import { testPlrDaoAsset } from '../utils/asset';
+import { plrDaoAssetPerChainId } from '../utils/asset';
 
 export type IAsset = TokenListToken;
 
@@ -221,7 +221,7 @@ const EtherspotContextProvider = ({
         CHAIN_ID.BINANCE,
         CHAIN_ID.ETHEREUM_MAINNET,
         CHAIN_ID.POLYGON,
-        CHAIN_ID.OKTC
+        CHAIN_ID.OKTC,
       ];
 
       const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
@@ -241,10 +241,8 @@ const EtherspotContextProvider = ({
       const hasNativeAsset = assets.some(
         (asset) => !asset.address || addressesEqual(asset.address, nativeAssetPerChainId[chainId]?.address)
       );
-      // TODO: to be added back when DKU token is no longer needed. This is for the DKU testing.
-      // supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
-      supportedAssetsPerChainId[assetsChainId] =
-        hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets, testPlrDaoAsset[CHAIN_ID.POLYGON]];
+
+      supportedAssetsPerChainId[assetsChainId] = hasNativeAsset || !nativeAsset ? assets : [nativeAsset, ...assets];
 
       return supportedAssetsPerChainId[assetsChainId];
     },
@@ -624,7 +622,7 @@ const EtherspotContextProvider = ({
       getRatesByNativeChainId,
       changeTheme,
       environment,
-      setEnvironment
+      setEnvironment,
     }),
     [
       connect,
@@ -655,7 +653,7 @@ const EtherspotContextProvider = ({
       getRatesByNativeChainId,
       changeTheme,
       environment,
-      setEnvironment
+      setEnvironment,
     ]
   );
 

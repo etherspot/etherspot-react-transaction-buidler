@@ -894,6 +894,7 @@ const ActionPreview = ({
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
     const {
+      hasEnoughPLR,
       fromAsset,
       fromChainId,
       toAsset,
@@ -928,7 +929,7 @@ const ActionPreview = ({
 
     return (
       <Card
-        title="PLR Dao Staking"
+        title={hasEnoughPLR ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
