@@ -163,7 +163,11 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     }
 
     if (selectedFromAsset?.chainId !== CHAIN_ID.XDAI && routeToUSDC.length == 0) {
-      setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
+      setTransactionBlockFieldValidationError(
+        transactionBlockId,
+        'routeToUSDC',
+        'Please try with different inputs/amount'
+      );
       return;
     }
 
