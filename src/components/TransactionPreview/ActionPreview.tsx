@@ -611,6 +611,8 @@ const ActionPreview = ({
     const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
     const fromAssetPriceUsd = useAssetPriceUsd(fromChainId, fromAsset.address);
 
+    //console.log("CROSSCHAINACTION ZZZZ", crossChainAction);
+    
 		return (
       <Card
         title="Klima DAO Staking"
@@ -687,7 +689,7 @@ const ActionPreview = ({
                 {!!cost && (
                   <>
                     <Text size={12} marginLeft={8} color={theme.color?.text?.innerLabel} medium block>
-                      Gas price1
+                      Gas price
                     </Text>
                     <Text marginLeft={4} medium>
                       {cost}
@@ -699,10 +701,12 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
+
         <TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
         />
+          
         {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
           CROSS_CHAIN_ACTION_STATUS.CONFIRMED && (
           <TransactionStatus

@@ -300,12 +300,14 @@ const KlimaStakingTransactionBlock = ({
           toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toAddress: sdk.state.accountAddress,
         });
-
         const bestRoutetoUSDC = getBestRouteItem(routesUSDC);
 
         setRouteToUSDC(routesUSDC);
         setAvailableRoutes(routesUSDC);
 
+        console.log("BESTROUTE_USDC", bestRoutetoUSDC);
+        setToolUsed(bestRoutetoUSDC.steps[0].tool);
+        
         if (routesUSDC === null) {
           setIsRouteFetching(false);
           resetRoutes();
@@ -357,8 +359,6 @@ const KlimaStakingTransactionBlock = ({
         setRouteToKlima(routesKLIMA);
         setSelectedRoute(mapRouteToOption(bestRoute));
 
-        setToolUsed('');
-
         setReceiveAmount(
           ethers.utils.formatUnits(bestRoute.toAmount, klimaAsset.decimals)
         );
@@ -366,7 +366,6 @@ const KlimaStakingTransactionBlock = ({
         setIsRouteFetching(false);
 
       } catch (err) {
-        console.log(err);
         resetRoutes();
         setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       }

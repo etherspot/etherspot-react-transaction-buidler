@@ -600,6 +600,7 @@ const TransactionBuilderContextProvider = ({
     }
 
     if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+      console.log("crossChainActions", crossChainActions);
       let crossChainAction = crossChainActions[0];
 
       if (!crossChainAction.receiveAmount) {
@@ -635,6 +636,7 @@ const TransactionBuilderContextProvider = ({
         });
         return;
       }
+      console.log("result", result);
 
       crossChainAction.transactions.map((transaction) => {
         transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
@@ -678,7 +680,6 @@ const TransactionBuilderContextProvider = ({
         setIsSubmitting(false);
         return;
       }
-
       const estimateGas = await estimateCrossChainAction(
         getSdkForChainId(CHAIN_ID.POLYGON),
         web3Provider,
@@ -686,6 +687,7 @@ const TransactionBuilderContextProvider = ({
         providerAddress,
         accountAddress
       );
+      console.log("GGG estimateGas", estimateGas);
 
       const stakingTxns = await klimaDaoStaking(
         transactionBlocks[0].type === 'KLIMA_STAKE' ? transactionBlocks[0].values?.routeToKlima : null,
@@ -697,7 +699,7 @@ const TransactionBuilderContextProvider = ({
           .sub(estimateGas.feeAmount ?? '0')
           .toString()
       );
-
+      console.log("GGG stakingTxns", stakingTxns);
       if (stakingTxns.errorMessage) {
         showAlertModal(stakingTxns.errorMessage);
         setIsSubmitting(false);
@@ -711,6 +713,7 @@ const TransactionBuilderContextProvider = ({
         providerAddress,
         accountAddress
       );
+      console.log("GGG estimated", estimated);
 
       crossChainAction = {
         ...crossChainAction,
@@ -718,6 +721,7 @@ const TransactionBuilderContextProvider = ({
         transactions: stakingTxns.result?.transactions ?? [],
         chainId: CHAIN_ID.POLYGON,
       };
+      console.log("GGG crossChainAction", crossChainAction);
 
       crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
         transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
@@ -729,6 +733,7 @@ const TransactionBuilderContextProvider = ({
         POLYGON_USDC_CONTRACT_ADDRESS
       );
 
+      console.log("GGG resultX", result);
       if (result?.errorMessage || !result?.transactionHash?.length) {
         showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
         crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
