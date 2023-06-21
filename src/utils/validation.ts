@@ -133,6 +133,8 @@ export const validateTransactionBlockValues = (transactionBlock: ITransactionBlo
       errors.offer1 = 'Select the first token';
     if (!transactionBlockValues?.offer2 && transactionBlockValues?.toToken2?.address !== GNOSIS_USDC_CONTRACT_ADDRESS)
       errors.offer2 = 'Select the second token';
+    if (transactionBlockValues?.toToken2?.address === transactionBlockValues?.toToken1?.address)
+      errors.toToken2 = 'Please select different token';
   }
 
   return errors;
