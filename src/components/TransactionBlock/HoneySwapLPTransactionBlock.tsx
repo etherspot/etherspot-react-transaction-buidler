@@ -171,6 +171,11 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       return;
     }
 
+    if (selectedToken1Asset?.address === selectedToken2Asset?.address) {
+      setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Please try with different assets');
+      return;
+    }
+
     // resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     setTransactionBlockValues(transactionBlockId, {
       fromChainId: selectedFromNetwork?.chainId ?? undefined,
@@ -493,6 +498,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         !!selectedToken1Asset &&
         !!selectedToken2Asset &&
         !!amount &&
+        selectedToken1Asset?.address !== selectedToken2Asset?.address &&
         selectedFromAsset.chainId !== CHAIN_ID.XDAI &&
         (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
           <SelectInput
