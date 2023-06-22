@@ -1477,6 +1477,7 @@ export const submitEtherspotAndWaitForTransactionHash = async (
   } catch (e) {
     errorMessage = parseEtherspotErrorMessageIfAvailable(e);
     if (!errorMessage && e instanceof Error) {
+      console.log(errorMessage);
       errorMessage = e?.message;
     }
     return { errorMessage };
