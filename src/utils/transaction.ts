@@ -26,7 +26,7 @@ import { map as rxjsMap } from 'rxjs/operators';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
-import { plrDaoAsset, testPlrDaoAsset, plrStakedAssetEthereumMainnet } from './asset';
+import { plrDaoAsset, plrDaoAssetPerChainId, plrStakedAssetEthereumMainnet } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
@@ -893,7 +893,7 @@ export const buildCrossChainAction = async (
 
         const preview = {
           fromChainId,
-          toChainId: testPlrDaoAsset[fromChainId].chainId,
+          toChainId: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].chainId,
           providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
           providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
           hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,

@@ -33,7 +33,7 @@ import {
   MAINNET_CHAIN_ID,
   TESTNET_CHAIN_ID,
 } from '../../utils/chain';
-import { plrDaoAsset, testPlrDaoAsset } from '../../utils/asset';
+import { plrDaoAsset, plrDaoAssetPerChainId } from '../../utils/asset';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
@@ -214,11 +214,13 @@ const PlrDaoStakingTransactionBlock = ({
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
   const enableAssetBridge =
     selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON &&
-    selectedFromAsset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol;
-  const enableAssetSwap = selectedFromAsset?.symbol !== testPlrDaoAsset[STAKING_CHAIN_ID].symbol;
+    selectedFromAsset?.symbol === plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol;
+  const enableAssetSwap = selectedFromAsset?.symbol !== plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol;
 
   const toAsset =
-    enableAssetBridge || enableAssetSwap ? testPlrDaoAsset[STAKING_CHAIN_ID] : plrDaoMemberNft[STAKING_CHAIN_ID];
+    hasEnoughPLR && !enableAssetBridge && !enableAssetSwap
+      ? plrDaoMemberNft[STAKING_CHAIN_ID]
+      : plrDaoAssetPerChainId[STAKING_CHAIN_ID];
 
   const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
 
@@ -316,12 +318,12 @@ const PlrDaoStakingTransactionBlock = ({
       let smartWalletBalance = 0;
       let keyBasedBalance = 0;
       accountsBalances[0]?.forEach(({ symbol, decimals, balance }) => {
-        if (symbol == testPlrDaoAsset[STAKING_CHAIN_ID].symbol) {
+        if (symbol == plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol) {
           smartWalletBalance += +ethers.utils.formatUnits(balance, decimals);
         }
       });
       accountsBalances[1]?.forEach(({ symbol, decimals, balance }) => {
-        if (symbol == testPlrDaoAsset[STAKING_CHAIN_ID].symbol) {
+        if (symbol == plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol) {
           keyBasedBalance += +ethers.utils.formatUnits(balance, decimals);
         }
       });
@@ -530,7 +532,7 @@ const PlrDaoStakingTransactionBlock = ({
     const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
 
     const valueToReceiveRaw = availableOffer
-      ? ethers.utils.formatUnits(availableOffer.receiveAmount, testPlrDaoAsset[STAKING_CHAIN_ID].decimals)
+      ? ethers.utils.formatUnits(availableOffer.receiveAmount, plrDaoAssetPerChainId[STAKING_CHAIN_ID].decimals)
       : undefined;
 
     const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
@@ -544,7 +546,7 @@ const PlrDaoStakingTransactionBlock = ({
           </Text>
           {!!valueToReceive && (
             <Text size={16} medium>
-              {valueToReceive} {testPlrDaoAsset[STAKING_CHAIN_ID].symbol}
+              {valueToReceive} {plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol}
               {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$', 2)}`}
             </Text>
           )}
@@ -566,7 +568,7 @@ const PlrDaoStakingTransactionBlock = ({
   if (isNFTMember) {
     return (
       <>
-        {!hideTitle && <Title>Pillar DAO Staking</Title>}
+        {!hideTitle && <Title>Pillar DAO NFT Membership</Title>}
         <ContainerWrapper>
           <Container>
             <Text size={18} color={theme?.color?.text?.tokenValue}>
@@ -606,7 +608,7 @@ const PlrDaoStakingTransactionBlock = ({
 
   return (
     <>
-      {!hideTitle && <Title>Stake into Pillar DAO</Title>}
+      {!hideTitle && <Title>{hasEnoughPLR ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}</Title>}
       <ContainerWrapper>
         <Container>
           <Text size={16}>
@@ -624,11 +626,10 @@ const PlrDaoStakingTransactionBlock = ({
           {'\n'}
           {tokenArray.map(({ chainId, chainName, keyBasedWallet, smartWallet }) => (
             <Text size={12}>
-              {<Block></Block>}
               {keyBasedWallet > 0 && (
                 <Block
                   color={
-                    chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
+                    !hasEnoughPLR && chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
                       ? theme?.color?.text?.tokenTotal
                       : ''
                   }
@@ -641,7 +642,7 @@ const PlrDaoStakingTransactionBlock = ({
               {smartWallet > 0 && (
                 <Block
                   color={
-                    chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
+                    !hasEnoughPLR && chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
                       ? theme?.color?.text?.tokenTotal
                       : ''
                   }
@@ -679,7 +680,7 @@ const PlrDaoStakingTransactionBlock = ({
             setSelectedFromAsset(asset);
             if (
               selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
-              asset?.symbol === testPlrDaoAsset[STAKING_CHAIN_ID].symbol
+              asset?.symbol === plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol
             ) {
               setAmount(formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, asset.decimals));
               return;
