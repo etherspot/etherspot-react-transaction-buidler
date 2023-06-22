@@ -5,6 +5,8 @@ import { Route } from '@lifi/sdk';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { IMultiCallData } from './transactionBlock';
 import { IPlrStakingV2BlockSwap } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { ExchangeOffer } from 'etherspot';
+import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 
 interface AssetTransfer {
   address: string;
@@ -35,12 +37,12 @@ export interface SendAssetActionPreview {
 }
 
 interface KlimaStakingActionPreview {
-	fromChainId: number;
-	fromAsset: AssetTransfer;
-	toAsset: AssetTransfer;
-	providerName: string;
-	providerIconUrl: string | undefined;
-	receiverAddress?: string;
+  fromChainId: number;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  providerName: string;
+  providerIconUrl: string | undefined;
+  receiverAddress?: string;
 }
 
 interface PlrStakingActionPreview {
@@ -75,6 +77,18 @@ export interface AssetSwapActionPreview {
   receiverAddress?: string;
 }
 
+interface HoneySwapLPActionPreview {
+  fromChainId: number;
+  fromAsset: AssetTransfer;
+  toAsset: AssetTransfer;
+  receiverAddress?: string;
+  route?: Route;
+  offer1?: ExchangeOffer;
+  offer2?: ExchangeOffer;
+  token1: IAssetWithBalance;
+  token2: IAssetWithBalance;
+}
+
 interface AssetBridgeAction {
   type: typeof TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
   preview: AssetBridgeActionPreview;
@@ -91,12 +105,23 @@ interface AssetSwapAction {
 }
 
 interface KlimaStakingAction {
-	type: typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
-	preview: KlimaStakingActionPreview;
-	destinationCrossChainAction: ICrossChainAction[];
-	containsSwitchChain?: boolean;
-	receiveAmount?: string;
-	bridgeUsed?: string;
+  type: typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
+  preview: KlimaStakingActionPreview;
+  destinationCrossChainAction: ICrossChainAction[];
+  containsSwitchChain?: boolean;
+  receiveAmount?: string;
+  bridgeUsed?: string;
+  gasCost?: string;
+  transactionHash?: string;
+}
+
+interface HoneySwapLPAction {
+  type: typeof TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP;
+  preview: HoneySwapLPActionPreview;
+  destinationCrossChainAction: ICrossChainAction[];
+  containsSwitchChain?: boolean;
+  receiveAmount?: string;
+  bridgeUsed?: string;
   gasCost?: string;
   transactionHash?: string;
 }
@@ -124,10 +149,10 @@ export interface ICrossChainActionTransaction extends ExecuteAccountTransactionD
 }
 
 export interface ICrossChainActionEstimation {
-	gasCost?: BigNumber | null;
-	usdPrice?: number | null;
-	errorMessage?: string;
-	feeAmount?: BigNumber | null;
+  gasCost?: BigNumber | null;
+  usdPrice?: number | null;
+  errorMessage?: string;
+  feeAmount?: BigNumber | null;
 }
 
 export type ICrossChainAction = {
@@ -145,10 +170,11 @@ export type ICrossChainAction = {
   batchHash?: string;
   multiCallData?: IMultiCallData | null;
 } & (
-  AssetBridgeAction
+  | AssetBridgeAction
   | SendAssetAction
   | AssetSwapAction
   | KlimaStakingAction
   | PlrStakingAction
   | PlrStakingV2Action
+  | HoneySwapLPAction
 );

@@ -34,7 +34,7 @@ import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 // hooks
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
-import { BiCheck } from "react-icons/bi";
+import { BiCheck } from 'react-icons/bi';
 import { getAssetPriceInUsd } from '../../services/coingecko';
 
 export interface IKlimaStakingTransactionBlockValues {
@@ -70,7 +70,7 @@ const OfferDetails = styled.div`
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   width: 100%;
 `;
 
@@ -117,6 +117,7 @@ const KlimaStakingTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
   values,
+  hideTitle = false,
 }: IKlimaStakingTransactionBlock) => {
   const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
@@ -317,7 +318,7 @@ const KlimaStakingTransactionBlock = ({
         const sdkChain = getSdkForChainId(CHAIN_ID.POLYGON);
         const gasInfo = await sdkChain?.getGatewayGasInfo();
 
-        let priceUsd = await getAssetPriceInUsd(CHAIN_ID.POLYGON,ethers.constants.AddressZero,sdk);
+        let priceUsd = await getAssetPriceInUsd(CHAIN_ID.POLYGON, ethers.constants.AddressZero, sdk);
         if (!gasInfo || !priceUsd) {
           setTransactionBlockFieldValidationError(transactionBlockId, 'amount', `No Offer found`);
           resetRoutes();
@@ -329,12 +330,12 @@ const KlimaStakingTransactionBlock = ({
 
         if (sdk.state.account.state === AccountStates.UnDeployed) {
           estimatedGas += 330000;
-        }          
-     
+        }
+
         let gasFees = currentGasPrice.mul(estimatedGas);
         gasFees = gasFees.add(gasFees.mul(40).div(100));
-        
-        const gasFeesUSD = (Number(ethers.utils.formatEther(gasFees.toString())) * priceUsd) + 0.1
+
+        const gasFeesUSD = Number(ethers.utils.formatEther(gasFees.toString())) * priceUsd + 0.1;
         const gasFeesUSDC = ethers.utils.parseUnits(gasFeesUSD.toFixed(6), 6);
 
         if (BigNumber.from(bestRoutetoUSDC.toAmount).lt(gasFeesUSDC.add("500000"))) {
@@ -433,7 +434,7 @@ const KlimaStakingTransactionBlock = ({
 
   return (
     <>
-      <Title>Klima DAO Staking</Title>
+      {!hideTitle && <Title>Klima DAO Staking</Title>}
       <AccountSwitchInput
         label="From wallet"
         selectedAccountType={selectedAccountType}

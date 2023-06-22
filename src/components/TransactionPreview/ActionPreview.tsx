@@ -1,38 +1,36 @@
-import React, { useEffect, useMemo, useState } from "react";
-import styled, { useTheme } from "styled-components";
-import { ethers } from "ethers";
-import { HiOutlinePencilAlt } from "react-icons/hi";
+import React, { useEffect, useMemo, useState } from 'react';
+import styled, { useTheme } from 'styled-components';
+import { ethers } from 'ethers';
+import { HiOutlinePencilAlt } from 'react-icons/hi';
 import { BsClockHistory, BiCheck, IoClose, FaSignature } from 'react-icons/all';
 import { CgSandClock } from 'react-icons/cg';
-import { CHAIN_ID_TO_NETWORK_NAME } from "etherspot/dist/sdk/network/constants";
+import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
 // Components
-import Card from "../Card";
-import { ClickableText, Text } from "../Text";
-import RouteOption from "../RouteOption";
-import { CombinedRoundedImages, RoundedImage } from "../Image";
+import Card from '../Card';
+import { ClickableText, Text } from '../Text';
+import RouteOption from '../RouteOption';
+import { CombinedRoundedImages, RoundedImage } from '../Image';
 import GasTokenSelect from '../GasTokenSelect';
 
 // Utils
-import {
-  getTransactionExplorerLink,
-  isERC20ApprovalTransactionData,
-} from "../../utils/transaction";
+import { getTransactionExplorerLink, isERC20ApprovalTransactionData } from '../../utils/transaction';
 import { formatAmountDisplay, humanizeHexString, copyToClipboard, getTypeOfAddress } from '../../utils/common';
-import { Chain, CHAIN_ID, klimaAsset, nativeAssetPerChainId, supportedChains } from "../../utils/chain";
-import { Theme } from "../../utils/theme";
+import { Chain, CHAIN_ID, klimaAsset, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { Theme } from '../../utils/theme';
 
 // Constants
-import { TRANSACTION_BLOCK_TYPE } from "../../constants/transactionBuilderConstants";
-import { CROSS_CHAIN_ACTION_STATUS } from "../../constants/transactionDispatcherConstants";
-import moment from "moment";
+import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
+import { CROSS_CHAIN_ACTION_STATUS } from '../../constants/transactionDispatcherConstants';
+import moment from 'moment';
 
 // Hooks
-import { useEtherspot } from "../../hooks";
+import { useEtherspot } from '../../hooks';
 
 // Types
-import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from "../../types/crossChainAction";
-import useAssetPriceUsd from "../../hooks/useAssetPriceUsd";
+import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
+import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
+import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 
 const TransactionAction = styled.div`
   position: relative;
@@ -93,10 +91,10 @@ const ValueText = styled.div`
   margin-top: 3px;
 `;
 
-const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
-	margin-right: 10px;
-	padding: 5px;
-	cursor: pointer;
+const SignButton = styled(FaSignature)<{ disabled?: boolean }>`
+  margin-right: 10px;
+  padding: 5px;
+  cursor: pointer;
 
   &:hover {
     opacity: 0.5;
@@ -106,10 +104,10 @@ const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
-const EditButton = styled(HiOutlinePencilAlt) <{ disabled?: boolean }>`
-	margin-right: 10px;
-	padding: 5px;
-	cursor: pointer;
+const EditButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
+  margin-right: 10px;
+  padding: 5px;
+  cursor: pointer;
 
   &:hover {
     opacity: 0.8;
@@ -215,7 +213,7 @@ interface TransactionPreviewInterface {
 const TransactionStatus = ({
   crossChainAction,
   setIsTransactionDone,
-  web3ProviderChainId
+  web3ProviderChainId,
 }: {
   crossChainAction: ICrossChainAction;
   setIsTransactionDone?: (value: boolean) => void;
@@ -226,23 +224,25 @@ const TransactionStatus = ({
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [prevStatus, setPrevStatus] = useState<{ [id: string]: string }>({});
-  const [isTokenApproved, setIsTokenApproved] = useState(false)
+  const [isTokenApproved, setIsTokenApproved] = useState(false);
 
   const { chainId, batchHash: transactionsBatchHash } = crossChainAction;
 
   const previewTransaction = (transactionHash?: string, approvalTransaction: boolean = false) => {
     // show cross chain tx explorer link if bridge action
     if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE && !approvalTransaction) {
-      const explorerLink = crossChainAction?.preview?.route?.steps?.[0]?.tool === 'connext'
-        ? `https://connextscan.io/tx/${transactionHash}?source=search`
-        : `https://socketscan.io/tx/${transactionHash}`
+      const explorerLink =
+        crossChainAction?.preview?.route?.steps?.[0]?.tool === 'connext'
+          ? `https://connextscan.io/tx/${transactionHash}?source=search`
+          : `https://socketscan.io/tx/${transactionHash}`;
       window.open(explorerLink, '_blank');
       return;
     }
 
     const explorerLink = getTransactionExplorerLink(chainId, transactionHash);
+
     if (!explorerLink) {
-      alert("The transaction hash is not yet available. Please try again later.");
+      alert('The transaction hash is not yet available. Please try again later.');
       return;
     }
 
@@ -260,20 +260,26 @@ const TransactionStatus = ({
       return;
     }
 
+    if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP && !approvalTransaction) {
+      setIsGettingExplorerLink(false);
+      previewTransaction(crossChainAction.transactionHash, approvalTransaction);
+      return;
+    }
+
     const sdk = getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
-      alert("The transaction hash is not yet available. Please try again later.");
+      alert('The transaction hash is not yet available. Please try again later.');
       setIsGettingExplorerLink(false);
       return;
     }
 
-    let transactionHash = "";
+    let transactionHash = '';
     try {
       const submittedBatch = await sdk.getGatewaySubmittedBatch({
         hash: transactionsBatchHash,
       });
       const { transaction } = submittedBatch;
-      transactionHash = transaction?.hash ?? "";
+      transactionHash = transaction?.hash ?? '';
     } catch (e) {
       //
     }
@@ -283,16 +289,8 @@ const TransactionStatus = ({
   };
 
   useEffect(() => {
-    if (
-      crossChainAction.transactions.every(
-        (transaction) => !!transaction.finishTimestamp
-      )
-    )
-      return;
-    let intervalId = setInterval(
-      () => setSecondsAfter((current) => current + 1),
-      1000
-    );
+    if (crossChainAction.transactions.every((transaction) => !!transaction.finishTimestamp)) return;
+    let intervalId = setInterval(() => setSecondsAfter((current) => current + 1), 1000);
     return () => {
       if (!intervalId) return;
       clearInterval(intervalId);
@@ -304,8 +302,8 @@ const TransactionStatus = ({
     ? crossChainAction.transactions
     : [crossChainAction.transactions[0]];
 
-    const hasApprovalTransaction =
-      crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(statusPreviewTransactions[0].data as string);
+  const hasApprovalTransaction =
+    crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(statusPreviewTransactions[0].data as string);
 
   return (
     <>
@@ -322,15 +320,14 @@ const TransactionStatus = ({
           ? CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK
           : transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
-        const showAsApproval = crossChainAction.useWeb3Provider
-          && isERC20ApprovalTransactionData(transaction.data as string)
-          && index === 0; // show first tx approval only, bridge tx that are index > 0 can include approval method too
+        const showAsApproval =
+          crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(transaction.data as string) && index === 0; // show first tx approval only, bridge tx that are index > 0 can include approval method too
 
-        let switchNetworkName;  
-        if(isNetworkSwitchRequired) {
+        let switchNetworkName;
+        if (isNetworkSwitchRequired) {
           const network = supportedChains.find((supportedChain) => supportedChain.chainId === crossChainAction.chainId);
           switchNetworkName = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[crossChainAction.chainId].toUpperCase();
-        };
+        }
 
         const actionStatusToTitle: { [transactionStatus: string]: string } = {
           [CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK]: `Switch Network to ${switchNetworkName}`,
@@ -346,26 +343,17 @@ const TransactionStatus = ({
         const actionStatusToIconBackgroundColor: {
           [transactionStatus: string]: string | undefined;
         } = {
-          [CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK]:
-            theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.UNSENT]:
-            theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.PENDING]:
-            theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.FAILED]:
-            theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]:
-            theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]:
-            theme?.color?.background?.statusIconPending,
-          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]:
-            theme?.color?.background?.statusIconFailed,
-          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]:
-            theme?.color?.background?.statusIconSuccess,
+          [CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK]: theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.UNSENT]: theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.PENDING]: theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.FAILED]: theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.RECEIVING]: theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.ESTIMATING]: theme?.color?.background?.statusIconPending,
+          [CROSS_CHAIN_ACTION_STATUS.REJECTED_BY_USER]: theme?.color?.background?.statusIconFailed,
+          [CROSS_CHAIN_ACTION_STATUS.CONFIRMED]: theme?.color?.background?.statusIconSuccess,
         };
 
-        const actionStatusIconBackgroundColor =
-          actionStatusToIconBackgroundColor[transactionStatus];
+        const actionStatusIconBackgroundColor = actionStatusToIconBackgroundColor[transactionStatus];
         const actionStatusTitle = actionStatusToTitle[transactionStatus];
 
         if (!actionStatusTitle) return null;
@@ -404,7 +392,7 @@ const TransactionStatus = ({
             timeout = setTimeout(() => {
               setPrevStatus((current) => ({ ...current, [index]: undefined }));
             }, 2000);
-          }else{
+          } else {
             setPrevStatus((current) => ({ ...current, [index]: undefined }));
           }
           if (
@@ -418,10 +406,10 @@ const TransactionStatus = ({
           if (transactionStatus === CROSS_CHAIN_ACTION_STATUS.CONFIRMED) {
             setIsTokenApproved(true);
           }
-            if (timeout) {
-              //@ts-ignore
-              return () => clearTimeout(timeout);
-            }
+          if (timeout) {
+            //@ts-ignore
+            return () => clearTimeout(timeout);
+          }
         }, [transactionStatus]);
 
         if (hasApprovalTransaction && !showAsApproval && !isTokenApproved) {
@@ -430,18 +418,12 @@ const TransactionStatus = ({
 
         return (
           <TransactionStatusAction
-            key={`tx-status-${
-              transaction.transactionHash ||
-              crossChainAction.batchHash ||
-              'no-hash'
-            }-${index}`}
+            key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}
           >
             {prevStatus[index] ? (
               <TransactionStatusWrapper>
                 <TransactionStatusMessageWrapper>
-                  <StatusIconWrapper
-                    color={theme?.color?.background?.statusIconSuccess}
-                  >
+                  <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
                     <BiCheck size={16} />
                   </StatusIconWrapper>
                   <Text size={16} medium>
@@ -452,57 +434,45 @@ const TransactionStatus = ({
             ) : (
               <>
                 {transaction?.submitTimestamp &&
-                  (transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING || 
+                  (transactionStatus === CROSS_CHAIN_ACTION_STATUS.PENDING ||
                     transactionStatus === CROSS_CHAIN_ACTION_STATUS.RECEIVING) && (
                     <TransactionStatusClock>
                       {!!transaction.finishTimestamp &&
-                        moment(
-                          moment(transaction.finishTimestamp).diff(
-                            moment(transaction.submitTimestamp)
-                          )
-                        ).format('mm:ss')}
+                        moment(moment(transaction.finishTimestamp).diff(moment(transaction.submitTimestamp))).format(
+                          'mm:ss'
+                        )}
                       {!transaction.finishTimestamp &&
-                        moment(
-                          moment().diff(moment(transaction.submitTimestamp))
-                        ).format('mm:ss')}
+                        moment(moment().diff(moment(transaction.submitTimestamp))).format('mm:ss')}
                     </TransactionStatusClock>
                   )}
-                  <TransactionStatusWrapper>
-                    <TransactionStatusMessageWrapper>
-                      {!!actionStatusIconBackgroundColor && (
-                        <StatusIconWrapper
-                          color={actionStatusIconBackgroundColor}
-                        >
-                          {getStatusComponent}
-                        </StatusIconWrapper>
-                      )}
-                      <Text size={16} medium>
-                        {showAsApproval
-                          ? `Approve: ${actionStatusTitle.toLowerCase()}`
-                          : actionStatusTitle}
-                      </Text>
-                    </TransactionStatusMessageWrapper>
-                    {transaction?.submitTimestamp && (
-                      <ClickableText
-                        disabled={isGettingExplorerLink}
-                        onClick={() => {
-                          if (crossChainAction.useWeb3Provider) {
-                            previewTransaction(transaction.transactionHash, showAsApproval);
-                            return;
-                          }
-                          previewBatchTransaction(showAsApproval);
-                        }}
-                      >
-                        <Text
-                          size={16}
-                          color={theme?.color?.text?.transactionStatusLink}
-                          medium
-                        >
-                          Tx
-                        </Text>
-                      </ClickableText>
+                <TransactionStatusWrapper>
+                  <TransactionStatusMessageWrapper>
+                    {!!actionStatusIconBackgroundColor && (
+                      <StatusIconWrapper color={actionStatusIconBackgroundColor}>
+                        {getStatusComponent}
+                      </StatusIconWrapper>
                     )}
-                  </TransactionStatusWrapper>
+                    <Text size={16} medium>
+                      {showAsApproval ? `Approve: ${actionStatusTitle.toLowerCase()}` : actionStatusTitle}
+                    </Text>
+                  </TransactionStatusMessageWrapper>
+                  {transaction?.submitTimestamp && (
+                    <ClickableText
+                      disabled={isGettingExplorerLink}
+                      onClick={() => {
+                        if (crossChainAction.useWeb3Provider) {
+                          previewTransaction(transaction.transactionHash, showAsApproval);
+                          return;
+                        }
+                        previewBatchTransaction(showAsApproval);
+                      }}
+                    >
+                      <Text size={16} color={theme?.color?.text?.transactionStatusLink} medium>
+                        Tx
+                      </Text>
+                    </ClickableText>
+                  )}
+                </TransactionStatusWrapper>
               </>
             )}
           </TransactionStatusAction>
@@ -528,7 +498,6 @@ const ActionPreview = ({
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
   const { accountAddress, providerAddress, web3Provider } = useEtherspot();
-  console.log("addresses", accountAddress, providerAddress)
   const theme: Theme = useTheme();
 
   const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
@@ -545,69 +514,78 @@ const ActionPreview = ({
     }
   }, [isSubmitted, timer]);
 
+  const onEditButtonClick = () => {
+    if (editButtonDisabled || !onEdit) return;
+    onEdit();
+  };
 
-	const onEditButtonClick = () => {
-		if (editButtonDisabled || !onEdit) return;
-		onEdit();
-	};
+  const onSignButtonClick = () => {
+    if (signButtonDisabled || !onSign) return;
+    onSign();
+  };
 
-	const onSignButtonClick = () => {
-		if (signButtonDisabled || !onSign) return;
-		onSign();
-	};
-
-	const showCloseButton = !!onRemove;
+  const showCloseButton = !!onRemove;
 
   const cost = useMemo(() => {
-    if (isEstimating) return "Estimating...";
+    if (isEstimating) return 'Estimating...';
     if (!estimated || !estimated?.gasCost) {
-      if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE && crossChainAction.useWeb3Provider && crossChainAction.gasCost) {
+      if (
+        crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE &&
+        crossChainAction.useWeb3Provider &&
+        crossChainAction.gasCost
+      ) {
         return formatAmountDisplay(crossChainAction.gasCost, '$');
       }
       return estimated?.errorMessage;
     }
+    const gasCostNumericString =
+      estimated.feeAmount && crossChainAction.gasTokenDecimals
+        ? ethers.utils.formatUnits(estimated.feeAmount, crossChainAction.gasTokenDecimals)
+        : ethers.utils.formatUnits(estimated.gasCost, nativeAssetPerChainId[chainId].decimals);
 
-    const gasCostNumericString = estimated.feeAmount && crossChainAction.gasTokenDecimals
-      ? ethers.utils.formatUnits(estimated.feeAmount, crossChainAction.gasTokenDecimals)
-      : ethers.utils.formatUnits(estimated.gasCost, nativeAssetPerChainId[chainId].decimals);
-
-    const gasAssetSymbol = estimated.feeAmount && crossChainAction.gasTokenSymbol
-      ? crossChainAction.gasTokenSymbol
-      : nativeAssetPerChainId[chainId].symbol;
+    const gasAssetSymbol =
+      estimated.feeAmount && crossChainAction.gasTokenSymbol
+        ? crossChainAction.gasTokenSymbol
+        : nativeAssetPerChainId[chainId].symbol;
 
     const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${gasAssetSymbol}`;
     if (!estimated.usdPrice) return gasCostFormatted;
 
-    return formatAmountDisplay(
-      `${+gasCostNumericString * +estimated.usdPrice}`,
-      "$"
-    );
+    return formatAmountDisplay(`${+gasCostNumericString * +estimated.usdPrice}`, '$');
   }, [isEstimating, estimated]);
 
   const additionalTopButtons = [
     showSignButton && (
-      <SignButton color={theme?.color?.background?.closeButton} disabled={signButtonDisabled} onClick={onSignButtonClick} />
+      <SignButton
+        color={theme?.color?.background?.closeButton}
+        disabled={signButtonDisabled}
+        onClick={onSignButtonClick}
+      />
     ),
     showEditButton && (
-      <EditButton color={theme?.color?.background?.closeButton} disabled={editButtonDisabled} onClick={onEditButtonClick} />
+      <EditButton
+        color={theme?.color?.background?.closeButton}
+        disabled={editButtonDisabled}
+        onClick={onEditButtonClick}
+      />
     ),
   ];
 
-	if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
-		const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress } = preview;
+  if (type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+    const { fromAsset, fromChainId, toAsset, providerName, providerIconUrl, receiverAddress } = preview;
 
-		const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
-		const toNetwork = supportedChains[1];
+    const toNetwork = supportedChains[1];
 
-		const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[CHAIN_ID.POLYGON].toUpperCase();
+    const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[CHAIN_ID.POLYGON].toUpperCase();
 
-		const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
-		const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-		const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
-		const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
     const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
     const fromAssetPriceUsd = useAssetPriceUsd(fromChainId, fromAsset.address);
 
@@ -639,7 +617,9 @@ const ActionPreview = ({
             </ValueWrapper>
           </TransactionAction>
           <TransactionAction>
-            <Label>You receive {targetAssetPriceUsd && formatAmountDisplay(+toAmount * targetAssetPriceUsd, '$')}</Label>
+            <Label>
+              You receive {targetAssetPriceUsd && formatAmountDisplay(+toAmount * targetAssetPriceUsd, '$')}
+            </Label>
             <ValueWrapper>
               <CombinedRoundedImages
                 title={toAsset.symbol}
@@ -679,7 +659,9 @@ const ActionPreview = ({
             <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} size={24} marginTop={-5} />
             <ValueBlock>
               <ValueText>
-                <span>{toAmount} {toAsset.symbol}</span>
+                <span>
+                  {toAmount} {toAsset.symbol}
+                </span>
                 <Text color={theme.color?.text?.innerLabel} marginLeft={6} medium block>
                   via {providerName}
                 </Text>
@@ -716,33 +698,21 @@ const ActionPreview = ({
         )}
       </Card>
     );
-	}
+  }
 
-	if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-		const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
+  if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
+    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
 
-    const fromNetwork = supportedChains.find(
-      (supportedChain) => supportedChain.chainId === fromChainId
-    );
-    const toNetwork = supportedChains.find(
-      (supportedChain) => supportedChain.chainId === toChainId
-    );
+    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+    const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
 
-    const fromChainTitle =
-      fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
-    const toChainTitle =
-      toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
+    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
 
-    const fromAmount = formatAmountDisplay(
-      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
-    );
-    const toAmount = formatAmountDisplay(
-      ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
-    );
+    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
-    const senderAddress = crossChainAction.useWeb3Provider
-      ? providerAddress
-      : accountAddress;
+    const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
     return (
       <Card
@@ -847,17 +817,11 @@ const ActionPreview = ({
               <Text size={12}>On {chainTitle}</Text>
             </ValueBlock>
             <ValueBlock>
-              <Text
-                size={12}
-                marginBottom={2}
-                color={theme.color?.text?.innerLabel}
-                medium
-                block
-              >
+              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
                 Gas price
               </Text>
               <Text size={16} medium>
-                {cost ?? "N/A"}
+                {cost ?? 'N/A'}
               </Text>
             </ValueBlock>
           </ValueWrapper>
@@ -872,7 +836,7 @@ const ActionPreview = ({
                   &nbsp;
                 </>
               )}
-              {fromAddress ? "to" : "To"}
+              {fromAddress ? 'to' : 'To'}
               &nbsp;
               <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
                 {getTypeOfAddress(receiverAddress, accountAddress, providerAddress)}
@@ -883,18 +847,14 @@ const ActionPreview = ({
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
       </>
     );
-  }
+  };
 
   const previewSwap = (preview: AssetSwapActionPreview | null, network: Chain | undefined, chainTitle: string) => {
     if (!preview) return null;
 
     const { fromAsset, toAsset } = preview;
-    const fromAmount = formatAmountDisplay(
-      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
-    );
-    const toAmount = formatAmountDisplay(
-      ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
-    );
+    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
     return (
       <DoubleTransactionActionsInSingleRow>
@@ -934,7 +894,7 @@ const ActionPreview = ({
         </TransactionAction>
       </DoubleTransactionActionsInSingleRow>
     );
-  }
+  };
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
     const {
@@ -1165,21 +1125,16 @@ const ActionPreview = ({
       </Card>
     );
   }
-  
+
   if (type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
-          action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET
-            ? action.preview
-            : null
+          action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET ? action.preview : null
         )
       : [crossChainAction.preview];
 
-    const network = supportedChains.find(
-      (supportedChain) => supportedChain.chainId === chainId
-    );
-    const chainTitle =
-      network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
+    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
+    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     return (
       <Card
@@ -1188,7 +1143,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {previewList.map(preview => previewSend(preview, network, chainTitle))}
+        {previewList.map((preview) => previewSend(preview, network, chainTitle))}
 
         {previewList.length > 1 && (
           <TransactionAction>
@@ -1198,7 +1153,12 @@ const ActionPreview = ({
           </TransactionAction>
         )}
 
-        {showStatus && <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}} />}
+        {showStatus && (
+          <TransactionStatus
+            crossChainAction={crossChainAction}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+          />
+        )}
       </Card>
     );
   }
@@ -1206,17 +1166,15 @@ const ActionPreview = ({
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
     const previewList = crossChainAction?.batchTransactions?.length
       ? crossChainAction?.batchTransactions.map((action) =>
-          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP || (!!action.multiCallData && action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
+          action.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP ||
+          (!!action.multiCallData && action.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET)
             ? action.preview
             : null
         )
       : [crossChainAction.preview];
 
-    const network = supportedChains.find(
-      (supportedChain) => supportedChain.chainId === chainId
-    );
-    const chainTitle =
-      network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
+    const network = supportedChains.find((supportedChain) => supportedChain.chainId === chainId);
+    const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     return (
       <Card
@@ -1225,7 +1183,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        {previewList.map(preview => {
+        {previewList.map((preview) => {
           if (!preview) return null;
           if ('toAsset' in preview) {
             return previewSwap(preview as AssetSwapActionPreview, network, chainTitle);
@@ -1247,13 +1205,7 @@ const ActionPreview = ({
           <Label>Route</Label>
           {!!cost && (
             <Row center>
-              <Text
-                size={12}
-                marginBottom={2}
-                color={theme.color?.text?.innerLabel}
-                medium
-                block
-              >
+              <Text size={12} marginBottom={2} color={theme.color?.text?.innerLabel} medium block>
                 Gas price
               </Text>
               <Text size={14} marginLeft={4} medium>
@@ -1301,32 +1253,18 @@ const ActionPreview = ({
   if (type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2) {
     const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, swap } = preview;
 
-    const fromNetwork = supportedChains.find(
-      (supportedChain) => supportedChain.chainId === fromChainId
-    );
-    const toNetwork = supportedChains.find(
-      (supportedChain) => supportedChain.chainId === toChainId
-    );
+    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+    const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
 
-    const fromChainTitle =
-      fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
-    const toChainTitle =
-      toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
+    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+    const toChainTitle = toNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[toChainId].toUpperCase();
 
-    const fromAmount = formatAmountDisplay(
-      ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
-    );
-    const toAmount = formatAmountDisplay(
-      ethers.utils.formatUnits(toAsset.amount, toAsset.decimals)
-    );
+    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+    const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
 
-    const senderAddress = crossChainAction.useWeb3Provider
-      ? providerAddress
-      : accountAddress;
+    const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
-    const cardTitle = swap
-      ? 'Asset swap'
-      : 'PLR stake'
+    const cardTitle = swap ? 'Asset swap' : 'PLR stake';
 
     return (
       <Card
@@ -1396,9 +1334,63 @@ const ActionPreview = ({
         )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         {showStatus && (
+          <TransactionStatus crossChainAction={crossChainAction} setIsTransactionDone={setIsTransactionDone} />
+        )}
+      </Card>
+    );
+  }
+
+  if (type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+    const { fromAsset, fromChainId, toAsset, receiverAddress, route, token1, token2, offer1, offer2 } = preview;
+
+    const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
+
+    const toNetwork = supportedChains[1];
+
+    const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
+
+    const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    return (
+      <Card
+        title="Honeyswap Liquidity Pool"
+        onCloseButtonClick={onRemove}
+        showCloseButton={showCloseButton}
+        additionalTopButtons={additionalTopButtons}
+      >
+        <TransactionAction>
+          <Label>You send</Label>
+          <ValueWrapper>
+            <CombinedRoundedImages
+              title={fromAsset.symbol}
+              url={fromAsset.iconUrl}
+              smallImageTitle={fromChainTitle}
+              smallImageUrl={fromNetwork?.iconUrl}
+            />
+            <div>
+              <Text size={16} marginBottom={1} medium block>
+                {fromAsset.amount} {fromAsset.symbol}
+              </Text>
+              <Text size={12}>On {fromChainTitle}</Text>
+            </div>
+          </ValueWrapper>
+        </TransactionAction>
+        {!!route && (
+          <TransactionAction>
+            <Label>Route</Label>
+            <HoneySwapRoute route={route} cost={cost} token1={token1} token2={token2} offer1={offer1} offer2={offer2} />
+          </TransactionAction>
+        )}
+
+        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
+        <TransactionStatus
+          crossChainAction={crossChainAction}
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+        />
+        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
+          CROSS_CHAIN_ACTION_STATUS.CONFIRMED && (
           <TransactionStatus
-            crossChainAction={crossChainAction}
-            setIsTransactionDone={setIsTransactionDone}
+            crossChainAction={crossChainAction.destinationCrossChainAction[0]}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
           />
         )}
       </Card>

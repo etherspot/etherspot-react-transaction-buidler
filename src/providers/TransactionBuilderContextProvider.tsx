@@ -31,6 +31,7 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
+  honeyswapLP,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -50,7 +51,7 @@ import {
   WalletIcon,
 } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
-import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { GNOSIS_USDC_CONTRACT_ADDRESS, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
@@ -65,7 +66,19 @@ export interface TransactionBuilderContextProps {
   hiddenTransactionBlockTypes?: ITransactionBlockType[];
   hideAddTransactionButton?: boolean;
   showMenuLogout?: boolean;
+
+  removeTransactionBlockContainer?: boolean;
   hideWalletBlock?: boolean;
+  hideWalletBlockNavigation?: boolean;
+  hideTopNavigation?: boolean;
+  hideWalletToggle?: boolean;
+  hideBuyButton?: boolean;
+  hideStatus?: boolean;
+  hideSettingsButton?: boolean;
+  hideAddButton?: boolean;
+  hideCloseTransactionBlockButton?: boolean;
+  hideTransactionBlockTitle?: boolean;
+  hideWalletSwitch?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -166,13 +179,15 @@ const MultiCallButton = styled(PrimaryButton)`
   color: #fff;
 `;
 
-const TransactionBlocksWrapper = styled.div.attrs((props: { highlight: boolean }) => props)`
+const TransactionBlocksWrapper = styled.div.attrs(
+  (props: { highlight?: boolean; transparentBackground?: boolean }) => props
+)`
   ${({ theme, highlight }) =>
     !!highlight &&
     `margin: -10px; padding: 10px; border-radius: 18px; background-color: ${theme.color.background.secondary};`};
   margin-bottom: 20px;
 
-  background: ${({ theme }) => theme.color.background.cardBorder};
+  ${({ theme, transparentBackground }) => !transparentBackground && `background: ${theme.color.background.cardBorder}`};
   padding: 1px;
   border-radius: 12px;
 `;
@@ -270,6 +285,11 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   },
   {
     id: getTimeBasedUniqueId(),
+    title: 'HoneySwap LP',
+    type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+  },
+  {
+    id: getTimeBasedUniqueId(),
     title: 'LI.FI staking (not yet available)',
     type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
@@ -323,7 +343,18 @@ const TransactionBuilderContextProvider = ({
   hiddenTransactionBlockTypes,
   hideAddTransactionButton,
   showMenuLogout,
+  removeTransactionBlockContainer = false,
   hideWalletBlock = false,
+  hideWalletBlockNavigation = false,
+  hideTopNavigation = false,
+  hideWalletToggle = false,
+  hideBuyButton = false,
+  hideStatus = false,
+  hideSettingsButton = false,
+  hideAddButton = false,
+  hideCloseTransactionBlockButton = false,
+  hideTransactionBlockTitle = false,
+  hideWalletSwitch = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -361,11 +392,15 @@ const TransactionBuilderContextProvider = ({
 
   useEffect(() => {
     setShowWalletBlock(false);
-    setTransactionBlocks([]);
     setTimeout(() => {
-      setShowWalletBlock(true);
+      if (defaultShowWallet) setShowWalletBlock(true);
     }, 2000);
   }, [environment]);
+
+  // Check for dynamic changes from parent
+  useEffect(() => {
+    setShowWalletBlock(!mappedDefaultTransactionBlocks?.length && !hideWalletBlock);
+  }, [hideWalletBlock]);
 
   // Change copy icon back
   useInterval(() => {
@@ -403,10 +438,9 @@ const TransactionBuilderContextProvider = ({
     [crossChainActions]
   );
 
-  const isEstimationFailing = useMemo(
-    () => crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage),
-    [crossChainActions]
-  );
+  const isEstimationFailing = useMemo(() => {
+    return crossChainActions.some((crossChainAction) => !!crossChainAction.estimated?.errorMessage);
+  }, [crossChainActions]);
 
   const getValidationErrors = () => {
     let validationErrors: IValidationErrors = {};
@@ -432,6 +466,7 @@ const TransactionBuilderContextProvider = ({
 
   const isBlockValid = useMemo(() => {
     const validationErrors = getValidationErrors();
+    console.log('Something', validationErrors);
 
     return isEmpty(validationErrors);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
@@ -459,6 +494,7 @@ const TransactionBuilderContextProvider = ({
       let multiCallList: string[] = [];
       for (const transactionBlock of transactionBlocks) {
         const result = await buildCrossChainAction(sdk, transactionBlock);
+
         if (!result?.crossChainAction || result?.errorMessage) {
           errorMessage = result?.errorMessage ?? `Failed to build a cross chain action!`;
           break;
@@ -513,7 +549,6 @@ const TransactionBuilderContextProvider = ({
     }
 
     setIsChecking(false);
-
     if (!errorMessage && !newCrossChainActions?.length) {
       errorMessage = `Failed to proceed with selected actions!`;
     }
@@ -661,6 +696,7 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
             });
+
             crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
               transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
             });
@@ -745,6 +781,133 @@ const TransactionBuilderContextProvider = ({
       setCrossChainActions([]);
       setTransactionBlocks([]);
       showAlertModal('Transaction sent');
+      setIsSubmitting(false);
+    } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+      const sdkForXdai = getSdkForChainId(CHAIN_ID.XDAI);
+
+      if (!sdkForXdai) return;
+
+      let crossChainAction = crossChainActions[0];
+
+      const res = await sdkForXdai.getAccountBalances({
+        tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
+      });
+
+      const balance =
+        res.items.find((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)?.balance ??
+        ethers.utils.parseUnits('0', 6);
+
+      let result: {
+        transactionHash?: string;
+        errorMessage?: string;
+      };
+
+      if (crossChainAction.chainId !== CHAIN_ID.XDAI) {
+        result = crossChainAction.useWeb3Provider
+          ? await submitWeb3ProviderTransactions(
+              getSdkForChainId(crossChainAction.chainId) as Sdk,
+              web3Provider,
+              crossChainAction.transactions,
+              crossChainAction.chainId,
+              providerAddress
+            )
+          : await submitEtherspotAndWaitForTransactionHash(
+              getSdkForChainId(crossChainAction.chainId) as Sdk,
+              crossChainAction.transactions,
+              crossChainAction.gasTokenAddress ?? undefined
+            );
+
+        if (result?.errorMessage || !result?.transactionHash?.length) {
+          showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
+          setIsSubmitting(false);
+          crossChainAction.transactions.map((transaction) => {
+            transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+          });
+          return;
+        }
+
+        crossChainAction.transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+          transaction.submitTimestamp = Date.now();
+          transaction.transactionHash = result.transactionHash;
+        });
+
+        crossChainAction.transactionHash = result.transactionHash;
+
+        let flag = 1,
+          errorOnLiFi;
+
+        while (flag) {
+          try {
+            const res = await sdkForXdai.getAccountBalances({
+              tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
+            });
+
+            const balanceUpdated =
+              res.items.find((item) => item.token === GNOSIS_USDC_CONTRACT_ADDRESS)?.balance ??
+              ethers.utils.parseUnits('0', 6);
+
+            if (!balance.eq(balanceUpdated)) {
+              flag = 0;
+              crossChainAction.transactions.map((transaction) => {
+                transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+              });
+              crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+                transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
+              });
+            }
+            await sleep(30);
+          } catch (err) {
+            console.log('errorOnlifi', err);
+            errorOnLiFi = 'Transaction Failed on LiFi';
+            flag = 0;
+          }
+        }
+
+        if (errorOnLiFi) {
+          showAlertModal(errorOnLiFi);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const estimateGas = await estimateCrossChainAction(
+        getSdkForChainId(CHAIN_ID.XDAI),
+        web3Provider,
+        crossChainAction.destinationCrossChainAction[0],
+        providerAddress,
+        accountAddress
+      );
+
+      crossChainAction = {
+        ...crossChainAction,
+        estimated: estimateGas,
+        transactions: crossChainAction.destinationCrossChainAction[0].transactions ?? [],
+        chainId: CHAIN_ID.XDAI,
+      };
+
+      crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
+      });
+
+      result = await submitEtherspotAndWaitForTransactionHash(
+        getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
+        crossChainAction.transactions,
+        GNOSIS_USDC_CONTRACT_ADDRESS
+      );
+
+      if (result?.errorMessage || !result?.transactionHash?.length) {
+        showAlertModal(result.errorMessage ?? 'Unable to send Gnosis transaction!');
+        crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
+          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      showAlertModal('Transaction sent');
+      setCrossChainActions([]);
+      setTransactionBlocks([]);
       setIsSubmitting(false);
     } else {
       setCrossChainActions([]);
@@ -986,51 +1149,63 @@ const TransactionBuilderContextProvider = ({
 
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
-      <TopNavigation>
-        <WalletAddressesWrapper>
-          <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
-            <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
-              <TbWallet size={16} />
-            </Text>
-            {accountAddress ? (
-              <>
-                <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
-                  Wallet
+      {!hideTopNavigation && (
+        <TopNavigation>
+          <WalletAddressesWrapper>
+            {!hideWalletToggle && (
+              <WalletAddress selected={showWalletBlock} disabled={isConnecting}>
+                <Text marginRight={2} color={theme.color?.text?.topMenuWallet}>
+                  <TbWallet size={16} />
                 </Text>
-                <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)}>
-                  {copiedAddress ? (
-                    <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
-                  ) : (
-                    <TbCopy size={16} color={theme.color?.text?.topMenuWallet} />
-                  )}
-                </Text>
-              </>
-            ) : (
-              <Text onClick={connect}>Wallet</Text>
+                {accountAddress ? (
+                  <>
+                    <Text onClick={() => setShowWalletBlock(!showWalletBlock)} marginRight={8}>
+                      Wallet
+                    </Text>
+                    <Text onClick={() => copyToClipboard(accountAddress, onCopySuccess)}>
+                      {copiedAddress ? (
+                        <CheckmarkIcon color={theme.color?.text?.topMenuWallet} />
+                      ) : (
+                        <TbCopy size={16} color={theme.color?.text?.topMenuWallet} />
+                      )}
+                    </Text>
+                  </>
+                ) : (
+                  <Text onClick={connect}>Wallet</Text>
+                )}
+              </WalletAddress>
             )}
-          </WalletAddress>
-          {accountAddress && (
-            <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
-              {deployingAccount ? 'Deploying...' : 'Buy'}
-            </WalletAddress>
+            {!hideBuyButton && accountAddress && (
+              <WalletAddress disabled={deployingAccount} onClick={onBuyClick}>
+                {deployingAccount ? 'Deploying...' : 'Buy'}
+              </WalletAddress>
+            )}
+          </WalletAddressesWrapper>
+          {!hideStatus && <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>}
+          {!hideSettingsButton && (
+            <SettingsWrapper>
+              <ConnectionIcon isConnected={!!accountAddress} />
+              <SettingMenu showLogout={showMenuLogout} logout={logout} />
+            </SettingsWrapper>
           )}
-        </WalletAddressesWrapper>
-        <StatusWrapper>{connectedStatusMessages[connectionStatus]}</StatusWrapper>
-        <SettingsWrapper>
-          <ConnectionIcon isConnected={!!accountAddress} />
-          <SettingMenu showLogout={showMenuLogout} logout={logout} />
-        </SettingsWrapper>
-      </TopNavigation>
+        </TopNavigation>
+      )}
       <div>
         {/* Wallet */}
-        {showWalletBlock && accountAddress && (
-          <TransactionBlocksWrapper>
-            <Card onCloseButtonClick={() => setShowWalletBlock(false)} showCloseButton>
+        {showWalletBlock && (
+          <TransactionBlocksWrapper transparentBackground={removeTransactionBlockContainer}>
+            <Card
+              onCloseButtonClick={() => setShowWalletBlock(false)}
+              showCloseButton={!hideCloseTransactionBlockButton}
+              removeContainer={removeTransactionBlockContainer}
+            >
               <WalletTransactionBlock
                 availableTransactionBlocks={availableTransactionBlocks}
                 hasTransactionBlockAdded={hasTransactionBlockAdded}
                 addTransactionBlock={addTransactionBlock}
                 hideWalletBlock={() => setShowWalletBlock(false)}
+                hideWalletBlockNavigation={hideWalletBlockNavigation}
+                hideTransactionBlockTitle={hideTransactionBlockTitle}
               />
             </Card>
           </TransactionBlocksWrapper>
@@ -1044,6 +1219,7 @@ const TransactionBuilderContextProvider = ({
                   !!crossChainActionInProcessing?.batchTransactions?.length &&
                   !!crossChainActionInProcessing.multiCallData
                 }
+                transparentBackground={removeTransactionBlockContainer}
               >
                 {!!crossChainActionInProcessing?.batchTransactions?.length &&
                   !!crossChainActionInProcessing.multiCallData && (
@@ -1094,7 +1270,8 @@ const TransactionBuilderContextProvider = ({
                     onCloseButtonClick={() => {
                       setShowMulticallOptions(null);
                     }}
-                    showCloseButton
+                    showCloseButton={!hideCloseTransactionBlockButton}
+                    removeContainer={removeTransactionBlockContainer}
                   >
                     {availableMulticallBlocks
                       .filter((block) => !block.hideFor?.includes(lastTxType.type))
@@ -1261,7 +1438,10 @@ const TransactionBuilderContextProvider = ({
               };
 
               return (
-                <TransactionBlocksWrapper highlight={!!multiCallBlocks?.length}>
+                <TransactionBlocksWrapper
+                  highlight={!!multiCallBlocks?.length}
+                  transparentBackground={removeTransactionBlockContainer}
+                >
                   {!!multiCallBlocks?.length ? (
                     multiCallBlocks?.map((multiCallBlock, j) => {
                       return (
@@ -1277,14 +1457,18 @@ const TransactionBuilderContextProvider = ({
                           }
                           // Should only have the option to delete last multicall, any change mid structure should reset the entire block
                           showCloseButton={
-                            (multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) ||
-                            (multiCallBlocks.length === 1 && !editingTransactionBlock)
+                            !hideCloseTransactionBlockButton &&
+                            ((multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) ||
+                              (multiCallBlocks.length === 1 && !editingTransactionBlock))
                           }
+                          removeContainer={removeTransactionBlockContainer}
                         >
                           <TransactionBlock
                             key={`block-${multiCallBlock.id}`}
                             {...multiCallBlock}
                             errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                            hideTitle={hideTransactionBlockTitle}
+                            hideWalletSwitch={hideWalletSwitch}
                           />
                           {j === multiCallBlocks.length - 1 &&
                             multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
@@ -1318,12 +1502,15 @@ const TransactionBuilderContextProvider = ({
                           current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
                         )
                       }
-                      showCloseButton={!editingTransactionBlock}
+                      showCloseButton={!hideCloseTransactionBlockButton && !editingTransactionBlock}
+                      removeContainer={removeTransactionBlockContainer}
                     >
                       <TransactionBlock
                         key={`block-${transactionBlock.id}`}
                         {...transactionBlock}
                         errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                        hideTitle={hideTransactionBlockTitle}
+                        hideWalletSwitch={hideWalletSwitch}
                       />
                       {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                         transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
@@ -1353,7 +1540,7 @@ const TransactionBuilderContextProvider = ({
                 </TransactionBlocksWrapper>
               );
             })}
-            {!showTransactionBlockSelect && !hideAddTransactionButton && !editingTransactionBlock && (
+            {!hideAddButton && !showTransactionBlockSelect && !hideAddTransactionButton && !editingTransactionBlock && (
               <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
                 <AiOutlinePlusCircle size={24} />
                 <span>Add transaction</span>
@@ -1394,7 +1581,11 @@ const TransactionBuilderContextProvider = ({
               </SecondaryButton>
             )}
             {showTransactionBlockSelect && (
-              <Card onCloseButtonClick={() => setShowTransactionBlockSelect(false)} showCloseButton>
+              <Card
+                onCloseButtonClick={() => setShowTransactionBlockSelect(false)}
+                showCloseButton={!hideCloseTransactionBlockButton}
+                removeContainer={removeTransactionBlockContainer}
+              >
                 {availableTransactionBlocks
                   .filter(
                     (availableTransactionBlock) =>
@@ -1537,7 +1728,10 @@ const TransactionBuilderContextProvider = ({
               };
 
               return (
-                <TransactionBlocksWrapper highlight={!!multiCallBlocks.length}>
+                <TransactionBlocksWrapper
+                  highlight={!!multiCallBlocks.length}
+                  transparentBackground={removeTransactionBlockContainer}
+                >
                   {!!multiCallBlocks.length && <TransactionBlocksWrapperIcon>{ChainIcon}</TransactionBlocksWrapperIcon>}
                   {actionPreview(crossChainAction)}
                 </TransactionBlocksWrapper>

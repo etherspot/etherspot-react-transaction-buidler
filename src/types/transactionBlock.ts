@@ -8,6 +8,7 @@ import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/Pl
 import { ErrorMessages } from '../utils/validation';
 import { Chain } from '../utils/chain';
 import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { IHoneySwapLPTransactionBlockValues } from '../components/TransactionBlock/HoneySwapLPTransactionBlock';
 
 export type IMultiCallData = {
   id: string;
@@ -24,6 +25,8 @@ export type ITransactionBlockBase = {
   title?: string;
   errorMessages?: ErrorMessages;
   multiCallData?: IMultiCallData | null;
+  hideTitle?: boolean;
+  hideWalletSwitch?: boolean;
 };
 
 export type ITransactionBlockType =
@@ -33,7 +36,8 @@ export type ITransactionBlockType =
   | typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE
   | typeof TRANSACTION_BLOCK_TYPE.DISABLED
-  | typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2;
+  | typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2
+  | typeof TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP;
 
 export type IDefaultTransactionBlock = {
   title?: string;
@@ -70,6 +74,11 @@ export interface IPlrStakingV2Block extends ITransactionBlockBase {
   values?: IPlrStakingV2BlockValues;
 }
 
+export interface IHoneySwapLPBlock extends ITransactionBlockBase {
+  type: typeof TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP;
+  values?: IHoneySwapLPTransactionBlockValues;
+}
+
 interface IDisabledTransactionBlock extends ITransactionBlockBase {
   type: typeof TRANSACTION_BLOCK_TYPE.DISABLED;
 }
@@ -81,6 +90,7 @@ export type ITransactionBlock =
   | IKlimaStakingTransactionBlock
   | IPlrDaoStakingMembershipBlock
   | IPlrStakingV2Block
+  | IHoneySwapLPBlock
   | IDisabledTransactionBlock;
 
 export type ITransactionBlockValues =
@@ -89,6 +99,7 @@ export type ITransactionBlockValues =
   | ISendAssetTransactionBlockValues
   | IKlimaStakingTransactionBlockValues
   | IPlrDaoTransactionBlockValues
+  | IHoneySwapLPTransactionBlockValues
   | IPlrStakingV2BlockValues;
 
 export type IMulticallBlock = { icon: string } & ITransactionBlock;
