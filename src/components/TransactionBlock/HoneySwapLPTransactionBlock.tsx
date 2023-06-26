@@ -185,7 +185,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       fromAssetIconUrl: selectedFromAsset?.logoURI,
       amount,
       accountType: selectedAccountType,
-      receiverAddress: receiverAddress ?? undefined,
+      receiverAddress:
+        (selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress) ?? undefined,
       routeToUSDC: routeToUSDC[0],
       toToken1: selectedToken1Asset ?? undefined,
       toToken2: selectedToken2Asset ?? undefined,
@@ -384,6 +385,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         label="From wallet"
         selectedAccountType={selectedAccountType}
         onChange={(accountType) => {
+          setSelectedReceiveAccountType(accountType);
           setSelectedAccountType(accountType);
         }}
         hideKeyBased={smartWalletOnly}
