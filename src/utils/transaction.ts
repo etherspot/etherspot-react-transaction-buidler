@@ -423,6 +423,8 @@ export const honeyswapLP = async (
 ) => {
   if (!sdk) return { errorMessage: 'No sdk found' };
 
+  console.log('receiverAddress', receiverAddress);
+
   const contractAddress = '0x1C232F01118CB8B424793ae03F870aa7D0ac7f77';
   const contractAddressProxy = '0xf8D1677c8a0c961938bf2f9aDc3F3CFDA759A9d9';
 
