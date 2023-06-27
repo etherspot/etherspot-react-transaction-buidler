@@ -350,8 +350,10 @@ const PlrDaoStakingTransactionBlock = ({
     return total;
   };
 
-  const fetchAllAccountBalances = async () => {
+  const fetchAllAccountBalances = useCallback(async () => {
     try {
+      if (!sdk || (!accountAddress && !providerAddress)) return;
+
       const filteredSupportedChains = supportedChains.filter((chain) =>
         [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.POLYGON, CHAIN_ID.XDAI, CHAIN_ID.BINANCE].includes(chain.chainId)
       );
@@ -371,12 +373,12 @@ const PlrDaoStakingTransactionBlock = ({
     } catch (e) {
       //
     }
-  };
+  }, [accountAddress, providerAddress, sdk]);
 
   useEffect(() => {
     // Fetch token balance for all the chains
     fetchAllAccountBalances();
-  }, []);
+  }, [fetchAllAccountBalances]);
 
   const updateAvailableOffers = useCallback<() => Promise<ExchangeOffer[] | undefined>>(
     debounce(async () => {
@@ -408,7 +410,7 @@ const PlrDaoStakingTransactionBlock = ({
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType]
   );
 
-  const getNftList = async () => {
+  const getNftList = useCallback(async () => {
     if (!accountAddress || !providerAddress || !sdk) {
       return;
     }
@@ -424,7 +426,7 @@ const PlrDaoStakingTransactionBlock = ({
     } catch (error) {
       //
     }
-  };
+  }, [accountAddress, providerAddress, sdk]);
 
   useEffect(() => {
     // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
