@@ -64,7 +64,7 @@ const Etherspot = ({
   etherspotSessionStorage,
   showMenuLogout,
   smartWalletOnly,
-  hideWalletBlock = false,
+  hideWalletBlock = true,
   onLogout,
 }: EtherspotProps) => {
   const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));

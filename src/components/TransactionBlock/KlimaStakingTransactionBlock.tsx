@@ -267,7 +267,7 @@ const KlimaStakingTransactionBlock = ({
           fromTokenAddress: selectedFromAsset.address,
           fromAddress: selectedAccountType === AccountTypes.Key ? sdk.state.walletAddress : sdk.state.accountAddress,
           toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-          toAddress: sdk.state.accountAddress,
+          toAddress: sdk.state.walletAddress,
           serviceProvider: CrossChainServiceProvider.LiFi,
         });
 
@@ -282,7 +282,7 @@ const KlimaStakingTransactionBlock = ({
         const routeToKlima = await sdk.getCrossChainQuotes({
           fromChainId: CHAIN_ID.POLYGON,
           toChainId: CHAIN_ID.POLYGON,
-          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('250000'),
+          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub('2000'),
           fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
           toAddress: receiverAddress ?? undefined,
@@ -313,7 +313,7 @@ const KlimaStakingTransactionBlock = ({
         setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       }
     }, 200),
-    [selectedFromNetwork, selectedFromAsset, amount, selectedAccountType, receiverAddress]
+    [selectedFromNetwork, selectedFromAsset, amount, AccountTypes.Key, receiverAddress]
   );
 
   /**
@@ -377,16 +377,6 @@ const KlimaStakingTransactionBlock = ({
   return (
     <>
       <Title>Stake into sKlima</Title>
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          setSelectedAccountType(accountType);
-        }}
-        hideKeyBased={smartWalletOnly}
-        errorMessage={errorMessages?.accountType}
-        showTotals
-      />
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
@@ -410,7 +400,7 @@ const KlimaStakingTransactionBlock = ({
           errorMessages?.fromAssetAddress ||
           errorMessages?.fromAssetDecimals
         }
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+        walletAddress={selectedAccountType === AccountTypes.Key ? accountAddress : providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
         accountType={selectedAccountType}
@@ -420,8 +410,8 @@ const KlimaStakingTransactionBlock = ({
         selectedNetwork={supportedChains[1]}
         selectedAsset={klimaAsset}
         disabled={true}
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        accountType={selectedAccountType}
+        walletAddress={selectedAccountType === AccountTypes.Key ? accountAddress : providerAddress}
+        accountType={AccountTypes.Key}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
@@ -453,24 +443,6 @@ const KlimaStakingTransactionBlock = ({
           errorMessage={errorMessages?.amount}
         />
       )}
-      <WalletReceiveWrapper>
-        <AccountSwitchInput
-          label="You will receive on"
-          selectedAccountType={selectedReceiveAccountType}
-          onChange={(value) => {
-            setSelectedReceiveAccountType(value);
-            if (value == DestinationWalletEnum.Custom) {
-              setUseCustomAddress(true);
-              return;
-            }
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-            setUseCustomAddress(false);
-            setCustomReceiverAddress(null);
-          }}
-          hideKeyBased={smartWalletOnly}
-          showCustom
-        />
-      </WalletReceiveWrapper>
       {useCustomAddress && (
         <TextInput
           value={customReceiverAddress ?? ''}

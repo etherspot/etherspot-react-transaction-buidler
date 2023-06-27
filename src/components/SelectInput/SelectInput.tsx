@@ -23,7 +23,7 @@ const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: bo
   border-radius: 8px;
   padding: 8px 14px 14px;
   cursor: pointer;
-  ${({ disabled }) => disabled && `opacity: 0.3;`}
+  ${({ disabled }) => disabled && `opacity: 1;`}
 `;
 
 const SelectButtonWrapper = styled.div<{ disabled?: boolean }>`

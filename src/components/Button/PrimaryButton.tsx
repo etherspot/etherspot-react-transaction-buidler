@@ -22,7 +22,7 @@ const PrimaryButton = styled.div<{
   cursor: pointer;
   font-family: "PTRootUIWebMedium", sans-serif;
 
-  ${({ disabled }) => disabled && `opacity: 0.7;`}
+  ${({ disabled }) => disabled && `opacity: 1;`}
 
   &:hover {
     opacity: 0.7;

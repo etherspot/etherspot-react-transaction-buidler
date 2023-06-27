@@ -33,7 +33,7 @@ import { AiOutlineSearch } from 'react-icons/ai';
 
 const tabOptions = {
   tokens: {
-    title: 'Tokens',
+    title: 'Tokens2',
     value: 'tokens',
   },
   nfts: {
@@ -356,140 +356,7 @@ const WalletTransactionBlock = ({
 
   return (
     <>
-      <Title>{`$${formatAmountDisplay(walletTotal)}`}</Title>
-      <ButtonRow>
-        <ActionButtonWrapper onClick={handleDepositButton}>
-          <ActionButton>{WalletDepositIcon}</ActionButton>
-          <ActionButtonText>Deposit</ActionButtonText>
-        </ActionButtonWrapper>
-
-        <ActionButtonWrapper onClick={handleSendButton}>
-          <ActionButton>{WalletSendIcon}</ActionButton>
-          <ActionButtonText>Send</ActionButtonText>
-        </ActionButtonWrapper>
-
-        <ActionButtonWrapper onClick={handleWithdrawButton}>
-          <ActionButton>{WalletWithdrawIcon}</ActionButton>
-          <ActionButtonText>Withdraw</ActionButtonText>
-        </ActionButtonWrapper>
-
-        <ActionButtonWrapper onClick={() => handleActionButton(TRANSACTION_BLOCK_TYPE.ASSET_SWAP)}>
-          <ActionButton>{WalletSwapIcon}</ActionButton>
-          <ActionButtonText>Swap</ActionButtonText>
-        </ActionButtonWrapper>
-
-        <ActionButtonWrapper
-          disabled={!!hasTransactionBlockAdded}
-          onClick={() => handleActionButton(TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE)}
-        >
-          <ActionButton>{WalletBridgeIcon}</ActionButton>
-          <ActionButtonText>Bridge</ActionButtonText>
-        </ActionButtonWrapper>
-      </ButtonRow>
-
-      <SwitchInput
-        options={Object.values(tabOptions).map((tabs) => tabs)}
-        selectedOption={tabOptions[tab]}
-        onChange={(option) => changeTab(option.value)}
-      />
-
-      <ButtonRow>
-        <SearchWrapper>
-          <SearchIcon>
-            <AiOutlineSearch color={theme?.color?.text?.searchIcon} size={20} />
-          </SearchIcon>
-          <SearchInput
-            placeholder="Search"
-            value={searchValue}
-            onChange={({ target }) => setSearchValue(target.value)}
-          />
-          {searchValue && <SearchIcon color={theme?.color?.background?.closeButton} onClick={hideSearchBar}>{WalletCloseSearchIcon}</SearchIcon>}
-        </SearchWrapper>
-
-        <ChainButtonRow>
-          <ChainButton selected={!showAllChains} onClick={() => toggleShowAllChains(false)}>
-            <ChainButtonText>Assets</ChainButtonText>
-          </ChainButton>
-
-          <ChainButton selected={showAllChains} onClick={() => toggleShowAllChains(true)}>
-            <ChainButtonText>Chains</ChainButtonText>
-          </ChainButton>
-        </ChainButtonRow>
-      </ButtonRow>
-
-      {!showAllChains && (
-        <ChainDropdownWrapper>
-          <ChainDropdownSelect>
-            {supportedChains?.map((chain, i) => {
-              if (i > 5) return null;
-
-              return (
-                <ChainDropdownButton
-                  key={`chain-dropdown-${i}`}
-                  onClick={() => toggleChainDropdownOption(chain.chainId)}
-                  selected={selectedChains.includes(chain.chainId)}
-                >
-                  <RoundedImage url={chain.iconUrl} title={chain.title} size={34} marginRight={0} />
-                </ChainDropdownButton>
-              );
-            })}
-
-            <ChainDropdownIcon onClick={onDropdownClick}>
-              <HiChevronDown size={18} color={theme.color?.text?.walletDropdownIcon} />
-            </ChainDropdownIcon>
-          </ChainDropdownSelect>
-
-          {showChainDropdown && (
-            <ChainDropdownModal>
-              <ChainDropdownListWrapper>
-                <ChainDropdownList>
-                  {supportedChains?.map((chain, i) => {
-                    return (
-                      <ChainDropdownButton
-                        key={`chain-dropdown-button-${i}`}
-                        onClick={() => toggleChainDropdownOption(chain.chainId)}
-                        selected={selectedChains.includes(chain.chainId)}
-                      >
-                        <RoundedImage url={chain.iconUrl} title={chain.title} size={34} marginRight={0} />
-                      </ChainDropdownButton>
-                    );
-                  })}
-
-                  <ChainDropdownIcon onClick={hideDropdown}>
-                    <HiChevronUp size={18} color={theme.color?.text?.walletDropdownIcon} />
-                  </ChainDropdownIcon>
-                </ChainDropdownList>
-                <SelectAllWrapper onClick={selectAllChain}>
-                  <Text>Select All</Text>
-                </SelectAllWrapper>
-              </ChainDropdownListWrapper>
-            </ChainDropdownModal>
-          )}
-        </ChainDropdownWrapper>
-      )}
-
-      <WalletAssetsList
-        updateCount={refreshCount}
-        accountAddress={accountAddress}
-        tab={tab}
-        showAllChains={showAllChains}
-        selectedChains={selectedChains}
-        hideChainList={hideChainList}
-        displayAssets={displayAssets}
-        onCopy={copyToClipboard}
-        toggleChainBlock={toggleChainBlock}
-      />
-
-      <WalletNftsList
-        accountAddress={accountAddress}
-        tab={tab}
-        showAllChains={showAllChains}
-        selectedChains={selectedChains}
-        hideChainList={hideChainList}
-        displayNfts={displayNfts}
-        onCopy={copyToClipboard}
-        toggleChainBlock={toggleChainBlock}
-      />
+    {handleActionButton(TRANSACTION_BLOCK_TYPE.KLIMA_STAKE)}
     </>
   );
 };

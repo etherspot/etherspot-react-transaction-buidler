@@ -12,7 +12,7 @@ export default (
       <g fill="none" fill-rule="evenodd">
         <path d="M27 .13 53.87 27 27 53.87.13 27z" />
         <g
-          stroke="#FFF"
+          stroke="#000"
           stroke-linecap="round"
           stroke-linejoin="round"
           stroke-width="1.5"

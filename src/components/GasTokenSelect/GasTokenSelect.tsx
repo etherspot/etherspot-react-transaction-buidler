@@ -34,7 +34,7 @@ const Wrapper = styled.div<{ disabled?: boolean }>`
   border-radius: 8px;
   padding: 8px 10px;
   margin-bottom: 14px;
-  ${({ disabled }) => disabled && `opacity: 0.7;`}
+  ${({ disabled }) => disabled && `opacity: 1;`}
 `;
 
 const SelectedGasOption = styled.div`
@@ -114,54 +114,7 @@ const GasTokenSelect = ({
     : isZeroAddress(gasToken.address)
   );
 
-  return (
-    <Wrapper disabled={isDisabled}>
-      {selectedGasToken && (
-        <SelectedGasOption
-          onClick={() => {
-            if (isDisabled) return;
-            setShowOptions(!showOptions)
-          }}
-        >
-          <Text size={16} marginRight={8} inline medium>Paying fees with</Text>
-          <RoundedImage title={selectedGasToken.symbol} url={selectedGasToken.logoURI} size={16} marginRight={4}/>
-          {selectedGasToken.symbol}
-          {selectedGasToken.balanceWorthUsd && `・ ${formatAmountDisplay(selectedGasToken.balanceWorthUsd, '$')} left`}
-          <GasOptionSelectIcon>
-            {!showOptions && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
-            {showOptions && <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />}
-          </GasOptionSelectIcon>
-        </SelectedGasOption>
-      )}
-      {!isDisabled && showOptions && gasAssets.map((gasToken) => {
-        const isSelected = crossChainAction.gasTokenAddress
-          ? addressesEqual(gasToken.address, crossChainAction.gasTokenAddress)
-          : isZeroAddress(gasToken.address);
-
-        return (
-          <GasOption
-            onClick={() => {
-              setCrossChainActionGasToken(
-                crossChainAction.id,
-                gasToken.address,
-                gasToken.decimals,
-                gasToken.symbol,
-              );
-              setShowOptions(false);
-            }}
-          >
-            <RoundedImage title={gasToken.symbol} url={gasToken.logoURI} size={16} marginRight={4}/>
-            {formatAmountDisplay(ethers.utils.formatUnits(gasToken.balance, gasToken.decimals))} {gasToken.symbol}
-            {gasToken.balanceWorthUsd && `・ ${formatAmountDisplay(gasToken.balanceWorthUsd, '$')}`}
-            <GasOptionSelectIcon>
-              {isSelected && <IoRadioButtonOnOutline size={17} color={theme.color?.background?.selectInputRadioOn} />}
-              {!isSelected && <SelectInputRadioOff />}
-            </GasOptionSelectIcon>
-          </GasOption>
-        )
-      })}
-    </Wrapper>
-  );
+  return (null);
 }
 
 export default GasTokenSelect;

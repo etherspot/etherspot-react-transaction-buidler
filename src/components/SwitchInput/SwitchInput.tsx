@@ -35,7 +35,7 @@ const Wrapper = styled.div<{
 
   
   ${({ disabled }) => disabled && `
-    opacity: 0.3;
+    opacity: 1;
   `}
 `;
 

@@ -95,7 +95,7 @@ const SignButton = styled(FaSignature) <{ disabled?: boolean }>`
   }
 
   ${({ color }) => color && `color: ${color};`}
-  ${({ disabled }) => disabled && `opacity: 0.5;`}
+  ${({ disabled }) => disabled && `opacity: 1;`}
 `;
 
 const EditButton = styled(HiOutlinePencilAlt) <{ disabled?: boolean }>`
@@ -108,7 +108,7 @@ const EditButton = styled(HiOutlinePencilAlt) <{ disabled?: boolean }>`
   }
 
   ${({ color }) => color && `color: ${color};`}
-  ${({ disabled }) => disabled && `opacity: 0.5;`}
+  ${({ disabled }) => disabled && `opacity: 1;`}
 `;
 
 const TransactionStatusWrapper = styled(TransactionAction)`
@@ -585,7 +585,6 @@ const ActionPreview = ({
         marginBottom={20}
         onCloseButtonClick={onRemove}
         showCloseButton={showCloseButton}
-        additionalTopButtons={additionalTopButtons}
       >
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
@@ -623,23 +622,6 @@ const ActionPreview = ({
             </ValueWrapper>
           </TransactionAction>
         </DoubleTransactionActionsInSingleRow>
-        {!!senderAddress && !!receiverAddress && (
-          <TransactionAction>
-            <Text size={16} medium>
-              <>
-                From &nbsp;
-                <ClickableText onClick={() => copyToClipboard(senderAddress)}>
-                  {getTypeOfAddress(senderAddress, accountAddress, providerAddress)}
-                </ClickableText>
-                &nbsp;
-              </>
-              to &nbsp;
-              <ClickableText onClick={() => copyToClipboard(receiverAddress)}>
-                {getTypeOfAddress(receiverAddress, accountAddress, providerAddress)}
-              </ClickableText>
-            </Text>
-          </TransactionAction>
-        )}
         <TransactionAction>
           <Label>Route</Label>
           <ValueWrapper>
@@ -664,7 +646,7 @@ const ActionPreview = ({
             )}
           </ValueWrapper>
         </TransactionAction>
-        {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
+        
         <TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}

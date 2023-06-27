@@ -8,7 +8,7 @@ const ClickableText = styled.span<{ disabled?: boolean }>`
     opacity: 0.5;
   }
   
-  ${({ disabled }) => disabled && `opacity: 0.5;`}
+  ${({ disabled }) => disabled && `opacity: 1;`}
 `;
 
 export default ClickableText;

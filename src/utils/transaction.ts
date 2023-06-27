@@ -527,7 +527,7 @@ export const buildCrossChainAction = async (
                 transactions: destinationTxns,
                 isEstimating: false,
                 estimated: null,
-                useWeb3Provider: false,
+                useWeb3Provider: true,
                 destinationCrossChainAction: [],
               },
             ],
