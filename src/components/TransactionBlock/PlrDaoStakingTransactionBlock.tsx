@@ -213,18 +213,18 @@ const PlrDaoStakingTransactionBlock = ({
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
 
-  const hasNotEnoughPLRForPolygon = useCallback(() => {
+  const hasEnoughPLRForPolygon = useCallback(() => {
     const selectedChainBalance = accounts.find((acc) => acc.chainId === CHAIN_ID.POLYGON);
     if (!selectedChainBalance) return false;
 
     if (selectedAccountType === AccountTypes.Contract) {
-      return selectedChainBalance['smartWallet'] < MAX_PLR_TOKEN_LIMIT;
+      return selectedChainBalance['smartWallet'] >= MAX_PLR_TOKEN_LIMIT;
     } else {
-      return selectedChainBalance['keyBasedWallet'] < MAX_PLR_TOKEN_LIMIT;
+      return selectedChainBalance['keyBasedWallet'] >= MAX_PLR_TOKEN_LIMIT;
     }
   }, [accounts, selectedAccountType, selectedFromNetwork]);
 
-  const hasEnoughPLRInPolygon = !hasNotEnoughPLRForPolygon();
+  const hasEnoughPLRInPolygon = hasEnoughPLRForPolygon();
 
   const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON;
   const enableAssetSwap =
