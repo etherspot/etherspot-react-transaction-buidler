@@ -226,11 +226,19 @@ const PlrDaoStakingTransactionBlock = ({
 
   const hasEnoughPLRInPolygon = hasEnoughPLRForPolygon();
 
-  const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON;
-  const enableAssetSwap =
-    hasEnoughPLRInPolygon ||
-    (selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
-      selectedFromAsset?.symbol !== plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol);
+  let enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON;
+  let enableAssetSwap =
+    selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
+    selectedFromAsset?.symbol !== plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol;
+
+  if (
+    hasEnoughPLRInPolygon &&
+    selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
+    selectedFromAsset?.symbol === plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol
+  ) {
+    enableAssetBridge = false;
+    enableAssetSwap = false;
+  }
 
   const toAsset =
     hasEnoughPLRInPolygon && !enableAssetBridge && !enableAssetSwap
@@ -286,6 +294,18 @@ const PlrDaoStakingTransactionBlock = ({
     }
   }, [selectedFromNetwork]);
 
+  const receiverAddress = useMemo(() => {
+    if (useCustomAddress) return customReceiverAddress;
+    return selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
+  }, [
+    useCustomAddress,
+    customReceiverAddress,
+    providerAddress,
+    selectedReceiveAccountType,
+    selectedAccountType,
+    accountAddress,
+  ]);
+
   const updateAvailableRoutes = useCallback(
     debounce(async () => {
       setSelectedRoute(null);
@@ -316,7 +336,7 @@ const PlrDaoStakingTransactionBlock = ({
 
       setIsLoadingAvailableRoutes(false);
     }, 200),
-    [sdk, selectedFromAsset, amount, selectedFromNetwork]
+    [sdk, selectedFromAsset, amount, accountAddress, selectedAccountType, selectedFromNetwork, receiverAddress]
   );
 
   useEffect(() => {
@@ -422,7 +442,7 @@ const PlrDaoStakingTransactionBlock = ({
         setTransactionBlockFieldValidationError(transactionBlockId, 'offer', 'Cannot fetch offers');
       }
     }, 200),
-    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType]
+    [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType, receiverAddress]
   );
 
   const getNftList = useCallback(async () => {
@@ -472,18 +492,6 @@ const PlrDaoStakingTransactionBlock = ({
   }, [updateAvailableOffers]);
 
   const availableOffersOptions = useMemo(() => availableOffers?.map(mapOfferToOption), [availableOffers]);
-
-  const receiverAddress = useMemo(() => {
-    if (useCustomAddress) return customReceiverAddress;
-    return selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
-  }, [
-    useCustomAddress,
-    customReceiverAddress,
-    providerAddress,
-    selectedReceiveAccountType,
-    selectedAccountType,
-    accountAddress,
-  ]);
 
   const onAmountChange = useCallback(
     (newAmount: string) => {
