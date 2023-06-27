@@ -318,6 +318,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       setTokenOneAmount(tknAmt);
       setTokenTwoAmount(tknAmt);
 
+      console.log('TokenAmt', tknAmt);
+
       try {
         // needed computed account address before calling getExchangeOffers
         await sdkOnXdai.computeContractAccount();
@@ -375,6 +377,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       token2={selectedToken2Asset}
       offer1={selectedOffer1}
       offer2={selectedOffer2}
+      tokenAmount={tokenOneAmount}
     />
   );
 
@@ -527,6 +530,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             token2={selectedToken2Asset}
             offer1={selectedOffer1}
             offer2={selectedOffer2}
+            tokenAmount={tokenOneAmount}
           />
         )}
     </>

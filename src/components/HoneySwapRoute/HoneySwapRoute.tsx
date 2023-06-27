@@ -12,11 +12,13 @@ import styled, { useTheme } from 'styled-components';
 import { Theme } from '../../utils/theme';
 import { ExchangeOffer } from 'etherspot';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
+import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 
-interface RouteOptionProps {
+interface HoneySwapRouteProps {
   route?: Route;
   isChecked?: boolean;
   showActions?: boolean;
+  tokenAmount?: string | null;
   cost?: string;
   offer1?: ExchangeOffer | null;
   offer2?: ExchangeOffer | null;
@@ -83,7 +85,17 @@ const OffersBlockWrapper = styled(OffersBlock)`
   margin-bottom: 6px;
 `;
 
-const HoneySwapRoute = ({ route, isChecked, showActions, cost, offer1, offer2, token1, token2 }: RouteOptionProps) => {
+const HoneySwapRoute = ({
+  route,
+  isChecked,
+  showActions,
+  cost,
+  offer1,
+  offer2,
+  token1,
+  token2,
+  tokenAmount,
+}: HoneySwapRouteProps) => {
   const theme: Theme = useTheme();
 
   if (!route) return null;
@@ -98,27 +110,36 @@ const HoneySwapRoute = ({ route, isChecked, showActions, cost, offer1, offer2, t
   const [{ toolDetails: firstStepViaService }] = firstStep?.includedSteps ?? [];
   const twoDetailsRows = !!(route?.gasCostUSD || firstStep?.estimate?.executionDuration);
 
+  const getFormattedAmountByTokenAndOffer = (
+    token?: IAssetWithBalance | null,
+    offer?: ExchangeOffer | null,
+    tokenAmount?: string | null
+  ) => {
+    if (token && token.address !== GNOSIS_USDC_CONTRACT_ADDRESS && !!offer) {
+      return formatAmountDisplay(
+        Number(ethers.utils.formatUnits(offer.receiveAmount.toString(), token.decimals)).toFixed(4)
+      );
+    } else if (token && token.address === GNOSIS_USDC_CONTRACT_ADDRESS && !offer && !!tokenAmount) {
+      console.log('tokenAmount', tokenAmount);
+      return formatAmountDisplay(Number(tokenAmount).toFixed(4));
+    }
+
+    return '';
+  };
+
   return (
     <div>
       <OffersBlockWrapper>
         <OffersBlock>
           <RoundedImage title={token1?.name ?? 'First'} url={token1?.logoURI} size={16} noMarginRight />
-          {offer1 &&
-            token1 &&
-            formatAmountDisplay(
-              Number(ethers.utils.formatUnits(offer1.receiveAmount.toString(), token1.decimals)).toFixed(4)
-            )}
+          {token1 && getFormattedAmountByTokenAndOffer(token1, offer1, tokenAmount)}
           &nbsp;
           {token1 && token1.name}
         </OffersBlock>
         +
         <OffersBlock>
           <RoundedImage title={token2?.name ?? 'First'} url={token2?.logoURI} size={16} noMarginRight />
-          {offer2 &&
-            token2 &&
-            formatAmountDisplay(
-              Number(ethers.utils.formatUnits(offer2.receiveAmount.toString(), token2.decimals)).toFixed(4)
-            )}
+          {token2 && getFormattedAmountByTokenAndOffer(token2, offer2, tokenAmount)}
           &nbsp;
           {token2 && token2.name}
         </OffersBlock>
