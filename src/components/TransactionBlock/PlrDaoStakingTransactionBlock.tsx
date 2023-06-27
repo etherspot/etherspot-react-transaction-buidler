@@ -212,13 +212,28 @@ const PlrDaoStakingTransactionBlock = ({
 
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
-  const enableAssetBridge =
-    selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON &&
-    selectedFromAsset?.symbol === plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol;
-  const enableAssetSwap = selectedFromAsset?.symbol !== plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol;
+
+  const hasNotEnoughPLRForPolygon = useCallback(() => {
+    const selectedChainBalance = accounts.find((acc) => acc.chainId === CHAIN_ID.POLYGON);
+    if (!selectedChainBalance) return false;
+
+    if (selectedAccountType === AccountTypes.Contract) {
+      return selectedChainBalance['smartWallet'] < MAX_PLR_TOKEN_LIMIT;
+    } else {
+      return selectedChainBalance['keyBasedWallet'] < MAX_PLR_TOKEN_LIMIT;
+    }
+  }, [accounts, selectedAccountType, selectedFromNetwork]);
+
+  const hasEnoughPLRInPolygon = !hasNotEnoughPLRForPolygon();
+
+  const enableAssetBridge = selectedFromNetwork?.chainId !== CHAIN_ID.POLYGON;
+  const enableAssetSwap =
+    hasEnoughPLRInPolygon ||
+    (selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
+      selectedFromAsset?.symbol !== plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol);
 
   const toAsset =
-    hasEnoughPLR && !enableAssetBridge && !enableAssetSwap
+    hasEnoughPLRInPolygon && !enableAssetBridge && !enableAssetSwap
       ? plrDaoMemberNft[STAKING_CHAIN_ID]
       : plrDaoAssetPerChainId[STAKING_CHAIN_ID];
 
@@ -492,7 +507,7 @@ const PlrDaoStakingTransactionBlock = ({
     }
     resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
     setTransactionBlockValues(transactionBlockId, {
-      hasEnoughPLR,
+      hasEnoughPLR: hasEnoughPLRInPolygon,
       enableAssetBridge,
       enableAssetSwap,
       fromChainId: selectedFromNetwork?.chainId ?? undefined,
@@ -565,7 +580,7 @@ const PlrDaoStakingTransactionBlock = ({
   );
 
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
-  const tokenArray = hasEnoughPLR && accounts.length == 1 ? [] : accounts;
+  const tokenArray = hasEnoughPLRInPolygon && accounts.length == 1 ? [] : accounts;
 
   if (isNFTMember) {
     return (
@@ -610,7 +625,9 @@ const PlrDaoStakingTransactionBlock = ({
 
   return (
     <>
-      {!hideTitle && <Title>{hasEnoughPLR ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}</Title>}
+      {!hideTitle && (
+        <Title>{hasEnoughPLRInPolygon ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}</Title>
+      )}
       <ContainerWrapper>
         <Container>
           <Text size={16}>
@@ -631,7 +648,7 @@ const PlrDaoStakingTransactionBlock = ({
               {keyBasedWallet > 0 && (
                 <Block
                   color={
-                    !hasEnoughPLR && chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
+                    chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
                       ? theme?.color?.text?.tokenTotal
                       : ''
                   }
@@ -644,7 +661,7 @@ const PlrDaoStakingTransactionBlock = ({
               {smartWallet > 0 && (
                 <Block
                   color={
-                    !hasEnoughPLR && chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
+                    chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
                       ? theme?.color?.text?.tokenTotal
                       : ''
                   }
@@ -663,6 +680,8 @@ const PlrDaoStakingTransactionBlock = ({
           label="From wallet"
           selectedAccountType={selectedAccountType}
           onChange={(accountType) => {
+            setSelectedFromNetwork(null);
+            setSelectedFromAsset(null);
             setSelectedAccountType(accountType);
             setAvailableOffers([]);
             setSelectedOffer(null);
@@ -681,6 +700,7 @@ const PlrDaoStakingTransactionBlock = ({
             resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
             setSelectedFromAsset(asset);
             if (
+              hasEnoughPLRInPolygon &&
               selectedFromNetwork?.chainId === CHAIN_ID.POLYGON &&
               asset?.symbol === plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol
             ) {
