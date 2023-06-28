@@ -362,6 +362,14 @@ const PlrDaoStakingTransactionBlock = ({
           keyBasedBalance += +ethers.utils.formatUnits(balance, decimals);
         }
       });
+      console.log(
+        'get balance : ',
+        chainId,
+        'keyBasedBalance',
+        keyBasedBalance,
+        ' smartWalletBalance :: ',
+        smartWalletBalance
+      );
       return {
         chainId,
         chainName: name,
@@ -387,6 +395,8 @@ const PlrDaoStakingTransactionBlock = ({
 
   const fetchAllAccountBalances = useCallback(async () => {
     try {
+      console.log('fetch balance sdk : ', sdk, accountAddress, providerAddress);
+
       if (!sdk || (!accountAddress && !providerAddress)) return;
 
       const filteredSupportedChains = supportedChains.filter((chain) =>
@@ -590,7 +600,7 @@ const PlrDaoStakingTransactionBlock = ({
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
   const tokenArray = hasEnoughPLRInPolygon && accounts.length == 1 ? [] : accounts;
 
-  if (isNFTMember) {
+  if (false) {
     return (
       <>
         {!hideTitle && <Title>Pillar DAO NFT Membership</Title>}
