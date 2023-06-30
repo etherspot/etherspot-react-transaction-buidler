@@ -184,6 +184,7 @@ const PlrDaoStakingTransactionBlock = ({
     getNftsForChainId,
     environment,
   } = useEtherspot();
+  const theme: Theme = useTheme();
 
   const [amount, setAmount] = useState<string>('');
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
@@ -214,7 +215,31 @@ const PlrDaoStakingTransactionBlock = ({
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
 
+  const getNftList = useCallback(async () => {
+    if (!accountAddress || !providerAddress || !sdk) {
+      return;
+    }
+    try {
+      const [providerAddressNfts, accountAddressNfts] = await Promise.all([
+        getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true),
+        getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
+      ]);
+      const nftCollection = [...providerAddressNfts, ...accountAddressNfts];
+      setIsNFTMember(
+        nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address))
+      );
+    } catch (error) {
+      //
+    }
+  }, [accountAddress, providerAddress, sdk]);
+
+  useEffect(() => {
+    // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
+    getNftList();
+  }, [getNftList]);
+
   const hasEnoughPLRForPolygon = useCallback(() => {
+    if (isNFTMember) return false;
     const selectedChainBalance = accounts.find((acc) => acc.chainId === CHAIN_ID.POLYGON);
     if (!selectedChainBalance) return false;
 
@@ -223,7 +248,7 @@ const PlrDaoStakingTransactionBlock = ({
     } else {
       return selectedChainBalance['keyBasedWallet'] >= MAX_PLR_TOKEN_LIMIT;
     }
-  }, [accounts, selectedAccountType, selectedFromNetwork]);
+  }, [accounts, selectedAccountType, selectedFromNetwork, isNFTMember]);
 
   const hasEnoughPLRInPolygon = hasEnoughPLRForPolygon();
 
@@ -247,8 +272,6 @@ const PlrDaoStakingTransactionBlock = ({
       : plrDaoAssetPerChainId[STAKING_CHAIN_ID];
 
   const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
-
-  const theme: Theme = useTheme();
 
   const fixed = multiCallData?.fixed ?? false;
   const defaultCustomReceiverAddress =
@@ -460,29 +483,6 @@ const PlrDaoStakingTransactionBlock = ({
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType, receiverAddress]
   );
 
-  const getNftList = useCallback(async () => {
-    if (!accountAddress || !providerAddress || !sdk) {
-      return;
-    }
-    try {
-      const [providerAddressNfts, accountAddressNfts] = await Promise.all([
-        getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true),
-        getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
-      ]);
-      const nftCollection = [...providerAddressNfts, ...accountAddressNfts];
-      setIsNFTMember(
-        nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address))
-      );
-    } catch (error) {
-      //
-    }
-  }, [accountAddress, providerAddress, sdk]);
-
-  useEffect(() => {
-    // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
-    getNftList();
-  }, [getNftList]);
-
   useEffect(() => {
     // this will ensure that the old data won't replace the new one
     let active = true;
@@ -606,40 +606,15 @@ const PlrDaoStakingTransactionBlock = ({
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
   const tokenArray = hasEnoughPLRInPolygon && accounts.length == 1 ? [] : accounts;
 
-  if (isNFTMember) {
-    return (
-      <>
-        {!hideTitle && <Title>Pillar DAO NFT Membership</Title>}
-        <ContainerWrapper>
-          <Container>
-            <Text size={18} color={theme?.color?.text?.tokenValue}>
-              Thank You!
-            </Text>
-            <br />
-            <Text size={18} marginTop={2}>
-              You are already a Pillar DAO member.
-            </Text>
-          </Container>
-        </ContainerWrapper>
-      </>
-    );
-  }
-
   const preSelectFrom = useCallback(() => {
     const fromNetwork: Chain | undefined = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
     const fromAsset = plrDaoAssetPerChainId[STAKING_CHAIN_ID];
     setAmount(formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, fromAsset.decimals));
     setSelectedFromAsset(fromAsset);
     if (fromNetwork) setSelectedFromNetwork(fromNetwork);
-
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetAddress');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetSymbol');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAssetDecimals');
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
   }, [hasEnoughPLRInPolygon, selectedFromNetwork, selectedFromAsset]);
 
-  if (hasEnoughPLRInPolygon && !selectedFromNetwork && !selectedFromAsset) {
+  if (!isNFTMember && hasEnoughPLRInPolygon && !selectedFromNetwork && !selectedFromAsset) {
     preSelectFrom();
   }
 
@@ -664,6 +639,25 @@ const PlrDaoStakingTransactionBlock = ({
       exchnageRate={exchangeRateByChainId}
     />
   );
+
+  if (isNFTMember) {
+    return (
+      <>
+        {!hideTitle && <Title>Pillar DAO NFT Membership</Title>}
+        <ContainerWrapper>
+          <Container>
+            <Text size={18} color={theme?.color?.text?.tokenValue}>
+              Thank You!
+            </Text>
+            <br />
+            <Text size={18} marginTop={2}>
+              You are already a Pillar DAO member.
+            </Text>
+          </Container>
+        </ContainerWrapper>
+      </>
+    );
+  }
 
   return (
     <>
