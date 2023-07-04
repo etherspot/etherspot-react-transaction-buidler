@@ -821,7 +821,6 @@ const TransactionBuilderContextProvider = ({
                 }
               });
             } catch (error) {
-              console.log('FailedPPP', error);
               transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
               transaction.submitTimestamp = Date.now();
               transaction.transactionHash = undefined;
