@@ -795,22 +795,51 @@ const TransactionBuilderContextProvider = ({
       let result: {
         transactionHash?: string;
         errorMessage?: string;
-      };
+      } = {};
 
       if (crossChainAction.chainId !== CHAIN_ID.XDAI) {
-        result = crossChainAction.useWeb3Provider
-          ? await submitWeb3ProviderTransactions(
-              getSdkForChainId(crossChainAction.chainId) as Sdk,
-              web3Provider,
-              crossChainAction.transactions,
-              crossChainAction.chainId,
-              providerAddress
-            )
-          : await submitEtherspotAndWaitForTransactionHash(
-              getSdkForChainId(crossChainAction.chainId) as Sdk,
-              crossChainAction.transactions,
-              crossChainAction.gasTokenAddress ?? undefined
-            );
+        if (crossChainAction.useWeb3Provider) {
+          for (let i = 0; i < crossChainAction.transactions.length; i++) {
+            const transaction = crossChainAction.transactions[i];
+            try {
+              result = await submitWeb3ProviderTransaction(
+                web3Provider,
+                transaction,
+                crossChainAction.chainId,
+                providerAddress
+              );
+
+              crossChainAction.transactions.map((tnx, index) => {
+                if (i === 0 && index === 0) {
+                  transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+                  transaction.submitTimestamp = Date.now();
+                  transaction.transactionHash = result.transactionHash;
+                } else if (index > 0) {
+                  tnx.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+                  tnx.submitTimestamp = Date.now();
+                  tnx.transactionHash = result.transactionHash;
+                }
+              });
+            } catch (error) {
+              console.log('FailedPPP', error);
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+              transaction.submitTimestamp = Date.now();
+              transaction.transactionHash = undefined;
+            }
+          }
+        } else {
+          result = await submitEtherspotAndWaitForTransactionHash(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            crossChainAction.transactions,
+            crossChainAction.gasTokenAddress ?? undefined
+          );
+
+          crossChainAction.transactions.map((transaction) => {
+            transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+            transaction.submitTimestamp = Date.now();
+            transaction.transactionHash = result.transactionHash;
+          });
+        }
 
         if (result?.errorMessage || !result?.transactionHash?.length) {
           showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
@@ -820,12 +849,6 @@ const TransactionBuilderContextProvider = ({
           });
           return;
         }
-
-        crossChainAction.transactions.map((transaction) => {
-          transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
-          transaction.submitTimestamp = Date.now();
-          transaction.transactionHash = result.transactionHash;
-        });
 
         crossChainAction.transactionHash = result.transactionHash;
 
