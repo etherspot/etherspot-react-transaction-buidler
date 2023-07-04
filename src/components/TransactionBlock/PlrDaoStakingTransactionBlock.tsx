@@ -161,10 +161,11 @@ const mapRouteToOption = (route: Route) => {
     title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
     iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    extension: route.gasCostUSD,
   };
 };
 
-const MAX_PLR_TOKEN_LIMIT = 10000;
+const MAX_PLR_TOKEN_LIMIT = 1;
 
 const PlrDaoStakingTransactionBlock = ({
   id: transactionBlockId,
@@ -183,6 +184,7 @@ const PlrDaoStakingTransactionBlock = ({
     getNftsForChainId,
     environment,
   } = useEtherspot();
+  const theme: Theme = useTheme();
 
   const [amount, setAmount] = useState<string>('');
   const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
@@ -213,7 +215,31 @@ const PlrDaoStakingTransactionBlock = ({
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
 
+  const getNftList = useCallback(async () => {
+    if (!accountAddress || !providerAddress || !sdk) {
+      return;
+    }
+    try {
+      const [providerAddressNfts, accountAddressNfts] = await Promise.all([
+        getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true),
+        getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
+      ]);
+      const nftCollection = [...providerAddressNfts, ...accountAddressNfts];
+      setIsNFTMember(
+        nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address))
+      );
+    } catch (error) {
+      //
+    }
+  }, [accountAddress, providerAddress, sdk]);
+
+  useEffect(() => {
+    // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
+    getNftList();
+  }, [getNftList]);
+
   const hasEnoughPLRForPolygon = useCallback(() => {
+    if (isNFTMember) return false;
     const selectedChainBalance = accounts.find((acc) => acc.chainId === CHAIN_ID.POLYGON);
     if (!selectedChainBalance) return false;
 
@@ -222,7 +248,7 @@ const PlrDaoStakingTransactionBlock = ({
     } else {
       return selectedChainBalance['keyBasedWallet'] >= MAX_PLR_TOKEN_LIMIT;
     }
-  }, [accounts, selectedAccountType, selectedFromNetwork]);
+  }, [accounts, selectedAccountType, selectedFromNetwork, isNFTMember]);
 
   const hasEnoughPLRInPolygon = hasEnoughPLRForPolygon();
 
@@ -246,8 +272,6 @@ const PlrDaoStakingTransactionBlock = ({
       : plrDaoAssetPerChainId[STAKING_CHAIN_ID];
 
   const targetAssetPriceUsd = useAssetPriceUsd(toAsset.chainId, toAsset.address);
-
-  const theme: Theme = useTheme();
 
   const fixed = multiCallData?.fixed ?? false;
   const defaultCustomReceiverAddress =
@@ -306,6 +330,19 @@ const PlrDaoStakingTransactionBlock = ({
     accountAddress,
   ]);
 
+  const getBestRouteItem = (routes: Route[]) => {
+    let bestRoute = routes[0];
+    let minAmount = routes[0].gasCostUSD ? +routes[0].fromAmountUSD - +routes[0].gasCostUSD : Number.MAX_SAFE_INTEGER;
+
+    routes.forEach((route) => {
+      const { gasCostUSD, fromAmountUSD } = route;
+      if (!gasCostUSD) return;
+      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
+    });
+
+    return bestRoute;
+  };
+
   const updateAvailableRoutes = useCallback(
     debounce(async () => {
       setSelectedRoute(null);
@@ -329,7 +366,8 @@ const PlrDaoStakingTransactionBlock = ({
           toAddress: receiverAddress ?? undefined,
         });
         setAvailableRoutes(routes);
-        if (routes.length === 1) setSelectedRoute(mapRouteToOption(routes[0]));
+        const bestRoute = getBestRouteItem(routes);
+        setSelectedRoute(mapRouteToOption(bestRoute));
       } catch (e) {
         setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Cannot fetch routes');
       }
@@ -444,29 +482,6 @@ const PlrDaoStakingTransactionBlock = ({
     }, 200),
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType, receiverAddress]
   );
-
-  const getNftList = useCallback(async () => {
-    if (!accountAddress || !providerAddress || !sdk) {
-      return;
-    }
-    try {
-      const [providerAddressNfts, accountAddressNfts] = await Promise.all([
-        getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true),
-        getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
-      ]);
-      const nftCollection = [...providerAddressNfts, ...accountAddressNfts];
-      setIsNFTMember(
-        nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address))
-      );
-    } catch (error) {
-      //
-    }
-  }, [accountAddress, providerAddress, sdk]);
-
-  useEffect(() => {
-    // Fetch a list of NFTs for the account to check if the user is existing member of PLR Dao.
-    getNftList();
-  }, [getNftList]);
 
   useEffect(() => {
     // this will ensure that the old data won't replace the new one
@@ -584,29 +599,23 @@ const PlrDaoStakingTransactionBlock = ({
     <RouteOption
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
+      cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
     />
   );
 
   const totalTokens = formatAmountDisplay(totalKeyBasedPLRTokens + totalSmartWalletPLRTokens);
   const tokenArray = hasEnoughPLRInPolygon && accounts.length == 1 ? [] : accounts;
 
-  if (isNFTMember) {
-    return (
-      <>
-        {!hideTitle && <Title>Pillar DAO NFT Membership</Title>}
-        <ContainerWrapper>
-          <Container>
-            <Text size={18} color={theme?.color?.text?.tokenValue}>
-              Thank You!
-            </Text>
-            <br />
-            <Text size={18} marginTop={2}>
-              You are already a Pillar DAO member.
-            </Text>
-          </Container>
-        </ContainerWrapper>
-      </>
-    );
+  const preSelectFrom = useCallback(() => {
+    const fromNetwork: Chain | undefined = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON);
+    const fromAsset = plrDaoAssetPerChainId[STAKING_CHAIN_ID];
+    setAmount(formatAssetAmountInput(`${MAX_PLR_TOKEN_LIMIT}`, fromAsset.decimals));
+    setSelectedFromAsset(fromAsset);
+    if (fromNetwork) setSelectedFromNetwork(fromNetwork);
+  }, [hasEnoughPLRInPolygon, selectedFromNetwork, selectedFromAsset]);
+
+  if (!isNFTMember && hasEnoughPLRInPolygon && !selectedFromNetwork && !selectedFromAsset) {
+    preSelectFrom();
   }
 
   const chain = accounts.length == 1 ? `${accounts[0].chainName} chain` : `${accounts.length} chains`;
@@ -630,6 +639,25 @@ const PlrDaoStakingTransactionBlock = ({
       exchnageRate={exchangeRateByChainId}
     />
   );
+
+  if (isNFTMember) {
+    return (
+      <>
+        {!hideTitle && <Title>Pillar DAO NFT Membership</Title>}
+        <ContainerWrapper>
+          <Container>
+            <Text size={18} color={theme?.color?.text?.tokenValue}>
+              Thank You!
+            </Text>
+            <br />
+            <Text size={18} marginTop={2}>
+              You are already a Pillar DAO member.
+            </Text>
+          </Container>
+        </ContainerWrapper>
+      </>
+    );
+  }
 
   return (
     <>
@@ -656,8 +684,10 @@ const PlrDaoStakingTransactionBlock = ({
               {keyBasedWallet > 0 && (
                 <Block
                   color={
-                    chainId === CHAIN_ID.POLYGON && keyBasedWallet < MAX_PLR_TOKEN_LIMIT
-                      ? theme?.color?.text?.tokenTotal
+                    chainId === CHAIN_ID.POLYGON
+                      ? keyBasedWallet < MAX_PLR_TOKEN_LIMIT
+                        ? theme?.color?.text?.tokenTotal
+                        : theme?.color?.text?.tokenValue
                       : ''
                   }
                 >
@@ -669,8 +699,10 @@ const PlrDaoStakingTransactionBlock = ({
               {smartWallet > 0 && (
                 <Block
                   color={
-                    chainId === CHAIN_ID.POLYGON && smartWallet < MAX_PLR_TOKEN_LIMIT
-                      ? theme?.color?.text?.tokenTotal
+                    chainId === CHAIN_ID.POLYGON
+                      ? smartWallet < MAX_PLR_TOKEN_LIMIT
+                        ? theme?.color?.text?.tokenTotal
+                        : theme?.color?.text?.tokenValue
                       : ''
                   }
                 >
@@ -834,7 +866,7 @@ const PlrDaoStakingTransactionBlock = ({
             errorMessage={errorMessages?.route}
             disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
             noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
-            forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1}
+            forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
             isOffer
           />
         )}
