@@ -32,6 +32,7 @@ import {
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
   honeyswapLP,
+  isERC20ApprovalTransactionData,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -795,22 +796,55 @@ const TransactionBuilderContextProvider = ({
       let result: {
         transactionHash?: string;
         errorMessage?: string;
-      };
+      } = {};
+
+      console.log('jhhhhh', crossChainAction.useWeb3Provider);
 
       if (crossChainAction.chainId !== CHAIN_ID.XDAI) {
-        result = crossChainAction.useWeb3Provider
-          ? await submitWeb3ProviderTransactions(
-              getSdkForChainId(crossChainAction.chainId) as Sdk,
-              web3Provider,
-              crossChainAction.transactions,
-              crossChainAction.chainId,
-              providerAddress
-            )
-          : await submitEtherspotAndWaitForTransactionHash(
-              getSdkForChainId(crossChainAction.chainId) as Sdk,
-              crossChainAction.transactions,
-              crossChainAction.gasTokenAddress ?? undefined
-            );
+        if (crossChainAction.useWeb3Provider) {
+          for (let i = 0; i < crossChainAction.transactions.length; i++) {
+            const transaction = crossChainAction.transactions[i];
+            try {
+              result = await submitWeb3ProviderTransaction(
+                web3Provider,
+                transaction,
+                crossChainAction.chainId,
+                providerAddress
+              );
+
+              crossChainAction.transactions.map((tnx, index) => {
+                if (i === 0 && index === 0 && isERC20ApprovalTransactionData(transaction.data as string)) {
+                  transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+                  transaction.submitTimestamp = Date.now();
+                  transaction.transactionHash = result.transactionHash;
+                } else if (
+                  index > 0 ||
+                  !isERC20ApprovalTransactionData(crossChainAction.transactions[0].data as string)
+                ) {
+                  tnx.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+                  tnx.submitTimestamp = Date.now();
+                  tnx.transactionHash = result.transactionHash;
+                }
+              });
+            } catch (error) {
+              transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
+              transaction.submitTimestamp = Date.now();
+              transaction.transactionHash = undefined;
+            }
+          }
+        } else {
+          result = await submitEtherspotAndWaitForTransactionHash(
+            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            crossChainAction.transactions,
+            crossChainAction.gasTokenAddress ?? undefined
+          );
+
+          crossChainAction.transactions.map((transaction) => {
+            transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+            transaction.submitTimestamp = Date.now();
+            transaction.transactionHash = result.transactionHash;
+          });
+        }
 
         if (result?.errorMessage || !result?.transactionHash?.length) {
           showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
@@ -820,12 +854,6 @@ const TransactionBuilderContextProvider = ({
           });
           return;
         }
-
-        crossChainAction.transactions.map((transaction) => {
-          transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
-          transaction.submitTimestamp = Date.now();
-          transaction.transactionHash = result.transactionHash;
-        });
 
         crossChainAction.transactionHash = result.transactionHash;
 
