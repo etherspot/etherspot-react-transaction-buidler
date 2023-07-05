@@ -32,6 +32,7 @@ import {
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
   honeyswapLP,
+  isERC20ApprovalTransactionData,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -797,6 +798,8 @@ const TransactionBuilderContextProvider = ({
         errorMessage?: string;
       } = {};
 
+      console.log('jhhhhh', crossChainAction.useWeb3Provider);
+
       if (crossChainAction.chainId !== CHAIN_ID.XDAI) {
         if (crossChainAction.useWeb3Provider) {
           for (let i = 0; i < crossChainAction.transactions.length; i++) {
@@ -810,11 +813,14 @@ const TransactionBuilderContextProvider = ({
               );
 
               crossChainAction.transactions.map((tnx, index) => {
-                if (i === 0 && index === 0) {
+                if (i === 0 && index === 0 && isERC20ApprovalTransactionData(transaction.data as string)) {
                   transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
                   transaction.submitTimestamp = Date.now();
                   transaction.transactionHash = result.transactionHash;
-                } else if (index > 0) {
+                } else if (
+                  index > 0 ||
+                  !isERC20ApprovalTransactionData(crossChainAction.transactions[0].data as string)
+                ) {
                   tnx.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
                   tnx.submitTimestamp = Date.now();
                   tnx.transactionHash = result.transactionHash;
