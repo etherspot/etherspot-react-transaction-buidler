@@ -369,7 +369,7 @@ const PlrDaoStakingTransactionBlock = ({
         const bestRoute = getBestRouteItem(routes);
         setSelectedRoute(mapRouteToOption(bestRoute));
       } catch (e) {
-        setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Cannot fetch routes');
+        //
       }
 
       setIsLoadingAvailableRoutes(false);
@@ -477,7 +477,7 @@ const PlrDaoStakingTransactionBlock = ({
         });
         return offers;
       } catch (e) {
-        setTransactionBlockFieldValidationError(transactionBlockId, 'offer', 'Cannot fetch offers');
+        //
       }
     }, 200),
     [sdk, selectedFromAsset, amount, selectedFromNetwork, accountAddress, selectedAccountType, receiverAddress]
@@ -498,7 +498,9 @@ const PlrDaoStakingTransactionBlock = ({
         );
         const selectedOffer = bestOffer?.provider ? bestOffer : offers[0];
         setSelectedOffer(mapOfferToOption(selectedOffer));
-      } catch (e) {}
+      } catch (e) {
+        //
+      }
     };
     update();
     return () => {
@@ -723,6 +725,7 @@ const PlrDaoStakingTransactionBlock = ({
             setSelectedFromNetwork(null);
             setSelectedFromAsset(null);
             setSelectedAccountType(accountType);
+            setSelectedReceiveAccountType(accountType);
             setAvailableOffers([]);
             setSelectedOffer(null);
           }}
