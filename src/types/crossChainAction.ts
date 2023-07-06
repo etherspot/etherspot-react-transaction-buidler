@@ -55,6 +55,7 @@ interface PlrStakingActionPreview {
   providerName?: string;
   providerIconUrl?: string | undefined;
   receiverAddress?: string;
+  route?: Route;
 }
 
 interface PlrStakingV2ActionPreview {
