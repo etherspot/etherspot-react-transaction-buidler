@@ -898,11 +898,10 @@ const ActionPreview = ({
       fromAsset,
       fromChainId,
       toAsset,
-      providerName,
-      providerIconUrl,
       receiverAddress,
       enableAssetSwap,
       enableAssetBridge,
+      route,
     } = preview;
 
     const previewList = crossChainAction?.batchTransactions?.length
@@ -925,7 +924,6 @@ const ActionPreview = ({
     const toAmount = enablePlrStaking ? toAsset.amount : formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
-    const timeStamp = crossChainAction.transactions[crossChainAction.transactions.length - 1].createTimestamp;
 
     return (
       <Card
@@ -1038,36 +1036,8 @@ const ActionPreview = ({
           </>
         )}
         <TransactionAction>
-          {(enableAssetSwap || enableAssetBridge) && (
-            <>
-              <ColoredText>Route</ColoredText>
-              <ValueWrapper>
-                <RoundedImage title={providerName ?? 'Unknown'} url={providerIconUrl} />
-                <ValueBlock>
-                  <Text size={12} marginBottom={2} medium block>
-                    {providerName}
-                  </Text>
-                  <Text size={16} medium>
-                    {toAmount} {toAsset.symbol}{' '}
-                  </Text>
-                </ValueBlock>
-              </ValueWrapper>
-            </>
-          )}
-          <ValueWrapper>
-            {!!cost && (
-              <>
-                <ColoredText>Gas price</ColoredText>
-                {cost}
-              </>
-            )}
-            {timeStamp && (
-              <>
-                <ColoredText>Time</ColoredText>
-                {moment(timeStamp).format('m [min], s [sec]')}
-              </>
-            )}
-          </ValueWrapper>
+          <Label>Route</Label>
+          {!!route && enableAssetBridge && <RouteOption route={route} cost={route?.gasCostUSD} showActions />}
           {enableAssetSwap && (
             <RouteWrapper>
               {previewList.map((preview) => {
@@ -1099,25 +1069,11 @@ const ActionPreview = ({
             </RouteWrapper>
           )}
         </TransactionAction>
-        {isSubmitted && (
-          <PrepareTransaction>
-            <ColoredText>{moment.utc(timer * 1000).format('mm:ss')}</ColoredText>
-            <PrepareTransactionWrapper>
-              <ValueWrapper>
-                <StatusIconWrapper color={theme?.color?.background?.statusIconPending}>
-                  <CgSandClock size={14} />
-                </StatusIconWrapper>
-                <Text size={16} medium>
-                  Preparing Transaction
-                </Text>
-              </ValueWrapper>
-            </PrepareTransactionWrapper>
-          </PrepareTransaction>
-        )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         <TransactionStatus
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+          web3ProviderChainId={web3Provider?.web3?.networkVersion && Number(web3Provider?.web3?.networkVersion)}
         />
       </Card>
     );

@@ -1269,7 +1269,7 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {(!crossChainActions?.length || !!editingTransactionBlock) && !crossChainActionsInProcessing?.length && (
+        {(connectionStatus === CONNECTION_STATUSES.IS_CONNECTED) && (!crossChainActions?.length || !!editingTransactionBlock) && !crossChainActionsInProcessing?.length && (
           <>
             {(editingTransactionBlock ? [editingTransactionBlock] : transactionBlocks).map((transactionBlock, i) => {
               let disabled = false;
