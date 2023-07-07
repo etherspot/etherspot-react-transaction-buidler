@@ -54,6 +54,7 @@ export interface IHoneySwapLPTransactionBlockValues {
   routeToUSDC?: Route;
   offer1?: ExchangeOffer;
   offer2?: ExchangeOffer;
+  offer3?: ExchangeOffer;
   tokenOneAmount?: string;
   tokenTwoAmount?: string;
 }
@@ -81,12 +82,13 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
   const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Key);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [receiveAmount, setReceiveAmount] = useState<string>('');
   const [routeToUSDC, setRouteToUSDC] = useState<Route[]>([]);
   const [selectedOffer1, setSelectedOffer1] = useState<ExchangeOffer | null>();
   const [selectedOffer2, setSelectedOffer2] = useState<ExchangeOffer | null>();
+  const [selectedOffer3, setSelectedOffer3] = useState<ExchangeOffer | null>();
   const [tokenOneAmount, setTokenOneAmount] = useState<string | null>(null);
   const [tokenTwoAmount, setTokenTwoAmount] = useState<string | null>(null);
   const [routeToKlima, setRouteToKlima] = useState<BridgingQuote[]>([]);
@@ -113,9 +115,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       addressesEqual(providerAddress, values?.receiverAddress))
       ? AccountTypes.Key
       : AccountTypes.Contract;
-  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
-    defaultSelectedReceiveAccountType
-  );
+  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(AccountTypes.Key);
 
   const {
     setTransactionBlockValues,
@@ -192,6 +192,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       toToken2: selectedToken2Asset ?? undefined,
       offer1: selectedOffer1,
       offer2: selectedOffer2,
+      offer3: selectedOffer3,
       tokenOneAmount,
       tokenTwoAmount,
     });
@@ -205,6 +206,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     receiveAmount,
     selectedOffer1,
     selectedOffer2,
+    selectedOffer3,
     tokenOneAmount,
     tokenTwoAmount,
   ]);
@@ -305,6 +307,27 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         } catch (e) {
           //
         }
+      } else if (
+        selectedFromNetwork.chainId === CHAIN_ID.XDAI &&
+        selectedFromAsset.address !== GNOSIS_USDC_CONTRACT_ADDRESS
+      ) {
+        try {
+          // needed computed account address before calling getExchangeOffers
+          await sdkOnXdai.computeContractAccount();
+
+          const offers = await sdkOnXdai.getExchangeOffers({
+            fromChainId: CHAIN_ID.XDAI,
+            fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+            fromTokenAddress: selectedFromAsset.address,
+            toTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+          });
+
+          remainingAmount = Number(offers[0].receiveAmount.toString()) - Number(gasAmountUSD);
+
+          setSelectedOffer3(offers[0]);
+        } catch {
+          //
+        }
       } else {
         remainingAmount =
           Number(ethers.utils.parseUnits(amount, selectedFromAsset.decimals).toString()) - Number(gasAmountUSD);
@@ -315,8 +338,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
       const tknAmt = String(Number(halfOfRemainingAmount) / 1000000);
-      setTokenOneAmount(tknAmt);
-      setTokenTwoAmount(tknAmt);
+      setTokenOneAmount(String(Number(amount) / 2));
+      setTokenTwoAmount(String(Number(amount) / 2));
 
       console.log('TokenAmt', tknAmt);
 
@@ -409,13 +432,6 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromChainId');
           setSelectedFromNetwork(network);
         }}
-        assetIdsToSelectFrom={[
-          {
-            chainId: CHAIN_ID.XDAI,
-            assetIds: [GNOSIS_USDC_CONTRACT_ADDRESS],
-          },
-        ]}
-        hideChainIds={selectedAccountType === AccountTypes.Key ? [CHAIN_ID.XDAI] : []}
         selectedNetwork={selectedFromNetwork}
         selectedAsset={selectedFromAsset}
         errorMessage={
