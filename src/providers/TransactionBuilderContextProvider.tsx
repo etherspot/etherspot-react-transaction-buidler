@@ -33,6 +33,7 @@ import {
   getFirstCrossChainActionByStatus,
   honeyswapLP,
   isERC20ApprovalTransactionData,
+  getTransactionStatus,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -798,8 +799,6 @@ const TransactionBuilderContextProvider = ({
         errorMessage?: string;
       } = {};
 
-      console.log('jhhhhh', crossChainAction.useWeb3Provider);
-
       if (crossChainAction.chainId !== CHAIN_ID.XDAI) {
         if (crossChainAction.useWeb3Provider) {
           for (let i = 0; i < crossChainAction.transactions.length; i++) {
@@ -1269,382 +1268,389 @@ const TransactionBuilderContextProvider = ({
             )}
           </>
         )}
-        {(connectionStatus === CONNECTION_STATUSES.IS_CONNECTED) && (!crossChainActions?.length || !!editingTransactionBlock) && !crossChainActionsInProcessing?.length && (
-          <>
-            {(editingTransactionBlock ? [editingTransactionBlock] : transactionBlocks).map((transactionBlock, i) => {
-              let disabled = false;
-              let multiCallBlocks: ITransactionBlock[] = [];
+        {connectionStatus === CONNECTION_STATUSES.IS_CONNECTED &&
+          (!crossChainActions?.length || !!editingTransactionBlock) &&
+          !crossChainActionsInProcessing?.length && (
+            <>
+              {(editingTransactionBlock ? [editingTransactionBlock] : transactionBlocks).map((transactionBlock, i) => {
+                let disabled = false;
+                let multiCallBlocks: ITransactionBlock[] = [];
 
-              if (!!transactionBlock?.multiCallData) {
-                let multiCallId = transactionBlock?.multiCallData?.id;
+                if (!!transactionBlock?.multiCallData) {
+                  let multiCallId = transactionBlock?.multiCallData?.id;
 
-                if (!!multiCallId && multiCallList.includes(multiCallId)) return null;
-                else if (!!multiCallId) multiCallList.push(multiCallId);
+                  if (!!multiCallId && multiCallList.includes(multiCallId)) return null;
+                  else if (!!multiCallId) multiCallList.push(multiCallId);
 
-                multiCallBlocks =
-                  transactionBlocks.filter((item) => item?.multiCallData?.id === transactionBlock?.multiCallData?.id) ||
-                  null;
-              }
+                  multiCallBlocks =
+                    transactionBlocks.filter(
+                      (item) => item?.multiCallData?.id === transactionBlock?.multiCallData?.id
+                    ) || null;
+                }
 
-              const multicallOptions = (transactions: ITransactionBlock[]) => {
-                const lastTxType = transactions[transactions.length - 1];
-                return (
-                  <Card
-                    onCloseButtonClick={() => {
-                      setShowMulticallOptions(null);
-                    }}
-                    showCloseButton={!hideCloseTransactionBlockButton}
-                    removeContainer={removeTransactionBlockContainer}
-                  >
-                    {availableMulticallBlocks
-                      .filter((block) => !block.hideFor?.includes(lastTxType.type))
-                      .map((item) => (
-                        <MulticallBlockListItemWrapper
-                          key={item.id}
-                          onClick={() => {
-                            const txBlock = availableTransactionBlocks.find((block) => {
-                              return block.type === item.type;
-                            });
-                            if (!txBlock) return;
-                            let multiCallData: IMultiCallData;
-                            let newMultiCallData: IMultiCallData | null = null;
-                            let multiCallBlock: ITransactionBlock;
-                            let mutatedBlock: ITransactionBlock;
-                            if (!!multiCallBlocks?.length) {
-                              multiCallBlock = multiCallBlocks[multiCallBlocks.length - 1];
-                              if (!multiCallBlock.multiCallData) {
-                                return;
-                              }
-                              multiCallData = {
-                                ...multiCallBlock.multiCallData,
-                                fixed: true,
-                              };
-
-                              let token: TokenListToken | null = null;
-                              let value = 0;
-                              let chain: Chain | null = null;
-
-                              if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-                                const values = multiCallBlock.values;
-                                if (values && values.chain && values.toAsset && values.offer) {
-                                  chain = values.chain;
-                                  token = values.toAsset;
-                                  value = +ethers.utils.formatUnits(values.offer.receiveAmount, token.decimals);
-                                }
-                              }
-
-                              if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-                                const values = multiCallBlock.values;
-                                if (values && values.chain && values.selectedAsset && values.amount) {
-                                  chain = values.chain;
-                                  token = values.selectedAsset;
-                                  let sumOfSwaps = multiCallBlocks
-                                    .filter(
-                                      (block) =>
-                                        block.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
-                                        block.values?.toAsset?.address === token?.address
-                                    )
-                                    .reduce((sum: number, block: ITransactionBlock) => {
-                                      const values = (block as IAssetSwapTransactionBlock).values;
-                                      if (values && values.offer?.receiveAmount) {
-                                        const value = +ethers.utils.formatUnits(
-                                          values.offer.receiveAmount,
-                                          values.toAsset?.decimals
-                                        );
-                                        return sum + value;
-                                      }
-                                      return sum;
-                                    }, 0);
-                                  let sumOfSends = multiCallBlocks
-                                    .filter(
-                                      (block) =>
-                                        block.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
-                                        block.values?.selectedAsset?.address === token?.address
-                                    )
-                                    .reduce((sum: number, block: ITransactionBlock) => {
-                                      const values = (block as ISendAssetTransactionBlock).values;
-                                      if (values && values.amount) {
-                                        return sum + +values.amount;
-                                      }
-                                      return sum;
-                                    }, 0);
-                                  value = -sumOfSends + sumOfSwaps;
-                                }
-                              }
-
-                              if (!token || !value || !chain) {
-                                return;
-                              }
-
-                              newMultiCallData = {
-                                id: multiCallBlock.multiCallData.id,
-                                chain: chain,
-                                lastCallId: multiCallBlock.id,
-                                index: multiCallBlocks.length,
-                                token: token,
-                                value: value,
-                              };
-                              setShowMulticallOptions(null);
-                            } else {
-                              multiCallBlock = transactionBlock;
-                              const multiCallId = getTimeBasedUniqueId();
-                              let token: TokenListToken | null = null;
-                              let value = 0;
-                              let chain: Chain | null = null;
-                              if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
-                                const values = transactionBlock?.values;
-                                if (values && values.chain && values.toAsset && values.offer) {
-                                  chain = values.chain;
-                                  token = values.toAsset;
-                                  value = +ethers.utils.formatUnits(values.offer.receiveAmount, token.decimals);
-                                }
-                              }
-
-                              if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
-                                const values = multiCallBlock.values;
-                                if (values && values.chain && values.selectedAsset && values.amount) {
-                                  chain = values.chain;
-                                  token = values.selectedAsset;
-                                  value = -values.amount;
-                                }
-                              }
-
-                              if (!chain || !token || !value) {
-                                return;
-                              }
-
-                              multiCallData = {
-                                id: multiCallId,
-                                chain: chain,
-                                lastCallId: null,
-                                index: 0,
-                                fixed: true,
-                              };
-                              newMultiCallData = {
-                                id: multiCallId,
-                                chain: chain,
-                                lastCallId: transactionBlock.id,
-                                index: 1,
-                                token: token,
-                                value: value,
-                              };
-                            }
-
-                            mutatedBlock = {
-                              ...multiCallBlock,
-                              multiCallData,
-                            };
-
-                            const newTransactionBlock: ITransactionBlock = {
-                              ...txBlock,
-                              id: getTimeBasedUniqueId(),
-                              multiCallData: newMultiCallData,
-                            };
-
-                            setTransactionBlocks((current) => {
-                              let block = current.find((item) => item.id === multiCallBlock.id);
-                              if (!!block) {
-                                let index = current.indexOf(block);
-                                if (index > -1) current[index] = mutatedBlock;
-                              }
-                              return [...current, newTransactionBlock];
-                            });
-                            setShowMulticallOptions(null);
-                          }}
-                        >
-                          {item.icon}
-                          {item.title as string}
-                        </MulticallBlockListItemWrapper>
-                      ))}
-                  </Card>
-                );
-              };
-
-              return (
-                <TransactionBlocksWrapper
-                  highlight={!!multiCallBlocks?.length}
-                  transparentBackground={removeTransactionBlockContainer}
-                >
-                  {!!multiCallBlocks?.length ? (
-                    multiCallBlocks?.map((multiCallBlock, j) => {
-                      return (
-                        <Card
-                          key={`transaction-block-${multiCallBlock.id}`}
-                          marginBottom={
-                            j === multiCallBlocks.length - 1 && showMulticallOptions !== transactionBlock.id ? 0 : 20
-                          }
-                          onCloseButtonClick={() =>
-                            setTransactionBlocks((current) => {
-                              return current.filter((block) => block.id !== transactionBlock.id);
-                            })
-                          }
-                          // Should only have the option to delete last multicall, any change mid structure should reset the entire block
-                          showCloseButton={
-                            !hideCloseTransactionBlockButton &&
-                            ((multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) ||
-                              (multiCallBlocks.length === 1 && !editingTransactionBlock))
-                          }
-                          removeContainer={removeTransactionBlockContainer}
-                        >
-                          <TransactionBlock
-                            key={`block-${multiCallBlock.id}`}
-                            {...multiCallBlock}
-                            errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
-                            hideTitle={hideTransactionBlockTitle}
-                            hideWalletSwitch={hideWalletSwitch}
-                          />
-                          {j === multiCallBlocks.length - 1 &&
-                            multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
-                              <MultiCallButton
-                                disabled={!!disabled || !isBlockValid}
-                                onClick={async () => {
-                                  // Add new transaction block to the multicall block list
-                                  let validationErrors = await onValidate();
-                                  if (!!multiCallBlock.multiCallData && !validationErrors[multiCallBlock.id]) {
-                                    setShowMulticallOptions(transactionBlock.id);
-                                  }
-                                }}
-                              >
-                                Continue Multi-Call
-                                {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
-                                  multiCallBlock.values?.toAsset?.symbol &&
-                                  ` with ${multiCallBlock.values?.toAsset?.symbol}`}
-                              </MultiCallButton>
-                            )}
-                        </Card>
-                      );
-                    })
-                  ) : (
+                const multicallOptions = (transactions: ITransactionBlock[]) => {
+                  const lastTxType = transactions[transactions.length - 1];
+                  return (
                     <Card
-                      key={`transaction-block-${transactionBlock.id}`}
-                      marginBottom={
-                        i === transactionBlocks.length - 1 && showMulticallOptions !== transactionBlock.id ? 0 : 20
-                      }
-                      onCloseButtonClick={() =>
-                        setTransactionBlocks((current) =>
-                          current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
-                        )
-                      }
-                      showCloseButton={!hideCloseTransactionBlockButton && !editingTransactionBlock}
+                      onCloseButtonClick={() => {
+                        setShowMulticallOptions(null);
+                      }}
+                      showCloseButton={!hideCloseTransactionBlockButton}
                       removeContainer={removeTransactionBlockContainer}
                     >
-                      <TransactionBlock
-                        key={`block-${transactionBlock.id}`}
-                        {...transactionBlock}
-                        errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
-                        hideTitle={hideTransactionBlockTitle}
-                        hideWalletSwitch={hideWalletSwitch}
-                      />
-                      {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
-                        transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
-                        !editingTransactionBlock &&
-                        isBlockValid &&
-                        !disabled && (
-                          <MultiCallButton
-                            disabled={!!disabled || !isBlockValid}
-                            onClick={async () => {
-                              // Add new transaction block to the multicall block list
-                              let validationErrors = await onValidate();
-                              if (!validationErrors[transactionBlock.id]) {
-                                setShowMulticallOptions(transactionBlock.id);
+                      {availableMulticallBlocks
+                        .filter((block) => !block.hideFor?.includes(lastTxType.type))
+                        .map((item) => (
+                          <MulticallBlockListItemWrapper
+                            key={item.id}
+                            onClick={() => {
+                              const txBlock = availableTransactionBlocks.find((block) => {
+                                return block.type === item.type;
+                              });
+                              if (!txBlock) return;
+                              let multiCallData: IMultiCallData;
+                              let newMultiCallData: IMultiCallData | null = null;
+                              let multiCallBlock: ITransactionBlock;
+                              let mutatedBlock: ITransactionBlock;
+                              if (!!multiCallBlocks?.length) {
+                                multiCallBlock = multiCallBlocks[multiCallBlocks.length - 1];
+                                if (!multiCallBlock.multiCallData) {
+                                  return;
+                                }
+                                multiCallData = {
+                                  ...multiCallBlock.multiCallData,
+                                  fixed: true,
+                                };
+
+                                let token: TokenListToken | null = null;
+                                let value = 0;
+                                let chain: Chain | null = null;
+
+                                if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
+                                  const values = multiCallBlock.values;
+                                  if (values && values.chain && values.toAsset && values.offer) {
+                                    chain = values.chain;
+                                    token = values.toAsset;
+                                    value = +ethers.utils.formatUnits(values.offer.receiveAmount, token.decimals);
+                                  }
+                                }
+
+                                if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
+                                  const values = multiCallBlock.values;
+                                  if (values && values.chain && values.selectedAsset && values.amount) {
+                                    chain = values.chain;
+                                    token = values.selectedAsset;
+                                    let sumOfSwaps = multiCallBlocks
+                                      .filter(
+                                        (block) =>
+                                          block.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
+                                          block.values?.toAsset?.address === token?.address
+                                      )
+                                      .reduce((sum: number, block: ITransactionBlock) => {
+                                        const values = (block as IAssetSwapTransactionBlock).values;
+                                        if (values && values.offer?.receiveAmount) {
+                                          const value = +ethers.utils.formatUnits(
+                                            values.offer.receiveAmount,
+                                            values.toAsset?.decimals
+                                          );
+                                          return sum + value;
+                                        }
+                                        return sum;
+                                      }, 0);
+                                    let sumOfSends = multiCallBlocks
+                                      .filter(
+                                        (block) =>
+                                          block.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
+                                          block.values?.selectedAsset?.address === token?.address
+                                      )
+                                      .reduce((sum: number, block: ITransactionBlock) => {
+                                        const values = (block as ISendAssetTransactionBlock).values;
+                                        if (values && values.amount) {
+                                          return sum + +values.amount;
+                                        }
+                                        return sum;
+                                      }, 0);
+                                    value = -sumOfSends + sumOfSwaps;
+                                  }
+                                }
+
+                                if (!token || !value || !chain) {
+                                  return;
+                                }
+
+                                newMultiCallData = {
+                                  id: multiCallBlock.multiCallData.id,
+                                  chain: chain,
+                                  lastCallId: multiCallBlock.id,
+                                  index: multiCallBlocks.length,
+                                  token: token,
+                                  value: value,
+                                };
+                                setShowMulticallOptions(null);
+                              } else {
+                                multiCallBlock = transactionBlock;
+                                const multiCallId = getTimeBasedUniqueId();
+                                let token: TokenListToken | null = null;
+                                let value = 0;
+                                let chain: Chain | null = null;
+                                if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) {
+                                  const values = transactionBlock?.values;
+                                  if (values && values.chain && values.toAsset && values.offer) {
+                                    chain = values.chain;
+                                    token = values.toAsset;
+                                    value = +ethers.utils.formatUnits(values.offer.receiveAmount, token.decimals);
+                                  }
+                                }
+
+                                if (multiCallBlock.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET) {
+                                  const values = multiCallBlock.values;
+                                  if (values && values.chain && values.selectedAsset && values.amount) {
+                                    chain = values.chain;
+                                    token = values.selectedAsset;
+                                    value = -values.amount;
+                                  }
+                                }
+
+                                if (!chain || !token || !value) {
+                                  return;
+                                }
+
+                                multiCallData = {
+                                  id: multiCallId,
+                                  chain: chain,
+                                  lastCallId: null,
+                                  index: 0,
+                                  fixed: true,
+                                };
+                                newMultiCallData = {
+                                  id: multiCallId,
+                                  chain: chain,
+                                  lastCallId: transactionBlock.id,
+                                  index: 1,
+                                  token: token,
+                                  value: value,
+                                };
                               }
+
+                              mutatedBlock = {
+                                ...multiCallBlock,
+                                multiCallData,
+                              };
+
+                              const newTransactionBlock: ITransactionBlock = {
+                                ...txBlock,
+                                id: getTimeBasedUniqueId(),
+                                multiCallData: newMultiCallData,
+                              };
+
+                              setTransactionBlocks((current) => {
+                                let block = current.find((item) => item.id === multiCallBlock.id);
+                                if (!!block) {
+                                  let index = current.indexOf(block);
+                                  if (index > -1) current[index] = mutatedBlock;
+                                }
+                                return [...current, newTransactionBlock];
+                              });
+                              setShowMulticallOptions(null);
                             }}
                           >
-                            Start Multi-Call
-                            {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
-                              transactionBlock.values?.toAsset?.symbol &&
-                              ` with ${transactionBlock.values?.toAsset?.symbol}`}
-                          </MultiCallButton>
-                        )}
+                            {item.icon}
+                            {item.title as string}
+                          </MulticallBlockListItemWrapper>
+                        ))}
                     </Card>
-                  )}
-                  {showMulticallOptions === transactionBlock.id &&
-                    multicallOptions(!!multiCallBlocks?.length ? multiCallBlocks : [transactionBlock])}
-                </TransactionBlocksWrapper>
-              );
-            })}
-            {!hideAddButton && !showTransactionBlockSelect && !hideAddTransactionButton && !editingTransactionBlock && (
-              <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
-                <AiOutlinePlusCircle size={24} />
-                <span>Add transaction</span>
-              </AddTransactionButton>
-            )}
-            {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
-              <>
-                <br />
-                {!isChecking && isBlockValid && (
-                  <PrimaryButton
-                    marginTop={editingTransactionBlock ? 0 : 30}
-                    onClick={onContinueClick}
-                    disabled={isChecking || !isBlockValid}
-                  >
-                    {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
-                    {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
-                  </PrimaryButton>
-                )}
-              </>
-            )}
-            {!!editingTransactionBlock && (
-              <SecondaryButton
-                marginTop={10}
-                onClick={() => {
-                  setEditingTransactionBlock(null);
-                  // reset value changes, editingTransactionBlock storing initial before edits
-                  setTransactionBlocks((current) =>
-                    current.map((currentTransactionBlock) => {
-                      if (currentTransactionBlock.id !== editingTransactionBlock?.id) {
-                        return currentTransactionBlock;
-                      }
-                      return editingTransactionBlock;
-                    })
                   );
-                }}
-              >
-                Go back to preview
-              </SecondaryButton>
-            )}
-            {showTransactionBlockSelect && (
-              <Card
-                onCloseButtonClick={() => setShowTransactionBlockSelect(false)}
-                showCloseButton={!hideCloseTransactionBlockButton}
-                removeContainer={removeTransactionBlockContainer}
-              >
-                {availableTransactionBlocks
-                  .filter(
-                    (availableTransactionBlock) =>
-                      !hiddenTransactionBlockTypes?.includes(availableTransactionBlock.type)
-                  )
-                  .map((availableTransactionBlock) => {
-                    const isBridgeTransactionBlock =
-                      availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
-                    const isBridgeTransactionBlockAndDisabled = isBridgeTransactionBlock && hasTransactionBlockAdded;
-                    const isDisabled =
-                      availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED ||
-                      isBridgeTransactionBlockAndDisabled;
-                    const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
-                      ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
-                      : availableTransactionBlock.title;
-                    const isKlimaBlockIncluded = availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
-                    return (
-                      <TransactionBlockListItemWrapper
-                        key={availableTransactionBlock.title}
-                        onClick={() =>
-                          addTransactionBlock(
-                            availableTransactionBlock,
-                            isBridgeTransactionBlockAndDisabled,
-                            isKlimaBlockIncluded
+                };
+
+                return (
+                  <TransactionBlocksWrapper
+                    highlight={!!multiCallBlocks?.length}
+                    transparentBackground={removeTransactionBlockContainer}
+                  >
+                    {!!multiCallBlocks?.length ? (
+                      multiCallBlocks?.map((multiCallBlock, j) => {
+                        return (
+                          <Card
+                            key={`transaction-block-${multiCallBlock.id}`}
+                            marginBottom={
+                              j === multiCallBlocks.length - 1 && showMulticallOptions !== transactionBlock.id ? 0 : 20
+                            }
+                            onCloseButtonClick={() =>
+                              setTransactionBlocks((current) => {
+                                return current.filter((block) => block.id !== transactionBlock.id);
+                              })
+                            }
+                            // Should only have the option to delete last multicall, any change mid structure should reset the entire block
+                            showCloseButton={
+                              !hideCloseTransactionBlockButton &&
+                              ((multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) ||
+                                (multiCallBlocks.length === 1 && !editingTransactionBlock))
+                            }
+                            removeContainer={removeTransactionBlockContainer}
+                          >
+                            <TransactionBlock
+                              key={`block-${multiCallBlock.id}`}
+                              {...multiCallBlock}
+                              errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                              hideTitle={hideTransactionBlockTitle}
+                              hideWalletSwitch={hideWalletSwitch}
+                            />
+                            {j === multiCallBlocks.length - 1 &&
+                              multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
+                                <MultiCallButton
+                                  disabled={!!disabled || !isBlockValid}
+                                  onClick={async () => {
+                                    // Add new transaction block to the multicall block list
+                                    let validationErrors = await onValidate();
+                                    if (!!multiCallBlock.multiCallData && !validationErrors[multiCallBlock.id]) {
+                                      setShowMulticallOptions(transactionBlock.id);
+                                    }
+                                  }}
+                                >
+                                  Continue Multi-Call
+                                  {multiCallBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
+                                    multiCallBlock.values?.toAsset?.symbol &&
+                                    ` with ${multiCallBlock.values?.toAsset?.symbol}`}
+                                </MultiCallButton>
+                              )}
+                          </Card>
+                        );
+                      })
+                    ) : (
+                      <Card
+                        key={`transaction-block-${transactionBlock.id}`}
+                        marginBottom={
+                          i === transactionBlocks.length - 1 && showMulticallOptions !== transactionBlock.id ? 0 : 20
+                        }
+                        onCloseButtonClick={() =>
+                          setTransactionBlocks((current) =>
+                            current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
                           )
                         }
-                        disabled={isDisabled || hasKlimaBlockAdded}
+                        showCloseButton={!hideCloseTransactionBlockButton && !editingTransactionBlock}
+                        removeContainer={removeTransactionBlockContainer}
                       >
-                        &bull; {availableTransactionBlockTitle}
-                      </TransactionBlockListItemWrapper>
+                        <TransactionBlock
+                          key={`block-${transactionBlock.id}`}
+                          {...transactionBlock}
+                          errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
+                          hideTitle={hideTransactionBlockTitle}
+                          hideWalletSwitch={hideWalletSwitch}
+                        />
+                        {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
+                          transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
+                          !editingTransactionBlock &&
+                          isBlockValid &&
+                          !disabled && (
+                            <MultiCallButton
+                              disabled={!!disabled || !isBlockValid}
+                              onClick={async () => {
+                                // Add new transaction block to the multicall block list
+                                let validationErrors = await onValidate();
+                                if (!validationErrors[transactionBlock.id]) {
+                                  setShowMulticallOptions(transactionBlock.id);
+                                }
+                              }}
+                            >
+                              Start Multi-Call
+                              {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
+                                transactionBlock.values?.toAsset?.symbol &&
+                                ` with ${transactionBlock.values?.toAsset?.symbol}`}
+                            </MultiCallButton>
+                          )}
+                      </Card>
+                    )}
+                    {showMulticallOptions === transactionBlock.id &&
+                      multicallOptions(!!multiCallBlocks?.length ? multiCallBlocks : [transactionBlock])}
+                  </TransactionBlocksWrapper>
+                );
+              })}
+              {!hideAddButton &&
+                !showTransactionBlockSelect &&
+                !hideAddTransactionButton &&
+                !editingTransactionBlock && (
+                  <AddTransactionButton onClick={() => setShowTransactionBlockSelect(true)}>
+                    <AiOutlinePlusCircle size={24} />
+                    <span>Add transaction</span>
+                  </AddTransactionButton>
+                )}
+              {!showTransactionBlockSelect && transactionBlocks.length > 0 && (
+                <>
+                  <br />
+                  {!isChecking && isBlockValid && (
+                    <PrimaryButton
+                      marginTop={editingTransactionBlock ? 0 : 30}
+                      onClick={onContinueClick}
+                      disabled={isChecking || !isBlockValid}
+                    >
+                      {!editingTransactionBlock && (isChecking ? 'Checking...' : 'Review')}
+                      {editingTransactionBlock && (isChecking ? 'Saving...' : 'Save')}
+                    </PrimaryButton>
+                  )}
+                </>
+              )}
+              {!!editingTransactionBlock && (
+                <SecondaryButton
+                  marginTop={10}
+                  onClick={() => {
+                    setEditingTransactionBlock(null);
+                    // reset value changes, editingTransactionBlock storing initial before edits
+                    setTransactionBlocks((current) =>
+                      current.map((currentTransactionBlock) => {
+                        if (currentTransactionBlock.id !== editingTransactionBlock?.id) {
+                          return currentTransactionBlock;
+                        }
+                        return editingTransactionBlock;
+                      })
                     );
-                  })}
-              </Card>
-            )}
-          </>
-        )}
+                  }}
+                >
+                  Go back to preview
+                </SecondaryButton>
+              )}
+              {showTransactionBlockSelect && (
+                <Card
+                  onCloseButtonClick={() => setShowTransactionBlockSelect(false)}
+                  showCloseButton={!hideCloseTransactionBlockButton}
+                  removeContainer={removeTransactionBlockContainer}
+                >
+                  {availableTransactionBlocks
+                    .filter(
+                      (availableTransactionBlock) =>
+                        !hiddenTransactionBlockTypes?.includes(availableTransactionBlock.type)
+                    )
+                    .map((availableTransactionBlock) => {
+                      const isBridgeTransactionBlock =
+                        availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE;
+                      const isBridgeTransactionBlockAndDisabled = isBridgeTransactionBlock && hasTransactionBlockAdded;
+                      const isDisabled =
+                        availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED ||
+                        isBridgeTransactionBlockAndDisabled;
+                      const availableTransactionBlockTitle = isBridgeTransactionBlockAndDisabled
+                        ? `${availableTransactionBlock.title} (Max. 1 bridge per batch)`
+                        : availableTransactionBlock.title;
+                      const isKlimaBlockIncluded =
+                        availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
+                      return (
+                        <TransactionBlockListItemWrapper
+                          key={availableTransactionBlock.title}
+                          onClick={() =>
+                            addTransactionBlock(
+                              availableTransactionBlock,
+                              isBridgeTransactionBlockAndDisabled,
+                              isKlimaBlockIncluded
+                            )
+                          }
+                          disabled={isDisabled || hasKlimaBlockAdded}
+                        >
+                          &bull; {availableTransactionBlockTitle}
+                        </TransactionBlockListItemWrapper>
+                      );
+                    })}
+                </Card>
+              )}
+            </>
+          )}
         {!!crossChainActions?.length && !crossChainActionsInProcessing?.length && !editingTransactionBlock && (
           <>
             {crossChainActions.map((crossChainAction) => {

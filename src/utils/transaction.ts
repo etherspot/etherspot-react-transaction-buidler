@@ -31,7 +31,7 @@ import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
-import { TransactionRequest } from 'etherspot/dist/sdk/common';
+import { TransactionRequest, sleep } from 'etherspot/dist/sdk/common';
 import {
   ICrossChainActionEstimation,
   ICrossChainActionTransaction,
@@ -1154,6 +1154,7 @@ export const buildCrossChainAction = async (
           receiverAddress,
           offer1,
           offer2,
+          offer3,
           tokenOneAmount,
           tokenTwoAmount,
           toToken1,
@@ -1176,7 +1177,6 @@ export const buildCrossChainAction = async (
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
 
           const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: routeToUSDC });
-
           transactions = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
             to: to as string,
             value,
@@ -1329,10 +1329,57 @@ export const buildCrossChainAction = async (
       } else if (fromChainId === CHAIN_ID.XDAI) {
         try {
           // This is used in case token 1 is USDC
-          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
+          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, fromAssetDecimals);
 
           // This is used in case token 2 is USDC
-          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, 6);
+          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, fromAssetDecimals);
+
+          let transferTransaction: ICrossChainActionTransaction = {
+            to: sdk.state.accountAddress,
+            value: ethers.utils.parseUnits(amount, fromAssetDecimals),
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          };
+
+          if (ethers.utils.isAddress(fromAssetAddress) && !isZeroAddress(fromAssetAddress)) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const transferTransactionRequest = erc20Contract?.encodeTransfer?.(
+              sdk.state.accountAddress,
+              ethers.utils.parseUnits(amount, fromAssetDecimals)
+            );
+            if (!transferTransactionRequest || !transferTransactionRequest.to) {
+              return { errorMessage: 'Failed build transfer transaction!' };
+            }
+
+            transferTransaction = {
+              ...transferTransaction,
+              to: transferTransactionRequest.to,
+              data: transferTransactionRequest.data,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+          }
+
+          if (accountType === AccountTypes.Key) {
+            destinationTxns = [...destinationTxns, transferTransaction];
+          }
+
+          // Swap 0 Start //
+          if (offer3 && fromAssetAddress !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer3.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 0 ENDS
 
           // Swap 1 Start //
           if (offer1 && toToken1.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
@@ -2057,6 +2104,21 @@ export const submitWeb3ProviderTransaction = async (
     };
     // @ts-ignore
     transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+
+    let transactionStatus = null;
+
+    while (transactionStatus === null) {
+      try {
+        // @ts-ignore
+        let status = await web3Provider.sendRequest('eth_getTransactionByHash', [transactionHash]);
+        if (status && status.blockNumber !== null) {
+          transactionStatus = status;
+        }
+        await sleep(2);
+      } catch (err) {
+        console.log('statuss', err);
+      }
+    }
   } catch (e) {
     if (e instanceof Error) {
       errorMessage = e?.message;
