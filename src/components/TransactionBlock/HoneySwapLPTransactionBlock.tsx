@@ -295,6 +295,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             fromTokenAddress: selectedFromAsset.address,
             toTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
             toAddress: sdk.state.accountAddress ?? undefined,
+            allowSwitchChain: false,
           });
 
           const bestRoute = getBestRouteItem(routes);

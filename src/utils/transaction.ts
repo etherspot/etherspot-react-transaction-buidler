@@ -31,7 +31,7 @@ import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
-import { TransactionRequest } from 'etherspot/dist/sdk/common';
+import { TransactionRequest, sleep } from 'etherspot/dist/sdk/common';
 import {
   ICrossChainActionEstimation,
   ICrossChainActionTransaction,
@@ -1177,7 +1177,6 @@ export const buildCrossChainAction = async (
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
 
           const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: routeToUSDC });
-
           transactions = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
             to: to as string,
             value,
@@ -2105,6 +2104,22 @@ export const submitWeb3ProviderTransaction = async (
     };
     // @ts-ignore
     transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+
+    let transactionStatus = null;
+
+    while (transactionStatus === null) {
+      try {
+        // @ts-ignore
+        let status = await web3Provider.sendRequest('eth_getTransactionByHash', [transactionHash]);
+        if (status && status.blockNumber !== null) {
+          transactionStatus = status;
+        }
+        console.log('transactionStatus', transactionStatus);
+        await sleep(10);
+      } catch (err) {
+        console.log('statuss', err);
+      }
+    }
   } catch (e) {
     if (e instanceof Error) {
       errorMessage = e?.message;
@@ -2264,6 +2279,7 @@ export const getTransactionStatus = async (sdk: EtherspotSdk, hash: string): Pro
   if (!sdk) return CROSS_CHAIN_ACTION_STATUS.FAILED;
 
   const result = await sdk.getTransaction({ hash });
+  console.log('resultppp', result);
 
   if (result.status === TransactionStatuses.Completed) {
     return CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
