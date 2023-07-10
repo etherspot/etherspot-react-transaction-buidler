@@ -2114,8 +2114,7 @@ export const submitWeb3ProviderTransaction = async (
         if (status && status.blockNumber !== null) {
           transactionStatus = status;
         }
-        console.log('transactionStatus', transactionStatus);
-        await sleep(10);
+        await sleep(2);
       } catch (err) {
         console.log('statuss', err);
       }
