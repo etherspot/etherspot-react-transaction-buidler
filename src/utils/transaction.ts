@@ -1618,8 +1618,6 @@ export const buildCrossChainAction = async (
         },
       } = transactionBlock;
 
-      console.log('amount', amount);
-
       const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
       const swapServiceDetails = swapServiceIdToDetails[offer.provider];
