@@ -2278,7 +2278,6 @@ export const getTransactionStatus = async (sdk: EtherspotSdk, hash: string): Pro
   if (!sdk) return CROSS_CHAIN_ACTION_STATUS.FAILED;
 
   const result = await sdk.getTransaction({ hash });
-  console.log('resultppp', result);
 
   if (result.status === TransactionStatuses.Completed) {
     return CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
