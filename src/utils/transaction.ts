@@ -1168,10 +1168,12 @@ export const buildCrossChainAction = async (
       if (fromChainId !== CHAIN_ID.XDAI && routeToUSDC) {
         try {
           // This is used in case token 1 is USDC
-          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
+          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, toToken1.decimals);
 
           // This is used in case token 2 is USDC
-          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, 6);
+          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, toToken2.decimals);
+
+          console.log('fromTokenOneAmountBN', fromTokenOneAmountBN, offer1?.receiveAmount);
 
           const [firstStep] = routeToUSDC.steps;
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
