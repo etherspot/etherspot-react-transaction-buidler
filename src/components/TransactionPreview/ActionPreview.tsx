@@ -894,6 +894,7 @@ const ActionPreview = ({
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE) {
     const {
+      isUnStake,
       hasEnoughPLR,
       fromAsset,
       fromChainId,
@@ -920,17 +921,20 @@ const ActionPreview = ({
 
     const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
-    const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+    const fromAmount = isUnStake
+      ? fromAsset.amount
+      : formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
+
     const toAmount = enablePlrStaking ? toAsset.amount : formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount));
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
     return (
       <Card
-        title={hasEnoughPLR ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}
+        title={hasEnoughPLR || isUnStake ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}
         onCloseButtonClick={onRemove}
-        showCloseButton={showCloseButton}
-        additionalTopButtons={additionalTopButtons}
+        showCloseButton={!isUnStake && showCloseButton}
+        additionalTopButtons={!isUnStake ? additionalTopButtons : []}
       >
         {enablePlrStaking ? (
           <>
@@ -1035,40 +1039,44 @@ const ActionPreview = ({
             })}
           </>
         )}
-        <TransactionAction>
-          <Label>Route</Label>
-          {!!route && enableAssetBridge && <RouteOption route={route} cost={route?.gasCostUSD} showActions />}
-          {enableAssetSwap && (
-            <RouteWrapper>
-              {previewList.map((preview) => {
-                if (!preview) return null;
-                if (!('toAsset' in preview)) return null;
-                const { fromAsset, toAsset, providerName, providerIconUrl } = preview;
+        {(enableAssetSwap || enableAssetBridge) && (
+          <TransactionAction>
+            <Label>Route</Label>
+            {!!route && enableAssetBridge && <RouteOption route={route} cost={route?.gasCostUSD} showActions />}
+            {enableAssetSwap && (
+              <RouteWrapper>
+                {previewList.map((preview) => {
+                  if (!preview) return null;
+                  if (!('toAsset' in preview)) return null;
+                  const { fromAsset, toAsset, providerName, providerIconUrl } = preview;
 
-                const fromAmount = formatAmountDisplay(ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals));
-                const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
-                return (
-                  <Row>
-                    <RoundedImage
-                      style={{ marginTop: 2 }}
-                      title={providerName ?? 'Unknown'}
-                      url={providerIconUrl}
-                      size={10}
-                    />
-                    <ValueBlock>
-                      <Text size={12} marginBottom={2} regular block>
-                        {`Swap on ${fromChainTitle} via ${providerName}`}
-                      </Text>
-                      <Text size={12} regular block>
-                        {`${fromAmount} ${fromAsset.symbol} → ${toAmount} ${toAsset.symbol}`}
-                      </Text>
-                    </ValueBlock>
-                  </Row>
-                );
-              })}
-            </RouteWrapper>
-          )}
-        </TransactionAction>
+                  const fromAmount = formatAmountDisplay(
+                    ethers.utils.formatUnits(fromAsset.amount, fromAsset.decimals)
+                  );
+                  const toAmount = formatAmountDisplay(ethers.utils.formatUnits(toAsset.amount, toAsset.decimals));
+                  return (
+                    <Row>
+                      <RoundedImage
+                        style={{ marginTop: 2 }}
+                        title={providerName ?? 'Unknown'}
+                        url={providerIconUrl}
+                        size={10}
+                      />
+                      <ValueBlock>
+                        <Text size={12} marginBottom={2} regular block>
+                          {`Swap on ${fromChainTitle} via ${providerName}`}
+                        </Text>
+                        <Text size={12} regular block>
+                          {`${fromAmount} ${fromAsset.symbol} → ${toAmount} ${toAsset.symbol}`}
+                        </Text>
+                      </ValueBlock>
+                    </Row>
+                  );
+                })}
+              </RouteWrapper>
+            )}
+          </TransactionAction>
+        )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         <TransactionStatus
           crossChainAction={crossChainAction}

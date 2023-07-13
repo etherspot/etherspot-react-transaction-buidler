@@ -18,6 +18,7 @@ import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import RouteOption from '../RouteOption';
 import { OfferRoute } from '../OfferRoute/OfferRoute';
+import { PrimaryButton } from '../Button';
 
 // providers
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -59,6 +60,8 @@ export interface IPlrDaoTransactionBlockValues {
   enableAssetBridge: boolean;
   enableAssetSwap: boolean;
   route?: Route;
+  membershipAddress?: string | null;
+  isUnStake?: boolean;
 }
 
 interface AccountBalance {
@@ -144,6 +147,15 @@ const Block = styled.div`
   color: ${(props) => props.color};
 `;
 
+const UnstakeButton = styled(PrimaryButton)`
+  text-align: center;
+  padding: 8px 0;
+  font-size: 16px;
+  border-radius: 6px;
+  background: ${({ theme }) => theme.color.background.primary};
+  color: #fff;
+`;
+
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
 
@@ -165,7 +177,7 @@ const mapRouteToOption = (route: Route) => {
   };
 };
 
-const MAX_PLR_TOKEN_LIMIT = 1;
+export const MAX_PLR_TOKEN_LIMIT = 1;
 
 const PlrDaoStakingTransactionBlock = ({
   id: transactionBlockId,
@@ -208,6 +220,7 @@ const PlrDaoStakingTransactionBlock = ({
   const [exchangeRateByChainId, setExchangeRateByChainId] = useState<number>(0);
 
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
+  const [nftMembershipAddress, setNFTMembershipAddress] = useState<string | null>(null);
   const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
   const STAKING_CHAIN_ID =
     environment === EtherspotEnvNames.MainNets ? MAINNET_CHAIN_ID.POLYGON : TESTNET_CHAIN_ID.POLYGON;
@@ -224,10 +237,18 @@ const PlrDaoStakingTransactionBlock = ({
         getNftsForChainId(CHAIN_ID.POLYGON, providerAddress, true),
         getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
       ]);
-      const nftCollection = [...providerAddressNfts, ...accountAddressNfts];
-      setIsNFTMember(
-        nftCollection.some((nft) => addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address))
+
+      var isMemberInProviderAddress = providerAddressNfts.some((nft) =>
+        addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
       );
+      var isMemberInAccountAddress = accountAddressNfts.some((nft) =>
+        addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
+      );
+
+      if (isMemberInProviderAddress || isMemberInAccountAddress) {
+        setIsNFTMember(true);
+        setNFTMembershipAddress(isMemberInProviderAddress ? providerAddress : accountAddress);
+      }
     } catch (error) {
       //
     }
@@ -555,6 +576,23 @@ const PlrDaoStakingTransactionBlock = ({
     receiverAddress,
   ]);
 
+  const setValueForUnStaking = async () => {
+    try {
+      setTransactionBlockValues(transactionBlockId, {
+        isUnStake: true,
+        hasEnoughPLR: false,
+        enableAssetBridge: false,
+        enableAssetSwap: false,
+        fromChainId: plrDaoMemberNft[STAKING_CHAIN_ID].chainId,
+        amount: `${MAX_PLR_TOKEN_LIMIT}`,
+        accountType: nftMembershipAddress === providerAddress ? AccountTypes.Key : AccountTypes.Contract,
+        membershipAddress: nftMembershipAddress,
+      });
+    } catch (error) {
+      //
+    }
+  };
+
   const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -657,6 +695,7 @@ const PlrDaoStakingTransactionBlock = ({
             </Text>
           </Container>
         </ContainerWrapper>
+        <UnstakeButton onClick={setValueForUnStaking}>Unstake</UnstakeButton>
       </>
     );
   }

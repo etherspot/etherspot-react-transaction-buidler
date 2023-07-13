@@ -54,9 +54,12 @@ export const validateTransactionBlockValues = (transactionBlock: ITransactionBlo
     const transactionBlockValues: IPlrDaoTransactionBlockValues | undefined = transactionBlock.values;
     if (!transactionBlockValues?.fromChainId) errors.fromChainId = 'No source chain selected!';
     if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
-    if (!transactionBlockValues?.fromAsset?.address) errors.fromAssetAddress = 'Invalid source asset selected!';
-    if (!transactionBlockValues?.fromAsset?.symbol) errors.fromAssetSymbol = 'Invalid source asset selected!';
-    if (!transactionBlockValues?.fromAsset?.decimals) errors.fromAssetDecimals = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.isUnStake && !transactionBlockValues?.fromAsset?.address)
+      errors.fromAssetAddress = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.isUnStake && !transactionBlockValues?.fromAsset?.symbol)
+      errors.fromAssetSymbol = 'Invalid source asset selected!';
+    if (!transactionBlockValues?.isUnStake && !transactionBlockValues?.fromAsset?.decimals)
+      errors.fromAssetDecimals = 'Invalid source asset selected!';
     if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress))
       errors.receiverAddress = 'Invalid receiver address!';
     if (!transactionBlockValues?.accountType) errors.accountType = 'No account type selected!';
