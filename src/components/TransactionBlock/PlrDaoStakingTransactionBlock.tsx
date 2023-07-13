@@ -177,7 +177,7 @@ const mapRouteToOption = (route: Route) => {
   };
 };
 
-export const MAX_PLR_TOKEN_LIMIT = 1;
+export const MAX_PLR_TOKEN_LIMIT = 10000;
 
 const PlrDaoStakingTransactionBlock = ({
   id: transactionBlockId,
@@ -238,10 +238,10 @@ const PlrDaoStakingTransactionBlock = ({
         getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
       ]);
 
-      var isMemberInProviderAddress = providerAddressNfts.some((nft) =>
+      let isMemberInProviderAddress = providerAddressNfts.some((nft) =>
         addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
       );
-      var isMemberInAccountAddress = accountAddressNfts.some((nft) =>
+      let isMemberInAccountAddress = accountAddressNfts.some((nft) =>
         addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
       );
 
@@ -576,21 +576,17 @@ const PlrDaoStakingTransactionBlock = ({
     receiverAddress,
   ]);
 
-  const setValueForUnStaking = async () => {
-    try {
-      setTransactionBlockValues(transactionBlockId, {
-        isUnStake: true,
-        hasEnoughPLR: false,
-        enableAssetBridge: false,
-        enableAssetSwap: false,
-        fromChainId: plrDaoMemberNft[STAKING_CHAIN_ID].chainId,
-        amount: `${MAX_PLR_TOKEN_LIMIT}`,
-        accountType: nftMembershipAddress === providerAddress ? AccountTypes.Key : AccountTypes.Contract,
-        membershipAddress: nftMembershipAddress,
-      });
-    } catch (error) {
-      //
-    }
+  const onUnstake = async () => {
+    setTransactionBlockValues(transactionBlockId, {
+      isUnStake: true,
+      hasEnoughPLR: false,
+      enableAssetBridge: false,
+      enableAssetSwap: false,
+      fromChainId: plrDaoMemberNft[STAKING_CHAIN_ID].chainId,
+      amount: `${MAX_PLR_TOKEN_LIMIT}`,
+      accountType: nftMembershipAddress === providerAddress ? AccountTypes.Key : AccountTypes.Contract,
+      membershipAddress: nftMembershipAddress,
+    });
   };
 
   const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);
@@ -695,7 +691,7 @@ const PlrDaoStakingTransactionBlock = ({
             </Text>
           </Container>
         </ContainerWrapper>
-        <UnstakeButton onClick={setValueForUnStaking}>Unstake</UnstakeButton>
+        {/* <UnstakeButton onClick={onUnstake}>Unstake</UnstakeButton> */}
       </>
     );
   }
