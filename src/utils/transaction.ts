@@ -1167,11 +1167,18 @@ export const buildCrossChainAction = async (
 
       if (fromChainId !== CHAIN_ID.XDAI && routeToUSDC) {
         try {
-          // This is used in case token 1 is USDC
-          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, 6);
+          let fromTokenOneAmountBN: any = null;
+          let fromTokenTwoAmountBN: any = null;
 
-          // This is used in case token 2 is USDC
-          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, 6);
+          try {
+            // This is used in case token 1 is USDC
+            fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, toToken1.decimals);
+
+            // This is used in case token 2 is USDC
+            fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, toToken2.decimals);
+          } catch (error) {
+            console.log('error', error);
+          }
 
           const [firstStep] = routeToUSDC.steps;
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
@@ -1328,11 +1335,18 @@ export const buildCrossChainAction = async (
         }
       } else if (fromChainId === CHAIN_ID.XDAI) {
         try {
-          // This is used in case token 1 is USDC
-          const fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, fromAssetDecimals);
+          let fromTokenOneAmountBN: any = null;
+          let fromTokenTwoAmountBN: any = null;
 
-          // This is used in case token 2 is USDC
-          const fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, fromAssetDecimals);
+          try {
+            // This is used in case token 1 is USDC
+            fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, toToken1.decimals);
+
+            // This is used in case token 2 is USDC
+            fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, toToken2.decimals);
+          } catch (error) {
+            console.log('error', error);
+          }
 
           let transferTransaction: ICrossChainActionTransaction = {
             to: sdk.state.accountAddress,

@@ -338,11 +338,10 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
-      const tknAmt = String(Number(halfOfRemainingAmount) / 1000000);
-      setTokenOneAmount(String(Number(amount) / 2));
-      setTokenTwoAmount(String(Number(amount) / 2));
-
-      console.log('TokenAmt', tknAmt);
+      const tknAmt1 = String(Number(halfOfRemainingAmount) / 10 ** selectedToken1Asset.decimals);
+      const tknAmt2 = String(Number(halfOfRemainingAmount) / 10 ** selectedToken2Asset.decimals);
+      setTokenOneAmount(tknAmt1);
+      setTokenTwoAmount(tknAmt2);
 
       try {
         // needed computed account address before calling getExchangeOffers
