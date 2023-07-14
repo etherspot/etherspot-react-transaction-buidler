@@ -114,14 +114,14 @@ const HoneySwapRoute = ({
     token?: IAssetWithBalance | null,
     offer?: ExchangeOffer | null,
     tokenAmount?: string | null,
-    state: string = 'one'
+    state: number = 1
   ) => {
     if (token && token.address !== GNOSIS_USDC_CONTRACT_ADDRESS && !!offer) {
       return formatAmountDisplay(
         Number(ethers.utils.formatUnits(offer.receiveAmount.toString(), token.decimals)).toFixed(4)
       );
     } else if (token && token.address === GNOSIS_USDC_CONTRACT_ADDRESS && !!tokenAmount) {
-      return (Number(tokenAmount) * 10 ** (state === 'one' ? 0 : 12)).toFixed(2);
+      return (Number(tokenAmount) * 10 ** (state === 1 ? 0 : 12)).toFixed(2);
     }
 
     return '';
@@ -132,14 +132,14 @@ const HoneySwapRoute = ({
       <OffersBlockWrapper>
         <OffersBlock>
           <RoundedImage title={token1?.name ?? 'First'} url={token1?.logoURI} size={16} noMarginRight />
-          {token1 && getFormattedAmountByTokenAndOffer(token1, offer1, tokenAmount, 'one')}
+          {token1 && getFormattedAmountByTokenAndOffer(token1, offer1, tokenAmount, 1)}
           &nbsp;
           {token1 && token1.name}
         </OffersBlock>
         +
         <OffersBlock>
           <RoundedImage title={token2?.name ?? 'First'} url={token2?.logoURI} size={16} noMarginRight />
-          {token2 && getFormattedAmountByTokenAndOffer(token2, offer2, tokenAmount, 'two')}
+          {token2 && getFormattedAmountByTokenAndOffer(token2, offer2, tokenAmount, 2)}
           &nbsp;
           {token2 && token2.name}
         </OffersBlock>
