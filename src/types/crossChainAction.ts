@@ -88,6 +88,8 @@ interface HoneySwapLPActionPreview {
   offer2?: ExchangeOffer;
   token1: IAssetWithBalance;
   token2: IAssetWithBalance;
+  tokenOneAmount?: string;
+  tokenTwoAmount?: string;
 }
 
 interface AssetBridgeAction {
