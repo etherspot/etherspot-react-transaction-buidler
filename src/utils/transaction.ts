@@ -48,9 +48,14 @@ import {
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 import { UNISWAP_ROUTER_ABI } from '../constants/uniswapRouterAbi';
 import { UniswapV2RouterContract } from '../contracts/UniswapV2Router';
+import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 
 interface IPillarDao {
   encodeDeposit(amount: BigNumber): {
+    to: string;
+    data: string;
+  };
+  encodeWithdraw(): {
     to: string;
     data: string;
   };
@@ -599,6 +604,91 @@ export const honeyswapLP = async (
   }
 };
 
+const buildPlrDaoUnStakeTransaction = (
+  sdk: EtherspotSdk | null,
+  transactionBlockId: string,
+  membershipAddress: string,
+  useWeb3Provider: boolean
+): { errorMessage?: string; crossChainAction?: ICrossChainAction } => {
+  if (!sdk) {
+    return { errorMessage: 'Failed to build Unstake transaction!' };
+  }
+
+  try {
+    const createTimestamp = +new Date();
+    const crossChainActionId = uniqueId(`${createTimestamp}-`);
+
+    let transactions: IPlrTransaction[] = [];
+    let contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[CHAIN_ID.POLYGON];
+
+    try {
+      const plrDaoStakingContract = sdk.registerContract<IPillarDao>(
+        'plrDaoStakingContract',
+        ['function withdraw()'],
+        contractAddress
+      );
+      const stakeTransactionRequest = plrDaoStakingContract?.encodeWithdraw?.();
+      if (!stakeTransactionRequest || !stakeTransactionRequest.to) {
+        return { errorMessage: 'Failed to build Unstake transaction!' };
+      }
+
+      const approvalTransaction = {
+        to: stakeTransactionRequest.to,
+        data: stakeTransactionRequest.data,
+        chainId: plrDaoMemberNft[CHAIN_ID.POLYGON].chainId,
+        value: 0,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      };
+
+      transactions = [approvalTransaction];
+    } catch (e) {
+      return { errorMessage: 'Failed to build Unstake transaction!' };
+    }
+
+    const preview = {
+      fromChainId: plrDaoMemberNft[CHAIN_ID.POLYGON].chainId,
+      isUnStake: true,
+      hasEnoughPLR: false,
+      enableAssetSwap: false,
+      enableAssetBridge: false,
+      fromAsset: {
+        address: plrDaoMemberNft[CHAIN_ID.POLYGON].address,
+        decimals: plrDaoMemberNft[CHAIN_ID.POLYGON].decimals,
+        symbol: plrDaoMemberNft[CHAIN_ID.POLYGON].symbol,
+        amount: '1',
+        iconUrl: plrDaoMemberNft[CHAIN_ID.POLYGON].logoURI,
+      },
+      amount: `${MAX_PLR_TOKEN_LIMIT}`,
+      toAsset: {
+        address: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].address,
+        decimals: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].decimals,
+        symbol: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].name,
+        amount: `${MAX_PLR_TOKEN_LIMIT}`,
+        iconUrl: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].logoURI,
+      },
+      receiverAddress: membershipAddress ?? '',
+    };
+
+    const crossChainAction: ICrossChainAction = {
+      id: crossChainActionId,
+      relatedTransactionBlockId: transactionBlockId,
+      chainId: plrDaoMemberNft[CHAIN_ID.POLYGON].chainId,
+      type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
+      preview,
+      transactions,
+      isEstimating: false,
+      estimated: null,
+      receiveAmount: `${MAX_PLR_TOKEN_LIMIT}`,
+      useWeb3Provider: useWeb3Provider,
+      destinationCrossChainAction: [],
+    };
+    return { crossChainAction };
+  } catch (e) {
+    return { errorMessage: 'Failed to build Unstake transaction!' };
+  }
+};
+
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
   transactionBlock: ITransactionBlock
@@ -751,6 +841,22 @@ export const buildCrossChainAction = async (
     } catch (e) {
       return { errorMessage: 'Failed to get KLIMA staking transaction!' };
     }
+  }
+
+  if (
+    transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE &&
+    transactionBlock?.values?.isUnStake &&
+    transactionBlock?.values?.membershipAddress
+  ) {
+    let result = buildPlrDaoUnStakeTransaction(
+      sdk,
+      transactionBlock.id,
+      transactionBlock?.values?.membershipAddress,
+      transactionBlock?.values?.accountType === AccountTypes.Key
+    );
+
+    if (result.errorMessage) return { errorMessage: result.errorMessage };
+    if (result.crossChainAction) return { crossChainAction: result.crossChainAction };
   }
 
   if (

@@ -487,7 +487,7 @@ export const klimaAsset: IAssetWithBalance = {
 // TODO: Update with Original PLR DAO Membership contract. This is test contract with 1 PLR with 1 day locking period
 export const plrDaoMemberNft = {
   [MAINNET_CHAIN_ID.POLYGON]: {
-    address: '0x154121e6CfaF9fc3ce69B9F7a690Ac1F039975C0',
+    address: '0xdf092214989eD7f73bAEf99D651E5e721e0e7F11',
     chainId: MAINNET_CHAIN_ID.POLYGON,
     name: 'Pillar DAO NFT',
     symbol: 'PLR DAO',
