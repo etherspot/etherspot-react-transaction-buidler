@@ -63,11 +63,17 @@ const WalletAssetsList = ({
 
                   <ChainBlockHeaderText>{`${chain.title}・$${formatAmountDisplay(chainTotal)}`}</ChainBlockHeaderText>
 
-                  <ChainHeaderCopyIcon color={theme?.color?.background?.walletAssetCopyIcon} onClick={() => onCopy(accountAddress || '')}>
+                  <ChainHeaderCopyIcon
+                    color={theme?.color?.background?.walletAssetCopyIcon}
+                    onClick={() => onCopy(accountAddress || '')}
+                  >
                     {WalletCopyIcon}
                   </ChainHeaderCopyIcon>
 
-                  <ChainBlockDropdownIcon color={theme.color?.text?.walletDropdownIcon} onClick={() => toggleChainBlock(chainId)}>
+                  <ChainBlockDropdownIcon
+                    color={theme.color?.text?.walletDropdownIcon}
+                    onClick={() => toggleChainBlock(chainId)}
+                  >
                     {hideChainList.includes(chainId) ? WalletDropdownDownIcon : WalletDropdownUpIcon}
                   </ChainBlockDropdownIcon>
                 </ChainBlockHeader>
@@ -154,7 +160,7 @@ const ChainBlock = styled.div`
   flex: 1;
   border-radius: 8px;
   background-color: ${({ theme }) => theme.color.background.walletChainDropdown};
-  padding: 12px 12px 12px 0px;
+  padding-bottom: 12px;
   margin-bottom: 12px;
 `;
 

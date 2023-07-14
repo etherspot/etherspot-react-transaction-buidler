@@ -403,7 +403,10 @@ const AssetSwapTransactionBlock = ({
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAsset');
           setSelectedFromAsset(asset);
-          setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
+
+          const amountTo = amountBN ? formatMaxAmount(amountBN, asset.decimals) : '';
+
+          setAmount(amountTo);
         }}
         onNetworkSelect={(network) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'chain');

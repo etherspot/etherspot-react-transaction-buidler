@@ -12,7 +12,7 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 import { Route } from '@lifi/sdk';
-import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { BigNumber, BigNumberish, ethers, utils } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
@@ -26,12 +26,12 @@ import { map as rxjsMap } from 'rxjs/operators';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
-import { plrDaoAsset, testPlrDaoAsset, plrStakedAssetEthereumMainnet } from './asset';
+import { plrDaoAsset, plrDaoAssetPerChainId, plrStakedAssetEthereumMainnet } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
-import { TransactionRequest } from 'etherspot/dist/sdk/common';
+import { TransactionRequest, sleep } from 'etherspot/dist/sdk/common';
 import {
   ICrossChainActionEstimation,
   ICrossChainActionTransaction,
@@ -39,11 +39,23 @@ import {
 } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { PLR_DAO_CONTRACT_PER_CHAIN, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import {
+  GNOSIS_USDC_CONTRACT_ADDRESS,
+  PLR_DAO_CONTRACT_PER_CHAIN,
+  PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
+  POLYGON_USDC_CONTRACT_ADDRESS,
+} from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
+import { UNISWAP_ROUTER_ABI } from '../constants/uniswapRouterAbi';
+import { UniswapV2RouterContract } from '../contracts/UniswapV2Router';
+import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 
 interface IPillarDao {
   encodeDeposit(amount: BigNumber): {
+    to: string;
+    data: string;
+  };
+  encodeWithdraw(): {
     to: string;
     data: string;
   };
@@ -406,6 +418,277 @@ export const klimaDaoStaking = async (
   }
 };
 
+export const honeyswapLP = async (
+  sdk: EtherspotSdk | null,
+  amount1: BigNumber,
+  tokenAddress1: string,
+  amount2: BigNumber,
+  tokenAddress2: string,
+  receiverAddress: string
+) => {
+  if (!sdk) return { errorMessage: 'No sdk found' };
+
+  const contractAddress = '0x1C232F01118CB8B424793ae03F870aa7D0ac7f77';
+  const contractAddressProxy = '0xf8D1677c8a0c961938bf2f9aDc3F3CFDA759A9d9';
+
+  const createTimestamp = Date.now() + 100;
+
+  try {
+    const amountMin1 = (Number(amount1) - Number(amount1) * 0.05).toFixed(0);
+    const amountMin2 = (Number(amount2) - Number(amount2) * 0.05).toFixed(0);
+
+    const uniswapV2AbiAddLiquidity = [
+      {
+        inputs: [
+          { internalType: 'address', name: 'tokenA', type: 'address' },
+          { internalType: 'address', name: 'tokenB', type: 'address' },
+          { internalType: 'uint256', name: 'amountADesired', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountBDesired', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountAMin', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountBMin', type: 'uint256' },
+          { internalType: 'address', name: 'to', type: 'address' },
+          { internalType: 'uint256', name: 'deadline', type: 'uint256' },
+        ],
+        name: 'addLiquidity',
+        outputs: [
+          { internalType: 'uint256', name: 'amountA', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountB', type: 'uint256' },
+          { internalType: 'uint256', name: 'liquidity', type: 'uint256' },
+        ],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ];
+
+    const uniswapV2AbiAddLiquidityETH = [
+      {
+        inputs: [
+          { internalType: 'address', name: 'token', type: 'address' },
+          { internalType: 'uint256', name: 'amountTokenDesired', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountTokenMin', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountETHMin', type: 'uint256' },
+          { internalType: 'address', name: 'to', type: 'address' },
+          { internalType: 'uint256', name: 'deadline', type: 'uint256' },
+        ],
+        name: 'addLiquidityETH',
+        outputs: [
+          { internalType: 'uint256', name: 'amountToken', type: 'uint256' },
+          { internalType: 'uint256', name: 'amountETH', type: 'uint256' },
+          { internalType: 'uint256', name: 'liquidity', type: 'uint256' },
+        ],
+        stateMutability: 'payable',
+        type: 'function',
+      },
+    ];
+
+    const ContractInterface = new ethers.utils.Interface(uniswapV2AbiAddLiquidity);
+
+    const ContractInterfaceEth = new ethers.utils.Interface(uniswapV2AbiAddLiquidityETH);
+
+    let encodedEthData = null;
+
+    if (isZeroAddress(tokenAddress1)) {
+      encodedEthData = ContractInterfaceEth.encodeFunctionData('addLiquidityETH', [
+        tokenAddress2,
+        amount2,
+        amountMin2,
+        amountMin1,
+        receiverAddress,
+        createTimestamp,
+      ]);
+    }
+
+    if (isZeroAddress(tokenAddress2)) {
+      encodedEthData = ContractInterfaceEth.encodeFunctionData('addLiquidityETH', [
+        tokenAddress1,
+        amount1,
+        amountMin1,
+        amountMin2,
+        receiverAddress,
+        createTimestamp,
+      ]);
+    }
+
+    const encodedData = ContractInterface.encodeFunctionData('addLiquidity', [
+      tokenAddress1,
+      tokenAddress2,
+      amount1,
+      amount2,
+      amountMin1,
+      amountMin2,
+      receiverAddress,
+      createTimestamp,
+    ]);
+
+    const approveAbi = [
+      {
+        constant: false,
+        inputs: [
+          { name: '_to', type: 'address' },
+          { name: '_value', type: 'uint256' },
+        ],
+        name: 'approve',
+        outputs: [{ name: 'result', type: 'bool' }],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ];
+
+    const ERC20Intance = new ethers.utils.Interface(approveAbi);
+
+    const approvalData1 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount1]);
+
+    const approvalData2 = ERC20Intance.encodeFunctionData('approve', [contractAddress, amount2]);
+
+    const newEncodeAddLiquidityTransactions = {
+      to: contractAddress,
+      data: encodedData,
+      chainId: CHAIN_ID.XDAI,
+      value: '0',
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    };
+
+    const newApprovalTransaction1 = {
+      to: tokenAddress1,
+      data: approvalData1,
+      chainId: CHAIN_ID.XDAI,
+      value: '0',
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    };
+
+    const newApprovalTransaction2 = {
+      to: tokenAddress2,
+      data: approvalData2,
+      chainId: CHAIN_ID.XDAI,
+      value: '0',
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+    };
+
+    let newNativeTokenEndodedData = encodedEthData
+      ? {
+          to: contractAddress,
+          data: encodedEthData,
+          chainId: CHAIN_ID.XDAI,
+          value: isZeroAddress(tokenAddress1) ? amount1 : amount2,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        }
+      : null;
+
+    const isAnyTokenAddressZero = isZeroAddress(tokenAddress1) || isZeroAddress(tokenAddress2);
+
+    let transactions: any[] = [];
+
+    if (isZeroAddress(tokenAddress1)) {
+      transactions = [newApprovalTransaction2];
+    } else if (isZeroAddress(tokenAddress2)) {
+      transactions = [newApprovalTransaction1];
+    } else {
+      transactions = [newApprovalTransaction1, newApprovalTransaction2];
+    }
+
+    if (isAnyTokenAddressZero && newNativeTokenEndodedData) {
+      transactions = [...transactions, newNativeTokenEndodedData];
+    } else {
+      transactions = [...transactions, newEncodeAddLiquidityTransactions];
+    }
+
+    return { result: { transactions, provider: 'LiFi' } };
+  } catch (error) {
+    console.log('errorPPP', error instanceof Error ? error.message : error);
+    return { errorMessage: 'Failed to build transaction!' };
+  }
+};
+
+const buildPlrDaoUnStakeTransaction = (
+  sdk: EtherspotSdk | null,
+  transactionBlockId: string,
+  membershipAddress: string,
+  useWeb3Provider: boolean
+): { errorMessage?: string; crossChainAction?: ICrossChainAction } => {
+  if (!sdk) {
+    return { errorMessage: 'Failed to build Unstake transaction!' };
+  }
+
+  try {
+    const createTimestamp = +new Date();
+    const crossChainActionId = uniqueId(`${createTimestamp}-`);
+
+    let transactions: IPlrTransaction[] = [];
+    let contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[CHAIN_ID.POLYGON];
+
+    try {
+      const plrDaoStakingContract = sdk.registerContract<IPillarDao>(
+        'plrDaoStakingContract',
+        ['function withdraw()'],
+        contractAddress
+      );
+      const stakeTransactionRequest = plrDaoStakingContract?.encodeWithdraw?.();
+      if (!stakeTransactionRequest || !stakeTransactionRequest.to) {
+        return { errorMessage: 'Failed to build Unstake transaction!' };
+      }
+
+      const approvalTransaction = {
+        to: stakeTransactionRequest.to,
+        data: stakeTransactionRequest.data,
+        chainId: plrDaoMemberNft[CHAIN_ID.POLYGON].chainId,
+        value: 0,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      };
+
+      transactions = [approvalTransaction];
+    } catch (e) {
+      return { errorMessage: 'Failed to build Unstake transaction!' };
+    }
+
+    const preview = {
+      fromChainId: plrDaoMemberNft[CHAIN_ID.POLYGON].chainId,
+      isUnStake: true,
+      hasEnoughPLR: false,
+      enableAssetSwap: false,
+      enableAssetBridge: false,
+      fromAsset: {
+        address: plrDaoMemberNft[CHAIN_ID.POLYGON].address,
+        decimals: plrDaoMemberNft[CHAIN_ID.POLYGON].decimals,
+        symbol: plrDaoMemberNft[CHAIN_ID.POLYGON].symbol,
+        amount: '1',
+        iconUrl: plrDaoMemberNft[CHAIN_ID.POLYGON].logoURI,
+      },
+      amount: `${MAX_PLR_TOKEN_LIMIT}`,
+      toAsset: {
+        address: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].address,
+        decimals: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].decimals,
+        symbol: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].name,
+        amount: `${MAX_PLR_TOKEN_LIMIT}`,
+        iconUrl: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].logoURI,
+      },
+      receiverAddress: membershipAddress ?? '',
+    };
+
+    const crossChainAction: ICrossChainAction = {
+      id: crossChainActionId,
+      relatedTransactionBlockId: transactionBlockId,
+      chainId: plrDaoMemberNft[CHAIN_ID.POLYGON].chainId,
+      type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
+      preview,
+      transactions,
+      isEstimating: false,
+      estimated: null,
+      receiveAmount: `${MAX_PLR_TOKEN_LIMIT}`,
+      useWeb3Provider: useWeb3Provider,
+      destinationCrossChainAction: [],
+    };
+    return { crossChainAction };
+  } catch (e) {
+    return { errorMessage: 'Failed to build Unstake transaction!' };
+  }
+};
+
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
   transactionBlock: ITransactionBlock
@@ -562,6 +845,22 @@ export const buildCrossChainAction = async (
 
   if (
     transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE &&
+    transactionBlock?.values?.isUnStake &&
+    transactionBlock?.values?.membershipAddress
+  ) {
+    let result = buildPlrDaoUnStakeTransaction(
+      sdk,
+      transactionBlock.id,
+      transactionBlock?.values?.membershipAddress,
+      transactionBlock?.values?.accountType === AccountTypes.Key
+    );
+
+    if (result.errorMessage) return { errorMessage: result.errorMessage };
+    if (result.crossChainAction) return { crossChainAction: result.crossChainAction };
+  }
+
+  if (
+    transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE &&
     (!transactionBlock?.values?.fromChainId ||
       !transactionBlock?.values?.fromAsset ||
       !transactionBlock?.values?.amount ||
@@ -700,7 +999,7 @@ export const buildCrossChainAction = async (
 
         const preview = {
           fromChainId,
-          toChainId: testPlrDaoAsset[fromChainId].chainId,
+          toChainId: plrDaoAssetPerChainId[CHAIN_ID.POLYGON].chainId,
           providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
           providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
           hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,
@@ -929,6 +1228,475 @@ export const buildCrossChainAction = async (
       };
 
       return { crossChainAction };
+    } catch (e) {
+      return { errorMessage: 'Failed to get bridge route!' };
+    }
+  }
+
+  if (
+    transactionBlock.type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP &&
+    !!transactionBlock?.values?.fromChainId &&
+    !!transactionBlock?.values?.toToken1 &&
+    !!transactionBlock?.values?.toToken2 &&
+    !!transactionBlock?.values?.fromAssetAddress &&
+    !!transactionBlock?.values?.fromAssetDecimals &&
+    !!transactionBlock?.values?.fromAssetSymbol &&
+    !!transactionBlock?.values?.amount &&
+    // !!transactionBlock?.values?.routeToUSDC &&
+    !!transactionBlock?.values?.tokenOneAmount &&
+    !!transactionBlock?.values?.tokenTwoAmount
+  ) {
+    try {
+      const {
+        values: {
+          fromChainId,
+          fromAssetAddress,
+          fromAssetDecimals,
+          fromAssetSymbol,
+          fromAssetIconUrl,
+          amount,
+          accountType,
+          routeToUSDC,
+          receiverAddress,
+          offer1,
+          offer2,
+          offer3,
+          tokenOneAmount,
+          tokenTwoAmount,
+          toToken1,
+          toToken2,
+        },
+      } = transactionBlock;
+
+      let destinationTxns: ICrossChainActionTransaction[] = [];
+      let transactions: ICrossChainActionTransaction[] = [];
+
+      let fromTokenOneAmountBN: any = null;
+      let fromTokenTwoAmountBN: any = null;
+
+      try {
+        // This is used in case token 1 is USDC
+        fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, toToken1.decimals);
+
+        // This is used in case token 2 is USDC
+        fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, toToken2.decimals);
+      } catch {}
+
+      const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      // // not native asset and no erc20 approval transaction included
+      if (
+        toToken1.address &&
+        !addressesEqual(toToken1.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+        offer1
+      ) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>(
+          'erc20Contract',
+          abi,
+          GNOSIS_USDC_CONTRACT_ADDRESS
+        );
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+          offer1?.transactions[0].to,
+          fromTokenOneAmountBN
+        );
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build bridge approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          chainId: CHAIN_ID.XDAI,
+          value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        };
+
+        if (offer1?.transactions.length === 1) {
+          destinationTxns = [approvalTransaction, ...destinationTxns];
+        }
+      }
+
+      if (
+        toToken2.address &&
+        !addressesEqual(toToken2.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+        offer2
+      ) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>(
+          'erc20Contract',
+          abi,
+          GNOSIS_USDC_CONTRACT_ADDRESS
+        );
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+          offer2?.transactions[0].to,
+          fromTokenTwoAmountBN
+        );
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build bridge approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          chainId: CHAIN_ID.XDAI,
+          value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        };
+
+        if (offer2?.transactions.length === 1) {
+          destinationTxns = [approvalTransaction, ...destinationTxns];
+        }
+      }
+
+      if (fromChainId !== CHAIN_ID.XDAI && routeToUSDC) {
+        try {
+          const [firstStep] = routeToUSDC.steps;
+          const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
+
+          const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: routeToUSDC });
+          transactions = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
+            to: to as string,
+            value,
+            data,
+            chainId: chainId ?? fromChainId,
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          }));
+
+          if (
+            ethers.utils.isAddress(routeToUSDC.fromToken.address) &&
+            !addressesEqual(routeToUSDC.fromToken.address, nativeAssetPerChainId[fromChainId].address) &&
+            transactions.length === 1 &&
+            routeToUSDC.fromAmount
+          ) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>(
+              'erc20Contract',
+              abi,
+              routeToUSDC.fromToken.address
+            );
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+              transactions[0].to,
+              routeToUSDC.fromAmount
+            );
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed to build bridge approval transaction!' };
+            }
+
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+
+            transactions = [approvalTransaction, ...transactions];
+          }
+
+          // Swap 1 Start //
+          if (offer1 && toToken1.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer1.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 1 ENDS
+
+          // Swap 2 Start
+
+          if (offer2 && toToken2.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer2.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 2 ENDS
+
+          const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
+
+          const honeySwapTransaction = await honeyswapLP(
+            sdk,
+            offer1 ? offer1.receiveAmount : fromTokenOneAmountBN,
+            toToken1.address,
+            offer2 ? offer2.receiveAmount : fromTokenTwoAmountBN,
+            toToken2.address,
+            addressToSendTo
+          );
+
+          if (honeySwapTransaction.errorMessage) return { errorMessage: honeySwapTransaction.errorMessage };
+
+          if (honeySwapTransaction.result?.transactions?.length) {
+            destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
+          }
+
+          const preview = {
+            fromChainId,
+            toChainId: CHAIN_ID.XDAI,
+            fromAsset: {
+              address: fromAssetAddress,
+              decimals: fromAssetDecimals,
+              symbol: fromAssetSymbol,
+              amount: amount,
+              iconUrl: fromAssetIconUrl,
+            },
+            amount: ethers.utils.parseUnits(amount ?? '0', 6),
+            toAsset: {
+              address: GNOSIS_USDC_CONTRACT_ADDRESS,
+              decimals: 6,
+              symbol: 'usdc',
+              amount: ethers.utils.parseUnits(amount ?? '0', 6).toString(),
+              iconUrl: 'https://polygonscan.com/token/images/klimadao_32.png',
+            },
+            route: routeToUSDC,
+            receiverAddress: transactionBlock?.values?.receiverAddress,
+            providerName: firstStep?.toolDetails?.name ?? bridgeServiceDetails?.title ?? 'LiFi',
+            providerIconUrl: firstStep?.toolDetails?.logoURI ?? bridgeServiceDetails?.iconUrl,
+            offer1,
+            offer2,
+            token1: toToken1,
+            token2: toToken2,
+            tokenOneAmount,
+            tokenTwoAmount,
+          };
+
+          const crossChainAction: ICrossChainAction = {
+            id: crossChainActionId,
+            relatedTransactionBlockId: transactionBlock.id,
+            chainId: fromChainId,
+            type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+            preview,
+            transactions,
+            isEstimating: false,
+            estimated: null,
+            useWeb3Provider: accountType === AccountTypes.Key,
+            multiCallData: transactionBlock?.multiCallData,
+            receiveAmount: amount,
+            destinationCrossChainAction: [
+              {
+                id: uniqueId(`${createTimestamp}-`),
+                relatedTransactionBlockId: transactionBlock.id,
+                chainId: CHAIN_ID.XDAI,
+                type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                preview,
+                transactions: destinationTxns,
+                isEstimating: false,
+                estimated: null,
+                useWeb3Provider: false,
+                gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                destinationCrossChainAction: [],
+              },
+            ],
+          };
+
+          return { crossChainAction: crossChainAction };
+        } catch (e) {
+          return { errorMessage: 'Failed to get bridge route!' };
+        }
+      } else if (fromChainId === CHAIN_ID.XDAI) {
+        try {
+          if (
+            fromAssetAddress &&
+            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+            offer3
+          ) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(offer3?.transactions[0].to, fromAmountBN);
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed build bridge approval transaction!' };
+            }
+
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              chainId: CHAIN_ID.XDAI,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+
+            if (offer3?.transactions.length === 1) {
+              destinationTxns = [approvalTransaction, ...destinationTxns];
+            }
+          }
+
+          let transferTransaction: ICrossChainActionTransaction = {
+            to: sdk.state.accountAddress,
+            value: ethers.utils.parseUnits(amount, fromAssetDecimals),
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          };
+
+          if (ethers.utils.isAddress(fromAssetAddress) && !isZeroAddress(fromAssetAddress)) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const transferTransactionRequest = erc20Contract?.encodeTransfer?.(
+              sdk.state.accountAddress,
+              ethers.utils.parseUnits(amount, fromAssetDecimals)
+            );
+            if (!transferTransactionRequest || !transferTransactionRequest.to) {
+              return { errorMessage: 'Failed build transfer transaction!' };
+            }
+
+            transferTransaction = {
+              ...transferTransaction,
+              to: transferTransactionRequest.to,
+              data: transferTransactionRequest.data,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
+          }
+
+          if (accountType === AccountTypes.Key) {
+            destinationTxns = [...destinationTxns, transferTransaction];
+          }
+
+          // Swap 0 Start //
+          if (offer3 && fromAssetAddress !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer3.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 0 ENDS
+
+          // Swap 1 Start //
+          if (offer1 && toToken1.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer1.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 1 ENDS
+
+          // Swap 2 Start
+
+          if (offer2 && toToken2.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
+            destinationTxns = [
+              ...destinationTxns,
+              ...offer2.transactions.map((transaction) => ({
+                ...transaction,
+                chainId: CHAIN_ID.XDAI,
+                createTimestamp,
+                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+              })),
+            ];
+          }
+
+          // SWAP 2 ENDS
+
+          const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
+
+          const honeySwapTransaction = await honeyswapLP(
+            sdk,
+            offer1 ? offer1.receiveAmount : fromTokenOneAmountBN,
+            toToken1.address,
+            offer2 ? offer2.receiveAmount : fromTokenTwoAmountBN,
+            toToken2.address,
+            addressToSendTo
+          );
+
+          if (honeySwapTransaction.errorMessage) return { errorMessage: honeySwapTransaction.errorMessage };
+
+          if (honeySwapTransaction.result?.transactions?.length) {
+            destinationTxns = [...destinationTxns, ...honeySwapTransaction.result?.transactions];
+          }
+
+          const preview = {
+            fromChainId,
+            toChainId: CHAIN_ID.XDAI,
+            fromAsset: {
+              address: fromAssetAddress,
+              decimals: fromAssetDecimals,
+              symbol: fromAssetSymbol,
+              amount: amount,
+              iconUrl: fromAssetIconUrl,
+            },
+            amount: ethers.utils.parseUnits(amount ?? '0', 6),
+            toAsset: {
+              address: GNOSIS_USDC_CONTRACT_ADDRESS,
+              decimals: 6,
+              symbol: 'usdc',
+              amount: ethers.utils.parseUnits(amount ?? '0', 6).toString(),
+              iconUrl: 'https://polygonscan.com/token/images/klimadao_32.png',
+            },
+            route: routeToUSDC,
+            receiverAddress: transactionBlock?.values?.receiverAddress,
+            providerName: 'LiFi',
+            providerIconUrl: '',
+            offer1,
+            offer2,
+            token1: toToken1,
+            token2: toToken2,
+            tokenTwoAmount,
+            tokenOneAmount,
+          };
+
+          const crossChainAction: ICrossChainAction = {
+            id: crossChainActionId,
+            relatedTransactionBlockId: transactionBlock.id,
+            chainId: fromChainId,
+            type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+            preview,
+            transactions: destinationTxns,
+            isEstimating: false,
+            estimated: null,
+            useWeb3Provider: accountType === AccountTypes.Key,
+            multiCallData: transactionBlock?.multiCallData,
+            receiveAmount: amount,
+            destinationCrossChainAction: [
+              {
+                id: uniqueId(`${createTimestamp}-`),
+                relatedTransactionBlockId: transactionBlock.id,
+                chainId: CHAIN_ID.XDAI,
+                type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                preview,
+                transactions: destinationTxns,
+                isEstimating: false,
+                estimated: null,
+                useWeb3Provider: false,
+                gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                destinationCrossChainAction: [],
+              },
+            ],
+          };
+
+          return { crossChainAction: crossChainAction };
+        } catch (e) {
+          return { errorMessage: 'Failed to do swap!' };
+        }
+      } else {
+        return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
+      }
     } catch (e) {
       return { errorMessage: 'Failed to get bridge route!' };
     }
@@ -1389,9 +2157,9 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     }
 
     const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
-    await sdk.estimateGatewayBatch({ feeToken });
+    await sdk.estimateGatewayBatch({ feeToken: feeToken });
     const result = await sdk.submitGatewayBatch();
-
+    console.log('RESULT_1', result);
     let temporaryBatchSubscription: Subscription;
 
     return new Promise<{
@@ -1452,6 +2220,7 @@ export const getCrossChainStatusByHash = async (
         options
       )
     ).json();
+
     return {
       receivingTxnHash: result.receiving?.txHash,
       sendingTxnHash: result.sending?.txHash,
@@ -1539,6 +2308,21 @@ export const submitWeb3ProviderTransaction = async (
     };
     // @ts-ignore
     transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+
+    let transactionStatus = null;
+
+    while (transactionStatus === null) {
+      try {
+        // @ts-ignore
+        let status = await web3Provider.sendRequest('eth_getTransactionByHash', [transactionHash]);
+        if (status && status.blockNumber !== null) {
+          transactionStatus = status;
+        }
+        await sleep(2);
+      } catch (err) {
+        console.log('statuss', err);
+      }
+    }
   } catch (e) {
     if (e instanceof Error) {
       errorMessage = e?.message;
@@ -1576,7 +2360,6 @@ export const estimateCrossChainAction = async (
   if (!sdk || (crossChainAction.useWeb3Provider && !web3Provider)) {
     return { errorMessage: 'Failed to estimate!' };
   }
-
   let feeAssetBalanceBN = ethers.BigNumber.from(0);
   try {
     const balancesForAddress = crossChainAction.useWeb3Provider && providerAddress ? providerAddress : accountAddress;
