@@ -338,8 +338,9 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
 
-      const tknAmt1 = String(Number(halfOfRemainingAmount) / 10 ** selectedToken1Asset.decimals);
-      const tknAmt2 = String(Number(halfOfRemainingAmount) / 10 ** selectedToken2Asset.decimals);
+      const tknAmt1 = ethers.utils.formatUnits(halfOfRemainingAmount, selectedToken1Asset.decimals);
+      const tknAmt2 = ethers.utils.formatUnits(halfOfRemainingAmount, selectedToken2Asset.decimals);
+
       setTokenOneAmount(tknAmt1);
       setTokenTwoAmount(tknAmt2);
 
@@ -546,7 +547,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             token2={selectedToken2Asset}
             offer1={selectedOffer1}
             offer2={selectedOffer2}
-            tokenAmount={tokenOneAmount}
+            tokenAmount={selectedToken1Asset.address === GNOSIS_USDC_CONTRACT_ADDRESS ? tokenOneAmount : tokenTwoAmount}
           />
         )}
     </>

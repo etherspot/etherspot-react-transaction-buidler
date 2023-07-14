@@ -31,6 +31,7 @@ import { useEtherspot } from '../../hooks';
 import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
+import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 
 const TransactionAction = styled.div`
   position: relative;
@@ -1302,7 +1303,19 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-    const { fromAsset, fromChainId, toAsset, receiverAddress, route, token1, token2, offer1, offer2 } = preview;
+    const {
+      fromAsset,
+      fromChainId,
+      toAsset,
+      receiverAddress,
+      route,
+      token1,
+      token2,
+      offer1,
+      offer2,
+      tokenOneAmount,
+      tokenTwoAmount,
+    } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
@@ -1338,7 +1351,15 @@ const ActionPreview = ({
         {!!route && (
           <TransactionAction>
             <Label>Route</Label>
-            <HoneySwapRoute route={route} cost={cost} token1={token1} token2={token2} offer1={offer1} offer2={offer2} />
+            <HoneySwapRoute
+              route={route}
+              cost={cost}
+              token1={token1}
+              token2={token2}
+              offer1={offer1}
+              offer2={offer2}
+              tokenAmount={token1.address === GNOSIS_USDC_CONTRACT_ADDRESS ? tokenOneAmount : tokenTwoAmount}
+            />
           </TransactionAction>
         )}
 

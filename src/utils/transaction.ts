@@ -1271,21 +1271,88 @@ export const buildCrossChainAction = async (
       let destinationTxns: ICrossChainActionTransaction[] = [];
       let transactions: ICrossChainActionTransaction[] = [];
 
+      let fromTokenOneAmountBN: any = null;
+      let fromTokenTwoAmountBN: any = null;
+
+      try {
+        // This is used in case token 1 is USDC
+        fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, toToken1.decimals);
+
+        // This is used in case token 2 is USDC
+        fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, toToken2.decimals);
+      } catch {}
+
+      const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
+
+      // // not native asset and no erc20 approval transaction included
+      if (
+        toToken1.address &&
+        !addressesEqual(toToken1.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+        offer1
+      ) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>(
+          'erc20Contract',
+          abi,
+          GNOSIS_USDC_CONTRACT_ADDRESS
+        );
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+          offer1?.transactions[0].to,
+          fromTokenOneAmountBN
+        );
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build bridge approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          chainId: CHAIN_ID.XDAI,
+          value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        };
+
+        if (offer1?.transactions.length === 1) {
+          destinationTxns = [approvalTransaction, ...destinationTxns];
+        }
+      }
+
+      if (
+        toToken2.address &&
+        !addressesEqual(toToken2.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+        offer2
+      ) {
+        const abi = getContractAbi(ContractNames.ERC20Token);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>(
+          'erc20Contract',
+          abi,
+          GNOSIS_USDC_CONTRACT_ADDRESS
+        );
+        const approvalTransactionRequest = erc20Contract?.encodeApprove?.(
+          offer2?.transactions[0].to,
+          fromTokenTwoAmountBN
+        );
+        if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+          return { errorMessage: 'Failed build bridge approval transaction!' };
+        }
+
+        const approvalTransaction = {
+          to: approvalTransactionRequest.to,
+          data: approvalTransactionRequest.data,
+          chainId: CHAIN_ID.XDAI,
+          value: 0,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        };
+
+        if (offer2?.transactions.length === 1) {
+          destinationTxns = [approvalTransaction, ...destinationTxns];
+        }
+      }
+
       if (fromChainId !== CHAIN_ID.XDAI && routeToUSDC) {
         try {
-          let fromTokenOneAmountBN: any = null;
-          let fromTokenTwoAmountBN: any = null;
-
-          try {
-            // This is used in case token 1 is USDC
-            fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, toToken1.decimals);
-
-            // This is used in case token 2 is USDC
-            fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, toToken2.decimals);
-          } catch (error) {
-            console.log('error', error);
-          }
-
           const [firstStep] = routeToUSDC.steps;
           const bridgeServiceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? ''];
 
@@ -1404,6 +1471,8 @@ export const buildCrossChainAction = async (
             offer2,
             token1: toToken1,
             token2: toToken2,
+            tokenOneAmount,
+            tokenTwoAmount,
           };
 
           const crossChainAction: ICrossChainAction = {
@@ -1441,17 +1510,30 @@ export const buildCrossChainAction = async (
         }
       } else if (fromChainId === CHAIN_ID.XDAI) {
         try {
-          let fromTokenOneAmountBN: any = null;
-          let fromTokenTwoAmountBN: any = null;
+          if (
+            fromAssetAddress &&
+            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+            offer3
+          ) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(offer3?.transactions[0].to, fromAmountBN);
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed build bridge approval transaction!' };
+            }
 
-          try {
-            // This is used in case token 1 is USDC
-            fromTokenOneAmountBN = ethers.utils.parseUnits(tokenOneAmount, toToken1.decimals);
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              chainId: CHAIN_ID.XDAI,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
 
-            // This is used in case token 2 is USDC
-            fromTokenTwoAmountBN = ethers.utils.parseUnits(tokenTwoAmount, toToken2.decimals);
-          } catch (error) {
-            console.log('error', error);
+            if (offer3?.transactions.length === 1) {
+              destinationTxns = [approvalTransaction, ...destinationTxns];
+            }
           }
 
           let transferTransaction: ICrossChainActionTransaction = {
@@ -1575,6 +1657,8 @@ export const buildCrossChainAction = async (
             offer2,
             token1: toToken1,
             token2: toToken2,
+            tokenTwoAmount,
+            tokenOneAmount,
           };
 
           const crossChainAction: ICrossChainAction = {
@@ -1608,7 +1692,7 @@ export const buildCrossChainAction = async (
 
           return { crossChainAction: crossChainAction };
         } catch (e) {
-          return { errorMessage: 'Failed to get bridge route!' };
+          return { errorMessage: 'Failed to do swap!' };
         }
       } else {
         return { errorMessage: 'Failed to fetch any offers for this asset to USDC' };
