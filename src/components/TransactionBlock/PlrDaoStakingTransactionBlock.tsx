@@ -238,10 +238,10 @@ const PlrDaoStakingTransactionBlock = ({
         getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
       ]);
 
-      let isMemberInProviderAddress = providerAddressNfts.some((nft) =>
+      var isMemberInProviderAddress = providerAddressNfts.some((nft) =>
         addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
       );
-      let isMemberInAccountAddress = accountAddressNfts.some((nft) =>
+      var isMemberInAccountAddress = accountAddressNfts.some((nft) =>
         addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
       );
 
@@ -577,16 +577,20 @@ const PlrDaoStakingTransactionBlock = ({
   ]);
 
   const onUnstake = async () => {
-    setTransactionBlockValues(transactionBlockId, {
-      isUnStake: true,
-      hasEnoughPLR: false,
-      enableAssetBridge: false,
-      enableAssetSwap: false,
-      fromChainId: plrDaoMemberNft[STAKING_CHAIN_ID].chainId,
-      amount: `${MAX_PLR_TOKEN_LIMIT}`,
-      accountType: nftMembershipAddress === providerAddress ? AccountTypes.Key : AccountTypes.Contract,
-      membershipAddress: nftMembershipAddress,
-    });
+    try {
+      setTransactionBlockValues(transactionBlockId, {
+        isUnStake: true,
+        hasEnoughPLR: false,
+        enableAssetBridge: false,
+        enableAssetSwap: false,
+        fromChainId: plrDaoMemberNft[STAKING_CHAIN_ID].chainId,
+        amount: `${MAX_PLR_TOKEN_LIMIT}`,
+        accountType: nftMembershipAddress === providerAddress ? AccountTypes.Key : AccountTypes.Contract,
+        membershipAddress: nftMembershipAddress,
+      });
+    } catch (error) {
+      //
+    }
   };
 
   const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);

@@ -46,7 +46,7 @@ interface KlimaStakingActionPreview {
 }
 
 interface PlrStakingActionPreview {
-  isUnStake?: boolean;
+  isUnStake?: boolean | null | undefined;
   fromChainId: number;
   hasEnoughPLR: boolean;
   enableAssetSwap: boolean;
