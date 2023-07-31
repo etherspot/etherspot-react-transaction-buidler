@@ -143,6 +143,7 @@ const PlrStakingV2TransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
   values,
+  hideTitle = false,
 }: IPlrStakingV2Block) => {
   const {
     sdk,
@@ -550,7 +551,7 @@ const PlrStakingV2TransactionBlock = ({
 
   return (
     <>
-      <Title>Pillar Validator Staking</Title>
+    {!hideTitle && <Title>Pillar Validator Staking</Title>}
       <ContainerWrapper>
         <Container>
           <Text size={14}>
@@ -606,7 +607,7 @@ const PlrStakingV2TransactionBlock = ({
                     <>
                       {plrOnKeyBased && (
                         <Text size={12} marginTop={4} color={plrOnKeyBased.textColor} block>
-                          • {plrOnKeyBased.amount} PLR on {chain.title} on Key Based
+                          • {plrOnKeyBased.amount} PLR on {chain.title} on Wallet
                         </Text>
                       )}
                       {plrOnSmartWallet && (
@@ -641,6 +642,7 @@ const PlrStakingV2TransactionBlock = ({
         errorMessage={errorMessages?.accountType}
         hideKeyBased={smartWalletOnly}
         showTotals
+        showHelperText
       />
       <NetworkAssetSelectInput
         label="From"

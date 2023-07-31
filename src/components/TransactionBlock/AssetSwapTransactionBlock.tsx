@@ -73,6 +73,8 @@ const AssetSwapTransactionBlock = ({
   errorMessages,
   values,
   multiCallData,
+  hideTitle = false,
+  hideWalletSwitch = false,
 }: IAssetSwapTransactionBlock) => {
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
@@ -373,8 +375,8 @@ const AssetSwapTransactionBlock = ({
 
   return (
     <>
-      <Title>Swap asset</Title>
-      {!multiCallData && (
+      {!hideTitle && <Title>Swap asset</Title>}
+      {!hideWalletSwitch && !multiCallData && (
         <AccountSwitchInput
           label="From wallet"
           selectedAccountType={selectedAccountType}
@@ -392,6 +394,7 @@ const AssetSwapTransactionBlock = ({
           errorMessage={errorMessages?.accountType}
           disabled={!!fixed || !!multiCallData}
           showTotals
+          showHelperText
         />
       )}
       <NetworkAssetSelectInput
@@ -400,7 +403,10 @@ const AssetSwapTransactionBlock = ({
           resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
           resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAsset');
           setSelectedFromAsset(asset);
-          setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
+
+          const amountTo = amountBN ? formatMaxAmount(amountBN, asset.decimals) : '';
+
+          setAmount(amountTo);
         }}
         onNetworkSelect={(network) => {
           resetTransactionBlockFieldValidationError(transactionBlockId, 'chain');

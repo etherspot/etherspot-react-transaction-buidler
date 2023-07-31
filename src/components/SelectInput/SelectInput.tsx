@@ -12,8 +12,9 @@ import { uniqueId } from 'lodash';
 import { containsText } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
+import ContentLoader from "react-content-loader";
 
-const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: boolean }>`
+const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: boolean; border?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme, expanded, isOffer }) =>
@@ -22,6 +23,7 @@ const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: bo
   border-radius: 8px;
   padding: 8px 14px 14px;
   cursor: pointer;
+  ${({ border = false, theme}) => border && `border: 1px solid ${theme.color.background.selectInputExpandedBorder};`}
   ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
@@ -59,7 +61,7 @@ const SearchInputWrapper = styled.label`
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  border-bottom: 1px solid #ffd2bb;
+  border-bottom: 1px solid ${({ theme }) => theme.color.background.selectInputBorder};;
   margin-bottom: 17px;
   padding: 0 0 5px;
 `;
@@ -155,6 +157,7 @@ export interface SelectOption {
   value: any;
   iconUrl?: string;
   extension?: string;
+  helperTooltip?: string;
 }
 
 interface SelectInputProps {
@@ -210,7 +213,18 @@ const SelectInput = ({
     }, [forceShow])
 
   const selectedOptionTitle = useMemo(() => {
-    if (isLoading && !selectedOption?.title) return 'Loading options...';
+    if (isLoading && !selectedOption?.title)
+      return (
+        <ContentLoader
+          viewBox="0 0 380 60"
+          foregroundColor={theme.color?.background?.loadingAnimationForeground}
+          backgroundColor={theme.color?.background?.loadingAnimationBackground}
+        >
+          <circle cx="25" cy="25" r="25" />
+          <rect x="60" y="10" rx="4" ry="4" width="310" height="13" />
+          <rect x="60" y="30" rx="4" ry="4" width="310" height="13" />
+        </ContentLoader>
+      );
     if (!isLoading && !options?.length) return 'No options';
     return selectedOption?.title ?? placeholder;
   }, [
@@ -228,7 +242,7 @@ const SelectInput = ({
   return (
     <>
       {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
-      <Wrapper isOffer={isOffer} disabled={disabled} expanded={showSelectModal} onClick={onSelectClick}>
+      <Wrapper isOffer={isOffer} disabled={disabled} expanded={showSelectModal} onClick={onSelectClick} border>
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         {!isLoading && options?.length > 1 && (
           <SelectButtonWrapper onClick={onSelectClick} disabled={disabled}>
