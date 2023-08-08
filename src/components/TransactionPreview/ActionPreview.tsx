@@ -1368,8 +1368,9 @@ const ActionPreview = ({
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
         />
-        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
-          CROSS_CHAIN_ACTION_STATUS.CONFIRMED && (
+        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status === CROSS_CHAIN_ACTION_STATUS.CONFIRMED
+          && !!crossChainAction.destinationCrossChainAction.length
+          && (
           <TransactionStatus
             crossChainAction={crossChainAction.destinationCrossChainAction[0]}
             setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
