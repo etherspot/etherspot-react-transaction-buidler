@@ -91,30 +91,11 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
   const [selectedOffer3, setSelectedOffer3] = useState<ExchangeOffer | null>();
   const [tokenOneAmount, setTokenOneAmount] = useState<string | null>(null);
   const [tokenTwoAmount, setTokenTwoAmount] = useState<string | null>(null);
-  const [routeToKlima, setRouteToKlima] = useState<BridgingQuote[]>([]);
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
-  const [toolUsed, setToolUsed] = useState<string>('');
-  const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
   const [selectedToken1Asset, setSelectedToken1Asset] = useState<IAssetWithBalance | null>(values?.toToken1 ?? null);
   const [selectedToken2Asset, setSelectedToken2Asset] = useState<IAssetWithBalance | null>(values?.toToken2 ?? null);
 
-  const defaultCustomReceiverAddress =
-    values?.receiverAddress &&
-    !addressesEqual(providerAddress, values?.receiverAddress) &&
-    !addressesEqual(accountAddress, values?.receiverAddress)
-      ? values.receiverAddress
-      : null;
-  const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
-  const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
-
-  const defaultSelectedReceiveAccountType =
-    (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
-    (values?.receiverAddress &&
-      values?.accountType === AccountTypes.Contract &&
-      addressesEqual(providerAddress, values?.receiverAddress))
-      ? AccountTypes.Key
-      : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(AccountTypes.Key);
 
   const {
@@ -139,17 +120,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     [selectedFromAsset]
   );
 
-  const receiverAddress = useMemo(() => {
-    if (useCustomAddress) return customReceiverAddress;
-    return selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
-  }, [
-    useCustomAddress,
-    customReceiverAddress,
-    providerAddress,
-    selectedReceiveAccountType,
-    selectedAccountType,
-    accountAddress,
-  ]);
+  const receiverAddress = selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
 
   useEffect(() => {
     if (selectedFromAsset?.assetPriceUsd && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
@@ -190,11 +161,11 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       routeToUSDC: routeToUSDC[0],
       toToken1: selectedToken1Asset ?? undefined,
       toToken2: selectedToken2Asset ?? undefined,
-      offer1: selectedOffer1,
-      offer2: selectedOffer2,
-      offer3: selectedOffer3,
-      tokenOneAmount,
-      tokenTwoAmount,
+      offer1: selectedOffer1 ?? undefined,
+      offer2: selectedOffer2 ?? undefined,
+      offer3: selectedOffer3 ?? undefined,
+      tokenOneAmount: tokenOneAmount ?? undefined,
+      tokenTwoAmount: tokenTwoAmount ?? undefined,
     });
   }, [
     selectedFromNetwork,
@@ -222,12 +193,10 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
   const resetRoutes = () => {
     setRouteToUSDC([]);
-    setRouteToKlima([]);
     setReceiveAmount('');
     // resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     setIsRouteFetching(false);
     setSelectedRoute(null);
-    setToolUsed('');
   };
 
   const getBestRouteItem = (routes: Route[]) => {
@@ -276,16 +245,19 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       const account = await sdkOnXdai.computeContractAccount();
 
-      const convertedData = utils.formatEther(
-        data.fast.mul(account.state === AccountStates.UnDeployed ? '1350000' : '1000000')
-      );
+      let gasInWeiBN = data.fast.mul(account.state === AccountStates.UnDeployed ? '1350000' : '1000000');
+
+      // add ~33% buffer
+      gasInWeiBN = gasInWeiBN.div(3).add(gasInWeiBN);
 
       const nativePrice = await getNativeAssetPriceInUsd(CHAIN_ID.XDAI);
+      if (!nativePrice) return;
 
-      const gasAmountUSD = utils
-        .parseUnits((Number(convertedData) * Number(nativePrice) * 1.3).toFixed(6), 6)
-        .toString();
-      let remainingAmount: any = null;
+      const gasPriceUsd = +ethers.utils.formatEther(gasInWeiBN) * nativePrice;
+      const gasPriceUsdBN = ethers.utils.parseUnits(gasPriceUsd.toFixed(6), 6);
+
+      let remainingAmountUsdBN = BigNumber.from(0);
+
       if (selectedFromNetwork.chainId !== CHAIN_ID.XDAI) {
         try {
           const { items: routes } = await sdk.getAdvanceRoutesLiFi({
@@ -300,7 +272,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
           const bestRoute = getBestRouteItem(routes);
 
-          remainingAmount = Number(bestRoute.toAmount) - Number(gasAmountUSD);
+          remainingAmountUsdBN = BigNumber.from(bestRoute.toAmountMin).sub(gasPriceUsdBN);
 
           setRouteToUSDC(routes);
 
@@ -323,20 +295,20 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
             toTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
           });
 
-          remainingAmount = Number(offers[0].receiveAmount.toString()) - Number(gasAmountUSD);
+          remainingAmountUsdBN = offers[0].receiveAmount;
 
           setSelectedOffer3(offers[0]);
         } catch {
           //
         }
       } else {
-        remainingAmount =
-          Number(ethers.utils.parseUnits(amount, selectedFromAsset.decimals).toString()) - Number(gasAmountUSD);
+        // USDC on Gnosis
+        remainingAmountUsdBN = ethers.utils.parseUnits(amount, 6);
       }
 
       setIsRouteFetching(false);
 
-      const halfOfRemainingAmount = Math.floor(remainingAmount / 2).toFixed(0);
+      const halfOfRemainingAmount = remainingAmountUsdBN.div(2);
 
       const tknAmt1 = ethers.utils.formatUnits(halfOfRemainingAmount, selectedToken1Asset.decimals);
       const tknAmt2 = ethers.utils.formatUnits(halfOfRemainingAmount, selectedToken2Asset.decimals);
@@ -356,7 +328,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         });
 
         setSelectedOffer1(offers[0]);
-      } catch {
+      } catch (e) {
         //
       }
 
@@ -372,8 +344,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
         });
 
         setSelectedOffer2(offers[0]);
-        // return offers;
-      } catch {
+      } catch (e) {
         //
       }
     }, 200),
