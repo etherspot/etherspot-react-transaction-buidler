@@ -41,7 +41,7 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
     const openLoginStore = openLoginStoreString && JSON.parse(openLoginStoreString);
     email = openLoginStore?.email ?? '';
   } catch (err) {
-    console.error('Error accessing local storage:', err);
+    //
   }
 
   const onCopySuccess = async (address: string) => {
