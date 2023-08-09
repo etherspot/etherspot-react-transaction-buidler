@@ -599,7 +599,6 @@ export const honeyswapLP = async (
 
     return { result: { transactions, provider: 'LiFi' } };
   } catch (error) {
-    console.log('errorPPP', error instanceof Error ? error.message : error);
     return { errorMessage: 'Failed to build transaction!' };
   }
 };
@@ -1287,7 +1286,6 @@ export const buildCrossChainAction = async (
       // // not native asset and no erc20 approval transaction included
       if (
         toToken1.address &&
-        !addressesEqual(toToken1.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
         offer1
       ) {
         const abi = getContractAbi(ContractNames.ERC20Token);
@@ -1318,9 +1316,20 @@ export const buildCrossChainAction = async (
         }
       }
 
+      if (offer1 && !addressesEqual(toToken1.address, GNOSIS_USDC_CONTRACT_ADDRESS)) {
+        destinationTxns = [
+          ...destinationTxns,
+          ...offer1.transactions.map((transaction) => ({
+            ...transaction,
+            chainId: CHAIN_ID.XDAI,
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          })),
+        ];
+      }
+
       if (
         toToken2.address &&
-        !addressesEqual(toToken2.address, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
         offer2
       ) {
         const abi = getContractAbi(ContractNames.ERC20Token);
@@ -1347,8 +1356,20 @@ export const buildCrossChainAction = async (
         };
 
         if (offer2?.transactions.length === 1) {
-          destinationTxns = [approvalTransaction, ...destinationTxns];
+          destinationTxns = [...destinationTxns, approvalTransaction]; // must go later before another swap
         }
+      }
+
+      if (offer2 && !addressesEqual(toToken2.address, GNOSIS_USDC_CONTRACT_ADDRESS)) {
+        destinationTxns = [
+          ...destinationTxns,
+          ...offer2.transactions.map((transaction) => ({
+            ...transaction,
+            chainId: CHAIN_ID.XDAI,
+            createTimestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+          })),
+        ];
       }
 
       if (fromChainId !== CHAIN_ID.XDAI && routeToUSDC) {
@@ -1397,36 +1418,6 @@ export const buildCrossChainAction = async (
             transactions = [approvalTransaction, ...transactions];
           }
 
-          // Swap 1 Start //
-          if (offer1 && toToken1.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
-            destinationTxns = [
-              ...destinationTxns,
-              ...offer1.transactions.map((transaction) => ({
-                ...transaction,
-                chainId: CHAIN_ID.XDAI,
-                createTimestamp,
-                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-              })),
-            ];
-          }
-
-          // SWAP 1 ENDS
-
-          // Swap 2 Start
-
-          if (offer2 && toToken2.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
-            destinationTxns = [
-              ...destinationTxns,
-              ...offer2.transactions.map((transaction) => ({
-                ...transaction,
-                chainId: CHAIN_ID.XDAI,
-                createTimestamp,
-                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-              })),
-            ];
-          }
-
-          // SWAP 2 ENDS
 
           const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
 
@@ -1510,32 +1501,6 @@ export const buildCrossChainAction = async (
         }
       } else if (fromChainId === CHAIN_ID.XDAI) {
         try {
-          if (
-            fromAssetAddress &&
-            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
-            offer3
-          ) {
-            const abi = getContractAbi(ContractNames.ERC20Token);
-            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
-            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(offer3?.transactions[0].to, fromAmountBN);
-            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-              return { errorMessage: 'Failed build bridge approval transaction!' };
-            }
-
-            const approvalTransaction = {
-              to: approvalTransactionRequest.to,
-              data: approvalTransactionRequest.data,
-              chainId: CHAIN_ID.XDAI,
-              value: 0,
-              createTimestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-            };
-
-            if (offer3?.transactions.length === 1) {
-              destinationTxns = [approvalTransaction, ...destinationTxns];
-            }
-          }
-
           let transferTransaction: ICrossChainActionTransaction = {
             to: sdk.state.accountAddress,
             value: ethers.utils.parseUnits(amount, fromAssetDecimals),
@@ -1564,55 +1529,43 @@ export const buildCrossChainAction = async (
             };
           }
 
-          if (accountType === AccountTypes.Key) {
-            destinationTxns = [...destinationTxns, transferTransaction];
-          }
-
-          // Swap 0 Start //
           if (offer3 && fromAssetAddress !== GNOSIS_USDC_CONTRACT_ADDRESS) {
             destinationTxns = [
-              ...destinationTxns,
               ...offer3.transactions.map((transaction) => ({
                 ...transaction,
                 chainId: CHAIN_ID.XDAI,
                 createTimestamp,
                 status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
               })),
-            ];
-          }
-
-          // SWAP 0 ENDS
-
-          // Swap 1 Start //
-          if (offer1 && toToken1.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
-            destinationTxns = [
               ...destinationTxns,
-              ...offer1.transactions.map((transaction) => ({
-                ...transaction,
-                chainId: CHAIN_ID.XDAI,
-                createTimestamp,
-                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-              })),
             ];
           }
 
-          // SWAP 1 ENDS
+          if (
+            fromAssetAddress &&
+            !addressesEqual(fromAssetAddress, nativeAssetPerChainId[CHAIN_ID.XDAI].address) &&
+            offer3
+          ) {
+            const abi = getContractAbi(ContractNames.ERC20Token);
+            const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+            const approvalTransactionRequest = erc20Contract?.encodeApprove?.(offer3?.transactions[0].to, fromAmountBN);
+            if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
+              return { errorMessage: 'Failed build bridge approval transaction!' };
+            }
 
-          // Swap 2 Start
+            const approvalTransaction = {
+              to: approvalTransactionRequest.to,
+              data: approvalTransactionRequest.data,
+              chainId: CHAIN_ID.XDAI,
+              value: 0,
+              createTimestamp,
+              status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+            };
 
-          if (offer2 && toToken2.address !== GNOSIS_USDC_CONTRACT_ADDRESS) {
-            destinationTxns = [
-              ...destinationTxns,
-              ...offer2.transactions.map((transaction) => ({
-                ...transaction,
-                chainId: CHAIN_ID.XDAI,
-                createTimestamp,
-                status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-              })),
-            ];
+            if (offer3?.transactions.length === 1) {
+              destinationTxns = [approvalTransaction, ...destinationTxns]; // must go as first swap approval
+            }
           }
-
-          // SWAP 2 ENDS
 
           const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
 
@@ -1667,27 +1620,27 @@ export const buildCrossChainAction = async (
             chainId: fromChainId,
             type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
             preview,
-            transactions: destinationTxns,
+            transactions: accountType === AccountTypes.Key ? [transferTransaction] : destinationTxns,
             isEstimating: false,
             estimated: null,
             useWeb3Provider: accountType === AccountTypes.Key,
             multiCallData: transactionBlock?.multiCallData,
             receiveAmount: amount,
-            destinationCrossChainAction: [
-              {
-                id: uniqueId(`${createTimestamp}-`),
-                relatedTransactionBlockId: transactionBlock.id,
-                chainId: CHAIN_ID.XDAI,
-                type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
-                preview,
-                transactions: destinationTxns,
-                isEstimating: false,
-                estimated: null,
-                useWeb3Provider: false,
-                gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
-                destinationCrossChainAction: [],
-              },
-            ],
+            destinationCrossChainAction: accountType !== AccountTypes.Key
+              ? []
+              : [{
+                  id: uniqueId(`${createTimestamp}-`),
+                  relatedTransactionBlockId: transactionBlock.id,
+                  chainId: CHAIN_ID.XDAI,
+                  type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                  preview,
+                  transactions: destinationTxns,
+                  isEstimating: false,
+                  estimated: null,
+                  useWeb3Provider: false,
+                  gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                  destinationCrossChainAction: [],
+                }]
           };
 
           return { crossChainAction: crossChainAction };
