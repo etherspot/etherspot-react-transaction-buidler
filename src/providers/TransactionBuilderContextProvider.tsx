@@ -468,7 +468,6 @@ const TransactionBuilderContextProvider = ({
 
   const isBlockValid = useMemo(() => {
     const validationErrors = getValidationErrors();
-    console.log({validationErrors});
 
     return isEmpty(validationErrors);
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
@@ -884,7 +883,6 @@ const TransactionBuilderContextProvider = ({
             }
           }
         } catch (err) {
-          console.log('errorOnlifi', err);
           errorOnLiFi = 'Transaction Failed on LiFi';
           flag = 0;
         }

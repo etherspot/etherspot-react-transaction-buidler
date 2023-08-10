@@ -2112,7 +2112,6 @@ export const submitEtherspotAndWaitForTransactionHash = async (
     const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
     await sdk.estimateGatewayBatch({ feeToken: feeToken });
     const result = await sdk.submitGatewayBatch();
-    console.log('RESULT_1', result);
     let temporaryBatchSubscription: Subscription;
 
     return new Promise<{
@@ -2273,7 +2272,7 @@ export const submitWeb3ProviderTransaction = async (
         }
         await sleep(2);
       } catch (err) {
-        console.log('statuss', err);
+        //
       }
     }
   } catch (e) {
