@@ -184,29 +184,25 @@ const PlrStakingV2TransactionBlock = ({
   }, [providerAddress, accountAddress, addressPlrBalancePerChain]);
 
   useEffect(() => {
-    const setPlrAsDefault = (selectedAccountType === AccountTypes.Key
-      && providerAddress
-      && addressPlrBalancePerChain?.[providerAddress]?.[CHAIN_ID.ETHEREUM_MAINNET]
-      && isEnoughPlrBalanceToStake(addressPlrBalancePerChain?.[providerAddress]?.[CHAIN_ID.ETHEREUM_MAINNET]))
-    || (selectedAccountType === AccountTypes.Contract
-        && accountAddress
-        && addressPlrBalancePerChain?.[accountAddress]?.[CHAIN_ID.ETHEREUM_MAINNET]
-        && isEnoughPlrBalanceToStake(addressPlrBalancePerChain?.[accountAddress]?.[CHAIN_ID.ETHEREUM_MAINNET]));
-
-    if (!setPlrAsDefault) return;
-
-    const ethereumMainnetChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.ETHEREUM_MAINNET) as Chain;
-    setSelectedFromNetwork(ethereumMainnetChain);
-    setSelectedToNetwork(ethereumMainnetChain);
+    if (!selectedAccountType || !providerAddress || !accountAddress) return;
 
     const balanceAddress = (selectedAccountType === AccountTypes.Key ? providerAddress : accountAddress) as string;
+
+    const ethereumMainnetChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.ETHEREUM_MAINNET) as Chain;
     const plrAsset = getPlrAssetForChainId(
       CHAIN_ID.ETHEREUM_MAINNET,
-      addressPlrBalancePerChain[balanceAddress][CHAIN_ID.ETHEREUM_MAINNET] as BigNumber,
+      addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.ETHEREUM_MAINNET] as BigNumber
     );
 
-    setSelectedFromAsset(plrAsset);
-    setSelectedToAsset(plrStakedAssetEthereumMainnet);
+    if (isEnoughPlrBalanceToStake(addressPlrBalancePerChain?.[providerAddress]?.[CHAIN_ID.ETHEREUM_MAINNET])) {
+      setSelectedFromNetwork(ethereumMainnetChain);
+      setSelectedToNetwork(ethereumMainnetChain);
+      setSelectedFromAsset(plrAsset);
+      setSelectedToAsset(plrStakedAssetEthereumMainnet);
+    } else {
+      setSelectedToNetwork(ethereumMainnetChain);
+      setSelectedToAsset(plrAsset);
+    }
   }, [
     addressPlrBalancePerChain,
     selectedAccountType,
@@ -551,7 +547,7 @@ const PlrStakingV2TransactionBlock = ({
 
   return (
     <>
-    {!hideTitle && <Title>Pillar Validator Staking</Title>}
+      {!hideTitle && <Title>Pillar Validator Staking</Title>}
       <ContainerWrapper>
         <Container>
           <Text size={14}>
@@ -679,6 +675,7 @@ const PlrStakingV2TransactionBlock = ({
         selectedAsset={selectedToAsset}
         errorMessage={errorMessages?.toChain || errorMessages?.toAsset}
         disabled={assetToSelectDisabled}
+        readOnly={assetToSelectDisabled}
         hideChainIds={[CHAIN_ID.AVALANCHE]}
         hideAssets={
           selectedFromNetwork && selectedFromAsset
