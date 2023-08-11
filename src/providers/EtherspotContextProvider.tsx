@@ -21,7 +21,7 @@ import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-tok
 import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
 import { sumAssetsBalanceWorth } from '../utils/common';
-import { plrDaoAssetPerChainId } from '../utils/asset';
+import { Theme } from '../utils/theme';
 
 export type IAsset = TokenListToken;
 
@@ -60,7 +60,7 @@ const EtherspotContextProvider = ({
 }: {
   children: ReactNode;
   provider: WalletProviderLike;
-  changeTheme: Function;
+  changeTheme: (theme: Theme) => void
   chainId?: number;
   etherspotSessionStorage?: SessionStorage;
   onLogout?: () => void;
@@ -83,7 +83,7 @@ const EtherspotContextProvider = ({
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
   const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
   const [keyBasedWalletBalanceByChain, setKeyBasedWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
-  const [environment, setEnvironment] = useState<string>(EtherspotEnvNames.MainNets);
+  const [environment, setEnvironment] = useState<EtherspotEnvNames>(EtherspotEnvNames.MainNets);
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -95,8 +95,18 @@ const EtherspotContextProvider = ({
     }
 
     if ((defaultProvider as IWalletConnectProvider<Web3WalletProvider>).isWalletConnect) {
-      // @ts-ignore
-      const walletConnectProvider = WalletConnectWalletProvider.connect(defaultProvider.connector);
+      const walletConnectProvider = WalletConnectWalletProvider.connect({
+        // @ts-ignore
+        ...defaultProvider,
+        signPersonalMessage: async (params) => {
+          // @ts-ignore
+          return defaultProvider.signer.request({
+            method: 'personal_sign',
+            // @ts-ignore
+            params: [params[0], params[1]],
+          });
+        },
+      });
       setProvider(walletConnectProvider);
       return;
     }
