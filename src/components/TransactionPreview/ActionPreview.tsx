@@ -1306,8 +1306,6 @@ const ActionPreview = ({
     const {
       fromAsset,
       fromChainId,
-      toAsset,
-      receiverAddress,
       route,
       token1,
       token2,

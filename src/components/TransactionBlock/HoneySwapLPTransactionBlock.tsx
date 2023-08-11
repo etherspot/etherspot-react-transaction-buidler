@@ -372,7 +372,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
       token2={selectedToken2Asset}
       offer1={selectedOffer1}
       offer2={selectedOffer2}
-      tokenAmount={tokenOneAmount}
+      tokenAmount={selectedToken1Asset?.address === GNOSIS_USDC_CONTRACT_ADDRESS ? tokenOneAmount : tokenTwoAmount}
     />
   );
 
