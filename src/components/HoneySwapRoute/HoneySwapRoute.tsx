@@ -114,9 +114,7 @@ const HoneySwapRoute = ({
     tokenAmount?: string | null,
   ) => {
     if (token && token.address !== GNOSIS_USDC_CONTRACT_ADDRESS && !!offer) {
-      return formatAmountDisplay(
-        Number(ethers.utils.formatUnits(offer.receiveAmount.toString(), token.decimals)).toFixed(4)
-      );
+      return formatAmountDisplay(+ethers.utils.formatUnits(offer.receiveAmount, token.decimals));
     } else if (token && token.address === GNOSIS_USDC_CONTRACT_ADDRESS && !!tokenAmount) {
       return formatAmountDisplay(+tokenAmount);
     }
