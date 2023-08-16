@@ -28,7 +28,7 @@ import moment from 'moment';
 import { useEtherspot } from '../../hooks';
 
 // Types
-import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
+import { AssetBridgeActionPreview, AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
@@ -698,8 +698,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
-
+    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route }: AssetBridgeActionPreview = preview;
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
     const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
 
@@ -711,6 +710,16 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
+    const gasCost = route?.gasCostUSD;
+    const [firstSteps] = route.steps;
+    const {
+      estimate: { feeCosts },
+    } = firstSteps;
+    let totalFees = 0;
+    feeCosts?.forEach(({ amountUSD = 0 }) => {
+      totalFees += +amountUSD;
+    });
+  
     return (
       <Card
         title="Asset bridge"
@@ -774,7 +783,12 @@ const ActionPreview = ({
         {!!route && (
           <TransactionAction>
             <Label>Route</Label>
-            <RouteOption route={route} cost={cost} showActions />
+            <RouteOption
+              route={route}
+              cost={gasCost ? `${formatAmountDisplay(gasCost, '$', 2)}` : cost}
+              fees={`${formatAmountDisplay(totalFees, '$', 2)}`}
+              showActions
+            />
           </TransactionAction>
         )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
@@ -1228,6 +1242,20 @@ const ActionPreview = ({
 
     const cardTitle = swap ? 'Asset swap' : 'PLR stake';
 
+    var gasCost;
+    var totalFees = 0;
+    if(swap?.type === 'CROSS_CHAIN_SWAP' && swap?.route) {
+      gasCost = swap?.route?.gasCostUSD;
+      const [firstSteps] = swap?.route.steps;
+      const {
+        estimate: { feeCosts },
+      } = firstSteps;
+      totalFees = 0;
+      feeCosts?.forEach(({ amountUSD = 0 }) => {
+        totalFees += +amountUSD;
+      });  
+    }
+    
     return (
       <Card
         title={cardTitle}
@@ -1291,7 +1319,12 @@ const ActionPreview = ({
         {swap?.type === 'CROSS_CHAIN_SWAP' && swap?.route && (
           <TransactionAction>
             <Label>Route</Label>
-            <RouteOption route={swap.route} cost={cost} showActions />
+            <RouteOption
+              route={swap.route}
+              cost={gasCost ? `${formatAmountDisplay(gasCost, '$', 2)}` : cost}
+              fees={`${formatAmountDisplay(totalFees, '$', 2)}`}
+              showActions
+            />
           </TransactionAction>
         )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
