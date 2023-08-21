@@ -169,11 +169,21 @@ const mapOfferToOption = (offer: ExchangeOffer) => {
 const mapRouteToOption = (route: Route) => {
   const [firstStep] = route.steps;
   const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
+
+  const {
+    estimate: { feeCosts },
+  } = firstStep;
+  let totalFees = 0;
+  feeCosts?.forEach(({ amountUSD = 0 }) => {
+    totalFees += +amountUSD;
+  });
+
   return {
     title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
     iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
     extension: route.gasCostUSD,
+    fees: totalFees,
   };
 };
 
@@ -358,7 +368,10 @@ const PlrDaoStakingTransactionBlock = ({
     routes.forEach((route) => {
       const { gasCostUSD, fromAmountUSD } = route;
       if (!gasCostUSD) return;
-      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
+      if (+fromAmountUSD - +gasCostUSD > minAmount) {
+        bestRoute = route;
+        minAmount = +fromAmountUSD - +gasCostUSD;
+      }
     });
 
     return bestRoute;
@@ -635,7 +648,9 @@ const PlrDaoStakingTransactionBlock = ({
     <RouteOption
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
-      cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
+      cost={option.extension && formatAmountDisplay(option.extension, '$', 2)}
+      fees={option?.fees && formatAmountDisplay(option.fees, '$', 2)}
+      showActions
     />
   );
 

@@ -317,7 +317,10 @@ const PlrStakingV2TransactionBlock = ({
     routes.forEach((route) => {
       const { gasCostUSD, fromAmountUSD } = route;
       if (!gasCostUSD) return;
-      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
+      if (+fromAmountUSD - +gasCostUSD > minAmount) {
+        bestRoute = route;
+        minAmount = +fromAmountUSD - +gasCostUSD;
+      }
     });
 
     return bestRoute;
@@ -530,8 +533,8 @@ const PlrStakingV2TransactionBlock = ({
     <RouteOption
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
-      cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
-      fees={option?.fees && `${formatAmountDisplay(option.fees, '$', 2)}`}
+      cost={option.extension && formatAmountDisplay(option.extension, '$', 2)}
+      fees={option?.fees && formatAmountDisplay(option.fees, '$', 2)}
       showActions
     />
   );
@@ -776,7 +779,7 @@ const PlrStakingV2TransactionBlock = ({
                 errorMessage={errorMessages?.route}
                 disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
                 noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
-                forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1}
+                forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
               />
             )}
             {selectedFromNetwork?.chainId === selectedToNetwork?.chainId && (

@@ -70,11 +70,21 @@ const Title = styled.h3`
 const mapRouteToOption = (route: Route) => {
   const [firstStep] = route.steps;
   const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
+
+  const {
+    estimate: { feeCosts },
+  } = firstStep;
+  let totalFees = 0;
+  feeCosts?.forEach(({ amountUSD = 0 }) => {
+    totalFees += +amountUSD;
+  });
+
   return {
     title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
     iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
     extension: route.gasCostUSD,
+    fees: totalFees,
   };
 };
 
@@ -206,7 +216,10 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     routes.forEach((route) => {
       const { gasCostUSD, fromAmountUSD } = route;
       if (!gasCostUSD) return;
-      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
+      if (+fromAmountUSD - +gasCostUSD > minAmount) {
+        bestRoute = route;
+        minAmount = +fromAmountUSD - +gasCostUSD;
+      }
     });
 
     return bestRoute;
@@ -367,7 +380,8 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     <HoneySwapRoute
       route={routeToUSDC?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
-      cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
+      cost={option.extension && formatAmountDisplay(option.extension, '$', 2)}
+      fees={option.fees && formatAmountDisplay(option.fees, '$', 2)}
       token1={selectedToken1Asset}
       token2={selectedToken2Asset}
       offer1={selectedOffer1}

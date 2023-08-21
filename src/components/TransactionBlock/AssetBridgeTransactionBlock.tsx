@@ -189,7 +189,10 @@ const AssetBridgeTransactionBlock = ({
     routes.forEach((route) => {
       const { gasCostUSD, fromAmountUSD } = route;
       if (!gasCostUSD) return;
-      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
+      if (+fromAmountUSD - +gasCostUSD > minAmount) {
+        bestRoute = route;
+        minAmount = +fromAmountUSD - +gasCostUSD;
+      }
     });
 
     return bestRoute;
@@ -302,8 +305,8 @@ const AssetBridgeTransactionBlock = ({
     <RouteOption
       route={availableRoutes?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
-      cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
-      fees={option?.fees && `${formatAmountDisplay(option.fees, '$', 2)}`}
+      cost={option.extension && formatAmountDisplay(option.extension, '$', 2)}
+      fees={option?.fees && formatAmountDisplay(option.fees, '$', 2)}
       showActions
     />
   );

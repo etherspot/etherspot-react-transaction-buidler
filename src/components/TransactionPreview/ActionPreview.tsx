@@ -710,8 +710,8 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
-    const gasCost = route?.gasCostUSD;
-    const [firstSteps] = route.steps;
+    let gasCost = route?.gasCostUSD;
+    let [firstSteps] = route.steps;
     const {
       estimate: { feeCosts },
     } = firstSteps;
@@ -785,8 +785,8 @@ const ActionPreview = ({
             <Label>Route</Label>
             <RouteOption
               route={route}
-              cost={gasCost ? `${formatAmountDisplay(gasCost, '$', 2)}` : cost}
-              fees={`${formatAmountDisplay(totalFees, '$', 2)}`}
+              cost={gasCost ? formatAmountDisplay(gasCost, '$', 2) : cost}
+              fees={formatAmountDisplay(totalFees, '$', 2)}
               showActions
             />
           </TransactionAction>
@@ -944,6 +944,20 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
+    let gasCost;
+    let totalFees = 0;
+    if (!!route && enableAssetBridge) {
+      gasCost = route?.gasCostUSD;
+      const [firstSteps] = route.steps;
+      const {
+        estimate: { feeCosts },
+      } = firstSteps;
+      totalFees = 0;
+      feeCosts?.forEach(({ amountUSD = 0 }) => {
+        totalFees += +amountUSD;
+      });
+    }
+
     return (
       <Card
         title={hasEnoughPLR || isUnStake ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}
@@ -1057,7 +1071,14 @@ const ActionPreview = ({
         {(enableAssetSwap || enableAssetBridge) && (
           <TransactionAction>
             <Label>Route</Label>
-            {!!route && enableAssetBridge && <RouteOption route={route} cost={route?.gasCostUSD} showActions />}
+            {!!route && enableAssetBridge && (
+              <RouteOption
+                route={route}
+                cost={formatAmountDisplay(gasCost || 0, '$', 2)}
+                fees={formatAmountDisplay(totalFees, '$', 2)}
+                showActions
+              />
+            )}
             {enableAssetSwap && (
               <RouteWrapper>
                 {previewList.map((preview) => {
@@ -1242,9 +1263,9 @@ const ActionPreview = ({
 
     const cardTitle = swap ? 'Asset swap' : 'PLR stake';
 
-    var gasCost;
-    var totalFees = 0;
-    if(swap?.type === 'CROSS_CHAIN_SWAP' && swap?.route) {
+    let gasCost;
+    let totalFees = 0;
+    if (swap?.type === 'CROSS_CHAIN_SWAP' && swap?.route) {
       gasCost = swap?.route?.gasCostUSD;
       const [firstSteps] = swap?.route.steps;
       const {
@@ -1253,7 +1274,7 @@ const ActionPreview = ({
       totalFees = 0;
       feeCosts?.forEach(({ amountUSD = 0 }) => {
         totalFees += +amountUSD;
-      });  
+      });
     }
     
     return (
@@ -1321,8 +1342,8 @@ const ActionPreview = ({
             <Label>Route</Label>
             <RouteOption
               route={swap.route}
-              cost={gasCost ? `${formatAmountDisplay(gasCost, '$', 2)}` : cost}
-              fees={`${formatAmountDisplay(totalFees, '$', 2)}`}
+              cost={gasCost ? formatAmountDisplay(gasCost, '$', 2) : cost}
+              fees={formatAmountDisplay(totalFees, '$', 2)}
               showActions
             />
           </TransactionAction>
@@ -1355,6 +1376,21 @@ const ActionPreview = ({
     const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+
+    let gasCost;
+    let totalFees = 0;
+    if (!!route) {
+      gasCost = route?.gasCostUSD;
+      const [firstSteps] = route.steps;
+      const {
+        estimate: { feeCosts },
+      } = firstSteps;
+      totalFees = 0;
+      feeCosts?.forEach(({ amountUSD = 0 }) => {
+        totalFees += +amountUSD;
+      });
+    }
+
     return (
       <Card
         title="Honeyswap Liquidity Pool"
@@ -1384,7 +1420,8 @@ const ActionPreview = ({
             <Label>Route</Label>
             <HoneySwapRoute
               route={route}
-              cost={cost}
+              cost={formatAmountDisplay(gasCost || 0, '$', 2)}
+              fees={formatAmountDisplay(totalFees, '$', 2)}
               token1={token1}
               token2={token2}
               offer1={offer1}
