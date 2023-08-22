@@ -2203,9 +2203,12 @@ export const submitWeb3ProviderTransactions = async (
     return { errorMessage: 'Unable to find connected Web3 provider!' };
   }
 
-  // Even if its on same chain it returns correctly so that we dont have to check against current chainId
-  const changed = await changeToChain(chainId);
-  if (!changed) return { errorMessage: 'Unable to change to selected network!' };
+  // @ts-ignore
+  if (web3Provider?.type !== 'WalletConnect') {
+    // Even if its on same chain it returns correctly so that we dont have to check against current chainId
+    const changed = await changeToChain(chainId);
+    if (!changed) return { errorMessage: 'Unable to change to selected network!' };
+  }
 
   try {
     for (const transaction of transactions) {
@@ -2217,7 +2220,7 @@ export const submitWeb3ProviderTransactions = async (
         value: prepareValueForRpcCall(value),
       };
       // @ts-ignore
-      transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+      transactionHash = await sendWeb3ProviderRequest(web3Provider, 'eth_sendTransaction', [tx], chainId);
     }
   } catch (e) {
     if (e instanceof Error) {
@@ -2245,7 +2248,8 @@ export const submitWeb3ProviderTransaction = async (
   }
 
   // TODO: check against current
-  if (chainId !== 1) {
+  // @ts-ignore
+  if (chainId !== 1 && web3Provider?.type !== 'WalletConnect') {
     const changed = await changeToChain(chainId);
     if (!changed) return { errorMessage: 'Unable to change to selected network!' };
   }
@@ -2259,14 +2263,14 @@ export const submitWeb3ProviderTransaction = async (
       value: prepareValueForRpcCall(value),
     };
     // @ts-ignore
-    transactionHash = await web3Provider.sendRequest('eth_sendTransaction', [tx]);
+    transactionHash = await sendWeb3ProviderRequest(web3Provider, 'eth_sendTransaction', [tx], chainId);
 
     let transactionStatus = null;
 
     while (transactionStatus === null) {
       try {
         // @ts-ignore
-        let status = await web3Provider.sendRequest('eth_getTransactionByHash', [transactionHash]);
+        let status = await sendWeb3ProviderRequest(web3Provider, 'eth_getTransactionByHash', [transactionHash], chainId);
         if (status && status.blockNumber !== null) {
           transactionStatus = status;
         }
@@ -2357,21 +2361,27 @@ export const estimateCrossChainAction = async (
     //
   }
 
-  if (crossChainAction.useWeb3Provider) {
+  // @ts-ignore
+  if (crossChainAction.useWeb3Provider && web3Provider?.type !== 'WalletConnect') {
     let gasLimit = ethers.BigNumber.from(0);
 
     try {
       for (const transactionsToSend of crossChainAction.transactions) {
         const { to, data, value } = transactionsToSend;
         // @ts-ignore
-        const estimatedTx = await web3Provider.sendRequest('eth_estimateGas', [
-          {
-            from: providerAddress,
-            to,
-            value: prepareValueForRpcCall(value),
-            data,
-          },
-        ]);
+        const estimatedTx = await sendWeb3ProviderRequest(
+          web3Provider,
+          'eth_estimateGas',
+          [
+            {
+              from: providerAddress,
+              to,
+              value: prepareValueForRpcCall(value),
+              data,
+            },
+          ],
+          crossChainAction.chainId,
+        );
         gasLimit = gasLimit.add(estimatedTx);
       }
       if (!gasLimit.isZero()) gasCost = gasLimit;
@@ -2380,7 +2390,7 @@ export const estimateCrossChainAction = async (
         errorMessage = e?.message;
       }
     }
-  } else {
+  } else if (!crossChainAction.useWeb3Provider) {
     try {
       if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
         await sdk.computeContractAccount({ sync: true });
@@ -2512,4 +2522,21 @@ export const deployAccount = async (sdk: EtherspotSdk | null) => {
   await sdk.batchDeployAccount();
   await sdk.estimateGatewayBatch();
   return sdk.submitGatewayBatch();
+};
+
+export const sendWeb3ProviderRequest = async (
+  web3Provider: any,
+  method: string,
+  params: any[],
+  chainId: number,
+) => {
+  // @ts-ignore
+  if (web3Provider.type === 'WalletConnect') {
+    let updatedParams;
+    if (method === 'eth_sendTransaction') {
+      updatedParams = [{ ...params[0], data: params[0].data ?? '0x' }]
+    }
+    return web3Provider.connector.signer.request({ method, params: updatedParams ?? params }, `eip155:${chainId}`);
+  }
+  return web3Provider.sendRequest(method, params);
 };
