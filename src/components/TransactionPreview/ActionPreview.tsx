@@ -33,7 +33,7 @@ import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 
-const TransactionAction = styled.div`
+const TransactionAction = styled.div<{ border?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme }) => theme.color.background.selectInputExpanded};
@@ -41,6 +41,8 @@ const TransactionAction = styled.div`
   border-radius: 8px;
   padding: 12px;
   word-break: break-all;
+
+  ${({ border = false, theme }) => border && `border: 1px solid ${theme.color.background.textInputBorder};`}
 `;
 
 const TransactionStatusAction = styled.div`
@@ -118,7 +120,7 @@ const EditButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
-const TransactionStatusWrapper = styled(TransactionAction)`
+const TransactionStatusWrapper = styled(TransactionAction)<{ border?: boolean }>`
   padding: 18px 14px;
   margin-bottom: 0;
   flex: 1;
@@ -126,6 +128,8 @@ const TransactionStatusWrapper = styled(TransactionAction)`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+
+  ${({ border = false, theme }) => border && `border: 1px solid ${theme.color.background.textInputBorder};`}
 `;
 
 const TransactionStatusMessageWrapper = styled.div`
@@ -422,7 +426,7 @@ const TransactionStatus = ({
             key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}
           >
             {prevStatus[index] ? (
-              <TransactionStatusWrapper>
+              <TransactionStatusWrapper border>
                 <TransactionStatusMessageWrapper>
                   <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
                     <BiCheck size={16} />
@@ -446,7 +450,7 @@ const TransactionStatus = ({
                         moment(moment().diff(moment(transaction.submitTimestamp))).format('mm:ss')}
                     </TransactionStatusClock>
                   )}
-                <TransactionStatusWrapper>
+                <TransactionStatusWrapper border>
                   <TransactionStatusMessageWrapper>
                     {!!actionStatusIconBackgroundColor && (
                       <StatusIconWrapper color={actionStatusIconBackgroundColor}>
@@ -1329,7 +1333,7 @@ const ActionPreview = ({
         showCloseButton={showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        <TransactionAction>
+        <TransactionAction border>
           <Label>You send</Label>
           <ValueWrapper>
             <CombinedRoundedImages
@@ -1347,7 +1351,7 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         {!!route && (
-          <TransactionAction>
+          <TransactionAction border>
             <Label>Route</Label>
             <HoneySwapRoute
               route={route}
