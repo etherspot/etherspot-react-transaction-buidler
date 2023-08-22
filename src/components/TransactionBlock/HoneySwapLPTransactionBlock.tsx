@@ -129,7 +129,7 @@ const HoneySwapLPTransactionBlock = ({
   const receiverAddress = selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
 
   useEffect(() => {
-    if (selectedFromAsset?.assetPriceUsd && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
+    if (selectedFromAsset?.assetPriceUsd && isValidAmount(amount) && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
       return;
     }
@@ -235,7 +235,7 @@ const HoneySwapLPTransactionBlock = ({
 
       setIsRouteFetching(true);
 
-      if (selectedFromAsset?.assetPriceUsd) {
+      if (selectedFromAsset?.assetPriceUsd && isValidAmount(amount)) {
         if (+amount * selectedFromAsset.assetPriceUsd < 0.4) {
           setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
           resetRoutes();
