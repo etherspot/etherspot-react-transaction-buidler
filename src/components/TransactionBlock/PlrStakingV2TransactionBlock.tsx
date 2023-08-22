@@ -317,7 +317,7 @@ const PlrStakingV2TransactionBlock = ({
     routes.forEach((route) => {
       const { gasCostUSD, fromAmountUSD } = route;
       if (!gasCostUSD) return;
-      if (+fromAmountUSD - +gasCostUSD > minAmount) {
+      if (+fromAmountUSD - +gasCostUSD < minAmount) {
         bestRoute = route;
         minAmount = +fromAmountUSD - +gasCostUSD;
       }
