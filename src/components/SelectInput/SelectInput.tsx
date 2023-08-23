@@ -158,6 +158,7 @@ export interface SelectOption {
   iconUrl?: string;
   extension?: string;
   helperTooltip?: string;
+  fees?: string;
 }
 
 interface SelectInputProps {

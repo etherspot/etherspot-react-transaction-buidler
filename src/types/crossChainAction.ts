@@ -17,7 +17,7 @@ interface AssetTransfer {
   usdPrice?: number;
 }
 
-interface AssetBridgeActionPreview {
+export interface AssetBridgeActionPreview {
   fromChainId: number;
   toChainId: number;
   fromAsset: AssetTransfer;

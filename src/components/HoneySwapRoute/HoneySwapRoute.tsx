@@ -24,6 +24,7 @@ interface HoneySwapRouteProps {
   offer2?: ExchangeOffer | null;
   token1?: IAssetWithBalance | null;
   token2?: IAssetWithBalance | null;
+  fees?: string;
 }
 
 const OfferDetails = styled.div`
@@ -90,6 +91,7 @@ const HoneySwapRoute = ({
   isChecked,
   showActions,
   cost,
+  fees,
   offer1,
   offer2,
   token1,
@@ -111,7 +113,7 @@ const HoneySwapRoute = ({
   const getFormattedAmountByTokenAndOffer = (
     token?: IAssetWithBalance | null,
     offer?: ExchangeOffer | null,
-    tokenAmount?: string | null,
+    tokenAmount?: string | null
   ) => {
     if (token && token.address !== GNOSIS_USDC_CONTRACT_ADDRESS && !!offer) {
       return formatAmountDisplay(+ethers.utils.formatUnits(offer.receiveAmount, token.decimals));
@@ -170,6 +172,16 @@ const HoneySwapRoute = ({
                     </Text>
                     <Text size={14} marginRight={22} medium inline>
                       {cost}
+                    </Text>
+                  </>
+                )}
+                {fees && (
+                  <>
+                    <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
+                      Fees
+                    </Text>
+                    <Text size={14} marginRight={22} medium inline>
+                      {fees}
                     </Text>
                   </>
                 )}
