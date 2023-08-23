@@ -221,7 +221,7 @@ const TransactionStatus = ({
   web3ProviderChainId?: number;
 }) => {
   const theme: Theme = useTheme();
-  const { getSdkForChainId } = useEtherspot();
+  const { getSdkForChainId, web3Provider } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [prevStatus, setPrevStatus] = useState<{ [id: string]: string }>({});
@@ -314,6 +314,8 @@ const TransactionStatus = ({
           (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE ||
             crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) &&
           crossChainAction.useWeb3Provider &&
+          // @ts-ignore
+          web3Provider?.type !== 'WalletConnect' &&
           web3ProviderChainId !== crossChainAction.chainId &&
           transaction.status === CROSS_CHAIN_ACTION_STATUS.UNSENT;
 
