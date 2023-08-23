@@ -10,6 +10,7 @@ import {
   TransactionStatuses,
   WalletProviderLike,
   Web3WalletProvider,
+  Account,
 } from 'etherspot';
 import { Route } from '@lifi/sdk';
 import { BigNumber, BigNumberish, ethers, utils } from 'ethers';
@@ -2560,4 +2561,13 @@ export const deployAccount = async (sdk: EtherspotSdk | null) => {
   await sdk.batchDeployAccount();
   await sdk.estimateGatewayBatch();
   return sdk.submitGatewayBatch();
+};
+
+export const fetchTransactionsData = async (sdk: EtherspotSdk | null, accountAddress: String | null) => {
+  if (!sdk) return { errorMessage: 'No sdk found' };
+  //const account = '0x468638F0a6680A8Bb03C4B99dBB160B043c0e9A8';
+  await sdk.computeContractAccount();
+  const results = await sdk.getTransactions({ account: accountAddress as string });
+  console.log(results);
+  return { ...results };
 };
