@@ -213,6 +213,7 @@ interface TransactionPreviewInterface {
   setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
   showGasAssetSelect?: boolean;
+  hideActionPreviewHeader?: boolean;
 }
 
 const TransactionStatus = ({
@@ -500,6 +501,7 @@ const ActionPreview = ({
   setIsTransactionDone,
   showStatus = true,
   showGasAssetSelect = false,
+  hideActionPreviewHeader = false,
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
   const { accountAddress, providerAddress, web3Provider } = useEtherspot();
@@ -560,14 +562,14 @@ const ActionPreview = ({
   }, [isEstimating, estimated]);
 
   const additionalTopButtons = [
-    showSignButton && (
+    !hideActionPreviewHeader && showSignButton && (
       <SignButton
         color={theme?.color?.background?.closeButton}
         disabled={signButtonDisabled}
         onClick={onSignButtonClick}
       />
     ),
-    showEditButton && (
+    !hideActionPreviewHeader && showEditButton && (
       <EditButton
         color={theme?.color?.background?.closeButton}
         disabled={editButtonDisabled}
@@ -1328,9 +1330,9 @@ const ActionPreview = ({
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
     return (
       <Card
-        title="Honeyswap Liquidity Pool"
-        onCloseButtonClick={onRemove}
-        showCloseButton={showCloseButton}
+        title={!hideActionPreviewHeader ? "Honeyswap Liquidity Pool" : undefined}
+        onCloseButtonClick={!hideActionPreviewHeader ? onRemove : () => {}}
+        showCloseButton={!hideActionPreviewHeader && showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
         <TransactionAction border>

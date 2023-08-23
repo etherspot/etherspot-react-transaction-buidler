@@ -81,6 +81,7 @@ export interface TransactionBuilderContextProps {
   hideCloseTransactionBlockButton?: boolean;
   hideTransactionBlockTitle?: boolean;
   hideWalletSwitch?: boolean;
+  hideActionPreviewHeader?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -357,6 +358,7 @@ const TransactionBuilderContextProvider = ({
   hideCloseTransactionBlockButton = false,
   hideTransactionBlockTitle = false,
   hideWalletSwitch = false,
+  hideActionPreviewHeader = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -810,9 +812,12 @@ const TransactionBuilderContextProvider = ({
             );
 
             crossChainAction.transactions.map((tnx, index) => {
-              if (i === 0
-                && index === 0
-                && (isERC20ApprovalTransactionData(transaction.data as string) || crossChainAction.chainId === CHAIN_ID.XDAI)) {
+              if (
+                i === 0 &&
+                index === 0 &&
+                (isERC20ApprovalTransactionData(transaction.data as string) ||
+                  crossChainAction.chainId === CHAIN_ID.XDAI)
+              ) {
                 transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
                 transaction.submitTimestamp = Date.now();
                 transaction.transactionHash = result.transactionHash;
@@ -839,10 +844,11 @@ const TransactionBuilderContextProvider = ({
         );
 
         crossChainAction.transactions.map((transaction) => {
-          transaction.status = crossChainAction.chainId === CHAIN_ID.XDAI
-            ? CROSS_CHAIN_ACTION_STATUS.CONFIRMED
-            : CROSS_CHAIN_ACTION_STATUS.RECEIVING,
-          transaction.submitTimestamp = Date.now();
+          (transaction.status =
+            crossChainAction.chainId === CHAIN_ID.XDAI
+              ? CROSS_CHAIN_ACTION_STATUS.CONFIRMED
+              : CROSS_CHAIN_ACTION_STATUS.RECEIVING),
+            (transaction.submitTimestamp = Date.now());
           transaction.transactionHash = result.transactionHash;
         });
       }
@@ -1254,6 +1260,7 @@ const TransactionBuilderContextProvider = ({
                   <ActionPreview
                     key={`preview-${crossChainActionInProcessing.id}`}
                     crossChainAction={crossChainActionInProcessing}
+                    hideActionPreviewHeader={hideActionPreviewHeader}
                   />
                 }
               </TransactionBlocksWrapper>
@@ -1755,6 +1762,7 @@ const TransactionBuilderContextProvider = ({
                     isSubmitted={isSubmitting}
                     setIsTransactionDone={setIsTransactionDone}
                     showGasAssetSelect
+                    hideActionPreviewHeader={hideActionPreviewHeader}
                   />
                 );
               };
