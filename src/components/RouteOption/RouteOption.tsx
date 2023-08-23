@@ -19,6 +19,7 @@ interface RouteOptionProps {
   isChecked?: boolean;
   showActions?: boolean;
   cost?: string;
+  fees?: string;
 }
 
 const OfferDetails = styled.div`
@@ -70,6 +71,7 @@ const RouteOption = ({
   isChecked,
   showActions,
   cost,
+  fees,
 }: RouteOptionProps) => {
   const theme: Theme = useTheme();
 
@@ -112,6 +114,16 @@ const RouteOption = ({
               <>
                 <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>Gas price</Text>
                 <Text size={14} marginRight={22} medium inline>{cost}</Text>
+              </>
+            )}
+            {fees && (
+              <>
+                <Text size={12} marginRight={4} color={theme.color?.text?.innerLabel} medium>
+                  Fees
+                </Text>
+                <Text size={14} marginRight={22} medium inline>
+                  {fees}
+                </Text>
               </>
             )}
             {!!firstStep?.estimate?.executionDuration && (
