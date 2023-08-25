@@ -88,7 +88,13 @@ const mapRouteToOption = (route: Route) => {
   };
 };
 
-const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, values }: IHoneySwapLPBlock) => {
+const HoneySwapLPTransactionBlock = ({
+  id: transactionBlockId,
+  errorMessages,
+  values,
+  hideTitle = false,
+  hideWalletSwitch = false,
+}: IHoneySwapLPBlock) => {
   const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
@@ -133,7 +139,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
   const receiverAddress = selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
 
   useEffect(() => {
-    if (selectedFromAsset?.assetPriceUsd && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
+    if (selectedFromAsset?.assetPriceUsd && isValidAmount(amount) && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
       return;
     }
@@ -242,7 +248,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       setIsRouteFetching(true);
 
-      if (selectedFromAsset?.assetPriceUsd) {
+      if (selectedFromAsset?.assetPriceUsd && isValidAmount(amount)) {
         if (+amount * selectedFromAsset.assetPriceUsd < 0.4) {
           setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
           resetRoutes();
@@ -392,18 +398,20 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
   return (
     <>
-      <Title>Honey Swap Liquidity Pool</Title>
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          setSelectedReceiveAccountType(accountType);
-          setSelectedAccountType(accountType);
-        }}
-        hideKeyBased={smartWalletOnly}
-        errorMessage={errorMessages?.accountType}
-        showTotals
-      />
+      {!hideTitle && <Title>Honey Swap Liquidity Pool</Title>}
+      {!hideWalletSwitch && (
+        <AccountSwitchInput
+          label="From wallet"
+          selectedAccountType={selectedAccountType}
+          onChange={(accountType) => {
+            setSelectedReceiveAccountType(accountType);
+            setSelectedAccountType(accountType);
+          }}
+          hideKeyBased={smartWalletOnly}
+          errorMessage={errorMessages?.accountType}
+          showTotals
+        />
+      )}
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {

@@ -134,7 +134,7 @@ const TextInput = ({
   return (
     <>
       {!noLabel && displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
-      <Wrapper disabled={disabled}>
+      <Wrapper disabled={disabled} border>
         {!noLabel && !displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         <InputWrapper>
           {inputLeftComponent}
