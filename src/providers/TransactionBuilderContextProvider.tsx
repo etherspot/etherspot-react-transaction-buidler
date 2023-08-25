@@ -938,7 +938,7 @@ const TransactionBuilderContextProvider = ({
 
       showAlertModal('Transaction sent');
       setCrossChainActions([]);
-      setTransactionBlocks([]);
+      setTransactionBlocks(mappedDefaultTransactionBlocks);
       setIsSubmitting(false);
     } else {
       setCrossChainActions([]);
