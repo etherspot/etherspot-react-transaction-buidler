@@ -690,7 +690,6 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.chainId,
             CHAIN_ID.POLYGON,
             result.transactionHash,
-            crossChainAction.bridgeUsed
           );
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
