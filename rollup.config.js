@@ -59,8 +59,7 @@ export default [
       }),
       process.env.NODE_ENV === 'production' && terser(),
     ],
-    external: ['react', 'react-dom', 'styled-components', 'etherspot'],
-    context: 'window'
+    external: ['react', 'react-dom', 'styled-components', 'etherspot']
   },
   {
     input: 'dist/esm/types/index.d.ts',
