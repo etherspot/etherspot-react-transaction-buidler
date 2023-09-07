@@ -23,4 +23,4 @@ export const PLR_DAO_CONTRACT_PER_CHAIN = {
 };
 
 // TODO: to be added once available, contract said to be deployed once QA passes UI
-export const PLR_STAKING_ADDRESS_ETHEREUM_MAINNET = '0x';
+export const PLR_STAKING_ADDRESS_ETHEREUM_MAINNET = '0x4fa3d9Cf11Dc94e5E0f3BCCa980aA8FB3a0d27f3';
