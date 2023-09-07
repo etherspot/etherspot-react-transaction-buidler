@@ -70,15 +70,31 @@ const Title = styled.h3`
 const mapRouteToOption = (route: Route) => {
   const [firstStep] = route.steps;
   const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
+
+  const {
+    estimate: { feeCosts },
+  } = firstStep;
+  let totalFees = 0;
+  feeCosts?.forEach(({ amountUSD = 0 }) => {
+    totalFees += +amountUSD;
+  });
+
   return {
     title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
     value: route.id,
     iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
     extension: route.gasCostUSD,
+    fees: totalFees,
   };
 };
 
-const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, values }: IHoneySwapLPBlock) => {
+const HoneySwapLPTransactionBlock = ({
+  id: transactionBlockId,
+  errorMessages,
+  values,
+  hideTitle = false,
+  hideWalletSwitch = false,
+}: IHoneySwapLPBlock) => {
   const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
@@ -123,7 +139,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
   const receiverAddress = selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
 
   useEffect(() => {
-    if (selectedFromAsset?.assetPriceUsd && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
+    if (selectedFromAsset?.assetPriceUsd && isValidAmount(amount) && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
       return;
     }
@@ -206,7 +222,10 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     routes.forEach((route) => {
       const { gasCostUSD, fromAmountUSD } = route;
       if (!gasCostUSD) return;
-      if (+fromAmountUSD - +gasCostUSD > minAmount) bestRoute = route;
+      if (+fromAmountUSD - +gasCostUSD < minAmount) {
+        bestRoute = route;
+        minAmount = +fromAmountUSD - +gasCostUSD;
+      }
     });
 
     return bestRoute;
@@ -229,7 +248,7 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
 
       setIsRouteFetching(true);
 
-      if (selectedFromAsset?.assetPriceUsd) {
+      if (selectedFromAsset?.assetPriceUsd && isValidAmount(amount)) {
         if (+amount * selectedFromAsset.assetPriceUsd < 0.4) {
           setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
           resetRoutes();
@@ -367,29 +386,32 @@ const HoneySwapLPTransactionBlock = ({ id: transactionBlockId, errorMessages, va
     <HoneySwapRoute
       route={routeToUSDC?.find((route) => route.id === option.value)}
       isChecked={selectedRoute?.value && selectedRoute?.value === option.value}
-      cost={option.extension && `${formatAmountDisplay(option.extension, '$', 2)}`}
+      cost={option.extension && formatAmountDisplay(option.extension, '$', 2)}
+      fees={option.fees && formatAmountDisplay(option.fees, '$', 2)}
       token1={selectedToken1Asset}
       token2={selectedToken2Asset}
       offer1={selectedOffer1}
       offer2={selectedOffer2}
-      tokenAmount={tokenOneAmount}
+      tokenAmount={selectedToken1Asset?.address === GNOSIS_USDC_CONTRACT_ADDRESS ? tokenOneAmount : tokenTwoAmount}
     />
   );
 
   return (
     <>
-      <Title>Honey Swap Liquidity Pool</Title>
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          setSelectedReceiveAccountType(accountType);
-          setSelectedAccountType(accountType);
-        }}
-        hideKeyBased={smartWalletOnly}
-        errorMessage={errorMessages?.accountType}
-        showTotals
-      />
+      {!hideTitle && <Title>Honey Swap Liquidity Pool</Title>}
+      {!hideWalletSwitch && (
+        <AccountSwitchInput
+          label="From wallet"
+          selectedAccountType={selectedAccountType}
+          onChange={(accountType) => {
+            setSelectedReceiveAccountType(accountType);
+            setSelectedAccountType(accountType);
+          }}
+          hideKeyBased={smartWalletOnly}
+          errorMessage={errorMessages?.accountType}
+          showTotals
+        />
+      )}
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {

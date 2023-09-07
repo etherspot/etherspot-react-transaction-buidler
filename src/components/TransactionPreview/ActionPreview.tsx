@@ -28,12 +28,12 @@ import moment from 'moment';
 import { useEtherspot } from '../../hooks';
 
 // Types
-import { AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
+import { AssetBridgeActionPreview, AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 
-const TransactionAction = styled.div`
+const TransactionAction = styled.div<{ border?: boolean }>`
   position: relative;
   margin-bottom: 18px;
   background: ${({ theme }) => theme.color.background.selectInputExpanded};
@@ -41,6 +41,8 @@ const TransactionAction = styled.div`
   border-radius: 8px;
   padding: 12px;
   word-break: break-all;
+
+  ${({ border = false, theme }) => border && `border: 1px solid ${theme.color.background.textInputBorder};`}
 `;
 
 const TransactionStatusAction = styled.div`
@@ -118,7 +120,7 @@ const EditButton = styled(HiOutlinePencilAlt)<{ disabled?: boolean }>`
   ${({ disabled }) => disabled && `opacity: 0.5;`}
 `;
 
-const TransactionStatusWrapper = styled(TransactionAction)`
+const TransactionStatusWrapper = styled(TransactionAction)<{ border?: boolean }>`
   padding: 18px 14px;
   margin-bottom: 0;
   flex: 1;
@@ -126,6 +128,8 @@ const TransactionStatusWrapper = styled(TransactionAction)`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+
+  ${({ border = false, theme }) => border && `border: 1px solid ${theme.color.background.textInputBorder};`}
 `;
 
 const TransactionStatusMessageWrapper = styled.div`
@@ -209,6 +213,7 @@ interface TransactionPreviewInterface {
   setIsTransactionDone?: (value: boolean) => void;
   showStatus?: boolean;
   showGasAssetSelect?: boolean;
+  hideActionPreviewHeader?: boolean;
 }
 
 const TransactionStatus = ({
@@ -221,7 +226,7 @@ const TransactionStatus = ({
   web3ProviderChainId?: number;
 }) => {
   const theme: Theme = useTheme();
-  const { getSdkForChainId } = useEtherspot();
+  const { getSdkForChainId, web3Provider } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [prevStatus, setPrevStatus] = useState<{ [id: string]: string }>({});
@@ -314,6 +319,8 @@ const TransactionStatus = ({
           (crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE ||
             crossChainAction.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP) &&
           crossChainAction.useWeb3Provider &&
+          // @ts-ignore
+          web3Provider?.type !== 'WalletConnect' &&
           web3ProviderChainId !== crossChainAction.chainId &&
           transaction.status === CROSS_CHAIN_ACTION_STATUS.UNSENT;
 
@@ -422,7 +429,7 @@ const TransactionStatus = ({
             key={`tx-status-${transaction.transactionHash || crossChainAction.batchHash || 'no-hash'}-${index}`}
           >
             {prevStatus[index] ? (
-              <TransactionStatusWrapper>
+              <TransactionStatusWrapper border>
                 <TransactionStatusMessageWrapper>
                   <StatusIconWrapper color={theme?.color?.background?.statusIconSuccess}>
                     <BiCheck size={16} />
@@ -446,7 +453,7 @@ const TransactionStatus = ({
                         moment(moment().diff(moment(transaction.submitTimestamp))).format('mm:ss')}
                     </TransactionStatusClock>
                   )}
-                <TransactionStatusWrapper>
+                <TransactionStatusWrapper border>
                   <TransactionStatusMessageWrapper>
                     {!!actionStatusIconBackgroundColor && (
                       <StatusIconWrapper color={actionStatusIconBackgroundColor}>
@@ -496,6 +503,7 @@ const ActionPreview = ({
   setIsTransactionDone,
   showStatus = true,
   showGasAssetSelect = false,
+  hideActionPreviewHeader = false,
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
   const { accountAddress, providerAddress, web3Provider } = useEtherspot();
@@ -556,14 +564,14 @@ const ActionPreview = ({
   }, [isEstimating, estimated]);
 
   const additionalTopButtons = [
-    showSignButton && (
+    !hideActionPreviewHeader && showSignButton && (
       <SignButton
         color={theme?.color?.background?.closeButton}
         disabled={signButtonDisabled}
         onClick={onSignButtonClick}
       />
     ),
-    showEditButton && (
+    !hideActionPreviewHeader && showEditButton && (
       <EditButton
         color={theme?.color?.background?.closeButton}
         disabled={editButtonDisabled}
@@ -698,8 +706,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.ASSET_BRIDGE) {
-    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route } = preview;
-
+    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, route }: AssetBridgeActionPreview = preview;
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
     const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
 
@@ -711,6 +718,16 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
+    let gasCost = route?.gasCostUSD;
+    let [firstSteps] = route.steps;
+    const {
+      estimate: { feeCosts },
+    } = firstSteps;
+    let totalFees = 0;
+    feeCosts?.forEach(({ amountUSD = 0 }) => {
+      totalFees += +amountUSD;
+    });
+  
     return (
       <Card
         title="Asset bridge"
@@ -774,7 +791,12 @@ const ActionPreview = ({
         {!!route && (
           <TransactionAction>
             <Label>Route</Label>
-            <RouteOption route={route} cost={cost} showActions />
+            <RouteOption
+              route={route}
+              cost={gasCost ? formatAmountDisplay(gasCost, '$', 2) : cost}
+              fees={formatAmountDisplay(totalFees, '$', 2)}
+              showActions
+            />
           </TransactionAction>
         )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
@@ -930,6 +952,20 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
+    let gasCost;
+    let totalFees = 0;
+    if (!!route && enableAssetBridge) {
+      gasCost = route?.gasCostUSD;
+      const [firstSteps] = route.steps;
+      const {
+        estimate: { feeCosts },
+      } = firstSteps;
+      totalFees = 0;
+      feeCosts?.forEach(({ amountUSD = 0 }) => {
+        totalFees += +amountUSD;
+      });
+    }
+
     return (
       <Card
         title={hasEnoughPLR || isUnStake ? 'Pillar DAO NFT Membership' : 'Swap more assets to PLR on Polygon'}
@@ -1043,7 +1079,14 @@ const ActionPreview = ({
         {(enableAssetSwap || enableAssetBridge) && (
           <TransactionAction>
             <Label>Route</Label>
-            {!!route && enableAssetBridge && <RouteOption route={route} cost={route?.gasCostUSD} showActions />}
+            {!!route && enableAssetBridge && (
+              <RouteOption
+                route={route}
+                cost={formatAmountDisplay(gasCost || 0, '$', 2)}
+                fees={formatAmountDisplay(totalFees, '$', 2)}
+                showActions
+              />
+            )}
             {enableAssetSwap && (
               <RouteWrapper>
                 {previewList.map((preview) => {
@@ -1228,6 +1271,20 @@ const ActionPreview = ({
 
     const cardTitle = swap ? 'Asset swap' : 'PLR stake';
 
+    let gasCost;
+    let totalFees = 0;
+    if (swap?.type === 'CROSS_CHAIN_SWAP' && swap?.route) {
+      gasCost = swap?.route?.gasCostUSD;
+      const [firstSteps] = swap?.route.steps;
+      const {
+        estimate: { feeCosts },
+      } = firstSteps;
+      totalFees = 0;
+      feeCosts?.forEach(({ amountUSD = 0 }) => {
+        totalFees += +amountUSD;
+      });
+    }
+    
     return (
       <Card
         title={cardTitle}
@@ -1291,7 +1348,12 @@ const ActionPreview = ({
         {swap?.type === 'CROSS_CHAIN_SWAP' && swap?.route && (
           <TransactionAction>
             <Label>Route</Label>
-            <RouteOption route={swap.route} cost={cost} showActions />
+            <RouteOption
+              route={swap.route}
+              cost={gasCost ? formatAmountDisplay(gasCost, '$', 2) : cost}
+              fees={formatAmountDisplay(totalFees, '$', 2)}
+              showActions
+            />
           </TransactionAction>
         )}
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
@@ -1306,8 +1368,6 @@ const ActionPreview = ({
     const {
       fromAsset,
       fromChainId,
-      toAsset,
-      receiverAddress,
       route,
       token1,
       token2,
@@ -1324,14 +1384,29 @@ const ActionPreview = ({
     const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+
+    let gasCost;
+    let totalFees = 0;
+    if (!!route) {
+      gasCost = route?.gasCostUSD;
+      const [firstSteps] = route.steps;
+      const {
+        estimate: { feeCosts },
+      } = firstSteps;
+      totalFees = 0;
+      feeCosts?.forEach(({ amountUSD = 0 }) => {
+        totalFees += +amountUSD;
+      });
+    }
+
     return (
       <Card
-        title="Honeyswap Liquidity Pool"
-        onCloseButtonClick={onRemove}
-        showCloseButton={showCloseButton}
+        title={!hideActionPreviewHeader ? "Honeyswap Liquidity Pool" : undefined}
+        onCloseButtonClick={!hideActionPreviewHeader ? onRemove : () => {}}
+        showCloseButton={!hideActionPreviewHeader && showCloseButton}
         additionalTopButtons={additionalTopButtons}
       >
-        <TransactionAction>
+        <TransactionAction border>
           <Label>You send</Label>
           <ValueWrapper>
             <CombinedRoundedImages
@@ -1349,11 +1424,12 @@ const ActionPreview = ({
           </ValueWrapper>
         </TransactionAction>
         {!!route && (
-          <TransactionAction>
+          <TransactionAction border>
             <Label>Route</Label>
             <HoneySwapRoute
               route={route}
-              cost={cost}
+              cost={formatAmountDisplay(gasCost || 0, '$', 2)}
+              fees={formatAmountDisplay(totalFees, '$', 2)}
               token1={token1}
               token2={token2}
               offer1={offer1}
