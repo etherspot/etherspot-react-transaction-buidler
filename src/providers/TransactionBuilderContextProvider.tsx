@@ -1165,7 +1165,6 @@ const TransactionBuilderContextProvider = ({
     ) {
       if (transactionBlocks?.length === 0 && crossChainActions.length === 0) {
         setShowWalletBlock(!mappedDefaultTransactionBlocks?.length && !hideWalletBlock);
-        setTransactionBlocks(mappedDefaultTransactionBlocks);
       }
     }
 
