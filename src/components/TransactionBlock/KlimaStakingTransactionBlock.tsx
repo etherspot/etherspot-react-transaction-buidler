@@ -10,7 +10,6 @@ import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 
 // Components
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import TextInput from '../TextInput';
@@ -24,13 +23,12 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
+import { isValidAmount } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
 
 // constants
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
-import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 // hooks
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
@@ -59,10 +57,6 @@ const Title = styled.h3`
   font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
-const WalletReceiveWrapper = styled.div`
-  display: flex;
-  flex-direction: row;
-`;
 
 const OfferDetails = styled.div`
   position: relative;
@@ -116,13 +110,11 @@ const mapRouteToOption = (route: Route): SelectOption => {
 const KlimaStakingTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
-  values,
   hideTitle = false,
 }: IKlimaStakingTransactionBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
+  const { providerAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [receiveAmount, setReceiveAmount] = useState<string>('');
   const [routeToUSDC, setRouteToUSDC] = useState<Route | null>(null);
@@ -130,26 +122,6 @@ const KlimaStakingTransactionBlock = ({
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
   const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
-
-  const defaultCustomReceiverAddress =
-    values?.receiverAddress &&
-    !addressesEqual(providerAddress, values?.receiverAddress) &&
-    !addressesEqual(accountAddress, values?.receiverAddress)
-      ? values.receiverAddress
-      : null;
-  const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
-  const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
-
-  const defaultSelectedReceiveAccountType =
-    (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
-    (values?.receiverAddress &&
-      values?.accountType === AccountTypes.Contract &&
-      addressesEqual(providerAddress, values?.receiverAddress))
-      ? AccountTypes.Key
-      : AccountTypes.Contract;
-  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
-    defaultSelectedReceiveAccountType
-  );
 
   const {
     setTransactionBlockValues,
@@ -174,29 +146,12 @@ const KlimaStakingTransactionBlock = ({
     [selectedFromAsset]
   );
 
-  const receiverAddress = useMemo(() => {
-    if (useCustomAddress) return customReceiverAddress;
-    return selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
-  }, [
-    useCustomAddress,
-    customReceiverAddress,
-    providerAddress,
-    selectedReceiveAccountType,
-    selectedAccountType,
-    accountAddress,
-  ]);
-
   useEffect(() => {
     if (selectedFromAsset?.assetPriceUsd && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
       return;
     }
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
-      setTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress', 'Invalid receiver address');
-      return;
-    }
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
 
     if (!routeToUSDC || !routeToKlima || isRouteFetching) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
@@ -211,8 +166,8 @@ const KlimaStakingTransactionBlock = ({
       fromAssetSymbol: selectedFromAsset?.symbol ?? undefined,
       fromAssetIconUrl: selectedFromAsset?.logoURI,
       amount,
-      accountType: selectedAccountType,
-      receiverAddress: receiverAddress ?? undefined,
+      accountType: AccountTypes.Key,
+      receiverAddress: providerAddress as string,
       routeToUSDC,
       routeToKlima,
       receiveAmount,
@@ -221,11 +176,10 @@ const KlimaStakingTransactionBlock = ({
     selectedFromNetwork,
     selectedFromAsset,
     amount,
-    selectedAccountType,
-    receiverAddress,
     routeToUSDC,
     routeToKlima,
     receiveAmount,
+    providerAddress,
   ]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -275,7 +229,7 @@ const KlimaStakingTransactionBlock = ({
           toChainId: CHAIN_ID.POLYGON,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
           fromTokenAddress: selectedFromAsset.address,
-          fromAddress: selectedAccountType === AccountTypes.Key ? sdk.state.walletAddress : sdk.state.accountAddress,
+          fromAddress: sdk.state.walletAddress,
           toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toAddress: sdk.state.accountAddress,
         });
@@ -329,7 +283,7 @@ const KlimaStakingTransactionBlock = ({
           fromAmount: usdcRouteAmountBN.sub(gasFeesUSDC),
           fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-          toAddress: receiverAddress ?? undefined,
+          toAddress: providerAddress as string,
         });
 
         if (routesToKlima.length > 0) {
@@ -355,7 +309,7 @@ const KlimaStakingTransactionBlock = ({
         setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       }
     }, 200),
-    [selectedFromNetwork, selectedFromAsset, amount, selectedAccountType, receiverAddress]
+    [selectedFromNetwork, selectedFromAsset, amount, providerAddress]
   );
 
   /**
@@ -417,17 +371,6 @@ const KlimaStakingTransactionBlock = ({
   return (
     <>
       {!hideTitle && <Title>Klima DAO Staking</Title>}
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          setSelectedAccountType(accountType);
-        }}
-        hideKeyBased={smartWalletOnly}
-        errorMessage={errorMessages?.accountType}
-        showTotals
-        showHelperText
-      />
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
@@ -451,18 +394,18 @@ const KlimaStakingTransactionBlock = ({
           errorMessages?.fromAssetAddress ||
           errorMessages?.fromAssetDecimals
         }
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+        walletAddress={providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
-        accountType={selectedAccountType}
+        accountType={AccountTypes.Key}
       />
       <NetworkAssetSelectInput
         label="To"
         selectedNetwork={supportedChains[1]}
         selectedAsset={klimaAsset}
         readOnly={true}
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        accountType={selectedAccountType}
+        walletAddress={providerAddress}
+        accountType={AccountTypes.Key}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
@@ -492,37 +435,6 @@ const KlimaStakingTransactionBlock = ({
             />
           }
           errorMessage={errorMessages?.amount}
-        />
-      )}
-      <WalletReceiveWrapper>
-        <AccountSwitchInput
-          label="You will receive on"
-          selectedAccountType={selectedReceiveAccountType}
-          onChange={(value) => {
-            setSelectedReceiveAccountType(value);
-            if (value == DestinationWalletEnum.Custom) {
-              setUseCustomAddress(true);
-              return;
-            }
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-            setUseCustomAddress(false);
-            setCustomReceiverAddress(null);
-          }}
-          hideKeyBased={smartWalletOnly}
-          showCustom
-        />
-      </WalletReceiveWrapper>
-      {useCustomAddress && (
-        <TextInput
-          value={customReceiverAddress ?? ''}
-          onValueChange={(value) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-            setCustomReceiverAddress(value);
-          }}
-          errorMessage={errorMessages?.receiverAddress}
-          placeholder="Insert address"
-          noLabel
-          showPasteButton
         />
       )}
       {!!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
