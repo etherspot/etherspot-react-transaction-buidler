@@ -690,7 +690,6 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.chainId,
             CHAIN_ID.POLYGON,
             result.transactionHash,
-            crossChainAction.bridgeUsed
           );
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
@@ -1165,6 +1164,7 @@ const TransactionBuilderContextProvider = ({
     ) {
       if (transactionBlocks?.length === 0 && crossChainActions.length === 0) {
         setShowWalletBlock(!mappedDefaultTransactionBlocks?.length && !hideWalletBlock);
+        if (mappedDefaultTransactionBlocks?.length) setTransactionBlocks(mappedDefaultTransactionBlocks);
       }
     }
 
@@ -1174,8 +1174,10 @@ const TransactionBuilderContextProvider = ({
     crossChainActionsInProcessing,
     crossChainActions,
     isSubmitting,
-    isEstimatingCrossChainActions,
     crossChainActionClick,
+    hideWalletBlock,
+    mappedDefaultTransactionBlocks,
+    showWalletBlock,
   ]);
 
   return (
