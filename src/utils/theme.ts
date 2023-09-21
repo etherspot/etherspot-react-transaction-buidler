@@ -55,6 +55,7 @@ export interface Theme {
       walletAssetCopyIcon?: string;
       tooltip?: string;
       tooltipBorder?: string;
+      walletDisplayTypeButtonActive?: string;
     };
     text?: {
       main?: string;
@@ -157,6 +158,7 @@ export const defaultTheme: Theme = {
       walletAssetCopyIcon: '#ff7733',
       tooltip: '#393f4a',
       tooltipBorder: '#393f4a',
+      walletDisplayTypeButtonActive: '#ff7733',
     },
     text: {
       main: '#fff',
