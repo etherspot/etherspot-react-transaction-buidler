@@ -50,14 +50,14 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
             ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol)
             : null;
           const chainId = chain_id;
-          const receiverAddress = item.to;
-          const fromAddress = item.from;
+          const receiverAddress = item.asset ? item.asset.to : item.to;
+          const fromAddress = item.asset ? item.asset.from : item.from;
           const isFromEtherspotWallet = false;
           const assetUsdPrice = UsdPrice;
           const createTimestamp = item.timestamp;
           const crossChainActionId = uniqueId(`${createTimestamp}-`);
           const transactionId = uniqueId(`${createTimestamp}-`);
-          const fromAddressToken = item.asset ? item.asset.from : '';
+          const fromAddressToken = item.asset ? item.asset.from : item.from;
           const assetDecimal = item.asset ? item.asset.decimal : 0;
           const assetSymbol = item.asset ? item.asset.symbol : '';
           const assetLogoUrl = assetnetwork != null ? assetnetwork?.logoURI : '';
