@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider } from 'etherspot';
+import { AccountStates, AccountTypes } from 'etherspot';
 import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { Route } from '@lifi/sdk';
 
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
@@ -44,9 +45,8 @@ export interface IKlimaStakingTransactionBlockValues {
   accountType: AccountTypes;
   receiverAddress?: string;
   receiveAmount?: string;
-  routeToUSDC?: BridgingQuote;
-  routeToKlima?: BridgingQuote;
-  toolUsed?: string;
+  routeToUSDC?: Route;
+  routeToKlima?: Route;
 }
 
 const Title = styled.h3`
@@ -95,12 +95,15 @@ const OfferText = styled.div`
   margin-bottom: 3px;
 `;
 
-const mapRouteToOption = (route: BridgingQuote): SelectOption => {
+const mapRouteToOption = (route: Route): SelectOption => {
+  const [firstStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
+
   return {
-    title: bridgeServiceIdToDetails['lifi'].title,
-    value: route.estimate.toAmount,
-    iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
-    extension: route.estimate.gasCosts.amountUSD,
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    value: route.toAmountMin,
+    iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    extension: route.gasCostUSD,
   };
 };
 
@@ -114,11 +117,10 @@ const KlimaStakingTransactionBlock = ({
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [receiveAmount, setReceiveAmount] = useState<string>('');
-  const [routeToUSDC, setRouteToUSDC] = useState<BridgingQuote[]>([]);
-  const [routeToKlima, setRouteToKlima] = useState<BridgingQuote[]>([]);
+  const [routeToUSDC, setRouteToUSDC] = useState<Route | null>(null);
+  const [routeToKlima, setRouteToKlima] = useState<Route | null>(null);
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
-  const [toolUsed, setToolUsed] = useState<string>('');
   const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
 
   const {
@@ -151,7 +153,7 @@ const KlimaStakingTransactionBlock = ({
     }
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
 
-    if (routeToUSDC.length == 0 || routeToKlima.length == 0 || isRouteFetching || !toolUsed) {
+    if (!routeToUSDC || !routeToKlima || isRouteFetching) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       return;
     }
@@ -166,10 +168,9 @@ const KlimaStakingTransactionBlock = ({
       amount,
       accountType: AccountTypes.Key,
       receiverAddress: providerAddress as string,
-      routeToUSDC: routeToUSDC[0],
-      routeToKlima: routeToKlima[0],
+      routeToUSDC,
+      routeToKlima,
       receiveAmount,
-      toolUsed,
     });
   }, [
     selectedFromNetwork,
@@ -178,7 +179,6 @@ const KlimaStakingTransactionBlock = ({
     routeToUSDC,
     routeToKlima,
     receiveAmount,
-    toolUsed,
     providerAddress,
   ]);
 
@@ -192,13 +192,12 @@ const KlimaStakingTransactionBlock = ({
   }, [amount, selectedFromAsset]);
 
   const resetRoutes = () => {
-    setRouteToUSDC([]);
-    setRouteToKlima([]);
+    setRouteToUSDC(null);
+    setRouteToKlima(null);
     setReceiveAmount('');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     setIsRouteFetching(false);
     setSelectedRoute(null);
-    setToolUsed('');
   };
 
   const computeReceiveAmount = useCallback(
@@ -225,7 +224,7 @@ const KlimaStakingTransactionBlock = ({
       }
 
       try {
-        const routeToUsdc = await sdk.getCrossChainQuotes({
+        const { items: usdcRoutes } = await sdk.getAdvanceRoutesLiFi({
           fromChainId: selectedFromNetwork.chainId,
           toChainId: CHAIN_ID.POLYGON,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
@@ -233,16 +232,15 @@ const KlimaStakingTransactionBlock = ({
           fromAddress: sdk.state.walletAddress,
           toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toAddress: sdk.state.accountAddress,
-          serviceProvider: CrossChainServiceProvider.LiFi,
         });
 
-        setRouteToUSDC(routeToUsdc.items);
-
-        if (routeToUsdc.items.length === 0) {
+        if (usdcRoutes.length === 0) {
           setIsRouteFetching(false);
           resetRoutes();
           return;
         }
+
+        setRouteToUSDC(usdcRoutes[0]);
 
         const sdkChain = getSdkForChainId(CHAIN_ID.POLYGON);
         const gasInfo = await sdkChain?.getGatewayGasInfo();
@@ -267,7 +265,9 @@ const KlimaStakingTransactionBlock = ({
         const gasFeesUSD = Number(ethers.utils.formatEther(gasFees.toString())) * priceUsd + 0.1;
         const gasFeesUSDC = ethers.utils.parseUnits(gasFeesUSD.toFixed(6), 6);
 
-        if (BigNumber.from(routeToUsdc.items[0].estimate.toAmount).lt(gasFeesUSDC.add('500000'))) {
+        const usdcRouteAmountBN = BigNumber.from(usdcRoutes[0].toAmountMin);
+
+        if (usdcRouteAmountBN.lt(gasFeesUSDC.add('500000'))) {
           setTransactionBlockFieldValidationError(
             transactionBlockId,
             'amount',
@@ -277,25 +277,23 @@ const KlimaStakingTransactionBlock = ({
           return;
         }
 
-        const routeToKlima = await sdk.getCrossChainQuotes({
+        const { items: routesToKlima } = await sdk.getAdvanceRoutesLiFi({
           fromChainId: CHAIN_ID.POLYGON,
           toChainId: CHAIN_ID.POLYGON,
-          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub(gasFeesUSDC),
+          fromAmount: usdcRouteAmountBN.sub(gasFeesUSDC),
           fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
           toAddress: providerAddress as string,
-          serviceProvider: CrossChainServiceProvider.LiFi,
         });
 
-        if (routeToKlima.items.length > 0) {
-          const bestRouteIndex = getBestRouteIndex(routeToKlima.items);
+        if (routesToKlima.length > 0) {
+          const bestRouteIndex = getBestRouteIndex(routesToKlima);
+          const bestKlimaRoute = routesToKlima[bestRouteIndex];
 
-          setSelectedRoute(mapRouteToOption(routeToKlima.items[bestRouteIndex]));
-          setToolUsed(routeToUsdc.items[bestRouteIndex].LiFiBridgeUsed ?? '');
-          setRouteToKlima(routeToKlima.items);
-          setReceiveAmount(
-            ethers.utils.formatUnits(routeToKlima.items[bestRouteIndex].estimate.toAmount, klimaAsset.decimals)
-          );
+          setSelectedRoute(mapRouteToOption(bestKlimaRoute));
+
+          setRouteToKlima(bestKlimaRoute);
+          setReceiveAmount(ethers.utils.formatUnits(bestKlimaRoute.toAmountMin, klimaAsset.decimals));
           resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
           setIsRouteFetching(false);
         } else {
@@ -318,16 +316,16 @@ const KlimaStakingTransactionBlock = ({
    * Calculation of best route index here is done on the basis of the best route returned
    * that in turn is calculated on the basis of the amount to receive (usd) minus the gas fees usd
    */
-  const getBestRouteIndex = (items: BridgingQuote[]) => {
+  const getBestRouteIndex = (items: Route[]) => {
     let index = 0;
     let maxReturnAmount =
-      +ethers.utils.formatUnits(items[0].estimate.toAmount) * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) -
-      +items[0].estimate.gasCosts.amountUSD;
+      +ethers.utils.formatUnits(items[0].toAmountMin) * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) -
+      (items[0].gasCostUSD ? +items[0].gasCostUSD : Number.MAX_SAFE_INTEGER);
 
     for (let i = 1; i < items.length; i++) {
-      const amountToRecieve = +ethers.utils.formatUnits(items[i].estimate.toAmount, klimaAsset.decimals);
-      const gasPriceUsd = +items[i].estimate.gasCosts.amountUSD;
-      const currentReturnAmount = amountToRecieve * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) - gasPriceUsd;
+      const amountToReceive = +ethers.utils.formatUnits(items[i].toAmountMin, klimaAsset.decimals);
+      const gasPriceUsd = items[i].gasCostUSD ? +(items[i].gasCostUSD as string) : Number.MAX_SAFE_INTEGER;
+      const currentReturnAmount = amountToReceive * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) - gasPriceUsd;
 
       if (targetAssetPriceUsd && currentReturnAmount > maxReturnAmount) {
         index = i;
