@@ -113,9 +113,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
       valueToReceiveRaw != null
         ? formatAmountDisplay(`${+valueToReceiveRaw * +crossChainAction.estimated.usdPrice}`, '$')
         : '';
-
-    const valueToReceive =
-    const amountString = (valueToReceiveRaw &&  valueToReceiveRaw != null) ?  `${+valueToReceiveRaw + ` ` + asset.symbol}・${valueToReceive}` : '';
+    const amountString = `${+valueToReceiveRaw + ` ` + asset.symbol}・${valueToReceive}`;
 
     return (
       <>
