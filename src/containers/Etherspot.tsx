@@ -40,6 +40,7 @@ interface EtherspotProps {
   hideTransactionBlockTitle?: boolean;
   hideWalletSwitch?: boolean;
   hideActionPreviewHeader?: boolean;
+  walletBlockActionsReplaceBehaviour?: boolean;
 }
 
 const ComponentWrapper = styled.div.attrs(
@@ -102,6 +103,7 @@ const Etherspot = ({
   hideTransactionBlockTitle = false,
   hideWalletSwitch = false,
   hideActionPreviewHeader = false,
+  walletBlockActionsReplaceBehaviour = false,
   onLogout,
 }: EtherspotProps) => {
   const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));
@@ -153,6 +155,7 @@ const Etherspot = ({
                 hideTransactionBlockTitle={hideTransactionBlockTitle}
                 hideWalletSwitch={hideWalletSwitch}
                 hideActionPreviewHeader={hideActionPreviewHeader}
+                walletBlockActionsReplaceBehaviour={walletBlockActionsReplaceBehaviour}
               />
             </TransactionsDispatcherContextProvider>
           </TransactionBuilderModalContextProvider>
