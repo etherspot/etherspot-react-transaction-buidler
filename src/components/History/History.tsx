@@ -58,12 +58,12 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
           const crossChainActionId = uniqueId(`${createTimestamp}-`);
           const transactionId = uniqueId(`${createTimestamp}-`);
           const fromAddressToken = item.asset ? item.asset.from : item.from;
-          const assetDecimal = item.asset ? item.asset.decimal : 0;
+          const assetDecimal = item.asset ? item.asset.decimal : 2;
           const assetSymbol = item.asset ? item.asset.symbol : '';
           const assetLogoUrl = assetnetwork != null ? assetnetwork?.logoURI : '';
           const transactionUrl = item.blockExplorerUrl;
 
-          let feeAmount = item.batch != null && item.batch.feeAmount ? item.batch.feeAmount : null;
+          let feeAmount = item.asset && item.asset != null && item.asset.value ? item.asset.value : null;
 
           let estimated = {
             usdPrice: assetUsdPrice,
@@ -114,10 +114,12 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
           storedTransactionsDetails[crossChainActionId] = [...crossChainAction];
 
           const storedGroupedCrossChainActionsUpdated = storedTransactionsDetails;
+
           setStoredGroupedCrossChainActions(storedGroupedCrossChainActionsUpdated);
         });
       });
     setIsLoadingTransactions(false);
+
     return { ...storedGroupedCrossChainActions };
   };
 

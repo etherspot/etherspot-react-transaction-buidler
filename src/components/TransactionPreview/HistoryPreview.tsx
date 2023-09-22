@@ -106,6 +106,17 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${gasAssetSymbol}`;
     const gasFeesUSD = formatAmountDisplay(`${+gasCostNumericString * +crossChainAction.estimated.usdPrice}`, '$');
 
+    const valueToReceiveRaw =
+      asset.feeAmount && asset.feeAmount != null ? ethers.utils.formatUnits(asset?.feeAmount, asset?.decimals) : null;
+
+    const valueToReceive =
+      valueToReceiveRaw != null
+        ? formatAmountDisplay(`${+valueToReceiveRaw * +crossChainAction.estimated.usdPrice}`, '$')
+        : '';
+
+    const valueToReceive =
+    const amountString = (valueToReceiveRaw &&  valueToReceiveRaw != null) ?  `${+valueToReceiveRaw + ` ` + asset.symbol}・${valueToReceive}` : '';
+
     return (
       <>
         <MainWrapper>
@@ -122,11 +133,12 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
                 smallImageUrl={network?.iconUrl}
                 size={24}
               />
+              <Text> {amountString} </Text>
             </ValueWrapper>
           </LeftWrapper>
           <RightWrapper>
             <DateLabel>
-              {!!asset.createTimestamp && moment.unix(asset.createTimestamp).format('D.M.YY HH:mm')}
+              {!!asset.createTimestamp && moment.unix(asset.createTimestamp).format('D.M.YY hh:mm')}
             </DateLabel>
             <ClickableText>
               <RiExternalLinkLine
