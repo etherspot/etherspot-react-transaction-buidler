@@ -1,24 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
+import { uniqueId } from 'lodash';
 
 import HistoryPreview from '../TransactionPreview/HistoryPreview';
 import { ICrossChainAction } from '../../types/crossChainAction';
 
 // Hooks
 import { useEtherspot } from '../../hooks';
+import { getNativeAssetPriceInUsd } from '../../services/coingecko';
 
-//utils
+// utils
 import { Theme } from '../../utils/theme';
 import ContentLoader from 'react-content-loader';
 import MenuModalWrapper from '../Menu/MenuModalWrapper';
 
-//constants
+// constants
 import { TRANSACTION_BLOCK_TYPE } from '../../constants/transactionBuilderConstants';
 import { CROSS_CHAIN_ACTION_STATUS } from '../../constants/transactionDispatcherConstants';
-
-import { getNativeAssetPriceInUsd } from '../../services/coingecko';
-
-import { uniqueId } from 'lodash';
 
 const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   const [storedGroupedCrossChainActions, setStoredGroupedCrossChainActions] = useState<{
@@ -42,13 +40,13 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
     let crossChainAction: ICrossChainAction[] = [];
     transactions &&
       Object.entries(transactions).forEach(async ([chain_id, value]) => {
-        const UsdPrice = await getNativeAssetPriceInUsd(chain_id);
+        let UsdPrice = await getNativeAssetPriceInUsd(chain_id);
+        if (!UsdPrice) UsdPrice = 0;
         const assets = await getSupportedAssetsForChainId(chain_id);
 
         value.map((item) => {
-          const assetnetwork = item.asset
-            ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol)
-            : null;
+          const assetnetwork =
+            item.asset && assets ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol) : null;
           const chainId = chain_id;
           const receiverAddress = item.asset ? item.asset.to : item.to;
           const fromAddress = item.asset ? item.asset.from : item.from;

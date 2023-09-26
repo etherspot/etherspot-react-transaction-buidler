@@ -28,50 +28,6 @@ import { ICrossChainAction, SendAssetActionPreview } from '../../types/crossChai
 import { RiExternalLinkLine } from 'react-icons/ri';
 import { LuFuel } from 'react-icons/lu';
 
-const MainWrapper = styled.div`
-  display: inline-block;
-  display: flex;
-  flex-direction: row;
-  background: ${({ theme }) => theme.color.background.card};
-  width: 100%;
-`;
-
-const LeftWrapper = styled.label`
-  font-size: 14px;
-  float: left;
-  text-align: left;
-  width: 50%;
-`;
-
-const RightWrapper = styled.label`
-  font-size: 14px;
-  float: right;
-  text-align: right;
-  width: 50%;
-`;
-
-const Label = styled.label`
-  display: inline-block;
-  color: ${({ theme }) => theme.color.text.innerLabel};
-  margin-bottom: 10px;
-  font-size: 14px;
-`;
-
-const DateLabel = styled.label`
-  display: inline-block;
-  color: ${({ theme }) => theme.color.text.innerLabel};
-  margin-right: 7px;
-  margin-bottom: 10px;
-  font-size: 14px;
-`;
-
-const ValueWrapper = styled.div<{ marginTop?: number }>`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`}
-`;
-
 interface TransactionPreviewInterface {
   crossChainAction: ICrossChainAction;
 }
@@ -175,3 +131,47 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
 };
 
 export default HistoryPreview;
+
+const MainWrapper = styled.div`
+  display: inline-block;
+  display: flex;
+  flex-direction: row;
+  background: ${({ theme }) => theme.color.background.card};
+  width: 100%;
+`;
+
+const LeftWrapper = styled.label`
+  font-size: 14px;
+  float: left;
+  text-align: left;
+  width: 50%;
+`;
+
+const RightWrapper = styled.label`
+  font-size: 14px;
+  float: right;
+  text-align: right;
+  width: 50%;
+`;
+
+const Label = styled.label`
+  display: inline-block;
+  color: ${({ theme }) => theme.color.text.innerLabel};
+  margin-bottom: 10px;
+  font-size: 14px;
+`;
+
+const DateLabel = styled.label`
+  display: inline-block;
+  color: ${({ theme }) => theme.color.text.innerLabel};
+  margin-right: 7px;
+  margin-bottom: 10px;
+  font-size: 14px;
+`;
+
+const ValueWrapper = styled.div<{ marginTop?: number }>`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`}
+`;
