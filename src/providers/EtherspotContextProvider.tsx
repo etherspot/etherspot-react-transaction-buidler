@@ -547,6 +547,7 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
+  // get transaction data for particular  chain
   const getTransactionsFromChain = useCallback(
     async (chainId: number, address: string | null): Promise<Transactions[]> => {
       const sdk = getSdkForChainId(chainId);
@@ -560,7 +561,7 @@ const EtherspotContextProvider = ({
         if (txs?.items) transactions = txs.items?.map((item) => ({ ...item, chainId }));
         return { transactions };
       } catch (e) {
-        //
+        console.log(e);
       }
 
       return [];
@@ -568,6 +569,7 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
+  // get all transaction data and pass to tx history
   const getAllTransactions = useCallback(
     async (address: string | null): Promise<IAllChainTransactions[]> => {
       let tempTransactions: IAllChainTransactions = {};
@@ -583,7 +585,7 @@ const EtherspotContextProvider = ({
               tempTransactionsChanges++;
             }
           } catch (e) {
-            //
+            console.log(e);
           }
         })
       );

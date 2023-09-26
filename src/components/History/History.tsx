@@ -30,6 +30,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   const { getAllTransactions, getSupportedAssetsForChainId, accountAddress } = useEtherspot();
   const theme: Theme = useTheme();
 
+  //pull all Transaction data and set in array to display on UI
   const pullAllNewTx = async (accountAddress: string | null) => {
     setIsLoadingTransactions(true);
     const transactions = await getAllTransactions(accountAddress);
