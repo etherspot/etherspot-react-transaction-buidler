@@ -11,6 +11,7 @@ import {
   NftCollection,
   WalletConnectWalletProvider,
   ENSNode,
+  Transactions,
 } from 'etherspot';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 import { BigNumber, ethers } from 'ethers';
@@ -22,6 +23,8 @@ import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAdd
 import { sessionStorageInstance } from '../services/etherspot';
 import { sumAssetsBalanceWorth } from '../utils/common';
 import { Theme } from '../utils/theme';
+
+import { ICrossChainAction } from '../types/crossChainAction';
 
 export type IAsset = TokenListToken;
 
@@ -39,6 +42,10 @@ export interface IBalanceByChain {
   total: number;
   title: string;
   chain: number;
+}
+
+export interface IAllChainTransactions {
+  [chain: number]: [];
 }
 
 let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
@@ -60,7 +67,7 @@ const EtherspotContextProvider = ({
 }: {
   children: ReactNode;
   provider: WalletProviderLike;
-  changeTheme: (theme: Theme) => void
+  changeTheme: (theme: Theme) => void;
   chainId?: number;
   etherspotSessionStorage?: SessionStorage;
   onLogout?: () => void;
@@ -540,6 +547,55 @@ const EtherspotContextProvider = ({
     [sdk, accountAddress]
   );
 
+  // get transaction data for particular  chain
+  const getTransactionsFromChain = useCallback(
+    async (chainId: number, address: string | null): Promise<Transactions[]> => {
+      const sdk = getSdkForChainId(chainId);
+      const account = address;
+      if (!!sdk && !account) return [];
+
+      await sdk.computeContractAccount();
+      try {
+        let transactions: any = [];
+        const txs = await sdk.getTransactions({ account });
+        if (txs?.items) transactions = txs.items?.map((item) => ({ ...item, chainId }));
+        return { transactions };
+      } catch (e) {
+        // error if fails to load tx data from sdk through any reasons
+        console.error(e);
+      }
+
+      return [];
+    },
+    [sdk, accountAddress]
+  );
+
+  // get all transaction data and pass to tx history
+  const getAllTransactions = useCallback(
+    async (address: string | null): Promise<IAllChainTransactions[]> => {
+      let tempTransactions: IAllChainTransactions = {};
+      let tempTransactionsChanges = 0;
+
+      await Promise.all(
+        supportedChains.map(async (chain) => {
+          try {
+            let transactionsResult = await getTransactionsFromChain(chain.chainId, address);
+            let chain_id = chain.chainId;
+            if (transactionsResult?.transactions) {
+              tempTransactions[chain_id] = transactionsResult.transactions;
+              tempTransactionsChanges++;
+            }
+          } catch (e) {
+            // error if fails to load tx data from any of chain through sdk
+            console.error(e);
+          }
+        })
+      );
+      return { ...tempTransactions };
+    },
+    [getSdkForChainId, accountAddress, getTransactionsFromChain]
+  );
+
   // get ENS Node
   const getEnsNode = useCallback(
     async (
@@ -618,6 +674,8 @@ const EtherspotContextProvider = ({
       loadSmartWalletBalancesByChain,
       getSupportedAssetsWithBalancesForChainId,
       getNftsForChainId,
+      getTransactionsFromChain,
+      getAllTransactions,
       getEnsNode,
       providerAddress,
       web3Provider: provider,
@@ -649,6 +707,8 @@ const EtherspotContextProvider = ({
       loadSmartWalletBalancesByChain,
       getSupportedAssetsWithBalancesForChainId,
       getNftsForChainId,
+      getTransactionsFromChain,
+      getAllTransactions,
       getEnsNode,
       providerAddress,
       provider,
