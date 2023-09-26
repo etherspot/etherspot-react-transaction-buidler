@@ -48,25 +48,16 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
           const assetnetwork =
             item.asset && assets ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol) : null;
           const chainId = chain_id;
+          const crossChainActionId = uniqueId(`${item.timestamp}-`);
           const receiverAddress = item.asset ? item.asset.to : item.to;
           const fromAddress = item.asset ? item.asset.from : item.from;
           const isFromEtherspotWallet = false;
-          const assetUsdPrice = UsdPrice;
-          const createTimestamp = item.timestamp;
-          const crossChainActionId = uniqueId(`${createTimestamp}-`);
-          const transactionId = uniqueId(`${createTimestamp}-`);
-          const fromAddressToken = item.asset ? item.asset.from : item.from;
-          const assetDecimal = item.asset ? item.asset.decimal : 2;
-          const assetSymbol = item.asset ? item.asset.symbol : '';
-          const assetLogoUrl = assetnetwork != null ? assetnetwork?.logoURI : '';
           const transactionUrl = item.blockExplorerUrl;
 
-          let feeAmount = item.asset && item.asset != null && item.asset.value ? item.asset.value : null;
-
           let estimated = {
-            usdPrice: assetUsdPrice,
+            usdPrice: UsdPrice,
             gasCost: item.gasPrice,
-            feeAmount: feeAmount,
+            feeAmount: item.asset && item.asset != null && item.asset.value ? item.asset.value : null,
           };
           let preview = {
             chainId,
@@ -75,14 +66,14 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
             isFromEtherspotWallet,
             transactionUrl,
             asset: {
-              address: fromAddressToken,
-              decimals: assetDecimal,
-              symbol: assetSymbol,
+              address: item.asset ? item.asset.from : item.from,
+              decimals: item.asset ? item.asset.decimal : 2,
+              symbol: item.asset ? item.asset.symbol : '',
               amount: '100000000000000000',
-              iconUrl: assetLogoUrl,
-              usdPrice: assetUsdPrice,
+              iconUrl: assetnetwork != null ? assetnetwork?.logoURI : '',
+              usdPrice: UsdPrice,
               gasCost: item.gasPrice,
-              feeAmount: feeAmount,
+              feeAmount: item.asset && item.asset != null && item.asset.value ? item.asset.value : null,
               createTimestamp: item.timestamp,
             },
           };
@@ -97,7 +88,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
           crossChainAction = [
             {
               id: crossChainActionId,
-              relatedTransactionBlockId: transactionId,
+              relatedTransactionBlockId: uniqueId(`${item.timestamp}-`),
               chainId: chainId,
               estimated,
               preview,
@@ -136,9 +127,10 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
             <Label>Completed</Label>
           </Header>
           <Body>
+            {errorMessage && <Section>Failed to load transaction.Try again!</Section>}
             {!storedGroupedCrossChainActionsIds?.length && (
               <Section>
-                {isLoadingTransactions ? (
+                {isLoadingTransactions && (
                   <ContentLoader
                     viewBox="0 0 380 70"
                     foregroundColor={theme.color?.background?.loadingAnimationForeground}
@@ -149,8 +141,6 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
                     <rect x="80" y="17" rx="4" ry="4" width="300" height="13" />
                     <rect x="80" y="40" rx="3" ry="3" width="250" height="10" />
                   </ContentLoader>
-                ) : (
-                  'No Transactions'
                 )}
               </Section>
             )}

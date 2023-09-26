@@ -24,7 +24,7 @@ import { useEtherspot } from '../../hooks';
 // Types
 import { ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
 
-//Icons
+// Icons
 import { RiExternalLinkLine } from 'react-icons/ri';
 import { LuFuel } from 'react-icons/lu';
 
@@ -39,8 +39,10 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
   const { chainId, type } = crossChainAction;
 
   const openBlockExplorerUrl = (transactionUrl) => {
-    if (!transactionUrl) return;
-    else window.open(transactionUrl, '_blank');
+    if (!transactionUrl) {
+      alert('The transaction hash is not yet available. Please try again later.');
+      return;
+    } else window.open(transactionUrl, '_blank');
   };
 
   const previewSend = (
@@ -92,7 +94,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
           </LeftWrapper>
           <RightWrapper>
             <DateLabel>
-              {!!asset.createTimestamp && moment.unix(asset.createTimestamp).format('D.M.YY hh:mm')}
+              {!!asset.createTimestamp && moment.unix(asset.createTimestamp).format('D/M/YY hh:mm')}
             </DateLabel>
             <ClickableText>
               <RiExternalLinkLine
@@ -122,7 +124,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     const chainTitle = network?.title ?? CHAIN_ID_TO_NETWORK_NAME[chainId].toUpperCase();
 
     return (
-      <Card title="" marginBottom={10}>
+      <Card marginBottom={10}>
         {previewList.map((preview) => previewSend(preview, network, chainTitle, crossChainAction.direction))}
       </Card>
     );
