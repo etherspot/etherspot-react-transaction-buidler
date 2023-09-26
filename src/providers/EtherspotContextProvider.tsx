@@ -561,7 +561,8 @@ const EtherspotContextProvider = ({
         if (txs?.items) transactions = txs.items?.map((item) => ({ ...item, chainId }));
         return { transactions };
       } catch (e) {
-        console.log(e);
+        // error if fails to load tx data from sdk through any reasons
+        console.error(e);
       }
 
       return [];
@@ -585,7 +586,8 @@ const EtherspotContextProvider = ({
               tempTransactionsChanges++;
             }
           } catch (e) {
-            console.log(e);
+            // error if fails to load tx data from any of chain through sdk
+            console.error(e);
           }
         })
       );
