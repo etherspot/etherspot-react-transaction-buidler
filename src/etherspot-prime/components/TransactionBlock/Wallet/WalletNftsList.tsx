@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import styled, { useTheme } from 'styled-components';
-import { ethers } from 'ethers';
-import { Nft, NftCollection } from 'etherspot';
+import React from 'react';
+import styled from 'styled-components';
 
 import { Chain, supportedChains } from '../../../utils/chain';
 import { Text } from '../../Text';
@@ -80,7 +78,7 @@ const WalletNftsList = ({
                   {nfts.map((nft, i) => {
                     return (
                       <NftWrapper key={`nft-${chainId}-${i}`}>
-                        {!!nft?.image ? <NftImage src={nft.image} /> : <NftMissingImage />}
+                        {nft?.image ? <NftImage src={nft.image} /> : <NftMissingImage />}
                         <NftText marginTop={12} medium>{`${nft.contractName}`}</NftText>
                         <NftText size={14} medium>{`${nft.name}`}</NftText>
                         <NftText size={12} regular>{`On ${nft.chain.title}`}</NftText>
@@ -103,7 +101,7 @@ const WalletNftsList = ({
               return (
                 <NftWrapper key={`all-nft-${nft?.chain?.chainId || 0}-${i}`}>
                   {nft?.chain?.iconUrl && <NftChainIcon src={nft.chain.iconUrl} />}
-                  {!!nft?.image ? <NftImage src={nft.image} /> : <NftMissingImage />}
+                  {nft?.image ? <NftImage src={nft.image} /> : <NftMissingImage />}
                   <NftText marginTop={12} medium>{`${nft.contractName}`}</NftText>
                   <NftText size={14} medium>{`${nft.name}`}</NftText>
                   <NftText size={12} regular>{`On ${nft.chain.title}`}</NftText>

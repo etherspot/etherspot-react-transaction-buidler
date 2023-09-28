@@ -122,7 +122,7 @@ const TextInput = ({
   const [inputId] = useState(uniqueId('etherspot-text-input-'));
   const handlePaste = async () => {
     try {
-      let res = await navigator.clipboard.readText()
+      const res = await navigator.clipboard.readText()
       if (res.length > 0 && onValueChange) {
         onValueChange(res);
       }

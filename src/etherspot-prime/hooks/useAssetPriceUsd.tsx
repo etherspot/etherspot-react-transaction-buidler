@@ -1,16 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // services
 import { getAssetPriceInUsd } from '../services/coingecko';
 
 // hooks
-import useEtherspot from './useEtherspot';
+import useEtherspotPrime from './useEtherspotPrime';
 
-const useAssetPriceUsd = (
-  chainId?: number,
-  assetAddress?: string,
-): number | null => {
-  const { sdk } = useEtherspot();
+const useAssetPriceUsd = (chainId?: number, assetAddress?: string): number | null => {
+  const { sdk } = useEtherspotPrime();
   const [assetPriceUsd, setAssetPriceUsd] = useState<number | null>(null);
 
   useEffect(() => {
@@ -26,10 +23,12 @@ const useAssetPriceUsd = (
       setAssetPriceUsd(priceUsd);
     })();
 
-    return () => { shouldUpdate = false };
+    return () => {
+      shouldUpdate = false;
+    };
   }, [chainId, assetAddress, sdk]);
 
   return useMemo(() => assetPriceUsd, [assetPriceUsd]);
-}
+};
 
 export default useAssetPriceUsd;

@@ -10,7 +10,7 @@ import Text from '../Text/Text';
 import { supportedChains } from '../../utils/chain';
 import styled, { useTheme } from 'styled-components';
 import { Theme } from '../../utils/theme';
-import { ExchangeOffer } from 'etherspot';
+import { ExchangeOffer } from '@etherspot/prime-sdk';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 

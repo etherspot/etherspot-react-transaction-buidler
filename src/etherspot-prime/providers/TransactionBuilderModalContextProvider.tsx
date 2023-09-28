@@ -1,17 +1,8 @@
-import React, {
-  ReactNode,
-  useContext,
-  useMemo,
-  useState,
-} from 'react';
+import React, { ReactNode, useContext, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 
 import Modal from '../components/Modal';
-import {
-  CloseButton,
-  PrimaryButton,
-  SecondaryButton,
-} from '../components/Button';
+import { CloseButton, PrimaryButton, SecondaryButton } from '../components/Button';
 import { Paragraph } from '../components/Text';
 import { TransactionBuilderModalContext } from '../contexts';
 import { Theme } from '../utils/theme';
@@ -22,11 +13,11 @@ const AlertWrapper = styled.div`
 
 let confirmCallback: (() => void) | null = null;
 
-const TransactionBuilderModalContextProvider = ({ children }: { children: ReactNode }) => {
+const TransactionPrimeBuilderModalContextProvider = ({ children }: { children: ReactNode }) => {
   const context = useContext(TransactionBuilderModalContext);
 
   if (context !== null) {
-    throw new Error('<TransactionBuilderContextProvider /> has already been declared.')
+    throw new Error('<TransactionPrimeBuilderModalContextProvider /> has already been declared.');
   }
 
   const [confirmModal, setConfirmModal] = useState<string | null>(null);
@@ -56,7 +47,7 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
       },
       hideModal,
     }),
-    [],
+    []
   );
 
   return (
@@ -72,11 +63,9 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
             }}
           >
             Confirm
-          </PrimaryButton><br />
-          <SecondaryButton
-            color={theme.color?.text?.card}
-            onClick={hideModal}
-          >
+          </PrimaryButton>
+          <br />
+          <SecondaryButton color={theme.color?.text?.card} onClick={hideModal}>
             Cancel
           </SecondaryButton>
         </Modal>
@@ -97,4 +86,4 @@ const TransactionBuilderModalContextProvider = ({ children }: { children: ReactN
   );
 };
 
-export default TransactionBuilderModalContextProvider;
+export default TransactionPrimeBuilderModalContextProvider;

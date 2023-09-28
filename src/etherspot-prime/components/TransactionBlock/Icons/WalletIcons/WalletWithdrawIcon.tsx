@@ -9,13 +9,13 @@ export default (
       viewBox="0 0 32 32"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <g fill="none" fill-rule="evenodd">
+      <g fill="none" fillRule="evenodd">
         <path d="M32 32H0V0h32z" />
         <g
           stroke="#FFF"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
         >
           <path d="M9 23 23 9M9 9v14h14" />
         </g>

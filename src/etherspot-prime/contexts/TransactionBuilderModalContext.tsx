@@ -1,7 +1,4 @@
-import React, {
-  createContext,
-  ReactNode,
-} from 'react';
+import { createContext, ReactNode } from 'react';
 
 export interface TransactionBuilderModalContextData {
   data: {
@@ -9,7 +6,7 @@ export interface TransactionBuilderModalContextData {
     showAlertModal: (content: ReactNode) => void;
     showModal: (content: ReactNode) => void;
     hideModal: () => void;
-  }
+  };
 }
 
 const TransactionBuilderModalContext = createContext<TransactionBuilderModalContextData | null>(null);

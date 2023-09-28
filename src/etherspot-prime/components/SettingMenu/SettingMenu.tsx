@@ -21,7 +21,7 @@ import useOnClickOutside from '../../hooks/useOnClickOutside';
 // Icons
 import { BsClockHistory } from 'react-icons/bs';
 import { MdOutlineSettings, MdOutlineDashboardCustomize, MdOutlineInfo } from 'react-icons/md';
-import { IoColorPaletteOutline, IoGlobeOutline, IoWalletOutline } from 'react-icons/io5';
+import { IoColorPaletteOutline, IoWalletOutline } from 'react-icons/io5';
 import { TbLogout } from 'react-icons/tb';
 import { HiOutlineUser } from 'react-icons/hi';
 
@@ -96,7 +96,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
                     hideModal();
                     setShowMenu(true);
                   }}
-                />,
+                />
               );
             }}
           />
@@ -119,7 +119,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
                     hideModal();
                     setShowMenu(true);
                   }}
-                />,
+                />
               );
             }}
           />
@@ -142,18 +142,18 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
                     hideModal();
                     setShowMenu(true);
                   }}
-                />,
+                />
               );
             }}
           />
-          <MenuItem
+          {/* <MenuItem
             icon={<IoGlobeOutline size={16} style={{ marginRight: 12 }} />}
             title="Environment"
             onClick={() => {
               setShowSubMenu(SettingsSubMenuOptions.ENVIRONMENT);
               setShowMenu(false);
             }}
-          />
+          /> */}
           <MenuItemAnchor
             title="About Etherspot"
             link="https://etherspot.io/"

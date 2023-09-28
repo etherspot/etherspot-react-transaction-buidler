@@ -1,19 +1,10 @@
-import React, {
-  useEffect,
-  useState,
-} from 'react';
+import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { IoRadioButtonOnOutline } from 'react-icons/io5';
-import {
-  MdOutlineKeyboardArrowDown,
-  MdOutlineKeyboardArrowUp,
-} from 'react-icons/md';
+import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icons/md';
 import { ethers } from 'ethers';
 
-import {
-  useEtherspot,
-  useTransactionBuilder,
-} from '../../hooks';
+import { useEtherspotPrime, useTransactionBuilder } from '../../hooks';
 import { ICrossChainAction } from '../../types/crossChainAction';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { formatAmountDisplay } from '../../utils/common';
@@ -38,7 +29,7 @@ const Wrapper = styled.div<{ disabled?: boolean }>`
 `;
 
 const SelectedGasOption = styled.div`
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   font-size: 14px;
   color: ${({ theme }) => theme.color.text.selectInputOption};
   display: flex;
@@ -49,7 +40,7 @@ const SelectedGasOption = styled.div`
 `;
 
 const GasOption = styled.div`
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   font-size: 14px;
   display: flex;
   flex-direction: row;
@@ -59,7 +50,7 @@ const GasOption = styled.div`
   padding: 3px 6px;
   border-radius: 6px;
   cursor: pointer;
- 
+
   &:hover {
     background: ${({ theme }) => theme.color.background.selectInputExpandedHover};
   }
@@ -78,14 +69,11 @@ const GasOptionSelectIcon = styled.div`
   text-align: right;
 `;
 
-const GasTokenSelect = ({
-  crossChainAction,
-  senderAddress,
-}: GasTokenSelectProps) => {
+const GasTokenSelect = ({ crossChainAction, senderAddress }: GasTokenSelectProps) => {
   const [showOptions, setShowOptions] = useState(false);
   const [gasAssets, setGasAssets] = useState<IAssetWithBalance[]>([]);
   const { setCrossChainActionGasToken } = useTransactionBuilder();
-  const { getGasAssetsForChainId } = useEtherspot();
+  const { getGasAssetsForChainId } = useEtherspotPrime();
   const theme: Theme = useTheme();
 
   const isDisabled = crossChainAction?.isEstimating;
@@ -101,7 +89,7 @@ const GasTokenSelect = ({
       }
 
       setGasAssets(supportedGasAssets);
-    }
+    };
 
     getGasAssets();
   }, [getGasAssetsForChainId, senderAddress]);
@@ -109,9 +97,10 @@ const GasTokenSelect = ({
   // do not display if not available
   if (crossChainAction.useWeb3Provider || !gasAssets?.length) return null;
 
-  const selectedGasToken = gasAssets.find((gasToken) => crossChainAction.gasTokenAddress
-    ? addressesEqual(gasToken.address, crossChainAction.gasTokenAddress)
-    : isZeroAddress(gasToken.address)
+  const selectedGasToken = gasAssets.find((gasToken) =>
+    crossChainAction.gasTokenAddress
+      ? addressesEqual(gasToken.address, crossChainAction.gasTokenAddress)
+      : isZeroAddress(gasToken.address)
   );
 
   return (
@@ -120,48 +109,51 @@ const GasTokenSelect = ({
         <SelectedGasOption
           onClick={() => {
             if (isDisabled) return;
-            setShowOptions(!showOptions)
+            setShowOptions(!showOptions);
           }}
         >
-          <Text size={16} marginRight={8} inline medium>Paying fees with</Text>
-          <RoundedImage title={selectedGasToken.symbol} url={selectedGasToken.logoURI} size={16} marginRight={4}/>
+          <Text size={16} marginRight={8} inline medium>
+            Paying fees with
+          </Text>
+          <RoundedImage title={selectedGasToken.symbol} url={selectedGasToken.logoURI} size={16} marginRight={4} />
           {selectedGasToken.symbol}
           {selectedGasToken.balanceWorthUsd && `・ ${formatAmountDisplay(selectedGasToken.balanceWorthUsd, '$')} left`}
           <GasOptionSelectIcon>
-            {!showOptions && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
-            {showOptions && <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />}
+            {!showOptions && (
+              <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />
+            )}
+            {showOptions && (
+              <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />
+            )}
           </GasOptionSelectIcon>
         </SelectedGasOption>
       )}
-      {!isDisabled && showOptions && gasAssets.map((gasToken) => {
-        const isSelected = crossChainAction.gasTokenAddress
-          ? addressesEqual(gasToken.address, crossChainAction.gasTokenAddress)
-          : isZeroAddress(gasToken.address);
+      {!isDisabled &&
+        showOptions &&
+        gasAssets.map((gasToken) => {
+          const isSelected = crossChainAction.gasTokenAddress
+            ? addressesEqual(gasToken.address, crossChainAction.gasTokenAddress)
+            : isZeroAddress(gasToken.address);
 
-        return (
-          <GasOption
-            onClick={() => {
-              setCrossChainActionGasToken(
-                crossChainAction.id,
-                gasToken.address,
-                gasToken.decimals,
-                gasToken.symbol,
-              );
-              setShowOptions(false);
-            }}
-          >
-            <RoundedImage title={gasToken.symbol} url={gasToken.logoURI} size={16} marginRight={4}/>
-            {formatAmountDisplay(ethers.utils.formatUnits(gasToken.balance, gasToken.decimals))} {gasToken.symbol}
-            {gasToken.balanceWorthUsd && `・ ${formatAmountDisplay(gasToken.balanceWorthUsd, '$')}`}
-            <GasOptionSelectIcon>
-              {isSelected && <IoRadioButtonOnOutline size={17} color={theme.color?.background?.selectInputRadioOn} />}
-              {!isSelected && <SelectInputRadioOff />}
-            </GasOptionSelectIcon>
-          </GasOption>
-        )
-      })}
+          return (
+            <GasOption
+              onClick={() => {
+                setCrossChainActionGasToken(crossChainAction.id, gasToken.address, gasToken.decimals, gasToken.symbol);
+                setShowOptions(false);
+              }}
+            >
+              <RoundedImage title={gasToken.symbol} url={gasToken.logoURI} size={16} marginRight={4} />
+              {formatAmountDisplay(ethers.utils.formatUnits(gasToken.balance, gasToken.decimals))} {gasToken.symbol}
+              {gasToken.balanceWorthUsd && `・ ${formatAmountDisplay(gasToken.balanceWorthUsd, '$')}`}
+              <GasOptionSelectIcon>
+                {isSelected && <IoRadioButtonOnOutline size={17} color={theme.color?.background?.selectInputRadioOn} />}
+                {!isSelected && <SelectInputRadioOff />}
+              </GasOptionSelectIcon>
+            </GasOption>
+          );
+        })}
     </Wrapper>
   );
-}
+};
 
 export default GasTokenSelect;

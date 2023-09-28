@@ -6,7 +6,7 @@ import { SelectOption } from '../SelectInput/SelectInput';
 
 import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
-import { useEtherspot } from '../../hooks';
+import { useEtherspotPrime } from '../../hooks';
 
 import { BsInfoCircle } from 'react-icons/bs';
 
@@ -24,7 +24,9 @@ const Wrapper = styled.div<{
   margin-bottom: 18px;
   width: 100%;
 
-  ${({ inline }) => inline && `
+  ${({ inline }) =>
+    inline &&
+    `
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -36,8 +38,9 @@ const Wrapper = styled.div<{
     }
   `}
 
-  
-  ${({ disabled }) => disabled && `
+  ${({ disabled }) =>
+    disabled &&
+    `
     opacity: 0.3;
   `}
 `;
@@ -65,11 +68,16 @@ const SwitchOption = styled.div<{ isActive: boolean; disabled: boolean; percenta
   min-height: 34px;
   line-height: 34px;
 
-  ${({ isActive, disabled }) => !isActive && !disabled && `
+  ${({ isActive, disabled }) =>
+    !isActive &&
+    !disabled &&
+    `
     cursor: pointer;
   `}
 
-  ${({ isActive, theme }) => isActive && `
+  ${({ isActive, theme }) =>
+    isActive &&
+    `
     border-radius: 6px;
     box-shadow: 0.5px 0 2px 0 rgba(107, 107, 107, 0.44);
     color: ${theme.color.text.switchInputActiveTab};
@@ -106,7 +114,7 @@ const SwitchInput = ({
   showTotals = false,
   showHelperText = false,
 }: TextInputProps) => {
-  const { smartWalletBalanceByChain, keyBasedWalletBalanceByChain } = useEtherspot()
+  const { smartWalletBalanceByChain, keyBasedWalletBalanceByChain } = useEtherspotPrime();
 
   const showTotalByWalletType = useCallback(
     (walletType: DestinationWalletEnum) => {
@@ -148,7 +156,7 @@ const SwitchInput = ({
             {option.title} {showTotals && showTotalByWalletType(option.value)}{' '}
             {showHelperText && option.helperTooltip && (
               <TippyWrapper
-                className='tippy-tooltip'
+                className="tippy-tooltip"
                 content={option.helperTooltip}
                 arrow={true}
                 maxWidth={'280px'}

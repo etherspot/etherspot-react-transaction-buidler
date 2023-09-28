@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 
 import { EtherspotContext } from '../contexts';
 
-const useEtherspot = () => {
+const useEtherspotPrime = () => {
   const context = useContext(EtherspotContext);
 
   if (context === null) {
@@ -12,4 +12,4 @@ const useEtherspot = () => {
   return context.data;
 };
 
-export default useEtherspot;
+export default useEtherspotPrime;

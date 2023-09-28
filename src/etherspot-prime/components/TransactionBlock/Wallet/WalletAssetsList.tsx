@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 
-import { IAssetWithBalance, IBalanceByChain } from '../../../providers/EtherspotContextProvider';
+import { IAssetWithBalance } from '../../../providers/EtherspotContextProvider';
 import { Chain, supportedChains } from '../../../utils/chain';
 import { Text } from '../../Text';
 import RoundedImage from '../../Image/RoundedImage';

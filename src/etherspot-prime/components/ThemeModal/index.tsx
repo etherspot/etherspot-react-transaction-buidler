@@ -6,7 +6,7 @@ import { startCase, lowerCase } from 'lodash';
 import { BackButton, HeaderTitle, ModalHeader } from '../Menu/MenuModalWrapper';
 
 // Hooks
-import { useEtherspot } from '../../hooks';
+import { useEtherspotPrime } from '../../hooks';
 
 // Icons
 import { IoMdCheckmark } from 'react-icons/io';
@@ -24,7 +24,7 @@ const ThemeModal = ({
 }) => {
   const [appliedTheme, setAppliedTheme] = useState<ThemeType>(ThemeType.DARK);
   const theme: Theme = useTheme();
-  const { changeTheme } = useEtherspot();
+  const { changeTheme } = useEtherspotPrime();
 
   useEffect(() => {
     const activeTheme = localStorage.getItem('current-theme');

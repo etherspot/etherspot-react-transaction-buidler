@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { AiOutlineSearch } from 'react-icons/ai';
 import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icons/md';
@@ -12,7 +7,7 @@ import { uniqueId } from 'lodash';
 import { containsText } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { RoundedImage } from '../Image';
-import ContentLoader from "react-content-loader";
+import ContentLoader from 'react-content-loader';
 
 const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: boolean; border?: boolean }>`
   position: relative;
@@ -23,7 +18,7 @@ const Wrapper = styled.div<{ disabled: boolean; expanded?: boolean; isOffer?: bo
   border-radius: 8px;
   padding: 8px 14px 14px;
   cursor: pointer;
-  ${({ border = false, theme}) => border && `border: 1px solid ${theme.color.background.selectInputExpandedBorder};`}
+  ${({ border = false, theme }) => border && `border: 1px solid ${theme.color.background.selectInputExpandedBorder};`}
   ${({ disabled }) => disabled && `opacity: 0.3;`}
 `;
 
@@ -34,7 +29,9 @@ const SelectButtonWrapper = styled.div<{ disabled?: boolean }>`
   width: 50px;
   text-align: right;
 
-  ${({ disabled }) => !disabled && `
+  ${({ disabled }) =>
+    !disabled &&
+    `
     cursor: pointer;
   
     &:hover {
@@ -45,8 +42,8 @@ const SelectButtonWrapper = styled.div<{ disabled?: boolean }>`
 
 const Label = styled.label<{ outside?: boolean }>`
   display: inline-block;
-  color: ${({ theme, outside }) => outside ? theme.color.text.outerLabel : theme.color.text.innerLabel};
-  margin-bottom: ${({ outside }) => outside ? 11 : 14}px;
+  color: ${({ theme, outside }) => (outside ? theme.color.text.outerLabel : theme.color.text.innerLabel)};
+  margin-bottom: ${({ outside }) => (outside ? 11 : 14)}px;
   font-size: 14px;
 `;
 
@@ -61,7 +58,7 @@ const SearchInputWrapper = styled.label`
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  border-bottom: 1px solid ${({ theme }) => theme.color.background.selectInputBorder};;
+  border-bottom: 1px solid ${({ theme }) => theme.color.background.selectInputBorder};
   margin-bottom: 17px;
   padding: 0 0 5px;
 `;
@@ -74,7 +71,7 @@ const SearchInput = styled.input`
   border: none;
   margin: 0;
   padding: 0 8px;
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   color: ${({ theme }) => theme.color.text.searchInput};
 
   &::placeholder {
@@ -90,20 +87,24 @@ const OptionList = styled.div`
   position: relative;
 `;
 
-const SelectedOption = styled.div<{ disabled?: boolean; noHover?: boolean; }>`
+const SelectedOption = styled.div<{ disabled?: boolean; noHover?: boolean }>`
   color: ${({ theme }) => theme.color.text.selectInputOption};
   font-size: 16px;
-  font-family: "PTRootUIWebMedium", sans-serif;
+  font-family: 'PTRootUIWebMedium', sans-serif;
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
 
-  ${({ disabled }) => !disabled && `
+  ${({ disabled }) =>
+    !disabled &&
+    `
     cursor: pointer;
   `}
 
-  ${({ noHover }) => noHover && `
+  ${({ noHover }) =>
+    noHover &&
+    `
     cursor: inherit;
   
     &:hover {
@@ -171,12 +172,12 @@ interface SelectInputProps {
   disabled?: boolean;
   noSearch?: boolean;
   placeholder?: string;
-  displayLabelOutside?: boolean
+  displayLabelOutside?: boolean;
   renderSelectedOptionContent?: (option: SelectOption) => React.ReactNode;
   renderOptionListItemContent?: (option: SelectOption) => React.ReactNode;
-  forceShow?: boolean
-  noOpen?: boolean
-  isOffer?: boolean
+  forceShow?: boolean;
+  noOpen?: boolean;
+  isOffer?: boolean;
 }
 
 const SelectInput = ({
@@ -208,10 +209,9 @@ const SelectInput = ({
   }, [isLoading, disabled, showSelectModal]);
 
   const hideSelectModal = () => setShowSelectModal(false);
-  +
-    useEffect(() => {
-      setShowSelectModal(forceShow);
-    }, [forceShow])
+  +useEffect(() => {
+    setShowSelectModal(forceShow);
+  }, [forceShow]);
 
   const selectedOptionTitle = useMemo(() => {
     if (isLoading && !selectedOption?.title)
@@ -228,39 +228,51 @@ const SelectInput = ({
       );
     if (!isLoading && !options?.length) return 'No options';
     return selectedOption?.title ?? placeholder;
-  }, [
-    selectedOption,
-    options,
-    isLoading,
-    placeholder,
-  ]);
+  }, [selectedOption, options, isLoading, placeholder]);
 
   const filteredSelectOptions: SelectOption[] = useMemo(
-    () => options.filter((selectOption) => containsText(selectOption?.title, searchQuery) || containsText(selectOption?.value, searchQuery)),
-    [options, searchQuery],
+    () =>
+      options.filter(
+        (selectOption) =>
+          containsText(selectOption?.title, searchQuery) || containsText(selectOption?.value, searchQuery)
+      ),
+    [options, searchQuery]
   );
 
   return (
     <>
-      {!!displayLabelOutside && !!label && <Label htmlFor={inputId} outside>{label}</Label>}
+      {!!displayLabelOutside && !!label && (
+        <Label htmlFor={inputId} outside>
+          {label}
+        </Label>
+      )}
       <Wrapper isOffer={isOffer} disabled={disabled} expanded={showSelectModal} onClick={onSelectClick} border>
         {!displayLabelOutside && !!label && <Label htmlFor={inputId}>{label}</Label>}
         {!isLoading && options?.length > 1 && (
           <SelectButtonWrapper onClick={onSelectClick} disabled={disabled}>
-            {!showSelectModal && <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />}
-            {showSelectModal && <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />}
+            {!showSelectModal && (
+              <MdOutlineKeyboardArrowDown size={21} color={theme.color?.background?.selectInputToggleButton} />
+            )}
+            {showSelectModal && (
+              <MdOutlineKeyboardArrowUp size={21} color={theme.color?.background?.selectInputToggleButton} />
+            )}
           </SelectButtonWrapper>
         )}
         {!showSelectModal && (
-          <SelectedOption onClick={(e) => {
-            e.stopPropagation()
-            onSelectClick()
-          }}
-            disabled={disabled} noHover={noOpen}>
+          <SelectedOption
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectClick();
+            }}
+            disabled={disabled}
+            noHover={noOpen}
+          >
             {!!renderSelectedOptionContent && selectedOption && renderSelectedOptionContent(selectedOption)}
             {(!renderSelectedOptionContent || !selectedOption) && (
               <>
-                {!!selectedOption?.iconUrl && <RoundedImage url={selectedOption.iconUrl} title={selectedOption.title} size={24} />}
+                {!!selectedOption?.iconUrl && (
+                  <RoundedImage url={selectedOption.iconUrl} title={selectedOption.title} size={24} />
+                )}
                 {selectedOptionTitle}
               </>
             )}
@@ -273,13 +285,13 @@ const SelectInput = ({
                 <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
                 <SearchInput
                   id={searchInputId}
-                  onChange={(e: any) => setSearchQuery(e?.target?.value)}
+                  onChange={(e) => setSearchQuery(e?.target?.value)}
                   placeholder="Search"
-                  onClick={(e: any) => {
-                    e.stopPropagation()
+                  onClick={(e) => {
+                    e.stopPropagation();
                   }}
-                  onFocus={(e: any) => {
-                    e.stopPropagation()
+                  onFocus={(e) => {
+                    e.stopPropagation();
                   }}
                 />
               </SearchInputWrapper>
@@ -315,6 +327,6 @@ const SelectInput = ({
       </Wrapper>
     </>
   );
-}
+};
 
 export default SelectInput;

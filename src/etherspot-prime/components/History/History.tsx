@@ -27,7 +27,7 @@ const History = () => {
 
   useEffect(() => {
     getLatest();
-    let intervalId = setInterval(getLatest, 3000);
+    const intervalId = setInterval(getLatest, 3000);
     return () => {
       if (!intervalId) return;
       clearInterval(intervalId);

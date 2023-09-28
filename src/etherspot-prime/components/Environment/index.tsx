@@ -12,8 +12,8 @@ import { CloseButton } from '../Button';
 
 // Utils
 import { Theme } from '../../utils/theme';
-import { useEtherspot } from '../../hooks';
-import { MAINNET_CHAIN_ID, TESTNET_CHAIN_ID, changeChainId } from '../../utils/chain';
+import { useEtherspot } from '../../../hooks';
+import { MAINNET_CHAIN_ID, TESTNET_CHAIN_ID, changeChainId } from '../../../utils/chain';
 
 const EnvironmentModal = ({
   onBackButtonClick,
@@ -29,7 +29,7 @@ const EnvironmentModal = ({
     setEnvironment(value);
     changeChainId(value);
     setChainId(
-      value === EtherspotEnvNames.MainNets ? MAINNET_CHAIN_ID.ETHEREUM_MAINNET : TESTNET_CHAIN_ID.ETHEREUM_MAINNET,
+      value === EtherspotEnvNames.MainNets ? MAINNET_CHAIN_ID.ETHEREUM_MAINNET : TESTNET_CHAIN_ID.ETHEREUM_MAINNET
     );
   };
 

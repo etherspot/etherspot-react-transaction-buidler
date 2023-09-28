@@ -5,7 +5,7 @@ import { MdOutlineKeyboardArrowDown, MdOutlineKeyboardArrowUp } from 'react-icon
 import { orderBy, uniqueId } from 'lodash';
 import { BigNumber, ethers } from 'ethers';
 
-import { useEtherspot } from '../../hooks';
+import { useEtherspotPrime } from '../../hooks';
 import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { addressesEqual, containsText } from '../../utils/validation';
@@ -291,7 +291,7 @@ const NetworkAssetSelectInput = ({
     providerAddress,
     accountAddress,
     setKeyBasedWalletBalanceByChain,
-  } = useEtherspot();
+  } = useEtherspotPrime();
 
   const onSelectClick = useCallback(() => {
     if (disabled) return;
@@ -409,16 +409,16 @@ const NetworkAssetSelectInput = ({
 
   const formatBalanceByChainByAccountType = (supportedChain: Chain, accType?: string) => {
     if (accType === DestinationWalletEnum.Contract && label === 'From' && smartWalletBalanceByChain?.length) {
-      let balanceByChain = smartWalletBalanceByChain.filter((item: any) => item.chain === supportedChain.chainId);
-      let displayBalance =
+      const balanceByChain = smartWalletBalanceByChain.filter((item) => item.chain === supportedChain.chainId);
+      const displayBalance =
         smartWalletBalanceByChain?.length && balanceByChain.length
           ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
           : '';
       return displayBalance === ' · $0' ? '' : displayBalance;
     }
     if (accType === DestinationWalletEnum.Key && label === 'From' && keyBasedWalletBalanceByChain?.length) {
-      let balanceByChain = keyBasedWalletBalanceByChain.filter((item) => item.chain === supportedChain.chainId);
-      let displayBalance =
+      const balanceByChain = keyBasedWalletBalanceByChain.filter((item) => item.chain === supportedChain.chainId);
+      const displayBalance =
         keyBasedWalletBalanceByChain?.length && balanceByChain.length
           ? ` · ${formatAmountDisplay(String(balanceByChain[0].total), '$')}`
           : '';
@@ -523,10 +523,10 @@ const NetworkAssetSelectInput = ({
                   <AiOutlineSearch size={18} color={theme?.color?.text?.searchInput} />
                   <SearchInput
                     id={searchInputId}
-                    onChange={(e: any) => setAssetSearchQuery(e?.target?.value)}
+                    onChange={(e) => setAssetSearchQuery(e?.target?.value)}
                     placeholder="Search"
-                    onClick={(e: any) => e.stopPropagation()}
-                    onFocus={(e: any) => {
+                    onClick={(e) => e.stopPropagation()}
+                    onFocus={(e) => {
                       e.stopPropagation();
                     }}
                   />
@@ -552,7 +552,7 @@ const NetworkAssetSelectInput = ({
                   .map((asset, index) => (
                     <LargeOptionListItem
                       key={`${asset.address ?? '0x'}-${index}`}
-                      onClick={(e: any) => {
+                      onClick={(e) => {
                         e.stopPropagation();
                         if (!showQuickInputButtons) {
                           onListItemClick(asset);

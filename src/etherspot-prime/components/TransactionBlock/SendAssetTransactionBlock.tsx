@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
-import { AccountTypes } from 'etherspot';
+import { AccountTypes } from '@etherspot/prime-sdk';
 
 import TextInput from '../TextInput';
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import { useEtherspotPrime, useTransactionBuilder } from '../../hooks';
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { Chain, supportedChains } from '../../utils/chain';
+import { Chain } from '../../utils/chain';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages } from '../Image';
@@ -46,9 +46,7 @@ const SendAssetTransactionBlock = ({
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedAsset, setSelectedAsset] = useState<IAssetWithBalance | null>(values?.selectedAsset ?? null);
   const [selectedNetwork, setSelectedNetwork] = useState<Chain | null>(values?.chain ?? null);
-  const [disableReceiverAddressInput, setDisableReceiverAddressInput] = useState<boolean>(
-    values?.disableReceiverAddressInput ?? false
-  );
+  const [disableReceiverAddressInput] = useState<boolean>(values?.disableReceiverAddressInput ?? false);
   const [isFromEtherspotWallet, setIsFromEtherspotWallet] = useState<boolean>(values?.isFromEtherspotWallet ?? true);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(
     values?.isFromEtherspotWallet ?? true ? AccountTypes.Contract : AccountTypes.Key
@@ -62,11 +60,11 @@ const SendAssetTransactionBlock = ({
     sdk,
     providerAddress,
     accountAddress,
-    chainId,
+    // chainId,
     getSupportedAssetsWithBalancesForChainId,
     smartWalletOnly,
     updateWalletBalances,
-  } = useEtherspot();
+  } = useEtherspotPrime();
 
   const onAmountChange = useCallback(
     (newAmount: string) => {

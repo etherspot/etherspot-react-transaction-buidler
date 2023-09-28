@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates, Account } from 'etherspot';
+import { AccountStates, Account } from '@etherspot/prime-sdk';
 
 // icons
 import { IoMdCheckmark } from 'react-icons/io';
@@ -8,13 +8,12 @@ import { CgSandClock } from 'react-icons/cg';
 
 // components
 import { RoundedImage } from '../Image';
-import { useEtherspot } from '../../hooks';
+import { useEtherspotPrime } from '../../hooks';
 import Modal from '../Modal/Modal';
 import { CloseButton } from '../Button';
 
 // utils
 import { supportedChains } from '../../utils/chain';
-import { deployAccount } from '../../utils/transaction';
 import { Theme } from '../../utils/theme';
 import MenuModalWrapper from '../Menu/MenuModalWrapper';
 import ContentLoader from 'react-content-loader';
@@ -36,15 +35,14 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoadingChainsStatus, setIsLoadingChainsStatus] = useState(false);
 
-  const { getSdkForChainId, accountAddress } = useEtherspot();
+  const { getSdkForChainId, accountAddress } = useEtherspotPrime();
   const theme: Theme = useTheme();
 
   const fetchDeploymentData = async (chainId: number): Promise<Account | undefined> => {
-    const sdk = getSdkForChainId(chainId);
+    const sdk = await getSdkForChainId(chainId);
     if (!accountAddress || !sdk) return;
     try {
-      await sdk.computeContractAccount();
-      return sdk.getAccount();
+      return sdk.state.account;
     } catch (err) {
       //
     }
@@ -94,7 +92,6 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
       return;
     }
     try {
-      await deployAccount(sdk);
       await getDeploymentData();
     } catch (err) {
       setErrorMessage('Failed to deploy selected chains!');
@@ -163,8 +160,8 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
               )}
             </Section>
           )}
-          {deployedChains.map(({ iconUrl, title }) => (
-            <Section>
+          {deployedChains.map(({ iconUrl, title, chainId }) => (
+            <Section key={chainId}>
               <RoundedImage url={iconUrl} title={title} size={20} />
               {title}
             </Section>
@@ -196,7 +193,7 @@ const Deployment = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =>
             </Section>
           )}
           {undeployedChains.map(({ chainId, iconUrl, title }) => (
-            <Section>
+            <Section key={chainId}>
               <RoundedImage url={iconUrl} title={title} size={20} />
               {title}
               <DeployButton
