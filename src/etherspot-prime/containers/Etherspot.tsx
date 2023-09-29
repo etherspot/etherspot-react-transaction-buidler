@@ -1,17 +1,19 @@
+/* eslint-disable react/no-unescaped-entities */
 import React, { useEffect, useState } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
-import { SessionStorage, WalletProviderLike } from 'etherspot';
 import { merge } from 'lodash';
-
 import {
-  TransactionBuilderContextProvider,
-  EtherspotContextProvider,
-  TransactionBuilderModalContextProvider,
-  TransactionsDispatcherContextProvider,
+  TransactionPrimeBuilderContextProvider,
+  EtherspotPrimeContextProvider,
+  TransactionPrimeBuilderModalContextProvider,
+  TransactionsPrimeDispatcherContextProvider,
 } from '../providers';
 
-import { darkTheme, getTheme, Theme, ThemeType } from '../utils/theme';
+import { getTheme, Theme, ThemeType } from '../utils/theme';
 import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
+
+import { SessionStorage } from '@etherspot/prime-sdk';
+import { WalletProviderLike } from 'etherspot';
 
 export interface EtherspotPrimeProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -84,7 +86,6 @@ const EtherspotPrime = ({
   hiddenTransactionBlockTypes,
   themeOverride,
   hideAddTransactionButton,
-  etherspotSessionStorage,
   showMenuLogout,
   smartWalletOnly,
   componentWidth,
@@ -117,10 +118,9 @@ const EtherspotPrime = ({
 
   return (
     <ThemeProvider theme={merge({}, activeTheme, themeOverride)}>
-      <EtherspotContextProvider
+      <EtherspotPrimeContextProvider
         provider={provider}
         chainId={chainId}
-        etherspotSessionStorage={etherspotSessionStorage}
         onLogout={onLogout}
         smartWalletOnly={smartWalletOnly}
         changeTheme={setActiveTheme}
@@ -133,9 +133,9 @@ const EtherspotPrime = ({
           url('https://unpkg.com/tippy.js@6.3.7/dist/border.css');
         </style>
         <ComponentWrapper removeOuterContainer={removeOuterContainer} componentWidth={componentWidth}>
-          <TransactionBuilderModalContextProvider>
-            <TransactionsDispatcherContextProvider>
-              <TransactionBuilderContextProvider
+          <TransactionPrimeBuilderModalContextProvider>
+            <TransactionsPrimeDispatcherContextProvider>
+              <TransactionPrimeBuilderContextProvider
                 defaultTransactionBlocks={defaultTransactionBlocks}
                 hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
                 removeTransactionBlockContainer={removeTransactionBlockContainer}
@@ -154,10 +154,10 @@ const EtherspotPrime = ({
                 hideWalletSwitch={hideWalletSwitch}
                 hideActionPreviewHeader={hideActionPreviewHeader}
               />
-            </TransactionsDispatcherContextProvider>
-          </TransactionBuilderModalContextProvider>
+            </TransactionsPrimeDispatcherContextProvider>
+          </TransactionPrimeBuilderModalContextProvider>
         </ComponentWrapper>
-      </EtherspotContextProvider>
+      </EtherspotPrimeContextProvider>
     </ThemeProvider>
   );
 };

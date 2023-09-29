@@ -1,21 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider, ExchangeOffer } from 'etherspot';
+import { AccountStates, AccountTypes, ExchangeOffer } from '@etherspot/prime-sdk';
 import { Route } from '@lifi/sdk';
-import { BigNumber, ethers, utils } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 
 // Types
-import { IHoneySwapLPBlock, IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
+import { IHoneySwapLPBlock } from '../../types/transactionBlock';
 
 // Components
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import { useEtherspotPrime, useTransactionBuilder } from '../../hooks';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
+import { CombinedRoundedImages } from '../Image';
 import TextInput from '../TextInput';
 import { Pill } from '../Text';
-import Text from '../Text/Text';
 import SelectInput from '../SelectInput';
 import { SelectOption } from '../SelectInput/SelectInput';
 
@@ -24,19 +23,15 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
+import { isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
-import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
+import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
 
 // constants
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
-import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 // hooks
-import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
-import { BiCheck } from 'react-icons/bi';
 import { getNativeAssetPriceInUsd } from '../../services/coingecko';
-import RouteOption from '../RouteOption/RouteOption';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 
@@ -95,7 +90,7 @@ const HoneySwapLPTransactionBlock = ({
   hideTitle = false,
   hideWalletSwitch = false,
 }: IHoneySwapLPBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
+  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspotPrime();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Key);
@@ -256,13 +251,13 @@ const HoneySwapLPTransactionBlock = ({
         }
       }
 
-      const sdkOnXdai = getSdkForChainId(CHAIN_ID.XDAI);
+      const sdkOnXdai = await getSdkForChainId(CHAIN_ID.XDAI);
 
       if (!sdkOnXdai) return;
 
       const data = await sdkOnXdai.getGatewayGasInfo();
 
-      const account = await sdkOnXdai.computeContractAccount();
+      const account = await sdkOnXdai.createSession();
 
       let gasInWeiBN = data.fast.mul(account.state === AccountStates.UnDeployed ? '1350000' : '1000000');
 
@@ -305,7 +300,7 @@ const HoneySwapLPTransactionBlock = ({
       ) {
         try {
           // needed computed account address before calling getExchangeOffers
-          await sdkOnXdai.computeContractAccount();
+          await sdkOnXdai.getCounterFactualAddress();
 
           const offers = await sdkOnXdai.getExchangeOffers({
             fromChainId: CHAIN_ID.XDAI,
@@ -337,7 +332,7 @@ const HoneySwapLPTransactionBlock = ({
 
       try {
         // needed computed account address before calling getExchangeOffers
-        await sdkOnXdai.computeContractAccount();
+        await sdkOnXdai.getCounterFactualAddress();
 
         const offers = await sdkOnXdai.getExchangeOffers({
           fromChainId: CHAIN_ID.XDAI,
@@ -353,7 +348,7 @@ const HoneySwapLPTransactionBlock = ({
 
       try {
         // needed computed account address before calling getExchangeOffers
-        if (!accountAddress) await sdkOnXdai.computeContractAccount();
+        if (!accountAddress) await sdkOnXdai.getCounterFactualAddress();
 
         const offers = await sdkOnXdai.getExchangeOffers({
           fromChainId: CHAIN_ID.XDAI,

@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 import { BiCheck } from 'react-icons/bi';
 
 // hooks
-import { useEtherspot } from '../../hooks';
+import { useEtherspotPrime } from '../../hooks';
 
 // utils
 import { addressesEqual } from '../../utils/validation';
@@ -47,24 +47,22 @@ export const OfferRoute = (props: OfferRouteProps) => {
   } = props;
   const [gasPrice, setGasPrice] = useState<string | undefined>();
   const [isEstimating, setIsEstimating] = useState(false);
-  const { getSdkForChainId } = useEtherspot();
+  const { getSdkForChainId } = useEtherspotPrime();
   const theme: Theme = useTheme();
 
   const getGasSwapUsdValue = async (offer: ExchangeOffer) => {
-    const sdkByChain = getSdkForChainId(selectedNetwork?.chainId ?? 1);
+    const sdkByChain = await getSdkForChainId(selectedNetwork?.chainId ?? 1);
     setIsEstimating(true);
 
     if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
-      await sdkByChain.computeContractAccount();
+      await sdkByChain.createSession();
 
-      sdkByChain.clearGatewayBatch();
+      sdkByChain.clearUserOpsFromBatch();
 
-      await Promise.all(
-        offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
-      );
+      await Promise.all(offer.transactions.map((transaction) => sdkByChain.addUserOpsToBatch(transaction)));
 
       try {
-        const estimation = await sdkByChain.estimateGatewayBatch();
+        const estimation = await sdkByChain.estimate();
         setIsEstimating(false);
         return Number(ethers.utils.formatUnits(estimation.estimation.feeAmount)) * exchnageRate;
       } catch (error) {

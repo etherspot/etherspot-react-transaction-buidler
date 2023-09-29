@@ -1,13 +1,6 @@
 import React, { createContext } from 'react';
-import { Sdk as EtherspotSdk } from 'etherspot/dist/sdk/sdk';
-import {
-  AccountBalance,
-  ENSNode,
-  NftCollection,
-  WalletProviderLike,
-  Web3WalletProvider,
-  EnvNames as EtherspotEnvNames,
-} from 'etherspot';
+import { PrimeSdk as EtherspotSdk } from '@etherspot/prime-sdk';
+import { AccountBalance, ENSNode, NftCollection, WalletProviderLike, Web3WalletProvider } from '@etherspot/prime-sdk';
 
 import {
   IAssetWithBalance,
@@ -25,7 +18,7 @@ export interface EtherspotContextData {
     connect: () => Promise<string | undefined>;
     chainId: number;
     setChainId: (chainId: number) => void;
-    getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
+    getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => Promise<EtherspotSdk | null>;
     isConnecting: boolean;
     sdk: EtherspotSdk | null;
     smartWalletBalanceByChain: IBalanceByChain[] | null;
@@ -57,8 +50,6 @@ export interface EtherspotContextData {
     updateWalletBalances: (force?: boolean) => void;
     getRatesByNativeChainId: (chainId: number) => Promise<number | null>;
     changeTheme: (theme: Theme) => void;
-    environment: EtherspotEnvNames;
-    setEnvironment: (environment: EtherspotEnvNames) => void;
   };
 }
 

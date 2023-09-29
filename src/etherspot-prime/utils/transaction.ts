@@ -3,16 +3,15 @@ import {
   BridgingQuote,
   CrossChainServiceProvider,
   ExchangeOffer,
-  GatewayTransactionStates,
+  TransactionStatuses,
   LiFiStatus,
   NotificationTypes,
-  Sdk as EtherspotSdk,
-  TransactionStatuses,
+  PrimeSdk as EtherspotSdk,
   WalletProviderLike,
   Web3WalletProvider,
-} from 'etherspot';
+} from '@etherspot/prime-sdk';
 import { Route } from '@lifi/sdk';
-import { BigNumber, BigNumberish, ethers, utils } from 'ethers';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
@@ -46,8 +45,6 @@ import {
   POLYGON_USDC_CONTRACT_ADDRESS,
 } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
-import { UNISWAP_ROUTER_ABI } from '../constants/uniswapRouterAbi';
-import { UniswapV2RouterContract } from '../contracts/UniswapV2Router';
 import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 
 interface IPillarDao {
@@ -99,7 +96,7 @@ const fetchBestRoute = async (
     }
     const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
 
-    let destinationTxns: ICrossChainActionTransaction[] = [];
+    const destinationTxns: ICrossChainActionTransaction[] = [];
     let transactions: ICrossChainActionTransaction[] = [];
 
     if (bestRoute.containsSwitchChain) {
@@ -285,7 +282,7 @@ export const klimaDaoStaking = async (
   routeToKlima?: BridgingQuote | null,
   receiverAddress?: string,
   sdk?: EtherspotSdk | null,
-  flag?: Boolean,
+  flag?: boolean,
   amount?: string
 ): Promise<{
   errorMessage?: string;
@@ -429,7 +426,7 @@ export const honeyswapLP = async (
   if (!sdk) return { errorMessage: 'No sdk found' };
 
   const contractAddress = '0x1C232F01118CB8B424793ae03F870aa7D0ac7f77';
-  const contractAddressProxy = '0xf8D1677c8a0c961938bf2f9aDc3F3CFDA759A9d9';
+  // const contractAddressProxy = '0xf8D1677c8a0c961938bf2f9aDc3F3CFDA759A9d9';
 
   const createTimestamp = Date.now() + 100;
 
@@ -568,7 +565,7 @@ export const honeyswapLP = async (
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    let newNativeTokenEndodedData = encodedEthData
+    const newNativeTokenEndodedData = encodedEthData
       ? {
           to: contractAddress,
           data: encodedEthData,
@@ -618,7 +615,7 @@ const buildPlrDaoUnStakeTransaction = (
     const crossChainActionId = uniqueId(`${createTimestamp}-`);
 
     let transactions: IPlrTransaction[] = [];
-    let contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[CHAIN_ID.POLYGON];
+    const contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[CHAIN_ID.POLYGON];
 
     try {
       const plrDaoStakingContract = sdk.registerContract<IPillarDao>(
@@ -729,7 +726,7 @@ export const buildCrossChainAction = async (
 
       if (fromChainId !== CHAIN_ID.POLYGON) {
         try {
-          let destinationTxns: ICrossChainActionTransaction[] = [];
+          const destinationTxns: ICrossChainActionTransaction[] = [];
           let transactions: ICrossChainActionTransaction[] = [];
 
           transactions = [
@@ -847,7 +844,7 @@ export const buildCrossChainAction = async (
     transactionBlock?.values?.isUnStake &&
     transactionBlock?.values?.membershipAddress
   ) {
-    let result = buildPlrDaoUnStakeTransaction(
+    const result = buildPlrDaoUnStakeTransaction(
       sdk,
       transactionBlock.id,
       transactionBlock?.values?.membershipAddress,
@@ -891,7 +888,7 @@ export const buildCrossChainAction = async (
           },
         } = transactionBlock;
         let transactions: IPlrTransaction[] = [];
-        let contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[fromChainId];
+        const contractAddress = PLR_DAO_CONTRACT_PER_CHAIN[fromChainId];
         const amountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
         if (fromAssetAddress && !addressesEqual(fromAssetAddress, nativeAssetPerChainId[fromChainId].address)) {
@@ -1075,7 +1072,7 @@ export const buildCrossChainAction = async (
 
       const swapServiceDetails = swapServiceIdToDetails[offer.provider];
 
-      let preview = {
+      const preview = {
         fromChainId: chainId,
         chainId,
         hasEnoughPLR: transactionBlock?.values?.hasEnoughPLR,
@@ -1099,7 +1096,7 @@ export const buildCrossChainAction = async (
         providerIconUrl: swapServiceDetails?.iconUrl,
         receiverAddress,
       };
-      let result = await fetchSwapAssetTransaction(
+      const result = await fetchSwapAssetTransaction(
         chainId,
         fromAmountBN,
         fromAssetAddress,
@@ -1284,10 +1281,7 @@ export const buildCrossChainAction = async (
       const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
       // // not native asset and no erc20 approval transaction included
-      if (
-        toToken1.address &&
-        offer1
-      ) {
+      if (toToken1.address && offer1) {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>(
           'erc20Contract',
@@ -1328,10 +1322,7 @@ export const buildCrossChainAction = async (
         ];
       }
 
-      if (
-        toToken2.address &&
-        offer2
-      ) {
+      if (toToken2.address && offer2) {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>(
           'erc20Contract',
@@ -1417,7 +1408,6 @@ export const buildCrossChainAction = async (
 
             transactions = [approvalTransaction, ...transactions];
           }
-
 
           const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
 
@@ -1626,21 +1616,24 @@ export const buildCrossChainAction = async (
             useWeb3Provider: accountType === AccountTypes.Key,
             multiCallData: transactionBlock?.multiCallData,
             receiveAmount: amount,
-            destinationCrossChainAction: accountType !== AccountTypes.Key
-              ? []
-              : [{
-                  id: uniqueId(`${createTimestamp}-`),
-                  relatedTransactionBlockId: transactionBlock.id,
-                  chainId: CHAIN_ID.XDAI,
-                  type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
-                  preview,
-                  transactions: destinationTxns,
-                  isEstimating: false,
-                  estimated: null,
-                  useWeb3Provider: false,
-                  gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
-                  destinationCrossChainAction: [],
-                }]
+            destinationCrossChainAction:
+              accountType !== AccountTypes.Key
+                ? []
+                : [
+                    {
+                      id: uniqueId(`${createTimestamp}-`),
+                      relatedTransactionBlockId: transactionBlock.id,
+                      chainId: CHAIN_ID.XDAI,
+                      type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                      preview,
+                      transactions: destinationTxns,
+                      isEstimating: false,
+                      estimated: null,
+                      useWeb3Provider: false,
+                      gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                      destinationCrossChainAction: [],
+                    },
+                  ],
           };
 
           return { crossChainAction: crossChainAction };
@@ -1778,7 +1771,7 @@ export const buildCrossChainAction = async (
 
       const swapServiceDetails = swapServiceIdToDetails[offer.provider];
 
-      let preview = {
+      const preview = {
         chainId,
         fromAsset: {
           address: fromAssetAddress,
@@ -1954,7 +1947,7 @@ export const buildCrossChainAction = async (
       }
     }
 
-    let preview = {
+    const preview = {
       fromChainId,
       toChainId,
       fromAsset: {
@@ -2060,22 +2053,19 @@ export const submitEtherspotTransactionsBatch = async (
   let batchHash;
 
   try {
-    if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
-      await sdk.computeContractAccount({ sync: true });
-    }
-
-    sdk.clearGatewayBatch();
+    sdk.clearUserOpsFromBatch();
 
     // sequential
     for (const transaction of transactions) {
       const { to, value, data } = transaction;
-      await sdk.batchExecuteAccountTransaction({ to, value, data });
+      await sdk.addUserOpsToBatch({ to, value, data: data?.toString() });
     }
 
     const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
-    await sdk.estimateGatewayBatch({ feeToken });
-    const result = await sdk.submitGatewayBatch();
-    ({ hash: batchHash } = result);
+    const op = await sdk.estimate({ maxFeePerGas: feeToken });
+
+    const result = await sdk.send(op);
+    batchHash = result;
   } catch (e) {
     errorMessage = parseEtherspotErrorMessageIfAvailable(e);
     if (!errorMessage && e instanceof Error) {
@@ -2097,21 +2087,18 @@ export const submitEtherspotAndWaitForTransactionHash = async (
   let errorMessage;
 
   try {
-    if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
-      await sdk.computeContractAccount({ sync: true });
-    }
-
-    sdk.clearGatewayBatch();
+    sdk.clearUserOpsFromBatch();
 
     // sequential
     for (const transaction of transactions) {
       const { to, value, data } = transaction;
-      await sdk.batchExecuteAccountTransaction({ to, value, data });
+      await sdk.addUserOpsToBatch({ to, value, data: data?.toString() });
     }
 
     const feeToken = isZeroAddress(feeTokenAddress) ? undefined : feeTokenAddress;
-    await sdk.estimateGatewayBatch({ feeToken: feeToken });
-    const result = await sdk.submitGatewayBatch();
+    const userOpEstimated = await sdk.estimate({ maxFeePerGas: feeToken });
+
+    const uoHash = await sdk.send(userOpEstimated);
     let temporaryBatchSubscription: Subscription;
 
     return new Promise<{
@@ -2122,12 +2109,12 @@ export const submitEtherspotAndWaitForTransactionHash = async (
         .pipe(
           rxjsMap(async (notification) => {
             if (notification.type === NotificationTypes.GatewayBatchUpdated) {
-              const submittedBatch = await sdk.getGatewaySubmittedBatch({ hash: result.hash });
+              const submittedBatch = await sdk.getUserOpReceipt(uoHash);
 
               const failedStates = [
-                GatewayTransactionStates.Canceling,
-                GatewayTransactionStates.Canceled,
-                GatewayTransactionStates.Reverted,
+                TransactionStatuses.Canceling,
+                TransactionStatuses.Canceled,
+                TransactionStatuses.Reverted,
               ];
 
               let finishSubscription;
@@ -2270,7 +2257,12 @@ export const submitWeb3ProviderTransaction = async (
     while (transactionStatus === null) {
       try {
         // @ts-ignore
-        let status = await sendWeb3ProviderRequest(web3Provider, 'eth_getTransactionByHash', [transactionHash], chainId);
+        const status = await sendWeb3ProviderRequest(
+          web3Provider,
+          'eth_getTransactionByHash',
+          [transactionHash],
+          chainId
+        );
         if (status && status.blockNumber !== null) {
           transactionStatus = status;
         }
@@ -2380,7 +2372,7 @@ export const estimateCrossChainAction = async (
               data,
             },
           ],
-          crossChainAction.chainId,
+          crossChainAction.chainId
         );
         gasLimit = gasLimit.add(estimatedTx);
       }
@@ -2392,16 +2384,12 @@ export const estimateCrossChainAction = async (
     }
   } else if (!crossChainAction.useWeb3Provider) {
     try {
-      if (!sdk?.state?.account?.type || sdk.state.account.type === AccountTypes.Key) {
-        await sdk.computeContractAccount({ sync: true });
-      }
-
-      sdk.clearGatewayBatch();
+      sdk.clearUserOpsFromBatch();
 
       // sequential
       for (const transactionsToSend of crossChainAction.transactions) {
         const { to, value, data } = transactionsToSend;
-        await sdk.batchExecuteAccountTransaction({ to, value, data });
+        await sdk.addUserOpsToBatch({ to, value, data: data?.toString() });
       }
 
       const feeToken =
@@ -2409,9 +2397,10 @@ export const estimateCrossChainAction = async (
           ? undefined
           : crossChainAction.gasTokenAddress;
 
-      const { estimation: gatewayBatchEstimation } = await sdk.estimateGatewayBatch({ feeToken });
-      gasCost = gatewayBatchEstimation.estimatedGasPrice.mul(gatewayBatchEstimation.estimatedGas);
-      feeAmount = feeToken ? gatewayBatchEstimation.feeAmount : null;
+      const gatewayBatchEstimation = await sdk.estimate();
+      const totalGas = await sdk.totalGasEstimated(gatewayBatchEstimation);
+      gasCost = totalGas.mul(gatewayBatchEstimation.maxFeePerGas);
+      feeAmount = feeToken ? gatewayBatchEstimation.maxFeePerGas : null;
     } catch (e) {
       errorMessage = parseEtherspotErrorMessageIfAvailable(e);
       if (!errorMessage && e instanceof Error) {
@@ -2518,23 +2507,18 @@ export const rejectUnsentCrossChainActionsTransactions = (
 
 export const deployAccount = async (sdk: EtherspotSdk | null) => {
   if (!sdk) return;
-  sdk.clearGatewayBatch();
-  await sdk.batchDeployAccount();
-  await sdk.estimateGatewayBatch();
-  return sdk.submitGatewayBatch();
+  sdk.clearUserOpsFromBatch();
+  const op = await sdk.estimate();
+
+  return sdk.send(op);
 };
 
-export const sendWeb3ProviderRequest = async (
-  web3Provider: any,
-  method: string,
-  params: any[],
-  chainId: number,
-) => {
+export const sendWeb3ProviderRequest = async (web3Provider: any, method: string, params: any[], chainId: number) => {
   // @ts-ignore
   if (web3Provider.type === 'WalletConnect') {
     let updatedParams;
     if (method === 'eth_sendTransaction') {
-      updatedParams = [{ ...params[0], data: params[0].data ?? '0x' }]
+      updatedParams = [{ ...params[0], data: params[0].data ?? '0x' }];
     }
     return web3Provider.connector.signer.request({ method, params: updatedParams ?? params }, `eip155:${chainId}`);
   }

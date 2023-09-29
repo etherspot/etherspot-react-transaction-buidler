@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes, ExchangeOffer, NftCollection, EnvNames as EtherspotEnvNames } from 'etherspot';
+import { AccountTypes, ExchangeOffer } from '@etherspot/prime-sdk';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
 import { Route } from '@lifi/sdk';
@@ -9,16 +9,15 @@ import { Route } from '@lifi/sdk';
 import { IPlrDaoStakingMembershipBlock } from '../../types/transactionBlock';
 
 // components
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import { useEtherspotPrime, useTransactionBuilder } from '../../hooks';
 import { Pill, Text } from '../Text';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
+import { CombinedRoundedImages } from '../Image';
 import RouteOption from '../RouteOption';
 import { OfferRoute } from '../OfferRoute/OfferRoute';
-import { PrimaryButton } from '../Button';
 
 // providers
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -26,14 +25,7 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 // utils
 import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
-import {
-  Chain,
-  supportedChains,
-  plrDaoMemberNft,
-  CHAIN_ID,
-  MAINNET_CHAIN_ID,
-  TESTNET_CHAIN_ID,
-} from '../../utils/chain';
+import { Chain, supportedChains, plrDaoMemberNft, CHAIN_ID, MAINNET_CHAIN_ID } from '../../utils/chain';
 import { plrDaoAsset, plrDaoAssetPerChainId } from '../../utils/asset';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
@@ -92,12 +84,12 @@ const WalletReceiveWrapper = styled.div`
   flex-direction: row;
 `;
 
-const OfferDetails = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  font-family: 'PTRootUIWebMedium', sans-serif;
-`;
+// const OfferDetails = styled.div`
+//   display: flex;
+//   flex-direction: row;
+//   align-items: center;
+//   font-family: 'PTRootUIWebMedium', sans-serif;
+// `;
 
 const ContainerWrapper = styled.div`
   background: ${({ theme }) => theme.color.background.horizontalLine};
@@ -147,14 +139,14 @@ const Block = styled.div`
   color: ${(props) => props.color};
 `;
 
-const UnstakeButton = styled(PrimaryButton)`
-  text-align: center;
-  padding: 8px 0;
-  font-size: 16px;
-  border-radius: 6px;
-  background: ${({ theme }) => theme.color.background.primary};
-  color: #fff;
-`;
+// const UnstakeButton = styled(PrimaryButton)`
+//   text-align: center;
+//   padding: 8px 0;
+//   font-size: 16px;
+//   border-radius: 6px;
+//   background: ${({ theme }) => theme.color.background.primary};
+//   color: #fff;
+// `;
 
 const mapOfferToOption = (offer: ExchangeOffer) => {
   const serviceDetails = swapServiceIdToDetails[offer.provider];
@@ -204,8 +196,9 @@ const PlrDaoStakingTransactionBlock = ({
     getSupportedAssetsWithBalancesForChainId,
     getRatesByNativeChainId,
     getNftsForChainId,
-    environment,
-  } = useEtherspot();
+    // environment,
+    chainId,
+  } = useEtherspotPrime();
   const theme: Theme = useTheme();
 
   const [amount, setAmount] = useState<string>('');
@@ -232,8 +225,7 @@ const PlrDaoStakingTransactionBlock = ({
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [nftMembershipAddress, setNFTMembershipAddress] = useState<string | null>(null);
   const [isNFTMember, setIsNFTMember] = useState<boolean>(false);
-  const STAKING_CHAIN_ID =
-    environment === EtherspotEnvNames.MainNets ? MAINNET_CHAIN_ID.POLYGON : TESTNET_CHAIN_ID.POLYGON;
+  const STAKING_CHAIN_ID = MAINNET_CHAIN_ID.POLYGON;
 
   const hasEnoughPLR =
     totalKeyBasedPLRTokens >= MAX_PLR_TOKEN_LIMIT || totalSmartWalletPLRTokens >= MAX_PLR_TOKEN_LIMIT;
@@ -248,10 +240,10 @@ const PlrDaoStakingTransactionBlock = ({
         getNftsForChainId(CHAIN_ID.POLYGON, accountAddress, true),
       ]);
 
-      let isMemberInProviderAddress = providerAddressNfts.some((nft) =>
+      const isMemberInProviderAddress = providerAddressNfts.some((nft) =>
         addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
       );
-      let isMemberInAccountAddress = accountAddressNfts.some((nft) =>
+      const isMemberInAccountAddress = accountAddressNfts.some((nft) =>
         addressesEqual(nft.contractAddress, plrDaoMemberNft[STAKING_CHAIN_ID].address)
       );
 
@@ -502,7 +494,7 @@ const PlrDaoStakingTransactionBlock = ({
 
       try {
         // needed computed account address before calling getExchangeOffers
-        if (!accountAddress) await sdk.computeContractAccount();
+        if (!accountAddress) await sdk.getCounterFactualAddress();
         const offers = await sdk.getExchangeOffers({
           fromChainId: selectedFromAsset.chainId,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
@@ -589,18 +581,18 @@ const PlrDaoStakingTransactionBlock = ({
     receiverAddress,
   ]);
 
-  const onUnstake = async () => {
-    setTransactionBlockValues(transactionBlockId, {
-      isUnStake: true,
-      hasEnoughPLR: false,
-      enableAssetBridge: false,
-      enableAssetSwap: false,
-      fromChainId: plrDaoMemberNft[STAKING_CHAIN_ID].chainId,
-      amount: `${MAX_PLR_TOKEN_LIMIT}`,
-      accountType: nftMembershipAddress === providerAddress ? AccountTypes.Key : AccountTypes.Contract,
-      membershipAddress: nftMembershipAddress,
-    });
-  };
+  // const onUnstake = async () => {
+  //   setTransactionBlockValues(transactionBlockId, {
+  //     isUnStake: true,
+  //     hasEnoughPLR: false,
+  //     enableAssetBridge: false,
+  //     enableAssetSwap: false,
+  //     fromChainId: plrDaoMemberNft[STAKING_CHAIN_ID].chainId,
+  //     amount: `${MAX_PLR_TOKEN_LIMIT}`,
+  //     accountType: nftMembershipAddress === providerAddress ? AccountTypes.Key : AccountTypes.Contract,
+  //     membershipAddress: nftMembershipAddress,
+  //   });
+  // };
 
   const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);
 
@@ -617,32 +609,32 @@ const PlrDaoStakingTransactionBlock = ({
     return +balanceWithAssetAmount + multiCallCarryOver;
   }, [amount, selectedFromAsset]);
 
-  const RenderOption = (option: SelectOption) => {
-    const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
+  // const RenderOption = (option: SelectOption) => {
+  //   const availableOffer = availableOffers?.find((offer) => offer.provider === option.value);
 
-    const valueToReceiveRaw = availableOffer
-      ? ethers.utils.formatUnits(availableOffer.receiveAmount, plrDaoAssetPerChainId[STAKING_CHAIN_ID].decimals)
-      : undefined;
+  //   const valueToReceiveRaw = availableOffer
+  //     ? ethers.utils.formatUnits(availableOffer.receiveAmount, plrDaoAssetPerChainId[STAKING_CHAIN_ID].decimals)
+  //     : undefined;
 
-    const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
+  //   const valueToReceive = valueToReceiveRaw && formatAmountDisplay(valueToReceiveRaw);
 
-    return (
-      <OfferDetails>
-        <RoundedImage title={option.title} url={option.iconUrl} size={24} />
-        <div>
-          <Text size={12} marginBottom={2} medium block>
-            {option.title}
-          </Text>
-          {!!valueToReceive && (
-            <Text size={16} medium>
-              {valueToReceive} {plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol}
-              {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$', 2)}`}
-            </Text>
-          )}
-        </div>
-      </OfferDetails>
-    );
-  };
+  //   return (
+  //     <OfferDetails>
+  //       <RoundedImage title={option.title} url={option.iconUrl} size={24} />
+  //       <div>
+  //         <Text size={12} marginBottom={2} medium block>
+  //           {option.title}
+  //         </Text>
+  //         {!!valueToReceive && (
+  //           <Text size={16} medium>
+  //             {valueToReceive} {plrDaoAssetPerChainId[STAKING_CHAIN_ID].symbol}
+  //             {targetAssetPriceUsd && ` · ${formatAmountDisplay(+valueToReceiveRaw * targetAssetPriceUsd, '$', 2)}`}
+  //           </Text>
+  //         )}
+  //       </div>
+  //     </OfferDetails>
+  //   );
+  // };
 
   const renderRoute = (option: SelectOption) => (
     <RouteOption

@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider } from 'etherspot';
+import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider } from '@etherspot/prime-sdk';
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 
 // Components
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import { useEtherspotPrime, useTransactionBuilder } from '../../hooks';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
@@ -116,7 +116,7 @@ const KlimaStakingTransactionBlock = ({
   values,
   hideTitle = false,
 }: IKlimaStakingTransactionBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
+  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspotPrime();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
   const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
@@ -290,10 +290,10 @@ const KlimaStakingTransactionBlock = ({
           return;
         }
 
-        const sdkChain = getSdkForChainId(CHAIN_ID.POLYGON);
+        const sdkChain = await getSdkForChainId(CHAIN_ID.POLYGON);
         const gasInfo = await sdkChain?.getGatewayGasInfo();
 
-        let priceUsd = await getAssetPriceInUsd(CHAIN_ID.POLYGON, ethers.constants.AddressZero, sdk);
+        const priceUsd = await getAssetPriceInUsd(CHAIN_ID.POLYGON, ethers.constants.AddressZero, sdk);
         if (!gasInfo || !priceUsd) {
           setTransactionBlockFieldValidationError(transactionBlockId, 'amount', `No Offer found`);
           resetRoutes();
@@ -301,7 +301,7 @@ const KlimaStakingTransactionBlock = ({
         }
 
         let estimatedGas: BigNumberish = 850000;
-        let currentGasPrice = gasInfo.fast;
+        const currentGasPrice = gasInfo.fast;
 
         if (sdk.state.account.state === AccountStates.UnDeployed) {
           estimatedGas += 330000;

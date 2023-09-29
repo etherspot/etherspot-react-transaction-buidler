@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountTypes } from 'etherspot';
+import { AccountTypes } from '@etherspot/prime-sdk';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import { useEtherspotPrime, useTransactionBuilder } from '../../hooks';
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
 import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
@@ -82,7 +82,7 @@ const AssetBridgeTransactionBlock = ({
     getSupportedAssetsWithBalancesForChainId,
     smartWalletOnly,
     updateWalletBalances,
-  } = useEtherspot();
+  } = useEtherspotPrime();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);

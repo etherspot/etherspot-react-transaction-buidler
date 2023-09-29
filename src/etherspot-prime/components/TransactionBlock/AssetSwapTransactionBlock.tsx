@@ -1,19 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates, AccountTypes, ExchangeOffer } from 'etherspot';
+import { AccountTypes, ExchangeOffer } from '@etherspot/prime-sdk';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { ethers } from 'ethers';
 import debounce from 'debounce-promise';
 
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
-import { useEtherspot, useTransactionBuilder } from '../../hooks';
+import { useEtherspotPrime, useTransactionBuilder } from '../../hooks';
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
 import { addressesEqual, isValidAmount } from '../../utils/validation';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { Chain } from '../../utils/chain';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
+import { CombinedRoundedImages } from '../Image';
 import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import AccountSwitchInput from '../AccountSwitchInput';
@@ -106,7 +106,7 @@ const AssetSwapTransactionBlock = ({
     updateWalletBalances,
     getRatesByNativeChainId,
     getSdkForChainId,
-  } = useEtherspot();
+  } = useEtherspotPrime();
   const theme: Theme = useTheme();
 
   useEffect(() => {
@@ -123,7 +123,7 @@ const AssetSwapTransactionBlock = ({
 
     resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
-    if (!!multiCallData?.token) preselectAsset(multiCallData);
+    if (multiCallData?.token) preselectAsset(multiCallData);
   }, [selectedNetwork, multiCallData]);
 
   const updateAvailableOffers = useCallback<() => Promise<ExchangeOffer[] | undefined>>(
@@ -148,7 +148,7 @@ const AssetSwapTransactionBlock = ({
 
       try {
         // needed computed account address before calling getExchangeOffers
-        if (!accountAddress) await sdk.computeContractAccount();
+        if (!accountAddress) await sdk.getCounterFactualAddress();
 
         const offers = await sdk.getExchangeOffers({
           fromChainId: selectedNetwork.chainId,
@@ -168,25 +168,19 @@ const AssetSwapTransactionBlock = ({
   const getGasSwapUsdValue = async (offer: ExchangeOffer) => {
     if (!selectedNetwork?.chainId) return;
 
-    const sdkByChain = getSdkForChainId(selectedNetwork?.chainId);
+    const sdkByChain = await getSdkForChainId(selectedNetwork?.chainId);
 
     if (sdkByChain && selectedFromAsset && selectedAccountType === AccountTypes.Contract) {
       if (sdkByChain.state.account.type !== AccountTypes.Contract) {
-        await sdkByChain.computeContractAccount();
+        await sdkByChain.getCounterFactualAddress();
       }
 
-      sdkByChain.clearGatewayBatch();
+      sdkByChain.clearUserOpsFromBatch();
 
-      if (sdkByChain.state.account.state === AccountStates.UnDeployed) {
-        await sdkByChain.batchDeployAccount();
-      }
-
-      await Promise.all(
-        offer.transactions.map((transaction) => sdkByChain.batchExecuteAccountTransaction(transaction))
-      );
+      await Promise.all(offer.transactions.map((transaction) => sdkByChain.addUserOpsToBatch(transaction)));
 
       try {
-        const estimation = await sdkByChain.estimateGatewayBatch();
+        const estimation = await sdkByChain.estimate();
         return +ethers.utils.formatUnits(estimation.estimation.feeAmount) * exchangeRateByChainId;
       } catch (error) {
         //
@@ -211,7 +205,7 @@ const AssetSwapTransactionBlock = ({
 
         let minAmount = Number.MIN_SAFE_INTEGER;
 
-        let offerNotLifi = offers.find((offer) => mapOfferToOption(offer).title !== 'LiFi');
+        const offerNotLifi = offers.find((offer) => mapOfferToOption(offer).title !== 'LiFi');
 
         let bestOffer = offerNotLifi ? offerNotLifi : offers[0];
 

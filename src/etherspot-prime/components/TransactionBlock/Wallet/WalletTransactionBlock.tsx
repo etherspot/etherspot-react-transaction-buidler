@@ -2,21 +2,18 @@ import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { HiChevronDown, HiChevronUp } from 'react-icons/hi';
 
-import { useEtherspot, useTransactionBuilder } from '../../../hooks';
+import { useEtherspotPrime } from '../../../hooks';
 import { CHAIN_ID, Chain, supportedChains } from '../../../utils/chain';
 import { IAssetWithBalance } from '../../../providers/EtherspotContextProvider';
 import { RoundedImage } from '../../Image';
 import { Theme } from '../../../utils/theme';
 import { ITransactionBlock } from '../../../types/transactionBlock';
 import {
-  WalletAssetSearchIcon,
   WalletBridgeIcon,
   WalletDepositIcon,
   WalletSendIcon,
   WalletSwapIcon,
   WalletWithdrawIcon,
-  WalletDropdownUpIcon,
-  WalletDropdownDownIcon,
   WalletCloseSearchIcon,
 } from '../Icons';
 import { Text } from '../../Text';
@@ -55,7 +52,6 @@ export interface IWalletTransactionBlock {
 }
 
 const WalletTransactionBlock = ({
-  chain,
   availableTransactionBlocks,
   hasTransactionBlockAdded,
   addTransactionBlock,
@@ -69,14 +65,8 @@ const WalletTransactionBlock = ({
 
   const theme: Theme = useTheme();
 
-  const {
-    sdk,
-    providerAddress,
-    accountAddress,
-    getAssetsBalancesForChainId,
-    getSupportedAssetsWithBalancesForChainId,
-    getNftsForChainId,
-  } = useEtherspot();
+  const { sdk, providerAddress, accountAddress, getSupportedAssetsWithBalancesForChainId, getNftsForChainId } =
+    useEtherspotPrime();
 
   const [tab, setTab] = useState<ITabs>('tokens');
   const [fetchingAssets, setFetchingAssets] = useState(false);
@@ -100,7 +90,7 @@ const WalletTransactionBlock = ({
     if (fetchingAssets) return;
     setFetchingAssets(true);
 
-    let allAssets: IChainAssets[] = [];
+    const allAssets: IChainAssets[] = [];
     supportedChains.map(async (chain, i) => {
       try {
         // Disabling Avalanche for the moment as it triggers another sign modal
@@ -132,13 +122,13 @@ const WalletTransactionBlock = ({
     if (fetchingNfts) return;
     setFetchingNfts(true);
 
-    let allNfts: IChainNfts[] = [];
+    const allNfts: IChainNfts[] = [];
     supportedChains.map(async (chain, i) => {
       try {
         // Disabling Avalanche for the moment as it triggers another sign modal
         if (chain.chainId === CHAIN_ID.AVALANCHE) return;
 
-        let collections = await getNftsForChainId(chain.chainId);
+        const collections = await getNftsForChainId(chain.chainId);
 
         if (collections?.length) {
           const nfts: INft[] = [];
@@ -201,7 +191,7 @@ const WalletTransactionBlock = ({
   // Sort assets + nfts
   useEffect(() => {
     let assets: IAssetWithBalance[] = [];
-    let nfts: INft[] = [];
+    const nfts: INft[] = [];
 
     if (chainAssets) {
       chainAssets.map((chainAsset) => {
@@ -279,8 +269,8 @@ const WalletTransactionBlock = ({
 
     if (!providerAddress || !accountAddress) return;
 
-    let newBlock = { ...block };
-    let values: ISendAssetTransactionBlockValues = {};
+    const newBlock = { ...block };
+    const values: ISendAssetTransactionBlockValues = {};
     values.fromAddress = providerAddress;
     values.receiverAddress = accountAddress;
     values.isFromEtherspotWallet = false;
@@ -295,8 +285,8 @@ const WalletTransactionBlock = ({
 
     if (!providerAddress || !accountAddress) return;
 
-    let newBlock = { ...block };
-    let values: ISendAssetTransactionBlockValues = {};
+    const newBlock = { ...block };
+    const values: ISendAssetTransactionBlockValues = {};
     values.fromAddress = accountAddress;
     values.isFromEtherspotWallet = true;
 
@@ -310,8 +300,8 @@ const WalletTransactionBlock = ({
 
     if (!providerAddress || !accountAddress) return;
 
-    let newBlock = { ...block };
-    let values: ISendAssetTransactionBlockValues = {};
+    const newBlock = { ...block };
+    const values: ISendAssetTransactionBlockValues = {};
     values.fromAddress = accountAddress;
     values.receiverAddress = providerAddress;
     values.isFromEtherspotWallet = true;

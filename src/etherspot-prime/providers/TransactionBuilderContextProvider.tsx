@@ -1,8 +1,8 @@
-import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { HiCheck } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { Sdk, sleep, TokenListToken } from 'etherspot';
+import { PrimeSdk as Sdk, sleep, TokenListToken } from '@etherspot/prime-sdk';
 import { BigNumber, utils, ethers } from 'ethers';
 
 // Types
@@ -18,7 +18,7 @@ import {
 import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
 
 import { PrimaryButton, SecondaryButton } from '../components/Button';
-import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
+import { useEtherspotPrime, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
 import TransactionBlock from '../components/TransactionBlock';
 import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
 import {
@@ -31,9 +31,7 @@ import {
   submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
   getFirstCrossChainActionByStatus,
-  honeyswapLP,
   isERC20ApprovalTransactionData,
-  getTransactionStatus,
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
@@ -153,10 +151,10 @@ const CheckmarkIcon = styled(HiCheck)`
   margin-top: -3px;
 `;
 
-const ConnectButton = styled(SecondaryButton)`
-  font-size: 14px;
-  margin-left: 5px;
-`;
+// const ConnectButton = styled(SecondaryButton)`
+//   font-size: 14px;
+//   margin-left: 5px;
+// `;
 
 const AddTransactionButton = styled(SecondaryButton)`
   text-align: center;
@@ -341,7 +339,7 @@ const addIdToDefaultTransactionBlock = (transactionBlock: IDefaultTransactionBlo
   id: getTimeBasedUniqueId(),
 });
 
-const TransactionBuilderContextProvider = ({
+const TransactionPrimeBuilderContextProvider = ({
   defaultTransactionBlocks,
   hiddenTransactionBlockTypes,
   hideAddTransactionButton,
@@ -381,7 +379,7 @@ const TransactionBuilderContextProvider = ({
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
   const [isTransactionDone, setIsTransactionDone] = useState<boolean>(false);
-  let multiCallList: string[] = [];
+  const multiCallList: string[] = [];
 
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedAddressInterval, setCopiedAddressInterval] = useState<number | null>(null);
@@ -392,14 +390,12 @@ const TransactionBuilderContextProvider = ({
 
   const theme: Theme = useTheme();
 
-  const { environment } = useEtherspot();
-
   useEffect(() => {
     setShowWalletBlock(false);
     setTimeout(() => {
       if (defaultShowWallet) setShowWalletBlock(true);
     }, 2000);
-  }, [environment]);
+  }, []);
 
   // Check for dynamic changes from parent
   useEffect(() => {
@@ -417,19 +413,10 @@ const TransactionBuilderContextProvider = ({
     if (!copiedAddress && !copiedAddressInterval) setCopiedAddressInterval(2000);
   };
 
-  const {
-    accountAddress,
-    connect,
-    isConnecting,
-    sdk,
-    providerAddress,
-    getSdkForChainId,
-    web3Provider,
-    logout,
-    smartWalletOnly,
-  } = useEtherspot();
+  const { accountAddress, connect, isConnecting, sdk, providerAddress, getSdkForChainId, web3Provider, logout } =
+    useEtherspotPrime();
 
-  const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
+  const { showAlertModal } = useTransactionBuilderModal();
   const {
     dispatchCrossChainActions,
     processingCrossChainActionIds,
@@ -487,14 +474,14 @@ const TransactionBuilderContextProvider = ({
       await connect();
     }
 
-    let validationErrors = await onValidate();
+    const validationErrors = await onValidate();
 
     let newCrossChainActions: ICrossChainAction[] = [];
     let errorMessage;
 
     if (Object.keys(validationErrors).length === 0) {
       // keep blocks in order
-      let multiCallList: string[] = [];
+      const multiCallList: string[] = [];
       for (const transactionBlock of transactionBlocks) {
         const result = await buildCrossChainAction(sdk, transactionBlock);
 
@@ -517,22 +504,22 @@ const TransactionBuilderContextProvider = ({
         if (!!transactionBlock.multiCallData && !multiCallList.includes(transactionBlock.multiCallData.id)) {
           // Batch multiCallData
           multiCallList.push(transactionBlock.multiCallData.id);
-          let multiCallBlocks = transactionBlocks.filter(
+          const multiCallBlocks = transactionBlocks.filter(
             (search) => search?.multiCallData?.id === transactionBlock.multiCallData?.id
           );
-          let allActionList: ICrossChainAction[] = [];
+          const allActionList: ICrossChainAction[] = [];
           for (const block of multiCallBlocks) {
-            let result = await buildCrossChainAction(sdk, block);
-            if (!!result?.crossChainAction) allActionList.push(result.crossChainAction);
+            const result = await buildCrossChainAction(sdk, block);
+            if (result?.crossChainAction) allActionList.push(result.crossChainAction);
           }
           if (foundChainIndex > -1 && !!allActionList.length) {
             // Append other calls to batch (should not happen)
             const chainTx = newCrossChainActions[foundChainIndex];
             chainTx.batchTransactions = [...allActionList];
             newCrossChainActions[foundChainIndex] = chainTx;
-          } else if (!!allActionList.length) {
+          } else if (allActionList.length) {
             // Create new CrossChainAction with multicalls batched
-            let chainTx: ICrossChainAction = {
+            const chainTx: ICrossChainAction = {
               ...allActionList[0],
               batchTransactions: allActionList,
             };
@@ -577,9 +564,10 @@ const TransactionBuilderContextProvider = ({
           return { ...crossChainAction, isEstimating: true };
         })
       );
+      const primeSdk = await getSdkForChainId(crossChainAction.chainId);
 
       const estimated = await estimateCrossChainAction(
-        getSdkForChainId(crossChainAction.chainId),
+        primeSdk,
         web3Provider,
         crossChainAction,
         providerAddress,
@@ -653,14 +641,14 @@ const TransactionBuilderContextProvider = ({
 
       result = crossChainAction.useWeb3Provider
         ? await submitWeb3ProviderTransactions(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            (await getSdkForChainId(crossChainAction.chainId)) as Sdk,
             web3Provider,
             crossChainAction.transactions,
             crossChainAction.chainId,
             providerAddress
           )
         : await submitEtherspotAndWaitForTransactionHash(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            (await getSdkForChainId(crossChainAction.chainId)) as Sdk,
             crossChainAction.transactions,
             crossChainAction.gasTokenAddress ?? undefined
           );
@@ -686,7 +674,7 @@ const TransactionBuilderContextProvider = ({
       while (flag) {
         try {
           const status = await getCrossChainStatusByHash(
-            getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+            (await getSdkForChainId(CHAIN_ID.POLYGON)) as Sdk,
             crossChainAction.chainId,
             CHAIN_ID.POLYGON,
             result.transactionHash,
@@ -719,7 +707,7 @@ const TransactionBuilderContextProvider = ({
       }
 
       const estimateGas = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
+        await getSdkForChainId(CHAIN_ID.POLYGON),
         web3Provider,
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
@@ -729,7 +717,7 @@ const TransactionBuilderContextProvider = ({
       const stakingTxns = await klimaDaoStaking(
         transactionBlocks[0].type === 'KLIMA_STAKE' ? transactionBlocks[0].values?.routeToKlima : null,
         transactionBlocks[0].type === 'KLIMA_STAKE' ? transactionBlocks[0].values?.receiverAddress : '',
-        getSdkForChainId(CHAIN_ID.POLYGON),
+        await getSdkForChainId(CHAIN_ID.POLYGON),
         false,
         BigNumber.from(crossChainAction.receiveAmount)
           .sub(utils.parseUnits('0.02', 6))
@@ -744,7 +732,7 @@ const TransactionBuilderContextProvider = ({
       }
 
       const estimated = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
+        await getSdkForChainId(CHAIN_ID.POLYGON),
         web3Provider,
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
@@ -763,7 +751,7 @@ const TransactionBuilderContextProvider = ({
       });
 
       result = await submitEtherspotAndWaitForTransactionHash(
-        getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+        (await getSdkForChainId(CHAIN_ID.POLYGON)) as Sdk,
         crossChainAction.transactions,
         POLYGON_USDC_CONTRACT_ADDRESS
       );
@@ -781,7 +769,7 @@ const TransactionBuilderContextProvider = ({
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
     } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-      const sdkForXdai = getSdkForChainId(CHAIN_ID.XDAI);
+      const sdkForXdai = await getSdkForChainId(CHAIN_ID.XDAI);
 
       if (!sdkForXdai) return;
 
@@ -838,7 +826,7 @@ const TransactionBuilderContextProvider = ({
         }
       } else {
         result = await submitEtherspotAndWaitForTransactionHash(
-          getSdkForChainId(crossChainAction.chainId) as Sdk,
+          (await getSdkForChainId(crossChainAction.chainId)) as Sdk,
           crossChainAction.transactions,
           crossChainAction.gasTokenAddress ?? undefined
         );
@@ -902,7 +890,7 @@ const TransactionBuilderContextProvider = ({
 
       if (crossChainAction.destinationCrossChainAction.length) {
         const estimateGas = await estimateCrossChainAction(
-          getSdkForChainId(CHAIN_ID.XDAI),
+          await getSdkForChainId(CHAIN_ID.XDAI),
           web3Provider,
           crossChainAction.destinationCrossChainAction[0],
           providerAddress,
@@ -921,7 +909,7 @@ const TransactionBuilderContextProvider = ({
         });
 
         result = await submitEtherspotAndWaitForTransactionHash(
-          getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
+          (await getSdkForChainId(CHAIN_ID.XDAI)) as Sdk,
           crossChainAction.transactions,
           GNOSIS_USDC_CONTRACT_ADDRESS
         );
@@ -1134,14 +1122,13 @@ const TransactionBuilderContextProvider = ({
   const onBuyClick = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.preventDefault();
 
-    const maticSdk = getSdkForChainId(CHAIN_ID.POLYGON);
+    const maticSdk = await getSdkForChainId(CHAIN_ID.POLYGON);
 
     if (!accountAddress || !maticSdk) return;
 
     let account = await maticSdk.getAccount();
     if (!account || account.address !== accountAddress) {
       try {
-        await maticSdk.computeContractAccount();
         account = await maticSdk.getAccount();
       } catch {
         showAlertModal('There was an error fetching the account, please try again later.');
@@ -1283,14 +1270,14 @@ const TransactionBuilderContextProvider = ({
           !crossChainActionsInProcessing?.length && (
             <>
               {(editingTransactionBlock ? [editingTransactionBlock] : transactionBlocks).map((transactionBlock, i) => {
-                let disabled = false;
+                const disabled = false;
                 let multiCallBlocks: ITransactionBlock[] = [];
 
-                if (!!transactionBlock?.multiCallData) {
-                  let multiCallId = transactionBlock?.multiCallData?.id;
+                if (transactionBlock?.multiCallData) {
+                  const multiCallId = transactionBlock?.multiCallData?.id;
 
                   if (!!multiCallId && multiCallList.includes(multiCallId)) return null;
-                  else if (!!multiCallId) multiCallList.push(multiCallId);
+                  else if (multiCallId) multiCallList.push(multiCallId);
 
                   multiCallBlocks =
                     transactionBlocks.filter(
@@ -1322,7 +1309,7 @@ const TransactionBuilderContextProvider = ({
                               let newMultiCallData: IMultiCallData | null = null;
                               let multiCallBlock: ITransactionBlock;
                               let mutatedBlock: ITransactionBlock;
-                              if (!!multiCallBlocks?.length) {
+                              if (multiCallBlocks?.length) {
                                 multiCallBlock = multiCallBlocks[multiCallBlocks.length - 1];
                                 if (!multiCallBlock.multiCallData) {
                                   return;
@@ -1350,7 +1337,7 @@ const TransactionBuilderContextProvider = ({
                                   if (values && values.chain && values.selectedAsset && values.amount) {
                                     chain = values.chain;
                                     token = values.selectedAsset;
-                                    let sumOfSwaps = multiCallBlocks
+                                    const sumOfSwaps = multiCallBlocks
                                       .filter(
                                         (block) =>
                                           block.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
@@ -1367,7 +1354,7 @@ const TransactionBuilderContextProvider = ({
                                         }
                                         return sum;
                                       }, 0);
-                                    let sumOfSends = multiCallBlocks
+                                    const sumOfSends = multiCallBlocks
                                       .filter(
                                         (block) =>
                                           block.type === TRANSACTION_BLOCK_TYPE.SEND_ASSET &&
@@ -1454,9 +1441,9 @@ const TransactionBuilderContextProvider = ({
                               };
 
                               setTransactionBlocks((current) => {
-                                let block = current.find((item) => item.id === multiCallBlock.id);
-                                if (!!block) {
-                                  let index = current.indexOf(block);
+                                const block = current.find((item) => item.id === multiCallBlock.id);
+                                if (block) {
+                                  const index = current.indexOf(block);
                                   if (index > -1) current[index] = mutatedBlock;
                                 }
                                 return [...current, newTransactionBlock];
@@ -1477,7 +1464,7 @@ const TransactionBuilderContextProvider = ({
                     highlight={!!multiCallBlocks?.length}
                     transparentBackground={removeTransactionBlockContainer}
                   >
-                    {!!multiCallBlocks?.length ? (
+                    {multiCallBlocks?.length ? (
                       multiCallBlocks?.map((multiCallBlock, j) => {
                         return (
                           <Card
@@ -1511,7 +1498,7 @@ const TransactionBuilderContextProvider = ({
                                   disabled={!!disabled || !isBlockValid}
                                   onClick={async () => {
                                     // Add new transaction block to the multicall block list
-                                    let validationErrors = await onValidate();
+                                    const validationErrors = await onValidate();
                                     if (!!multiCallBlock.multiCallData && !validationErrors[multiCallBlock.id]) {
                                       setShowMulticallOptions(transactionBlock.id);
                                     }
@@ -1556,7 +1543,7 @@ const TransactionBuilderContextProvider = ({
                               disabled={!!disabled || !isBlockValid}
                               onClick={async () => {
                                 // Add new transaction block to the multicall block list
-                                let validationErrors = await onValidate();
+                                const validationErrors = await onValidate();
                                 if (!validationErrors[transactionBlock.id]) {
                                   setShowMulticallOptions(transactionBlock.id);
                                 }
@@ -1571,7 +1558,7 @@ const TransactionBuilderContextProvider = ({
                       </Card>
                     )}
                     {showMulticallOptions === transactionBlock.id &&
-                      multicallOptions(!!multiCallBlocks?.length ? multiCallBlocks : [transactionBlock])}
+                      multicallOptions(multiCallBlocks?.length ? multiCallBlocks : [transactionBlock])}
                   </TransactionBlocksWrapper>
                 );
               })}
@@ -1665,11 +1652,11 @@ const TransactionBuilderContextProvider = ({
           <>
             {crossChainActions.map((crossChainAction) => {
               let multiCallBlocks: ICrossChainAction[] = [];
-              if (!!crossChainAction?.multiCallData) {
-                let multiCallId = crossChainAction?.multiCallData?.id;
+              if (crossChainAction?.multiCallData) {
+                const multiCallId = crossChainAction?.multiCallData?.id;
 
                 if (!!multiCallId && multiCallList.includes(multiCallId)) return null;
-                else if (!!multiCallId) multiCallList.push(multiCallId);
+                else if (multiCallId) multiCallList.push(multiCallId);
 
                 multiCallBlocks =
                   crossChainActions.filter((item) => item?.multiCallData?.id === crossChainAction?.multiCallData?.id) ||
@@ -1714,7 +1701,7 @@ const TransactionBuilderContextProvider = ({
                             providerAddress
                           )
                         : await submitEtherspotTransactionsBatch(
-                            getSdkForChainId(crossChainAction.chainId) as Sdk,
+                            (await getSdkForChainId(crossChainAction.chainId)) as Sdk,
                             crossChainAction.transactions,
                             crossChainAction.gasTokenAddress ?? undefined
                           );
@@ -1801,4 +1788,4 @@ const TransactionBuilderContextProvider = ({
   );
 };
 
-export default TransactionBuilderContextProvider;
+export default TransactionPrimeBuilderContextProvider;

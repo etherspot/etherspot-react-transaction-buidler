@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 
 // components
 import Text from '../Text/Text';
 
 // hooks
-import { useEtherspot } from '../../hooks';
+import { useEtherspotPrime } from '../../hooks';
 
 // icons
 import { FcCheckmark } from 'react-icons/fc';
@@ -14,20 +14,20 @@ import { IoCopyOutline } from 'react-icons/io5';
 // utils
 import { Theme } from '../../utils/theme';
 import { copyToClipboard } from '../../utils/common';
-import { CHAIN_ID } from '../../utils/chain';
+// import { CHAIN_ID } from '../../utils/chain';
 
 // constants
 import { OPENLOGIN_STORE, WAGMI_STORE } from '../../constants/storageConstants';
-import { ENSNode } from 'etherspot';
+// import { ENSNode } from '@etherspot/prime-sdk';
 import MenuModalWrapper from '../Menu/MenuModalWrapper';
 
 const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
-  const { accountAddress, providerAddress, getEnsNode } = useEtherspot();
+  const { accountAddress, providerAddress } = useEtherspotPrime();
 
   const theme: Theme = useTheme();
 
   const [copiedAddress, setCopiedAddress] = useState<string>('');
-  const [ensName, setEnsName] = useState<string | undefined>(undefined);
+  // const [ensName, setEnsName] = useState<string | undefined>(undefined);
 
   let email;
   let isWeb3Login = false;
@@ -49,17 +49,17 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
     setTimeout(() => setCopiedAddress(''), 10000);
   };
 
-  useEffect(() => {
-    const getAccount = async () => {
-      try {
-        const account: ENSNode = await getEnsNode(CHAIN_ID.ETHEREUM_MAINNET, accountAddress, false);
-        setEnsName(account.name);
-      } catch (err) {
-        //
-      }
-    };
-    getAccount();
-  }, []);
+  // useEffect(() => {
+  //   const getAccount = async () => {
+  //     try {
+  //       const account: ENSNode = await getEnsNode(CHAIN_ID.ETHEREUM_MAINNET, accountAddress, false);
+  //       setEnsName(account.name);
+  //     } catch (err) {
+  //       //
+  //     }
+  //   };
+  //   getAccount();
+  // }, []);
 
   return (
     <MenuModalWrapper title="Profile" onBackButtonClick={onBackButtonClick}>
@@ -112,10 +112,10 @@ const UserProfile = ({ onBackButtonClick }: { onBackButtonClick: () => void }) =
           )}
         </Value>
       </Wrapper>
-      <Wrapper>
+      {/* <Wrapper>
         <FieldHeader color={theme?.color?.text?.settingsModalSubHeader}>ENS</FieldHeader>
         <Value>{ensName ?? 'Not found'}</Value>
-      </Wrapper>
+      </Wrapper> */}
     </MenuModalWrapper>
   );
 };

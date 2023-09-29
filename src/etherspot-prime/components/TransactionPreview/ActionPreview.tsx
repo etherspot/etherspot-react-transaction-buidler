@@ -3,8 +3,6 @@ import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 import { HiOutlinePencilAlt } from 'react-icons/hi';
 import { BsClockHistory, BiCheck, IoClose, FaSignature } from 'react-icons/all';
-import { CgSandClock } from 'react-icons/cg';
-import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
 // Components
 import Card from '../Card';
@@ -25,13 +23,19 @@ import { CROSS_CHAIN_ACTION_STATUS } from '../../constants/transactionDispatcher
 import moment from 'moment';
 
 // Hooks
-import { useEtherspot } from '../../hooks';
+import { useEtherspotPrime } from '../../hooks';
 
 // Types
-import { AssetBridgeActionPreview, AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
+import {
+  AssetBridgeActionPreview,
+  AssetSwapActionPreview,
+  ICrossChainAction,
+  SendAssetActionPreview,
+} from '../../types/crossChainAction';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
+import { CHAIN_ID_TO_NETWORK_NAME } from '@etherspot/prime-sdk/dist/sdk/network/constants';
 
 const TransactionAction = styled.div<{ border?: boolean }>`
   position: relative;
@@ -173,26 +177,26 @@ const Row = styled.div.attrs((props: { center: boolean }) => props)`
   ${({ center }) => center && 'align-items: center;'};
 `;
 
-const PrepareTransaction = styled.div`
-  position: relative;
-  margin-bottom: 18px;
-  color: ${({ theme }) => theme.color.text.selectInput};
-  border-radius: 8px;
-  padding: 8px 14px;
-  word-break: break-all;
-  display: flex;
-`;
+// const PrepareTransaction = styled.div`
+//   position: relative;
+//   margin-bottom: 18px;
+//   color: ${({ theme }) => theme.color.text.selectInput};
+//   border-radius: 8px;
+//   padding: 8px 14px;
+//   word-break: break-all;
+//   display: flex;
+// `;
 
-const PrepareTransactionWrapper = styled.div`
-  position: relative;
-  margin-bottom: 18px;
-  background: ${({ theme }) => theme.color.background.selectInput};
-  color: ${({ theme }) => theme.color.text.selectInput};
-  border-radius: 8px;
-  padding: 8px 14px;
-  word-break: break-all;
-  width: 100%;
-`;
+// const PrepareTransactionWrapper = styled.div`
+//   position: relative;
+//   margin-bottom: 18px;
+//   background: ${({ theme }) => theme.color.background.selectInput};
+//   color: ${({ theme }) => theme.color.text.selectInput};
+//   border-radius: 8px;
+//   padding: 8px 14px;
+//   word-break: break-all;
+//   width: 100%;
+// `;
 
 const ColoredText = styled.div`
   color: ${({ theme }) => theme.color.text.reviewLabel};
@@ -226,7 +230,7 @@ const TransactionStatus = ({
   web3ProviderChainId?: number;
 }) => {
   const theme: Theme = useTheme();
-  const { getSdkForChainId, web3Provider } = useEtherspot();
+  const { getSdkForChainId, web3Provider } = useEtherspotPrime();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [prevStatus, setPrevStatus] = useState<{ [id: string]: string }>({});
@@ -272,7 +276,7 @@ const TransactionStatus = ({
       return;
     }
 
-    const sdk = getSdkForChainId(chainId);
+    const sdk = await getSdkForChainId(chainId);
     if (!transactionsBatchHash || !sdk) {
       alert('The transaction hash is not yet available. Please try again later.');
       setIsGettingExplorerLink(false);
@@ -281,9 +285,7 @@ const TransactionStatus = ({
 
     let transactionHash = '';
     try {
-      const submittedBatch = await sdk.getGatewaySubmittedBatch({
-        hash: transactionsBatchHash,
-      });
+      const submittedBatch = await sdk.getUserOpReceipt(transactionsBatchHash);
       const { transaction } = submittedBatch;
       transactionHash = transaction?.hash ?? '';
     } catch (e) {
@@ -296,7 +298,7 @@ const TransactionStatus = ({
 
   useEffect(() => {
     if (crossChainAction.transactions.every((transaction) => !!transaction.finishTimestamp)) return;
-    let intervalId = setInterval(() => setSecondsAfter((current) => current + 1), 1000);
+    const intervalId = setInterval(() => setSecondsAfter((current) => current + 1), 1000);
     return () => {
       if (!intervalId) return;
       clearInterval(intervalId);
@@ -506,7 +508,7 @@ const ActionPreview = ({
   hideActionPreviewHeader = false,
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
-  const { accountAddress, providerAddress, web3Provider } = useEtherspot();
+  const { accountAddress, providerAddress, web3Provider } = useEtherspotPrime();
   const theme: Theme = useTheme();
 
   const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
@@ -692,13 +694,13 @@ const ActionPreview = ({
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         <TransactionStatus
           crossChainAction={crossChainAction}
-          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
         />
         {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
           CROSS_CHAIN_ACTION_STATUS.CONFIRMED && (
           <TransactionStatus
             crossChainAction={crossChainAction.destinationCrossChainAction[0]}
-            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
           />
         )}
       </Card>
@@ -718,8 +720,8 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
-    let gasCost = route?.gasCostUSD;
-    let [firstSteps] = route.steps;
+    const gasCost = route?.gasCostUSD;
+    const [firstSteps] = route.steps;
     const {
       estimate: { feeCosts },
     } = firstSteps;
@@ -727,7 +729,7 @@ const ActionPreview = ({
     feeCosts?.forEach(({ amountUSD = 0 }) => {
       totalFees += +amountUSD;
     });
-  
+
     return (
       <Card
         title="Asset bridge"
@@ -803,7 +805,7 @@ const ActionPreview = ({
         {showStatus && (
           <TransactionStatus
             crossChainAction={crossChainAction}
-            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
             web3ProviderChainId={web3Provider?.web3?.networkVersion && Number(web3Provider?.web3?.networkVersion)}
           />
         )}
@@ -1124,7 +1126,7 @@ const ActionPreview = ({
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         <TransactionStatus
           crossChainAction={crossChainAction}
-          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
           web3ProviderChainId={web3Provider?.web3?.networkVersion && Number(web3Provider?.web3?.networkVersion)}
         />
       </Card>
@@ -1161,7 +1163,7 @@ const ActionPreview = ({
         {showStatus && (
           <TransactionStatus
             crossChainAction={crossChainAction}
-            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
           />
         )}
       </Card>
@@ -1247,7 +1249,7 @@ const ActionPreview = ({
         {showStatus && (
           <TransactionStatus
             crossChainAction={crossChainAction}
-            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
             web3ProviderChainId={web3Provider?.web3?.networkVersion && Number(web3Provider?.web3?.networkVersion)}
           />
         )}
@@ -1284,7 +1286,7 @@ const ActionPreview = ({
         totalFees += +amountUSD;
       });
     }
-    
+
     return (
       <Card
         title={cardTitle}
@@ -1365,29 +1367,19 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-    const {
-      fromAsset,
-      fromChainId,
-      route,
-      token1,
-      token2,
-      offer1,
-      offer2,
-      tokenOneAmount,
-      tokenTwoAmount,
-    } = preview;
+    const { fromAsset, fromChainId, route, token1, token2, offer1, offer2, tokenOneAmount, tokenTwoAmount } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
-    const toNetwork = supportedChains[1];
+    // const toNetwork = supportedChains[1];
 
     const fromChainTitle = fromNetwork?.title ?? CHAIN_ID_TO_NETWORK_NAME[fromChainId].toUpperCase();
 
-    const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
+    // const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
     let gasCost;
     let totalFees = 0;
-    if (!!route) {
+    if (route) {
       gasCost = route?.gasCostUSD;
       const [firstSteps] = route.steps;
       const {
@@ -1401,7 +1393,7 @@ const ActionPreview = ({
 
     return (
       <Card
-        title={!hideActionPreviewHeader ? "Honeyswap Liquidity Pool" : undefined}
+        title={!hideActionPreviewHeader ? 'Honeyswap Liquidity Pool' : undefined}
         onCloseButtonClick={!hideActionPreviewHeader ? onRemove : () => {}}
         showCloseButton={!hideActionPreviewHeader && showCloseButton}
         additionalTopButtons={additionalTopButtons}
@@ -1442,16 +1434,16 @@ const ActionPreview = ({
         {showGasAssetSelect && <GasTokenSelect crossChainAction={crossChainAction} />}
         <TransactionStatus
           crossChainAction={crossChainAction}
-          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+          setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
         />
-        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status === CROSS_CHAIN_ACTION_STATUS.CONFIRMED
-          && !!crossChainAction.destinationCrossChainAction.length
-          && (
-          <TransactionStatus
-            crossChainAction={crossChainAction.destinationCrossChainAction[0]}
-            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
-          />
-        )}
+        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
+          CROSS_CHAIN_ACTION_STATUS.CONFIRMED &&
+          !!crossChainAction.destinationCrossChainAction.length && (
+            <TransactionStatus
+              crossChainAction={crossChainAction.destinationCrossChainAction[0]}
+              setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : () => {}}
+            />
+          )}
       </Card>
     );
   }
