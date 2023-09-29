@@ -1,27 +1,32 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
-  AccountTypes,
-  EnvNames as EtherspotEnvNames,
-  isWalletProvider,
-  Sdk as EtherspotSdk,
   SessionStorage,
-  WalletProviderLike,
-  Web3WalletProvider,
-  RateData,
   NftCollection,
+  isWalletProvider,
   WalletConnectWalletProvider,
-  ENSNode,
-} from 'etherspot';
-import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
+  Web3WalletProvider,
+} from '@etherspot/prime-sdk';
+import { ENSNode, WalletProviderLike } from 'etherspot';
+
 import { BigNumber, ethers } from 'ethers';
 
 import { EtherspotContext } from '../contexts';
-import { Chain, CHAIN_ID, MAINNET_CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../utils/chain';
+import { CHAIN_ID, Chain, nativeAssetPerChainId, supportedChains } from '../utils/chain';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
-import { addressesEqual, isCaseInsensitiveMatch, isNativeAssetAddress, isZeroAddress } from '../utils/validation';
-import { sessionStorageInstance } from '../services/etherspot';
+import { isCaseInsensitiveMatch, isNativeAssetAddress } from '../utils/validation';
 import { sumAssetsBalanceWorth } from '../utils/common';
 import { Theme } from '../utils/theme';
+import {
+  useEtherspot,
+  useEtherspotAssets,
+  useEtherspotBalances,
+  useEtherspotNfts,
+  useEtherspotPrices,
+  useEtherspotTransactions,
+  useEtherspotUtils,
+  useWalletAddress,
+} from '@etherspot/transaction-kit';
 
 export type IAsset = TokenListToken;
 
@@ -41,49 +46,46 @@ export interface IBalanceByChain {
   chain: number;
 }
 
-let sdkPerChain: { [chainId: number]: EtherspotSdk } = {};
-let supportedAssetsPerChainId: { [chainId: number]: IAsset[] } = {};
-let gasTokenAddressesPerChainId: { [chainId: number]: string[] } = {};
+const supportedAssetsPerChainId: { [chainId: number]: IAsset[] } = {};
+// const gasTokenAddressesPerChainId: { [chainId: number]: string[] } = {};
 
 interface IWalletConnectProvider<T> {
   isWalletConnect?: boolean;
 }
 
-const EtherspotContextProvider = ({
+const EtherspotPrimeContextProvider = ({
   children,
   provider: defaultProvider,
-  chainId: defaultChainId = 1,
-  etherspotSessionStorage,
   onLogout,
   smartWalletOnly = false,
   changeTheme,
 }: {
   children: ReactNode;
   provider: WalletProviderLike;
-  changeTheme: (theme: Theme) => void
+  changeTheme: (theme: Theme) => void;
   chainId?: number;
   etherspotSessionStorage?: SessionStorage;
   onLogout?: () => void;
   smartWalletOnly?: boolean;
 }) => {
   const context = useContext(EtherspotContext);
+  const { providerWalletAddress: providerAddress, connect } = useEtherspot();
+  const { getAssets } = useEtherspotAssets();
+  const { getAccountBalances } = useEtherspotBalances();
+  const { getPrices, getPrice } = useEtherspotPrices();
+  const { isZeroAddress, addressesEqual } = useEtherspotUtils();
+  const { getAccountNfts } = useEtherspotNfts();
+  const { chainId, getEtherspotPrimeSdkForChainId: getSdkForChainId } = useEtherspotTransactions();
+  const accountAddress = useWalletAddress('etherspot-prime', chainId);
 
   if (context !== null) {
-    throw new Error('<EtherspotContextProvider /> has already been declared.');
+    throw new Error('<EtherspotPrimeContextProvider /> has already been declared.');
   }
 
-  const sessionStorage = etherspotSessionStorage ?? sessionStorageInstance;
-
-  const [accountAddress, setAccountAddress] = useState<string | null>(null);
-  const [providerAddress, setProviderAddress] = useState<string | null>(null);
-  const [chainId, setChainId] = useState<number>(defaultChainId);
   const [provider, setProvider] = useState<WalletProviderLike | Web3WalletProvider | null>(null);
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
-  const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
   const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
   const [keyBasedWalletBalanceByChain, setKeyBasedWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
-  const [environment, setEnvironment] = useState<EtherspotEnvNames>(EtherspotEnvNames.MainNets);
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -121,131 +123,20 @@ const EtherspotContextProvider = ({
     setMappedProvider();
   }, [setMappedProvider]);
 
-  const getSdkForChainId = useCallback(
-    (sdkChainId: number, forceNewInstance: boolean = false) => {
-      if (sdkPerChain[sdkChainId] && !forceNewInstance) return sdkPerChain[sdkChainId];
-
-      if (!provider) return null;
-
-      const networkName = CHAIN_ID_TO_NETWORK_NAME[sdkChainId];
-      const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
-      const envName = MainnetIDs.includes(sdkChainId) ? EtherspotEnvNames.MainNets : EtherspotEnvNames.TestNets;
-
-      if (!networkName) return null;
-
-      const sdkForChain = new EtherspotSdk(provider, {
-        networkName,
-        env: envName,
-        sessionStorage,
-        projectKey: '__ETHERSPOT_PROJECT_KEY__' || undefined,
-        omitWalletProviderNetworkCheck: true,
-      });
-
-      sdkPerChain = {
-        ...sdkPerChain,
-        [sdkChainId]: sdkForChain,
-      };
-
-      return sdkForChain;
-    },
-    [provider]
-  );
-
   const sdk = useMemo(() => {
     if (!chainId) return null;
-
     return getSdkForChainId(chainId);
-  }, [getSdkForChainId, chainId, environment]);
-
-  const connect = useCallback(async () => {
-    if (!sdk || isConnecting) return;
-    setIsConnecting(true);
-
-    try {
-      const computed = await sdk.computeContractAccount({ sync: true });
-      setIsConnecting(false);
-      return computed?.address;
-    } catch (e) {
-      //
-    }
-
-    setIsConnecting(false);
-  }, [sdk, isConnecting]);
-
-  useEffect(() => {
-    if (!sdk) return;
-
-    try {
-      sdk.state$.subscribe(async (sdkState) => {
-        if (sdkState?.account?.type === AccountTypes.Key) {
-          setProviderAddress(sdkState.account.address);
-          const sessionStorage = etherspotSessionStorage ?? sessionStorageInstance;
-
-          try {
-            const session = await sessionStorage.getSession(sdkState.account.address);
-            if (isRestoringSession || !session || +new Date(session.expireAt) <= +new Date()) return;
-            setIsRestoringSession(true);
-            await sdk.computeContractAccount({ sync: true });
-          } catch (e) {
-            //
-          }
-
-          setIsRestoringSession(false);
-
-          return;
-        }
-        if (sdkState?.account?.type === AccountTypes.Contract) {
-          setAccountAddress(sdkState.account.address);
-          return;
-        }
-      });
-    } catch (e) {
-      //
-    }
-
-    return () => {
-      try {
-        if (sdk?.state$?.closed) return;
-        // TODO: check why subscription in the above cannot be resubscribed
-        // sdk.state$.unsubscribe();
-      } catch (e) {
-        //
-      }
-    };
-  }, [sdk, isRestoringSession]);
+  }, [getSdkForChainId, chainId]);
 
   const getSupportedAssetsForChainId = useCallback(
     async (assetsChainId: number, force: boolean = false) => {
-      const sdk = assetsChainId !== CHAIN_ID.AVALANCHE && getSdkForChainId(assetsChainId); // Preload SDK if not Avalanche
+      const sdk = await getSdkForChainId(assetsChainId); // Preload SDK if not Avalanche
 
       if (!sdk) return [];
 
       if (!force && supportedAssetsPerChainId[assetsChainId]?.length) return supportedAssetsPerChainId[assetsChainId];
 
-      let assets: TokenListToken[] = [];
-
-      const chainsToUseNewAssets = [
-        CHAIN_ID.OPTIMISM,
-        CHAIN_ID.ARBITRUM,
-        CHAIN_ID.XDAI,
-        CHAIN_ID.BINANCE,
-        CHAIN_ID.ETHEREUM_MAINNET,
-        CHAIN_ID.POLYGON,
-        CHAIN_ID.OKTC,
-      ];
-
-      const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
-      try {
-        if (MainnetIDs.includes(assetsChainId)) {
-          assets = await sdk.getTokenListTokens({
-            name: chainsToUseNewAssets.includes(assetsChainId) ? 'EtherspotPopularTokens' : 'PillarTokens',
-          });
-        } else {
-          assets = await sdk.getTokenListTokens();
-        }
-      } catch (e) {
-        //
-      }
+      const assets = await getAssets();
 
       const nativeAsset = nativeAssetPerChainId[assetsChainId];
       const hasNativeAsset = assets.some(
@@ -263,11 +154,14 @@ const EtherspotContextProvider = ({
     async (
       assets: TokenListToken[],
       assetsChainId: number,
-      balancesForAddress: string | null = accountAddress,
+      balancesForAddress: string | undefined = accountAddress,
       recompute: boolean = true
     ) => {
-      if (!sdk) return [];
+      const primeSdk = await sdk;
+      if (!primeSdk) return [];
+
       let computedAccount;
+
       if (!balancesForAddress && recompute) {
         try {
           computedAccount = await connect();
@@ -279,15 +173,12 @@ const EtherspotContextProvider = ({
       if (!balancesForAddress && !computedAccount) return [];
 
       // 0x0...0 is default native token address in our assets, but it's not a ERC20 token
-      const assetAddressesWithoutZero = assets
-        .filter((asset) => !isZeroAddress(asset.address))
-        .map((asset) => asset.address);
+      // const assetAddressesWithoutZero = assets
+      //   .filter((asset) => !isZeroAddress(asset.address))
+      //   .map((asset) => asset.address);
 
       try {
-        const { items: balances } = await sdk.getAccountBalances({
-          account: balancesForAddress ?? computedAccount,
-          chainId: assetsChainId,
-        });
+        const balances = await getAccountBalances(balancesForAddress);
 
         return balances.filter((assetBalance) => {
           const { balance, token: balanceAssetAddress } = assetBalance;
@@ -316,7 +207,7 @@ const EtherspotContextProvider = ({
     async (
       assetsChainId: number,
       positiveBalancesOnly: boolean = false,
-      balancesForAddress: string | null = accountAddress,
+      balancesForAddress: string | undefined = accountAddress,
       recompute: boolean = true
     ): Promise<IAssetWithBalance[]> => {
       const supportedAssets = await getSupportedAssetsForChainId(assetsChainId);
@@ -326,7 +217,6 @@ const EtherspotContextProvider = ({
         balancesForAddress,
         recompute
       );
-
       // only get prices for assets with balances
       const assetsPrices = await getRatesByTokenAddresses(
         assetsChainId,
@@ -377,13 +267,13 @@ const EtherspotContextProvider = ({
   const loadSmartWalletBalancesByChain = useCallback(
     async (walletAddress: string, supportedChains: Chain[]) => {
       if (!sdk || !walletAddress) return;
-      let balanceByChain: IBalanceByChain[] = [];
+      const balanceByChain: IBalanceByChain[] = [];
       await Promise.all(
         supportedChains
           .filter(({ chainId }) => chainId !== CHAIN_ID.AVALANCHE)
           .map(async (chain) => {
             try {
-              let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+              const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
                 chain.chainId,
                 true,
                 walletAddress,
@@ -407,13 +297,13 @@ const EtherspotContextProvider = ({
   const loadKeyBasedWalletBalancesPerChain = useCallback(
     async (walletAddress: string, supportedChains: Chain[]) => {
       if (!sdk || !walletAddress) return;
-      let balanceByChain: IBalanceByChain[] = [];
+      const balanceByChain: IBalanceByChain[] = [];
       await Promise.all(
         supportedChains
           .filter((element) => element.chainId !== CHAIN_ID.AVALANCHE)
           .map(async (element) => {
             try {
-              let supportedAssets = await getSupportedAssetsWithBalancesForChainId(
+              const supportedAssets = await getSupportedAssetsWithBalancesForChainId(
                 element.chainId,
                 true,
                 walletAddress,
@@ -439,9 +329,9 @@ const EtherspotContextProvider = ({
     if (!sdk || !tokens.length) return null;
 
     try {
-      const rates: RateData = await sdk.fetchExchangeRates({ tokens, chainId });
-      if (rates.errored || !rates?.items?.length) return null;
-      return rates.items.reduce<Record<string, number>>(
+      const prices = await getPrices(tokens, chainId);
+      if (!prices?.length) return null;
+      return prices.reduce<Record<string, number>>(
         (currentRates, rate) => ({
           ...currentRates,
           [rate.address]: rate.usd,
@@ -456,12 +346,9 @@ const EtherspotContextProvider = ({
   const getRatesByNativeChainId = async (chainId: number) => {
     if (!sdk) return null;
     try {
-      const rates: RateData = await sdk.fetchExchangeRates({
-        tokens: [ethers.constants.AddressZero],
-        chainId,
-      });
-      if (!rates.errored && rates.items.length) {
-        return rates.items[0].usd;
+      const price = await getPrice(ethers.constants.AddressZero, chainId);
+      if (price) {
+        return price.usd;
       }
     } catch (error) {
       //
@@ -472,29 +359,27 @@ const EtherspotContextProvider = ({
 
   const getGasAssetsForChainId = useCallback(
     async (assetsChainId: number, senderAddress?: string): Promise<IAssetWithBalance[]> => {
-      const sdkForChainId = getSdkForChainId(assetsChainId);
+      const sdkForChainId = await getSdkForChainId(assetsChainId);
       if (!sdkForChainId) return [];
 
       let gasAssets: IAssetWithBalance[] = [];
 
       try {
-        if (!gasTokenAddressesPerChainId[assetsChainId]?.length) {
-          const gasTokens = await sdkForChainId.getGatewaySupportedTokens();
-          gasTokenAddressesPerChainId[assetsChainId] = gasTokens.map((gasToken) => gasToken.address);
-        }
-
-        const supportedAssetsWithBalances = await getSupportedAssetsWithBalancesForChainId(
-          assetsChainId,
-          true,
-          senderAddress
-        );
-
-        gasAssets = supportedAssetsWithBalances.filter((supportedAsset) =>
-          gasTokenAddressesPerChainId[assetsChainId].some(
-            (gasTokenAddress) =>
-              isZeroAddress(supportedAsset.address) || addressesEqual(gasTokenAddress, supportedAsset.address)
-          )
-        );
+        // if (!gasTokenAddressesPerChainId[assetsChainId]?.length) {
+        //   const gasTokens = await sdkForChainId.getGatewaySupportedTokens();
+        //   gasTokenAddressesPerChainId[assetsChainId] = gasTokens.map((gasToken) => gasToken.address);
+        // }
+        // const supportedAssetsWithBalances = await getSupportedAssetsWithBalancesForChainId(
+        //   assetsChainId,
+        //   true,
+        //   senderAddress
+        // );
+        // gasAssets = supportedAssetsWithBalances.filter((supportedAsset) =>
+        //   gasTokenAddressesPerChainId[assetsChainId].some(
+        //     (gasTokenAddress) =>
+        //       isZeroAddress(supportedAsset.address) || addressesEqual(gasTokenAddress, supportedAsset.address)
+        //   )
+        // );
       } catch (e) {
         //
       }
@@ -508,10 +393,10 @@ const EtherspotContextProvider = ({
   const getNftsForChainId = useCallback(
     async (
       chainId: number,
-      address: string | null = accountAddress,
+      address: string | undefined = accountAddress,
       recompute: boolean = true
     ): Promise<NftCollection[]> => {
-      const sdk = getSdkForChainId(chainId);
+      const sdk = await getSdkForChainId(chainId);
 
       if (!sdk) return [];
       let computedAccount;
@@ -526,9 +411,7 @@ const EtherspotContextProvider = ({
       if (!address && !computedAccount) return [];
 
       try {
-        const { items: nfts } = await sdk.getNftList({
-          account: address || computedAccount || '',
-        });
+        const nfts = await getAccountNfts(address || computedAccount || '');
 
         return nfts?.filter((nft) => !!nft?.items?.length && nft);
       } catch (e) {
@@ -544,15 +427,14 @@ const EtherspotContextProvider = ({
   const getEnsNode = useCallback(
     async (
       chainId: number,
-      address: string | null = accountAddress,
+      address: string | undefined = accountAddress,
       recompute: boolean = true
     ): Promise<ENSNode | null> => {
-      const sdkForChain = getSdkForChainId(chainId);
+      const sdkForChain = await getSdkForChainId(chainId);
 
       if (!sdkForChain) return null;
 
       let computedAccount;
-
       if (!address && recompute) {
         try {
           computedAccount = await connect();
@@ -564,10 +446,10 @@ const EtherspotContextProvider = ({
       if (!address && !computedAccount) return null;
 
       try {
-        const ens = await sdkForChain.getENSNode({
-          nameOrHashOrAddress: address || computedAccount,
-        });
-        return ens;
+        // const ens = await sdkForChain.getENSNode({
+        //   nameOrHashOrAddress: address || computedAccount,
+        // });
+        // return ens;
       } catch (e) {
         //
       }
@@ -578,16 +460,13 @@ const EtherspotContextProvider = ({
   );
 
   const logout = useCallback(() => {
-    sdkPerChain = {};
-    setProvider(null);
-    setProviderAddress(null);
-    setAccountAddress(null);
     if (onLogout) onLogout();
-  }, [setProvider, setProviderAddress, setAccountAddress, onLogout]);
+  }, [onLogout]);
 
   const updateWalletBalances = useCallback(
     async (force?: boolean) => {
-      if (!sdk || !accountAddress) return;
+      const primeSdk = await sdk;
+      if (!primeSdk || !accountAddress) return;
 
       if (!!force || !smartWalletBalanceByChain.length) {
         await loadSmartWalletBalancesByChain(accountAddress, supportedChains);
@@ -605,11 +484,9 @@ const EtherspotContextProvider = ({
   const contextData = useMemo(
     () => ({
       connect,
-      isConnecting,
       accountAddress,
       sdk,
       chainId,
-      setChainId,
       getSdkForChainId,
       smartWalletBalanceByChain,
       keyBasedWalletBalanceByChain,
@@ -631,16 +508,12 @@ const EtherspotContextProvider = ({
       updateWalletBalances,
       getRatesByNativeChainId,
       changeTheme,
-      environment,
-      setEnvironment,
     }),
     [
       connect,
-      isConnecting,
       accountAddress,
       sdk,
       chainId,
-      setChainId,
       getSdkForChainId,
       smartWalletBalanceByChain,
       keyBasedWalletBalanceByChain,
@@ -662,12 +535,10 @@ const EtherspotContextProvider = ({
       updateWalletBalances,
       getRatesByNativeChainId,
       changeTheme,
-      environment,
-      setEnvironment,
     ]
   );
 
   return <EtherspotContext.Provider value={{ data: contextData }}>{children}</EtherspotContext.Provider>;
 };
 
-export default EtherspotContextProvider;
+export default EtherspotPrimeContextProvider;
