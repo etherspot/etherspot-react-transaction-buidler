@@ -115,7 +115,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
 
   useEffect(() => {
     pullAllNewTx(accountAddress);
-  }, []);
+  }, [storedGroupedCrossChainActions]);
 
   // newest to oldest
   const storedGroupedCrossChainActionsIds = Object.keys(storedGroupedCrossChainActions).sort().reverse();
