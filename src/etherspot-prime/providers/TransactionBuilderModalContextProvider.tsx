@@ -1,9 +1,9 @@
 import React, { ReactNode, useContext, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 
-import Modal from '../components/Modal';
-import { CloseButton, PrimaryButton, SecondaryButton } from '../components/Button';
-import { Paragraph } from '../components/Text';
+import Modal from '../../components/Modal';
+import { CloseButton, PrimaryButton, SecondaryButton } from '../../components/Button';
+import { Paragraph } from '../../components/Text';
 import { TransactionBuilderModalContext } from '../contexts';
 import { Theme } from '../utils/theme';
 

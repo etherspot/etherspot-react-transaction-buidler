@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
-import UserProfile from '../components/User/UserProfile';
+import UserProfile from '../../components/User/UserProfile';
 
 describe('User Profile component', () => {
   const mockProps = {

@@ -2,7 +2,8 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import styled, { useTheme } from 'styled-components';
 import { HiCheck } from 'react-icons/hi';
 import { AiOutlinePlusCircle } from 'react-icons/ai';
-import { PrimeSdk as Sdk, sleep, TokenListToken } from '@etherspot/prime-sdk';
+import { PrimeSdk as Sdk } from '@etherspot/prime-sdk';
+import { sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
 
 // Types
@@ -17,9 +18,9 @@ import {
 } from '../types/transactionBlock';
 import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
 
-import { PrimaryButton, SecondaryButton } from '../components/Button';
+import { PrimaryButton, SecondaryButton } from '../../components/Button';
 import { useEtherspotPrime, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
-import TransactionBlock from '../components/TransactionBlock';
+import TransactionBlock from '../../components/TransactionBlock';
 import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
 import {
   buildCrossChainAction,
@@ -35,12 +36,12 @@ import {
 } from '../utils/transaction';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
-import { ActionPreview } from '../components/TransactionPreview';
+import { ActionPreview } from '../../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard } from '../utils/common';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
-import Card from '../components/Card';
-import { Text } from '../components/Text';
+import Card from '../../components/Card';
+import { Text } from '../../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import {
   SendActionIcon,
@@ -49,13 +50,13 @@ import {
   ChainIcon,
   WalletCopyIcon,
   WalletIcon,
-} from '../components/TransactionBlock/Icons';
+} from '../../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
 import { GNOSIS_USDC_CONTRACT_ADDRESS, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
-import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
+import WalletTransactionBlock from '../../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
-import SettingMenu from '../components/SettingMenu/SettingMenu';
+import SettingMenu from '../../components/SettingMenu/SettingMenu';
 import { TbCopy, TbWallet } from 'react-icons/tb';
 import { BiCheck } from 'react-icons/bi';
 import { CgSandClock } from 'react-icons/cg';
@@ -1126,10 +1127,10 @@ const TransactionPrimeBuilderContextProvider = ({
 
     if (!accountAddress || !maticSdk) return;
 
-    let account = await maticSdk.getAccount();
+    let account = maticSdk.state.account;
     if (!account || account.address !== accountAddress) {
       try {
-        account = await maticSdk.getAccount();
+        account = maticSdk.state.account;
       } catch {
         showAlertModal('There was an error fetching the account, please try again later.');
         return;

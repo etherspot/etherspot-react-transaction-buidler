@@ -4,7 +4,7 @@ import { Route } from '@lifi/sdk';
 
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { IMultiCallData } from './transactionBlock';
-import { IPlrStakingV2BlockSwap } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { IPlrStakingV2BlockSwap } from '../../components/TransactionBlock/PlrStakingV2TransactionBlock';
 import { ExchangeOffer } from '@etherspot/prime-sdk';
 import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 

@@ -6,8 +6,9 @@ import {
   isWalletProvider,
   WalletConnectWalletProvider,
   Web3WalletProvider,
+  WalletProviderLike,
 } from '@etherspot/prime-sdk';
-import { ENSNode, WalletProviderLike } from 'etherspot';
+import { ENSNode } from 'etherspot';
 
 import { BigNumber, ethers } from 'ethers';
 
@@ -56,12 +57,13 @@ interface IWalletConnectProvider<T> {
 const EtherspotPrimeContextProvider = ({
   children,
   provider: defaultProvider,
+  etherspotSessionStorage,
   onLogout,
   smartWalletOnly = false,
   changeTheme,
 }: {
   children: ReactNode;
-  provider: WalletProviderLike;
+  provider: WalletProviderLike | Web3WalletProvider;
   changeTheme: (theme: Theme) => void;
   chainId?: number;
   etherspotSessionStorage?: SessionStorage;

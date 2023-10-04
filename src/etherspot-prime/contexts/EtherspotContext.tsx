@@ -1,6 +1,7 @@
 import React, { createContext } from 'react';
 import { PrimeSdk as EtherspotSdk } from '@etherspot/prime-sdk';
-import { AccountBalance, ENSNode, NftCollection, WalletProviderLike, Web3WalletProvider } from '@etherspot/prime-sdk';
+import { AccountBalance, NftCollection, WalletProviderLike, Web3WalletProvider } from '@etherspot/prime-sdk';
+import { ENSNode } from 'etherspot';
 
 import {
   IAssetWithBalance,

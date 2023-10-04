@@ -1,14 +1,14 @@
 import { TokenListToken } from 'etherspot';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { ISendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
-import { IAssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
-import { ISwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
-import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
-import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
+import { ISendAssetTransactionBlockValues } from '../../components/TransactionBlock/SendAssetTransactionBlock';
+import { IAssetBridgeTransactionBlockValues } from '../../components/TransactionBlock/AssetBridgeTransactionBlock';
+import { ISwapAssetTransactionBlockValues } from '../../components/TransactionBlock/AssetSwapTransactionBlock';
+import { IKlimaStakingTransactionBlockValues } from '../../components/TransactionBlock/KlimaStakingTransactionBlock';
+import { IPlrDaoTransactionBlockValues } from '../../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { ErrorMessages } from '../utils/validation';
 import { Chain } from '../utils/chain';
-import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
-import { IHoneySwapLPTransactionBlockValues } from '../components/TransactionBlock/HoneySwapLPTransactionBlock';
+import { IPlrStakingV2BlockValues } from '../../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { IHoneySwapLPTransactionBlockValues } from '../../components/TransactionBlock/HoneySwapLPTransactionBlock';
 
 export type IMultiCallData = {
   id: string;

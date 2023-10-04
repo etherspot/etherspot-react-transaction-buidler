@@ -1,15 +1,15 @@
 import { ethers } from 'ethers';
 
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { IAssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
-import { ISendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
-import { ISwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
+import { IAssetBridgeTransactionBlockValues } from '../../components/TransactionBlock/AssetBridgeTransactionBlock';
+import { ISendAssetTransactionBlockValues } from '../../components/TransactionBlock/SendAssetTransactionBlock';
+import { ISwapAssetTransactionBlockValues } from '../../components/TransactionBlock/AssetSwapTransactionBlock';
 import { nativeAssetPerChainId } from './chain';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
-import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
-import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
-import { IHoneySwapLPTransactionBlockValues } from '../components/TransactionBlock/HoneySwapLPTransactionBlock';
+import { IKlimaStakingTransactionBlockValues } from '../../components/TransactionBlock/KlimaStakingTransactionBlock';
+import { IPlrDaoTransactionBlockValues } from '../../components/TransactionBlock/PlrDaoStakingTransactionBlock';
+import { IPlrStakingV2BlockValues } from '../../components/TransactionBlock/PlrStakingV2TransactionBlock';
+import { IHoneySwapLPTransactionBlockValues } from '../../components/TransactionBlock/HoneySwapLPTransactionBlock';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {

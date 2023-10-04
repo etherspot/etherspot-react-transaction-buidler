@@ -45,7 +45,7 @@ import {
   POLYGON_USDC_CONTRACT_ADDRESS,
 } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
-import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
+import { MAX_PLR_TOKEN_LIMIT } from '../../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 
 interface IPillarDao {
   encodeDeposit(amount: BigNumber): {

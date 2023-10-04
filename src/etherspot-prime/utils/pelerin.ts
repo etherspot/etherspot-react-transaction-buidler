@@ -1,4 +1,4 @@
-import { Account, AccountStates, GatewayTransactionStates, NotificationTypes, Sdk } from 'etherspot';
+import { Account, AccountStates, TransactionStatuses, NotificationTypes, PrimeSdk as Sdk } from '@etherspot/prime-sdk';
 import { map } from 'rxjs/operators';
 import { buildUrlOptions } from './common';
 import { deployAccount } from './transaction';
@@ -55,19 +55,17 @@ export const openMtPelerinTab = async (
       .pipe(
         map(async (notification) => {
           if (notification?.type === NotificationTypes.GatewayBatchUpdated) {
-            const submittedBatch = await sdk.getGatewaySubmittedBatch({
-              hash: submittedGateway.hash,
-            });
+            const submittedBatch = await sdk.getUserOpReceipt(submittedGateway.hash);
 
             const failedStates = [
-              GatewayTransactionStates.Canceling,
-              GatewayTransactionStates.Canceled,
-              GatewayTransactionStates.Reverted,
+              TransactionStatuses.Canceling,
+              TransactionStatuses.Canceled,
+              TransactionStatuses.Reverted,
             ];
 
             if (submittedBatch?.transaction?.state && failedStates.includes(submittedBatch?.transaction?.state)) {
               !!showAlert && showAlert('Failed to deploy the Etherspot wallet');
-            } else if (submittedBatch?.transaction?.state === GatewayTransactionStates.Sent) {
+            } else if (submittedBatch?.transaction?.state === TransactionStatuses.Sent) {
               const signature = await sdk.signMessage({ message });
               base64Hash = Buffer.from(signature.replace('0x', ''), 'hex').toString('base64');
 

@@ -128,3 +128,7 @@ export const getTypeOfAddress = (
     ? 'Wallet'
     : humanizeHexString(address);
 };
+
+export const isEtherspotPrime = (etherspotMode: string | undefined) => {
+  return etherspotMode === 'etherspot-prime' ? true : false;
+};

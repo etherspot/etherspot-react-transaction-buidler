@@ -1,5 +1,5 @@
 import { fireEvent, render } from '@testing-library/react';
-import SettingMenu from '../components/SettingMenu/SettingMenu';
+import SettingMenu from '../../components/SettingMenu/SettingMenu';
 import { TransactionBuilderModalContext } from '../contexts';
 import React from 'react';
 import { defaultTheme } from '../utils/theme';
@@ -9,11 +9,11 @@ jest.mock('react-icons/all', () => {
   return jest.mock;
 });
 
-jest.mock('../components/History/index.ts', () => {
+jest.mock('../../components/History/index.ts', () => {
   return jest.mock;
 });
 
-jest.mock('../components/User/UserProfile.tsx', () => {
+jest.mock('../../components/User/UserProfile.tsx', () => {
   return jest.mock;
 });
 
@@ -32,7 +32,7 @@ describe('builder setting menu', () => {
         <ThemeProvider theme={{ ...defaultTheme }}>
           <SettingMenu logout={() => {}} showLogout={true} />
         </ThemeProvider>
-      </TransactionBuilderModalContext.Provider>,
+      </TransactionBuilderModalContext.Provider>
     );
 
     fireEvent.click(await menuContext.findByTestId('builder-setting-menu'));

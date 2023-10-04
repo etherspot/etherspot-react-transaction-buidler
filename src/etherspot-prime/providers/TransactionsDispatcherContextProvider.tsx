@@ -1,5 +1,6 @@
 import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { NotificationTypes, PrimeSdk as Sdk, TransactionStatuses } from '@etherspot/prime-sdk';
+import { PrimeSdk as Sdk, TransactionStatuses } from '@etherspot/prime-sdk';
+import { NotificationTypes } from 'etherspot';
 import { map as rxjsMap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 
