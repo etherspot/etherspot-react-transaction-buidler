@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
 import { SessionStorage, WalletProviderLike } from 'etherspot';
+import { EtherspotTransactionKit } from '@etherspot/transaction-kit';
 import { merge } from 'lodash';
 
 import {
@@ -12,9 +13,7 @@ import {
 
 import { darkTheme, getTheme, Theme, ThemeType } from '../utils/theme';
 import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
-import { EtherspotTransactionKit } from '@etherspot/transaction-kit';
-
-export const ETHERSPOT = 'etherspot';
+import { ETHERSPOT } from '../constants/globalConstants';
 
 interface EtherspotProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -43,7 +42,7 @@ interface EtherspotProps {
   hideTransactionBlockTitle?: boolean;
   hideWalletSwitch?: boolean;
   hideActionPreviewHeader?: boolean;
-  etherspotMode?: string;
+  etherspotMode?: 'etherspot' | 'etherspot-prime';
 }
 
 const ComponentWrapper = styled.div.attrs(

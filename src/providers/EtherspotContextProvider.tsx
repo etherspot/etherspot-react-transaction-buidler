@@ -13,16 +13,6 @@ import {
   ENSNode,
   AccountBalance,
 } from 'etherspot';
-import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
-import { BigNumber, ethers } from 'ethers';
-
-import { EtherspotContext } from '../contexts';
-import { Chain, CHAIN_ID, MAINNET_CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../utils/chain';
-import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
-import { isCaseInsensitiveMatch, isNativeAssetAddress } from '../utils/validation';
-import { sessionStorageInstance } from '../services/etherspot';
-import { isEtherspotPrime, sumAssetsBalanceWorth } from '../utils/common';
-import { Theme } from '../utils/theme';
 import {
   useEtherspot,
   useEtherspotAssets,
@@ -33,6 +23,16 @@ import {
   useEtherspotUtils,
   useWalletAddress,
 } from '@etherspot/transaction-kit';
+import { BigNumber, ethers } from 'ethers';
+import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
+
+import { EtherspotContext } from '../contexts';
+import { Chain, CHAIN_ID, MAINNET_CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../utils/chain';
+import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
+import { isCaseInsensitiveMatch, isNativeAssetAddress } from '../utils/validation';
+import { sessionStorageInstance } from '../services/etherspot';
+import { isEtherspotPrime, sumAssetsBalanceWorth } from '../utils/common';
+import { Theme } from '../utils/theme';
 
 export type IAsset = TokenListToken;
 
@@ -98,16 +98,9 @@ const EtherspotContextProvider = ({
 
   const sessionStorage = etherspotSessionStorage ?? sessionStorageInstance;
 
-  // const [accountAddress, setAccountAddress] = useState<string | null>(
-  //   isEtherspotPrime(etherspotMode) ? primeAccountAddress! : null
-  // );
-  // const [providerAddress, setProviderAddress] = useState<string | null>(
-  //   isEtherspotPrime(etherspotMode) ? primeWalletAddress! : null
-  // );
   const [chainId, setChainId] = useState<number>(defaultChainId);
   const [provider, setProvider] = useState<WalletProviderLike | Web3WalletProvider | null>(null);
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
-  const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
+  const [isConnecting] = useState<boolean>(false);
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
   const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
   const [keyBasedWalletBalanceByChain, setKeyBasedWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
@@ -156,8 +149,8 @@ const EtherspotContextProvider = ({
       if (!provider) return null;
 
       const networkName = CHAIN_ID_TO_NETWORK_NAME[sdkChainId];
-      const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
-      const envName = MainnetIDs.includes(sdkChainId) ? EtherspotEnvNames.MainNets : EtherspotEnvNames.TestNets;
+      const mainnetIds = Object.values(MAINNET_CHAIN_ID);
+      const envName = mainnetIds.includes(sdkChainId) ? EtherspotEnvNames.MainNets : EtherspotEnvNames.TestNets;
 
       if (!networkName) return null;
 
@@ -184,65 +177,6 @@ const EtherspotContextProvider = ({
     return getSdkForChainId(chainId);
   }, [getSdkForChainId, getEtherspotPrimeSdkForChainId, chainId, environment]);
 
-  // const connect = useCallback(async () => {
-  //   if (!sdk || isConnecting) return;
-  //   setIsConnecting(true);
-
-  //   try {
-  //     let computed;
-  //     if (isEtherspotPrime(etherspotMode)) {
-  //       computed = await primeWalletConnect();
-  //       return computed;
-  //     }
-  //     computed = await (sdk as EtherspotSdk).computeContractAccount({ sync: true });
-  //     setIsConnecting(false);
-  //     return computed?.address;
-  //   } catch (e) {
-  //     console.log(e);
-  //     //
-  //   }
-
-  //   setIsConnecting(false);
-  // }, [sdk, isConnecting]);
-
-  useEffect(() => {
-    // if (!isEtherspotPrime(etherspotMode)) {
-    //   try {
-    //     (sdk as EtherspotSdk)?.state$.subscribe(async (sdkState) => {
-    //       if (sdkState?.account?.type === AccountTypes.Key) {
-    //         setProviderAddress(sdkState.account.address);
-    //         const sessionStorage = etherspotSessionStorage ?? sessionStorageInstance;
-    //         try {
-    //           const session = await sessionStorage.getSession(sdkState.account.address);
-    //           if (isRestoringSession || !session || +new Date(session.expireAt) <= +new Date()) return;
-    //           setIsRestoringSession(true);
-    //           await (sdk as EtherspotSdk).computeContractAccount({ sync: true });
-    //         } catch (e) {
-    //           //
-    //         }
-    //         setIsRestoringSession(false);
-    //         return;
-    //       }
-    //       if (sdkState?.account?.type === AccountTypes.Contract) {
-    //         setAccountAddress(sdkState.account.address);
-    //         return;
-    //       }
-    //     });
-    //   } catch (e) {
-    //     //
-    //   }
-    //   return () => {
-    //     try {
-    //       if ((sdk as EtherspotSdk)?.state$?.closed) return;
-    //       // TODO: check why subscription in the above cannot be resubscribed
-    //       // sdk.state$.unsubscribe();
-    //     } catch (e) {
-    //       //
-    //     }
-    //   };
-    // }
-  }, [sdk, isRestoringSession]);
-
   const getSupportedAssetsForChainId = useCallback(
     async (assetsChainId: number, force: boolean = false) => {
       const sdk =
@@ -259,7 +193,9 @@ const EtherspotContextProvider = ({
       if (isEtherspotPrime(etherspotMode)) {
         try {
           assets = await getAssets();
-        } catch (e) {}
+        } catch (e) {
+          console.error(e);
+        }
       } else {
         const chainsToUseNewAssets = [
           CHAIN_ID.OPTIMISM,
@@ -271,9 +207,9 @@ const EtherspotContextProvider = ({
           CHAIN_ID.OKTC,
         ];
 
-        const MainnetIDs = Object.values(MAINNET_CHAIN_ID);
+        const mainnetIds = Object.values(MAINNET_CHAIN_ID);
         try {
-          if (MainnetIDs.includes(assetsChainId)) {
+          if (mainnetIds.includes(assetsChainId)) {
             assets = await (sdk as EtherspotSdk).getTokenListTokens({
               name: chainsToUseNewAssets.includes(assetsChainId) ? 'EtherspotPopularTokens' : 'PillarTokens',
             });
@@ -281,6 +217,7 @@ const EtherspotContextProvider = ({
             assets = await (sdk as EtherspotSdk).getTokenListTokens();
           }
         } catch (e) {
+          console.error(e);
           //
         }
       }
@@ -310,6 +247,7 @@ const EtherspotContextProvider = ({
         try {
           computedAccount = await connect();
         } catch (e) {
+          console.error(e);
           //
         }
       }
@@ -349,6 +287,7 @@ const EtherspotContextProvider = ({
           return +ethers.utils.formatUnits(balance, supportedAsset.decimals) > 0;
         });
       } catch (e) {
+        console.error(e);
         //
       }
 
@@ -402,6 +341,7 @@ const EtherspotContextProvider = ({
                 +ethers.utils.formatUnits(balance, asset.decimals) * assetPriceUsd
               : null;
           } catch (e) {
+            console.error(e);
             //
           }
 
@@ -440,6 +380,7 @@ const EtherspotContextProvider = ({
                 total: sumAssetsBalanceWorth(supportedAssets),
               });
             } catch (e) {
+              console.error(e);
               //
             }
           })
@@ -470,6 +411,7 @@ const EtherspotContextProvider = ({
                 total: sumAssetsBalanceWorth(supportedAssets),
               });
             } catch (e) {
+              console.error(e);
               //
             }
           })
@@ -506,6 +448,7 @@ const EtherspotContextProvider = ({
         );
       }
     } catch (error) {
+      console.error(error);
       //
     }
   };
@@ -528,6 +471,7 @@ const EtherspotContextProvider = ({
         }
       }
     } catch (error) {
+      console.error(error);
       //
     }
 
@@ -562,6 +506,7 @@ const EtherspotContextProvider = ({
           )
         );
       } catch (e) {
+        console.error(e);
         //
       }
 
@@ -587,6 +532,7 @@ const EtherspotContextProvider = ({
         try {
           computedAccount = await connect();
         } catch (e) {
+          console.error(e);
           //
         }
       }
@@ -606,6 +552,7 @@ const EtherspotContextProvider = ({
 
         return nfts?.filter((nft) => !!nft?.items?.length && nft);
       } catch (e) {
+        console.error(e);
         //
       }
 
@@ -630,6 +577,7 @@ const EtherspotContextProvider = ({
         try {
           computedAccount = await connect();
         } catch (e) {
+          console.error(e);
           //
         }
       }
@@ -642,6 +590,7 @@ const EtherspotContextProvider = ({
         });
         return ens;
       } catch (e) {
+        console.error(e);
         //
       }
 
@@ -653,8 +602,6 @@ const EtherspotContextProvider = ({
   const logout = useCallback(() => {
     sdkPerChain = {};
     setProvider(null);
-    // setProviderAddress(null);
-    // setAccountAddress(null);
     if (onLogout) onLogout();
   }, [setProvider, onLogout]);
 

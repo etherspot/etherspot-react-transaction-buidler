@@ -8,6 +8,7 @@ import {
   Web3WalletProvider,
   EnvNames as EtherspotEnvNames,
 } from 'etherspot';
+import { PrimeSdk } from '@etherspot/prime-sdk';
 
 import {
   IAssetWithBalance,
@@ -17,7 +18,6 @@ import {
 } from '../providers/EtherspotContextProvider';
 import { Chain } from '../utils/chain';
 import { Theme } from '../utils/theme';
-import { PrimeSdk } from '@etherspot/prime-sdk';
 
 export interface EtherspotContextData {
   data: {
@@ -26,7 +26,7 @@ export interface EtherspotContextData {
     connect: () => Promise<string | undefined>;
     chainId: number;
     setChainId: (chainId: number) => void;
-    getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | Promise<PrimeSdk | null> | null;
+    getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
     getEtherspotPrimeSdkForChainId: (chainId: number) => Promise<PrimeSdk | null>;
     isConnecting: boolean;
     sdk: Promise<PrimeSdk | null> | EtherspotSdk | null;
