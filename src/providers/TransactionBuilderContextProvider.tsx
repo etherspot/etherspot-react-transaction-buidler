@@ -38,7 +38,7 @@ import {
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard } from '../utils/common';
+import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard, isEtherspotPrime } from '../utils/common';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
@@ -392,7 +392,7 @@ const TransactionBuilderContextProvider = ({
 
   const theme: Theme = useTheme();
 
-  const { environment } = useEtherspot();
+  const { environment, etherspotMode } = useEtherspot();
 
   useEffect(() => {
     setShowWalletBlock(false);
@@ -424,6 +424,7 @@ const TransactionBuilderContextProvider = ({
     sdk,
     providerAddress,
     getSdkForChainId,
+    getEtherspotPrimeSdkForChainId,
     web3Provider,
     logout,
     smartWalletOnly,
@@ -579,7 +580,9 @@ const TransactionBuilderContextProvider = ({
       );
 
       const estimated = await estimateCrossChainAction(
-        getSdkForChainId(crossChainAction.chainId),
+        isEtherspotPrime(etherspotMode)
+          ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+          : (getSdkForChainId(crossChainAction.chainId) as Sdk),
         web3Provider,
         crossChainAction,
         providerAddress,
@@ -653,14 +656,18 @@ const TransactionBuilderContextProvider = ({
 
       result = crossChainAction.useWeb3Provider
         ? await submitWeb3ProviderTransactions(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            isEtherspotPrime(etherspotMode)
+              ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+              : (getSdkForChainId(crossChainAction.chainId) as Sdk),
             web3Provider,
             crossChainAction.transactions,
             crossChainAction.chainId,
             providerAddress
           )
         : await submitEtherspotAndWaitForTransactionHash(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
+            isEtherspotPrime(etherspotMode)
+              ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+              : (getSdkForChainId(crossChainAction.chainId) as Sdk),
             crossChainAction.transactions,
             crossChainAction.gasTokenAddress ?? undefined
           );
@@ -686,7 +693,9 @@ const TransactionBuilderContextProvider = ({
       while (flag) {
         try {
           const status = await getCrossChainStatusByHash(
-            getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+            isEtherspotPrime(etherspotMode)
+              ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+              : (getSdkForChainId(CHAIN_ID.POLYGON) as Sdk),
             crossChainAction.chainId,
             CHAIN_ID.POLYGON,
             result.transactionHash,
@@ -719,7 +728,9 @@ const TransactionBuilderContextProvider = ({
       }
 
       const estimateGas = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
+        isEtherspotPrime(etherspotMode)
+          ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+          : (getSdkForChainId(CHAIN_ID.POLYGON) as Sdk),
         web3Provider,
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
@@ -729,7 +740,9 @@ const TransactionBuilderContextProvider = ({
       const stakingTxns = await klimaDaoStaking(
         transactionBlocks[0].type === 'KLIMA_STAKE' ? transactionBlocks[0].values?.routeToKlima : null,
         transactionBlocks[0].type === 'KLIMA_STAKE' ? transactionBlocks[0].values?.receiverAddress : '',
-        getSdkForChainId(CHAIN_ID.POLYGON),
+        isEtherspotPrime(etherspotMode)
+          ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+          : (getSdkForChainId(CHAIN_ID.POLYGON) as Sdk),
         false,
         BigNumber.from(crossChainAction.receiveAmount)
           .sub(utils.parseUnits('0.02', 6))
@@ -744,7 +757,9 @@ const TransactionBuilderContextProvider = ({
       }
 
       const estimated = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
+        isEtherspotPrime(etherspotMode)
+          ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+          : (getSdkForChainId(CHAIN_ID.POLYGON) as Sdk),
         web3Provider,
         crossChainAction.destinationCrossChainAction[0],
         providerAddress,
@@ -763,7 +778,9 @@ const TransactionBuilderContextProvider = ({
       });
 
       result = await submitEtherspotAndWaitForTransactionHash(
-        getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
+        isEtherspotPrime(etherspotMode)
+          ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+          : (getSdkForChainId(CHAIN_ID.POLYGON) as Sdk),
         crossChainAction.transactions,
         POLYGON_USDC_CONTRACT_ADDRESS
       );
@@ -781,13 +798,15 @@ const TransactionBuilderContextProvider = ({
       showAlertModal('Transaction sent');
       setIsSubmitting(false);
     } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-      const sdkForXdai = getSdkForChainId(CHAIN_ID.XDAI);
+      const sdkForXdai = isEtherspotPrime(etherspotMode)
+        ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+        : getSdkForChainId(CHAIN_ID.XDAI);
 
       if (!sdkForXdai) return;
 
       let crossChainAction = crossChainActions[0];
 
-      const res = await sdkForXdai.getAccountBalances({
+      const res = await (sdkForXdai as Sdk).getAccountBalances({
         tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
       });
 
@@ -838,7 +857,9 @@ const TransactionBuilderContextProvider = ({
         }
       } else {
         result = await submitEtherspotAndWaitForTransactionHash(
-          getSdkForChainId(crossChainAction.chainId) as Sdk,
+          isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+            : (getSdkForChainId(CHAIN_ID.XDAI) as Sdk),
           crossChainAction.transactions,
           crossChainAction.gasTokenAddress ?? undefined
         );
@@ -869,7 +890,7 @@ const TransactionBuilderContextProvider = ({
 
       while (flag) {
         try {
-          const res = await sdkForXdai.getAccountBalances({
+          const res = await (sdkForXdai as Sdk).getAccountBalances({
             tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
           });
 
@@ -902,7 +923,9 @@ const TransactionBuilderContextProvider = ({
 
       if (crossChainAction.destinationCrossChainAction.length) {
         const estimateGas = await estimateCrossChainAction(
-          getSdkForChainId(CHAIN_ID.XDAI),
+          isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+            : (getSdkForChainId(CHAIN_ID.XDAI) as Sdk),
           web3Provider,
           crossChainAction.destinationCrossChainAction[0],
           providerAddress,
@@ -921,7 +944,9 @@ const TransactionBuilderContextProvider = ({
         });
 
         result = await submitEtherspotAndWaitForTransactionHash(
-          getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
+          isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+            : (getSdkForChainId(CHAIN_ID.XDAI) as Sdk),
           crossChainAction.transactions,
           GNOSIS_USDC_CONTRACT_ADDRESS
         );
@@ -1134,15 +1159,17 @@ const TransactionBuilderContextProvider = ({
   const onBuyClick = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.preventDefault();
 
-    const maticSdk = getSdkForChainId(CHAIN_ID.POLYGON);
+    const maticSdk = isEtherspotPrime(etherspotMode)
+      ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+      : getSdkForChainId(CHAIN_ID.POLYGON);
 
     if (!accountAddress || !maticSdk) return;
 
-    let account = await maticSdk.getAccount();
+    let account = await (maticSdk as Sdk).getAccount();
     if (!account || account.address !== accountAddress) {
       try {
-        await maticSdk.computeContractAccount();
-        account = await maticSdk.getAccount();
+        await (maticSdk as Sdk).computeContractAccount();
+        account = await (maticSdk as Sdk).getAccount();
       } catch {
         showAlertModal('There was an error fetching the account, please try again later.');
         return;
@@ -1154,7 +1181,7 @@ const TransactionBuilderContextProvider = ({
       return;
     }
 
-    openMtPelerinTab(maticSdk, account, deployingAccount, setDeployingAccount, showAlertModal);
+    openMtPelerinTab(maticSdk as Sdk, account, deployingAccount, setDeployingAccount, showAlertModal);
   };
 
   useEffect(() => {
@@ -1714,7 +1741,9 @@ const TransactionBuilderContextProvider = ({
                             providerAddress
                           )
                         : await submitEtherspotTransactionsBatch(
-                            getSdkForChainId(crossChainAction.chainId) as Sdk,
+                            isEtherspotPrime(etherspotMode)
+                              ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+                              : (getSdkForChainId(crossChainAction.chainId) as Sdk),
                             crossChainAction.transactions,
                             crossChainAction.gasTokenAddress ?? undefined
                           );
