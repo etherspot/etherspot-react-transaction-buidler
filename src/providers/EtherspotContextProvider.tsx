@@ -33,6 +33,7 @@ import { isCaseInsensitiveMatch, isNativeAssetAddress } from '../utils/validatio
 import { sessionStorageInstance } from '../services/etherspot';
 import { isEtherspotPrime, sumAssetsBalanceWorth } from '../utils/common';
 import { Theme } from '../utils/theme';
+import { ETHERSPOT_PRIME } from '../constants/globalConstants';
 
 export type IAsset = TokenListToken;
 
@@ -80,15 +81,15 @@ const EtherspotContextProvider = ({
   etherspotMode?: string;
 }) => {
   const context = useContext(EtherspotContext);
-  const { providerWalletAddress: providerAddress, connect } = useEtherspot();
+  const { providerWalletAddress, connect: walletConnect } = useEtherspot();
   const { getAssets } = useEtherspotAssets();
   const { getAccountBalances } = useEtherspotBalances();
   const { getPrices, getPrice } = useEtherspotPrices();
   const { isZeroAddress, addressesEqual } = useEtherspotUtils();
   const { getAccountNfts } = useEtherspotNfts();
   const { chainId: primeChainId, getEtherspotPrimeSdkForChainId } = useEtherspotTransactions();
-  const accountAddress = useWalletAddress(
-    'etherspot-prime',
+  const primeAccountAddress = useWalletAddress(
+    ETHERSPOT_PRIME,
     isEtherspotPrime(etherspotMode) ? primeChainId : undefined
   );
 
@@ -98,9 +99,12 @@ const EtherspotContextProvider = ({
 
   const sessionStorage = etherspotSessionStorage ?? sessionStorageInstance;
 
+  const [accountAddress, setAccountAddress] = useState<string | null | undefined>(null);
+  const [providerAddress, setProviderAddress] = useState<string | null | undefined>(null);
   const [chainId, setChainId] = useState<number>(defaultChainId);
   const [provider, setProvider] = useState<WalletProviderLike | Web3WalletProvider | null>(null);
-  const [isConnecting] = useState<boolean>(false);
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [isRestoringSession, setIsRestoringSession] = useState<boolean>(false);
   const [totalWorthPerAddress] = useState<ITotalWorthPerAddress>({});
   const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
   const [keyBasedWalletBalanceByChain, setKeyBasedWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
@@ -142,6 +146,13 @@ const EtherspotContextProvider = ({
     setMappedProvider();
   }, [setMappedProvider]);
 
+  useEffect(() => {
+    if (isEtherspotPrime(etherspotMode) && primeAccountAddress && providerWalletAddress) {
+      setAccountAddress(primeAccountAddress);
+      setProviderAddress(providerWalletAddress);
+    }
+  }, [primeAccountAddress, providerWalletAddress]);
+
   const getSdkForChainId = useCallback(
     (sdkChainId: number, forceNewInstance: boolean = false) => {
       if (sdkPerChain[sdkChainId] && !forceNewInstance) return sdkPerChain[sdkChainId];
@@ -176,6 +187,69 @@ const EtherspotContextProvider = ({
     if (isEtherspotPrime(etherspotMode)) return getEtherspotPrimeSdkForChainId(chainId);
     return getSdkForChainId(chainId);
   }, [getSdkForChainId, getEtherspotPrimeSdkForChainId, chainId, environment]);
+
+  const connect = useCallback(async () => {
+    if (!sdk || isConnecting) return;
+    setIsConnecting(true);
+
+    try {
+      if (isEtherspotPrime(etherspotMode)) {
+        setIsConnecting(false);
+        return walletConnect();
+      }
+      const computed = await (sdk as EtherspotSdk).computeContractAccount({ sync: true });
+      setIsConnecting(false);
+      return computed?.address;
+    } catch (e) {
+      console.error(e);
+      //
+    }
+
+    setIsConnecting(false);
+  }, [sdk, isConnecting]);
+
+  useEffect(() => {
+    if (!sdk || isEtherspotPrime(etherspotMode)) return;
+
+    try {
+      (sdk as EtherspotSdk).state$.subscribe(async (sdkState) => {
+        if (sdkState?.account?.type === AccountTypes.Key) {
+          setProviderAddress(sdkState.account.address);
+          const sessionStorage = etherspotSessionStorage ?? sessionStorageInstance;
+
+          try {
+            const session = await sessionStorage.getSession(sdkState.account.address);
+            if (isRestoringSession || !session || +new Date(session.expireAt) <= +new Date()) return;
+            setIsRestoringSession(true);
+            await (sdk as EtherspotSdk).computeContractAccount({ sync: true });
+          } catch (e) {
+            console.error(e);
+            //
+          }
+
+          setIsRestoringSession(false);
+
+          return;
+        }
+        if (sdkState?.account?.type === AccountTypes.Contract) {
+          setAccountAddress(sdkState.account.address);
+          return;
+        }
+      });
+    } catch (e) {
+      //
+    }
+
+    return () => {
+      try {
+        if ((sdk as EtherspotSdk)?.state$?.closed) return;
+        // TODO: check why subscription in the above cannot be resubscribed
+        // sdk.state$.unsubscribe();
+      } catch (e) {
+        //
+      }
+    };
+  }, [sdk, isRestoringSession]);
 
   const getSupportedAssetsForChainId = useCallback(
     async (assetsChainId: number, force: boolean = false) => {
@@ -238,7 +312,7 @@ const EtherspotContextProvider = ({
     async (
       assets: TokenListToken[],
       assetsChainId: number,
-      balancesForAddress: string | undefined = accountAddress,
+      balancesForAddress: string | null | undefined = accountAddress,
       recompute: boolean = true
     ) => {
       if (!sdk) return [];
@@ -300,7 +374,7 @@ const EtherspotContextProvider = ({
     async (
       assetsChainId: number,
       positiveBalancesOnly: boolean = false,
-      balancesForAddress: string | undefined = accountAddress,
+      balancesForAddress: string | null | undefined = accountAddress,
       recompute: boolean = true
     ): Promise<IAssetWithBalance[]> => {
       const supportedAssets = await getSupportedAssetsForChainId(assetsChainId);
@@ -519,7 +593,7 @@ const EtherspotContextProvider = ({
   const getNftsForChainId = useCallback(
     async (
       chainId: number,
-      address: string | undefined = accountAddress,
+      address: string | null | undefined = accountAddress,
       recompute: boolean = true
     ): Promise<NftCollection[]> => {
       const sdk = isEtherspotPrime(etherspotMode)
@@ -565,7 +639,7 @@ const EtherspotContextProvider = ({
   const getEnsNode = useCallback(
     async (
       chainId: number,
-      address: string | undefined = accountAddress,
+      address: string | null | undefined = accountAddress,
       recompute: boolean = true
     ): Promise<ENSNode | null> => {
       const sdkForChain = getSdkForChainId(chainId);
