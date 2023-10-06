@@ -114,7 +114,6 @@ interface KlimaStakingAction {
   destinationCrossChainAction: ICrossChainAction[];
   containsSwitchChain?: boolean;
   receiveAmount?: string;
-  bridgeUsed?: string;
   gasCost?: string;
   transactionHash?: string;
 }

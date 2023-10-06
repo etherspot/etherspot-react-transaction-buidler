@@ -82,6 +82,7 @@ export interface TransactionBuilderContextProps {
   hideTransactionBlockTitle?: boolean;
   hideWalletSwitch?: boolean;
   hideActionPreviewHeader?: boolean;
+  walletBlockActionsReplaceBehaviour?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -359,6 +360,7 @@ const TransactionBuilderContextProvider = ({
   hideTransactionBlockTitle = false,
   hideWalletSwitch = false,
   hideActionPreviewHeader = false,
+  walletBlockActionsReplaceBehaviour = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -699,7 +701,6 @@ const TransactionBuilderContextProvider = ({
             crossChainAction.chainId,
             CHAIN_ID.POLYGON,
             result.transactionHash,
-            crossChainAction.bridgeUsed
           );
           if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
             flag = 0;
@@ -1097,24 +1098,31 @@ const TransactionBuilderContextProvider = ({
   ) => {
     if (!availableTransactionBlock) return;
 
-    if (isKlimaBlockIncluded && transactionBlocks.length > 0) {
+    if (!walletBlockActionsReplaceBehaviour && isKlimaBlockIncluded && transactionBlocks.length > 0) {
       showAlertModal(
         'Cannot add klima staking block with transaction batch. Please remove previous transactions or continue after the previous transactions are executed'
       );
       return;
     }
-    if (hasKlimaBlockAdded) {
+    if (!walletBlockActionsReplaceBehaviour && hasKlimaBlockAdded) {
       showAlertModal(
         'Cannot add another transaction block with transaction batch. Please remove Klima transaction or continue after the klima transaction is executed'
       );
       return;
     }
-    if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled)
+    if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled){
       return;
+    }
     const transactionBlock: ITransactionBlock = {
       ...availableTransactionBlock,
       id: getTimeBasedUniqueId(),
     };
+
+    if (walletBlockActionsReplaceBehaviour) {
+      setTransactionBlocks([transactionBlock]);
+      return;
+    }
+
     setTransactionBlocks((current) => current.concat(transactionBlock));
     setShowTransactionBlockSelect(false);
   };
@@ -1191,7 +1199,8 @@ const TransactionBuilderContextProvider = ({
       !crossChainActionClick
     ) {
       if (transactionBlocks?.length === 0 && crossChainActions.length === 0) {
-        setShowWalletBlock(true);
+        setShowWalletBlock(!mappedDefaultTransactionBlocks?.length && !hideWalletBlock);
+        if (mappedDefaultTransactionBlocks?.length) setTransactionBlocks(mappedDefaultTransactionBlocks);
       }
     }
 
@@ -1201,8 +1210,10 @@ const TransactionBuilderContextProvider = ({
     crossChainActionsInProcessing,
     crossChainActions,
     isSubmitting,
-    isEstimatingCrossChainActions,
     crossChainActionClick,
+    hideWalletBlock,
+    mappedDefaultTransactionBlocks,
+    showWalletBlock,
   ]);
 
   return (
@@ -1519,6 +1530,7 @@ const TransactionBuilderContextProvider = ({
                             }
                             // Should only have the option to delete last multicall, any change mid structure should reset the entire block
                             showCloseButton={
+                              (multiCallBlock.closeable ?? true) &&
                               !hideCloseTransactionBlockButton &&
                               ((multiCallBlocks.length > 1 && j === multiCallBlocks.length - 1) ||
                                 (multiCallBlocks.length === 1 && !editingTransactionBlock))
@@ -1564,7 +1576,7 @@ const TransactionBuilderContextProvider = ({
                             current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
                           )
                         }
-                        showCloseButton={!hideCloseTransactionBlockButton && !editingTransactionBlock}
+                        showCloseButton={!hideCloseTransactionBlockButton && !editingTransactionBlock && (transactionBlock.closeable ?? true)}
                         removeContainer={removeTransactionBlockContainer}
                       >
                         <TransactionBlock

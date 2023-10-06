@@ -23,6 +23,7 @@ export type IMultiCallData = {
 export type ITransactionBlockBase = {
   id: string;
   title?: string;
+  closeable?: boolean;
   errorMessages?: ErrorMessages;
   multiCallData?: IMultiCallData | null;
   hideTitle?: boolean;
@@ -41,6 +42,7 @@ export type ITransactionBlockType =
 
 export type IDefaultTransactionBlock = {
   title?: string;
+  closeable?: boolean;
   type: ITransactionBlockType;
 };
 

@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider } from 'etherspot';
+import { AccountStates, AccountTypes } from 'etherspot';
 import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { Route } from '@lifi/sdk';
 
 // Types
 import { IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
 
 // Components
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import TextInput from '../TextInput';
@@ -23,13 +23,12 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
+import { isValidAmount } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
 
 // constants
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
-import { DestinationWalletEnum } from '../../enums/wallet.enum';
 
 // hooks
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
@@ -46,9 +45,8 @@ export interface IKlimaStakingTransactionBlockValues {
   accountType: AccountTypes;
   receiverAddress?: string;
   receiveAmount?: string;
-  routeToUSDC?: BridgingQuote;
-  routeToKlima?: BridgingQuote;
-  toolUsed?: string;
+  routeToUSDC?: Route;
+  routeToKlima?: Route;
 }
 
 const Title = styled.h3`
@@ -59,10 +57,6 @@ const Title = styled.h3`
   font-family: 'PTRootUIWebBold', sans-serif;
 `;
 
-const WalletReceiveWrapper = styled.div`
-  display: flex;
-  flex-direction: row;
-`;
 
 const OfferDetails = styled.div`
   position: relative;
@@ -101,53 +95,33 @@ const OfferText = styled.div`
   margin-bottom: 3px;
 `;
 
-const mapRouteToOption = (route: BridgingQuote): SelectOption => {
+const mapRouteToOption = (route: Route): SelectOption => {
+  const [firstStep] = route.steps;
+  const serviceDetails = bridgeServiceIdToDetails[firstStep?.toolDetails?.key ?? 'lifi'];
+
   return {
-    title: bridgeServiceIdToDetails['lifi'].title,
-    value: route.estimate.toAmount,
-    iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
-    extension: route.estimate.gasCosts.amountUSD,
+    title: firstStep?.toolDetails?.name ?? serviceDetails?.title ?? 'LiFi',
+    value: route.toAmountMin,
+    iconUrl: firstStep?.toolDetails?.logoURI ?? serviceDetails?.iconUrl,
+    extension: route.gasCostUSD,
   };
 };
 
 const KlimaStakingTransactionBlock = ({
   id: transactionBlockId,
   errorMessages,
-  values,
   hideTitle = false,
 }: IKlimaStakingTransactionBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
+  const { providerAddress, sdk, getSdkForChainId } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [receiveAmount, setReceiveAmount] = useState<string>('');
-  const [routeToUSDC, setRouteToUSDC] = useState<BridgingQuote[]>([]);
-  const [routeToKlima, setRouteToKlima] = useState<BridgingQuote[]>([]);
+  const [routeToUSDC, setRouteToUSDC] = useState<Route | null>(null);
+  const [routeToKlima, setRouteToKlima] = useState<Route | null>(null);
   const [isRouteFetching, setIsRouteFetching] = useState<boolean>(false);
   const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(null);
-  const [toolUsed, setToolUsed] = useState<string>('');
   const targetAssetPriceUsd = useAssetPriceUsd(klimaAsset.chainId, klimaAsset.address);
-
-  const defaultCustomReceiverAddress =
-    values?.receiverAddress &&
-    !addressesEqual(providerAddress, values?.receiverAddress) &&
-    !addressesEqual(accountAddress, values?.receiverAddress)
-      ? values.receiverAddress
-      : null;
-  const [customReceiverAddress, setCustomReceiverAddress] = useState<string | null>(defaultCustomReceiverAddress);
-  const [useCustomAddress, setUseCustomAddress] = useState<boolean>(!!defaultCustomReceiverAddress);
-
-  const defaultSelectedReceiveAccountType =
-    (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
-    (values?.receiverAddress &&
-      values?.accountType === AccountTypes.Contract &&
-      addressesEqual(providerAddress, values?.receiverAddress))
-      ? AccountTypes.Key
-      : AccountTypes.Contract;
-  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
-    defaultSelectedReceiveAccountType
-  );
 
   const {
     setTransactionBlockValues,
@@ -172,31 +146,14 @@ const KlimaStakingTransactionBlock = ({
     [selectedFromAsset]
   );
 
-  const receiverAddress = useMemo(() => {
-    if (useCustomAddress) return customReceiverAddress;
-    return selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
-  }, [
-    useCustomAddress,
-    customReceiverAddress,
-    providerAddress,
-    selectedReceiveAccountType,
-    selectedAccountType,
-    accountAddress,
-  ]);
-
   useEffect(() => {
     if (selectedFromAsset?.assetPriceUsd && +amount * selectedFromAsset.assetPriceUsd < 0.4) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'amount', 'Minimum amount 0.4 USD');
       return;
     }
     resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
-      setTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress', 'Invalid receiver address');
-      return;
-    }
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
 
-    if (routeToUSDC.length == 0 || routeToKlima.length == 0 || isRouteFetching || !toolUsed) {
+    if (!routeToUSDC || !routeToKlima || isRouteFetching) {
       setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       return;
     }
@@ -209,23 +166,20 @@ const KlimaStakingTransactionBlock = ({
       fromAssetSymbol: selectedFromAsset?.symbol ?? undefined,
       fromAssetIconUrl: selectedFromAsset?.logoURI,
       amount,
-      accountType: selectedAccountType,
-      receiverAddress: receiverAddress ?? undefined,
-      routeToUSDC: routeToUSDC[0],
-      routeToKlima: routeToKlima[0],
+      accountType: AccountTypes.Key,
+      receiverAddress: providerAddress as string,
+      routeToUSDC,
+      routeToKlima,
       receiveAmount,
-      toolUsed,
     });
   }, [
     selectedFromNetwork,
     selectedFromAsset,
     amount,
-    selectedAccountType,
-    receiverAddress,
     routeToUSDC,
     routeToKlima,
     receiveAmount,
-    toolUsed,
+    providerAddress,
   ]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
@@ -238,13 +192,12 @@ const KlimaStakingTransactionBlock = ({
   }, [amount, selectedFromAsset]);
 
   const resetRoutes = () => {
-    setRouteToUSDC([]);
-    setRouteToKlima([]);
+    setRouteToUSDC(null);
+    setRouteToKlima(null);
     setReceiveAmount('');
     resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
     setIsRouteFetching(false);
     setSelectedRoute(null);
-    setToolUsed('');
   };
 
   const computeReceiveAmount = useCallback(
@@ -271,24 +224,23 @@ const KlimaStakingTransactionBlock = ({
       }
 
       try {
-        const routeToUsdc = await sdk.getCrossChainQuotes({
+        const { items: usdcRoutes } = await sdk.getAdvanceRoutesLiFi({
           fromChainId: selectedFromNetwork.chainId,
           toChainId: CHAIN_ID.POLYGON,
           fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
           fromTokenAddress: selectedFromAsset.address,
-          fromAddress: selectedAccountType === AccountTypes.Key ? sdk.state.walletAddress : sdk.state.accountAddress,
+          fromAddress: sdk.state.walletAddress,
           toTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toAddress: sdk.state.accountAddress,
-          serviceProvider: CrossChainServiceProvider.LiFi,
         });
 
-        setRouteToUSDC(routeToUsdc.items);
-
-        if (routeToUsdc.items.length === 0) {
+        if (usdcRoutes.length === 0) {
           setIsRouteFetching(false);
           resetRoutes();
           return;
         }
+
+        setRouteToUSDC(usdcRoutes[0]);
 
         const sdkChain = getSdkForChainId(CHAIN_ID.POLYGON);
         const gasInfo = await sdkChain?.getGatewayGasInfo();
@@ -313,7 +265,9 @@ const KlimaStakingTransactionBlock = ({
         const gasFeesUSD = Number(ethers.utils.formatEther(gasFees.toString())) * priceUsd + 0.1;
         const gasFeesUSDC = ethers.utils.parseUnits(gasFeesUSD.toFixed(6), 6);
 
-        if (BigNumber.from(routeToUsdc.items[0].estimate.toAmount).lt(gasFeesUSDC.add('500000'))) {
+        const usdcRouteAmountBN = BigNumber.from(usdcRoutes[0].toAmountMin);
+
+        if (usdcRouteAmountBN.lt(gasFeesUSDC.add('500000'))) {
           setTransactionBlockFieldValidationError(
             transactionBlockId,
             'amount',
@@ -323,25 +277,23 @@ const KlimaStakingTransactionBlock = ({
           return;
         }
 
-        const routeToKlima = await sdk.getCrossChainQuotes({
+        const { items: routesToKlima } = await sdk.getAdvanceRoutesLiFi({
           fromChainId: CHAIN_ID.POLYGON,
           toChainId: CHAIN_ID.POLYGON,
-          fromAmount: BigNumber.from(routeToUsdc.items[0].estimate.toAmount).sub(gasFeesUSDC),
+          fromAmount: usdcRouteAmountBN.sub(gasFeesUSDC),
           fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-          toAddress: receiverAddress ?? undefined,
-          serviceProvider: CrossChainServiceProvider.LiFi,
+          toAddress: sdk.state.accountAddress,
         });
 
-        if (routeToKlima.items.length > 0) {
-          const bestRouteIndex = getBestRouteIndex(routeToKlima.items);
+        if (routesToKlima.length > 0) {
+          const bestRouteIndex = getBestRouteIndex(routesToKlima);
+          const bestKlimaRoute = routesToKlima[bestRouteIndex];
 
-          setSelectedRoute(mapRouteToOption(routeToKlima.items[bestRouteIndex]));
-          setToolUsed(routeToUsdc.items[bestRouteIndex].LiFiBridgeUsed ?? '');
-          setRouteToKlima(routeToKlima.items);
-          setReceiveAmount(
-            ethers.utils.formatUnits(routeToKlima.items[bestRouteIndex].estimate.toAmount, klimaAsset.decimals)
-          );
+          setSelectedRoute(mapRouteToOption(bestKlimaRoute));
+
+          setRouteToKlima(bestKlimaRoute);
+          setReceiveAmount(ethers.utils.formatUnits(bestKlimaRoute.toAmountMin, klimaAsset.decimals));
           resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
           setIsRouteFetching(false);
         } else {
@@ -357,23 +309,23 @@ const KlimaStakingTransactionBlock = ({
         setTransactionBlockFieldValidationError(transactionBlockId, 'route', 'Please try with different inputs/amount');
       }
     }, 200),
-    [selectedFromNetwork, selectedFromAsset, amount, selectedAccountType, receiverAddress]
+    [selectedFromNetwork, selectedFromAsset, amount, providerAddress]
   );
 
   /**
    * Calculation of best route index here is done on the basis of the best route returned
    * that in turn is calculated on the basis of the amount to receive (usd) minus the gas fees usd
    */
-  const getBestRouteIndex = (items: BridgingQuote[]) => {
+  const getBestRouteIndex = (items: Route[]) => {
     let index = 0;
     let maxReturnAmount =
-      +ethers.utils.formatUnits(items[0].estimate.toAmount) * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) -
-      +items[0].estimate.gasCosts.amountUSD;
+      +ethers.utils.formatUnits(items[0].toAmountMin) * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) -
+      (items[0].gasCostUSD ? +items[0].gasCostUSD : Number.MAX_SAFE_INTEGER);
 
     for (let i = 1; i < items.length; i++) {
-      const amountToRecieve = +ethers.utils.formatUnits(items[i].estimate.toAmount, klimaAsset.decimals);
-      const gasPriceUsd = +items[i].estimate.gasCosts.amountUSD;
-      const currentReturnAmount = amountToRecieve * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) - gasPriceUsd;
+      const amountToReceive = +ethers.utils.formatUnits(items[i].toAmountMin, klimaAsset.decimals);
+      const gasPriceUsd = items[i].gasCostUSD ? +(items[i].gasCostUSD as string) : Number.MAX_SAFE_INTEGER;
+      const currentReturnAmount = amountToReceive * (targetAssetPriceUsd ? targetAssetPriceUsd : 0) - gasPriceUsd;
 
       if (targetAssetPriceUsd && currentReturnAmount > maxReturnAmount) {
         index = i;
@@ -419,17 +371,6 @@ const KlimaStakingTransactionBlock = ({
   return (
     <>
       {!hideTitle && <Title>Klima DAO Staking</Title>}
-      <AccountSwitchInput
-        label="From wallet"
-        selectedAccountType={selectedAccountType}
-        onChange={(accountType) => {
-          setSelectedAccountType(accountType);
-        }}
-        hideKeyBased={smartWalletOnly}
-        errorMessage={errorMessages?.accountType}
-        showTotals
-        showHelperText
-      />
       <NetworkAssetSelectInput
         label="From"
         onAssetSelect={(asset, amountBN) => {
@@ -453,18 +394,18 @@ const KlimaStakingTransactionBlock = ({
           errorMessages?.fromAssetAddress ||
           errorMessages?.fromAssetDecimals
         }
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
+        walletAddress={providerAddress}
         showPositiveBalanceAssets
         showQuickInputButtons
-        accountType={selectedAccountType}
+        accountType={AccountTypes.Key}
       />
       <NetworkAssetSelectInput
         label="To"
         selectedNetwork={supportedChains[1]}
         selectedAsset={klimaAsset}
         readOnly={true}
-        walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        accountType={selectedAccountType}
+        walletAddress={providerAddress}
+        accountType={AccountTypes.Key}
       />
       {selectedFromAsset && selectedFromNetwork && (
         <TextInput
@@ -494,37 +435,6 @@ const KlimaStakingTransactionBlock = ({
             />
           }
           errorMessage={errorMessages?.amount}
-        />
-      )}
-      <WalletReceiveWrapper>
-        <AccountSwitchInput
-          label="You will receive on"
-          selectedAccountType={selectedReceiveAccountType}
-          onChange={(value) => {
-            setSelectedReceiveAccountType(value);
-            if (value == DestinationWalletEnum.Custom) {
-              setUseCustomAddress(true);
-              return;
-            }
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-            setUseCustomAddress(false);
-            setCustomReceiverAddress(null);
-          }}
-          hideKeyBased={smartWalletOnly}
-          showCustom
-        />
-      </WalletReceiveWrapper>
-      {useCustomAddress && (
-        <TextInput
-          value={customReceiverAddress ?? ''}
-          onValueChange={(value) => {
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress');
-            setCustomReceiverAddress(value);
-          }}
-          errorMessage={errorMessages?.receiverAddress}
-          placeholder="Insert address"
-          noLabel
-          showPasteButton
         />
       )}
       {!!selectedFromAsset && !!amount && (remainingSelectedFromAssetBalance ?? 0) >= 0 && (

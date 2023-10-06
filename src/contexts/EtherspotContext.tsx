@@ -7,6 +7,7 @@ import {
   WalletProviderLike,
   Web3WalletProvider,
   EnvNames as EtherspotEnvNames,
+  Transactions,
 } from 'etherspot';
 import { PrimeSdk } from '@etherspot/prime-sdk';
 
@@ -15,6 +16,7 @@ import {
   IAsset,
   ITotalWorthPerAddress,
   IBalanceByChain,
+  IAllChainTransactions,
 } from '../providers/EtherspotContextProvider';
 import { Chain } from '../utils/chain';
 import { Theme } from '../utils/theme';
@@ -48,6 +50,12 @@ export interface EtherspotContextData {
     loadSmartWalletBalancesByChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
     loadKeyBasedWalletBalancesPerChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
     getNftsForChainId: (chainId: number, address?: string | null, recompute?: boolean) => Promise<NftCollection[]>;
+    getTransactionsFromChain: (
+      chainId: number,
+      address?: string | null,
+      recompute?: boolean
+    ) => Promise<Transactions[]>;
+    getAllTransactions: (address?: string | null) => Promise<IAllChainTransactions[]>;
     getEnsNode: (chainId: number, address?: string | null, recompute?: boolean) => Promise<ENSNode | null>;
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
     totalWorthPerAddress: ITotalWorthPerAddress;

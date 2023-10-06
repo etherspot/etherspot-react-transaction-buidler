@@ -42,6 +42,7 @@ interface EtherspotProps {
   hideTransactionBlockTitle?: boolean;
   hideWalletSwitch?: boolean;
   hideActionPreviewHeader?: boolean;
+  walletBlockActionsReplaceBehaviour?: boolean;
   etherspotMode?: 'etherspot' | 'etherspot-prime';
 }
 
@@ -105,6 +106,7 @@ const Etherspot = ({
   hideTransactionBlockTitle = false,
   hideWalletSwitch = false,
   hideActionPreviewHeader = false,
+  walletBlockActionsReplaceBehaviour = false,
   onLogout,
   etherspotMode = ETHERSPOT,
 }: EtherspotProps) => {
