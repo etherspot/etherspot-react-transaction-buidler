@@ -1,7 +1,7 @@
 import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { HiCheck } from 'react-icons/hi';
-import { AiOutlinePlusCircle } from 'react-icons/ai';
+import { AiFillWarning, AiOutlinePlusCircle } from 'react-icons/ai';
 import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
 
@@ -40,7 +40,7 @@ import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard, isEtherspotPrime } from '../utils/common';
 import { Theme } from '../utils/theme';
-import { CHAIN_ID, Chain } from '../utils/chain';
+import { CHAIN_ID, Chain, primeSdkSupportedChains } from '../utils/chain';
 import Card from '../components/Card';
 import { Text } from '../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
@@ -62,6 +62,7 @@ import { TbCopy, TbWallet } from 'react-icons/tb';
 import { BiCheck } from 'react-icons/bi';
 import { CgSandClock } from 'react-icons/cg';
 import { isEmpty } from 'lodash';
+import { RoundedImage } from '../components/Image';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -256,6 +257,67 @@ const SignButton = styled.button`
   cursor: pointer;
 `;
 
+const ModalContainer = styled.div`
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+`;
+
+const ModalBackDrop = styled.div`
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(21, 15, 33, 0.7);
+`;
+
+const Modal = styled.div`
+  position: relative;
+  background: transparent;
+  z-index: 2;
+  margin: 20px;
+`;
+
+const WalletUnsupportedNotes = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+`;
+
+const WalletUnsupportedNote = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 5px;
+`;
+
+const WalletUnsupportedText = styled(Text)`
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.text.settingsMenuItem};
+`;
+
+const SupportedWalletsList = styled.div`
+  display: flex;
+  flex-direction: row;
+  row-gap: 2px;
+`;
+
+const ListItem = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 8px;
+  padding: 5px 8px;
+`;
+
 const availableTransactionBlocks: ITransactionBlock[] = [
   {
     id: getTimeBasedUniqueId(),
@@ -391,10 +453,11 @@ const TransactionBuilderContextProvider = ({
   const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && !hideWalletBlock;
   const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
   const [isWalletConnecting, setIsWalletConnecting] = useState(false);
+  const [isWalletSupported, setIsWalletSupported] = useState(true);
 
   const theme: Theme = useTheme();
 
-  const { environment, etherspotMode } = useEtherspot();
+  const { environment, etherspotMode, chainId } = useEtherspot();
 
   useEffect(() => {
     setShowWalletBlock(false);
@@ -1131,8 +1194,21 @@ const TransactionBuilderContextProvider = ({
     if (sdk && connect) {
       setIsWalletConnecting(true);
       try {
-        await connect();
-      } catch {}
+        if (isEtherspotPrime(etherspotMode)) {
+          const isChainSupported = primeSdkSupportedChains.some(({ chainId: chain }) => chain === chainId);
+          if (isChainSupported) {
+            setIsWalletSupported(true);
+            await connect();
+          } else {
+            setIsWalletSupported(false);
+          }
+        } else {
+          await connect();
+        }
+      } catch (e) {
+        console.error(e);
+        /* empty */
+      }
     }
     setIsWalletConnecting(false);
   };
@@ -1218,6 +1294,44 @@ const TransactionBuilderContextProvider = ({
 
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
+      {isEtherspotPrime(etherspotMode) && !isWalletSupported && (
+        <ModalContainer>
+          <ModalBackDrop>
+            <Modal>
+              <Card color={theme.color?.background?.unsupportedNetworksCard}>
+                <WalletUnsupportedNotes>
+                  <WalletUnsupportedNote>
+                    <AiFillWarning size={18} color={theme.color?.text?.warningIcon} style={{ paddingRight: '5px' }} />
+                    <WalletUnsupportedText color={theme.color?.text?.button}>
+                      Your wallet network is temporarily unsupported
+                    </WalletUnsupportedText>
+                  </WalletUnsupportedNote>
+                  <WalletUnsupportedNote>
+                    <WalletUnsupportedText>
+                      To continue please connect your wallet on the following networks:
+                    </WalletUnsupportedText>
+                  </WalletUnsupportedNote>
+                  <SupportedWalletsList>
+                    {primeSdkSupportedChains.map((supportedChain) => (
+                      <ListItem key={supportedChain.chainId}>
+                        {!!supportedChain.iconUrl && (
+                          <RoundedImage
+                            url={supportedChain.iconUrl}
+                            title={supportedChain.title}
+                            size={18}
+                            marginRight={8}
+                          />
+                        )}
+                        {supportedChain.title}
+                      </ListItem>
+                    ))}
+                  </SupportedWalletsList>
+                </WalletUnsupportedNotes>
+              </Card>
+            </Modal>
+          </ModalBackDrop>
+        </ModalContainer>
+      )}
       {!hideTopNavigation && (
         <TopNavigation>
           <WalletAddressesWrapper>

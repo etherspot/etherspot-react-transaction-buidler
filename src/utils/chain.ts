@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { BigNumber, ethers } from 'ethers';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { EnvNames as EtherspotEnvNames } from 'etherspot';
@@ -225,6 +226,33 @@ export const testnetSupportedChains: Chain[] = [
     explorerUrl: 'https://www.oklink.com/okexchain-test/tx/',
   },
 ];
+
+export const primeNativeAssets: { [chainId: number]: TokenListToken } = {
+  [MAINNET_CHAIN_ID.POLYGON]: {
+    chainId: MAINNET_CHAIN_ID.POLYGON,
+    address: ethers.constants.AddressZero,
+    name: 'Matic',
+    symbol: 'MATIC',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/native_tokens/matic.png',
+  },
+  [MAINNET_CHAIN_ID.OPTIMISM]: {
+    chainId: MAINNET_CHAIN_ID.OPTIMISM,
+    address: ethers.constants.AddressZero,
+    name: 'Optimism',
+    symbol: 'ETH',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
+  },
+  [MAINNET_CHAIN_ID.ARBITRUM]: {
+    chainId: MAINNET_CHAIN_ID.ARBITRUM,
+    address: ethers.constants.AddressZero,
+    name: 'Arbitrum',
+    symbol: 'ETH',
+    decimals: 18,
+    logoURI: 'https://public.etherspot.io/buidler/chain_logos/ethereum.png',
+  },
+};
 
 export const mainnetNativeAssets: { [chainId: number]: TokenListToken } = {
   [MAINNET_CHAIN_ID.ETHEREUM_MAINNET]: {
@@ -457,8 +485,30 @@ export const testnetNativeAssets: { [chainId: number]: TokenListToken } = {
 };
 
 export let CHAIN_ID = MAINNET_CHAIN_ID;
+const primeSupportedChains = [
+  {
+    chainId: MAINNET_CHAIN_ID.POLYGON,
+    title: 'Polygon',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/polygon.svg',
+    explorerUrl: 'https://polygonscan.com/tx/',
+  },
+  {
+    chainId: MAINNET_CHAIN_ID.ARBITRUM,
+    title: 'Arbitrum',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/arbitrum.svg',
+    explorerUrl: 'https://arbiscan.io/tx/',
+  },
+  {
+    chainId: MAINNET_CHAIN_ID.OPTIMISM,
+    title: 'Optimism',
+    iconUrl: 'https://public.etherspot.io/buidler/chain_logos/optimism.png',
+    explorerUrl: 'https://optimistic.etherscan.io/tx/',
+  },
+];
 export let supportedChains: Chain[] = mainnetSupportedChains;
 export let nativeAssetPerChainId = mainnetNativeAssets;
+export const primeSdkSupportedChains: Chain[] = primeSupportedChains;
+export const primeNativeAssetPerChainId = primeNativeAssets;
 
 export const changeChainId = (value: EtherspotEnvNames) => {
   if (value === EtherspotEnvNames.MainNets) {
