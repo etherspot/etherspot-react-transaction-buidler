@@ -1,6 +1,7 @@
 import { uniqueId } from 'lodash';
 import { BigNumber, ethers } from 'ethers';
 import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
+import { ETHERSPOT_PRIME } from '../constants/globalConstants';
 
 export const formatAssetAmountInput = (amount: string, decimals: number = 18): string => {
   const formattedAmount = amount
@@ -130,5 +131,5 @@ export const getTypeOfAddress = (
 };
 
 export const isEtherspotPrime = (etherspotMode: string | undefined) => {
-  return etherspotMode === 'etherspot-prime' ? true : false;
+  return etherspotMode === ETHERSPOT_PRIME ? true : false;
 };

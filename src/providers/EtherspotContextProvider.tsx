@@ -87,10 +87,10 @@ const EtherspotContextProvider = ({
   const { getPrices, getPrice } = useEtherspotPrices();
   const { isZeroAddress, addressesEqual } = useEtherspotUtils();
   const { getAccountNfts } = useEtherspotNfts();
-  const { chainId: primeChainId, getEtherspotPrimeSdkForChainId } = useEtherspotTransactions();
+  const { chainId: walletChainId, getEtherspotPrimeSdkForChainId } = useEtherspotTransactions();
   const primeAccountAddress = useWalletAddress(
     ETHERSPOT_PRIME,
-    isEtherspotPrime(etherspotMode) ? primeChainId : undefined
+    isEtherspotPrime(etherspotMode) ? walletChainId : undefined
   );
 
   if (context !== null) {
@@ -152,6 +152,12 @@ const EtherspotContextProvider = ({
       setProviderAddress(providerWalletAddress);
     }
   }, [primeAccountAddress, providerWalletAddress]);
+
+  useEffect(() => {
+    if (isEtherspotPrime(etherspotMode)) {
+      setChainId(walletChainId);
+    }
+  }, [walletChainId]);
 
   const getSdkForChainId = useCallback(
     (sdkChainId: number, forceNewInstance: boolean = false) => {
