@@ -9,6 +9,7 @@ import {
   EnvNames as EtherspotEnvNames,
   Transactions,
 } from 'etherspot';
+import { PrimeSdk } from '@etherspot/prime-sdk';
 
 import {
   IAssetWithBalance,
@@ -28,8 +29,9 @@ export interface EtherspotContextData {
     chainId: number;
     setChainId: (chainId: number) => void;
     getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
+    getEtherspotPrimeSdkForChainId: (chainId: number) => Promise<PrimeSdk | null>;
     isConnecting: boolean;
-    sdk: EtherspotSdk | null;
+    sdk: Promise<PrimeSdk | null> | EtherspotSdk | null;
     smartWalletBalanceByChain: IBalanceByChain[] | null;
     keyBasedWalletBalanceByChain: IBalanceByChain[] | null;
     getSupportedAssetsForChainId: (chainId: number) => Promise<IAsset[]>;
@@ -67,6 +69,7 @@ export interface EtherspotContextData {
     changeTheme: (theme: Theme) => void;
     environment: EtherspotEnvNames;
     setEnvironment: (environment: EtherspotEnvNames) => void;
+    etherspotMode?: string;
   };
 }
 
