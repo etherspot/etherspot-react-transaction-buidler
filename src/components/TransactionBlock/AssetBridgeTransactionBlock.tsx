@@ -7,7 +7,7 @@ import debounce from 'debounce-promise';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
+import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount, isEtherspotPrime } from '../../utils/common';
 import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
@@ -82,6 +82,7 @@ const AssetBridgeTransactionBlock = ({
     getSupportedAssetsWithBalancesForChainId,
     smartWalletOnly,
     updateWalletBalances,
+    etherspotMode,
   } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
@@ -330,7 +331,7 @@ const AssetBridgeTransactionBlock = ({
             setSelectedAccountType(accountType);
           }}
           errorMessage={errorMessages?.accountType}
-          hideKeyBased={smartWalletOnly}
+          hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
           disabled={!!fixed || !!multiCallData}
           showTotals
           showHelperText
@@ -410,7 +411,7 @@ const AssetBridgeTransactionBlock = ({
           label="You will receive on"
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
-          hideKeyBased={smartWalletOnly}
+          hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
           showCustom
         />
       </WalletReceiveWrapper>
