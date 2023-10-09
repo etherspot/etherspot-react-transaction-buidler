@@ -300,7 +300,7 @@ export const klimaDaoStaking = async (
       fromAmount: BigNumber.from(amount).sub('250000'),
       fromTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS,
       toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-      toAddress: receiverAddress ?? undefined,
+      toAddress: sdk.state.accountAddress,
     });
     if (quotes.length > 0) routeToKlima = quotes[0];
     else return { errorMessage: 'No routes found for staking. Please try again' };
@@ -393,7 +393,7 @@ export const klimaDaoStaking = async (
       return { errorMessage: 'Failed build bridge approval transaction!' };
     }
 
-    const klimaStakinglTransaction = {
+    const klimaStakingTransaction = {
       to: klimaStakeTransactionRequest.to,
       data: klimaStakeTransactionRequest.data,
       chainId: CHAIN_ID.POLYGON,
@@ -402,7 +402,29 @@ export const klimaDaoStaking = async (
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     };
 
-    transactions = [...transactions, klimaApprovalTransaction, klimaStakinglTransaction];
+    transactions = [...transactions, klimaApprovalTransaction, klimaStakingTransaction];
+
+    // transfer back to receiver address if not the same as contract
+    if (receiverAddress && !addressesEqual(receiverAddress, sdk.state.accountAddress)) {
+      const erc20Abi = getContractAbi(ContractNames.ERC20Token);
+      const sKlimaContractAddress = '0xb0c22d8d350c67420f06f48936654f567c73e8c8'
+      const sKlimaContract = sdk.registerContract<ERC20TokenContract>('erc20Contract', erc20Abi, sKlimaContractAddress);
+      const sKlimaTransferTransactionRequest = sKlimaContract?.encodeTransfer?.(receiverAddress, bestRoute.toAmountMin);
+      if (!sKlimaTransferTransactionRequest || !sKlimaTransferTransactionRequest.to) {
+        return { errorMessage: 'Failed build transfer back transaction!' };
+      }
+
+      const sKlimaTransferTransaction = {
+        to: sKlimaTransferTransactionRequest.to,
+        data: sKlimaTransferTransactionRequest.data,
+        chainId: CHAIN_ID.POLYGON,
+        value: '0',
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      };
+
+      transactions = [...transactions, sKlimaTransferTransaction];
+    }
 
     return {
       result: {

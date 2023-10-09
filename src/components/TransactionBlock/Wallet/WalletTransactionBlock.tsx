@@ -577,7 +577,7 @@ const ChainButton = styled.div<{
 
   border-radius: 6px;
   ${({ theme, selected }) =>
-    selected ? `background-color: ${theme.color.text.searchInput};` : `background-color: rgba(0,0,0,0);`};
+    selected ? `background-color: ${theme.color.background.walletDisplayTypeButtonActive};` : `background-color: rgba(0,0,0,0);`};
 
   cursor: pointer;
   &:hover {

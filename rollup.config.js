@@ -43,7 +43,7 @@ export default [
       typescript({
         sourceMap: !isProduction,
         tsconfig: './tsconfig.json',
-        exclude: ['./example/**', './src/test/**']
+        exclude: ['./example/**', './src/test/**'],
       }),
       replace({
         __ETHERSPOT_PROJECT_KEY__: process.env.ETHERSPOT_PROJECT_KEY ?? '',
@@ -55,17 +55,33 @@ export default [
         plugins: [autoprefixer()],
         sourceMap: true,
         extract: true,
-        minimize: true
+        minimize: true,
       }),
       process.env.NODE_ENV === 'production' && terser(),
     ],
-    external: ['react', 'react-dom', 'styled-components', 'etherspot']
+    external: [
+      'react',
+      'react-dom',
+      'styled-components',
+      'etherspot',
+      '@etherspot/prime-sdk',
+      '@etherspot/transaction-kit',
+    ],
+    context: 'window',
+
   },
   {
     input: 'dist/esm/types/index.d.ts',
     output: [{ file: 'dist/index.d.ts', format: 'esm' }],
     plugins: [dts()],
-    external: ['react', 'react-dom', 'styled-components', 'etherspot'],
+    external: [
+      'react',
+      'react-dom',
+      'styled-components',
+      'etherspot',
+      '@etherspot/prime-sdk',
+      '@etherspot/transaction-kit',
+    ],
     watch: {
       clearScreen: false,
       include: 'src/**',

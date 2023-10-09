@@ -283,7 +283,7 @@ const KlimaStakingTransactionBlock = ({
           fromAmount: usdcRouteAmountBN.sub(gasFeesUSDC),
           fromTokenAddress: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
           toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-          toAddress: providerAddress as string,
+          toAddress: sdk.state.accountAddress,
         });
 
         if (routesToKlima.length > 0) {
