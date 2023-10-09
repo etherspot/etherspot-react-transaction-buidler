@@ -56,6 +56,7 @@ export interface Theme {
       tooltip?: string;
       tooltipBorder?: string;
       walletDisplayTypeButtonActive?: string;
+      unsupportedNetworksCard?: string;
     };
     text?: {
       main?: string;
@@ -101,6 +102,7 @@ export interface Theme {
       settingsMenuItem?: string;
       settingsMenuItemHover?: string;
       tooltip?: string;
+      warningIcon?: string;
     };
   };
 }
@@ -235,7 +237,7 @@ export const darkTheme: Theme = {
       selectInputScrollbarHover: '#2d2457',
       selectInputScrollbarActive: '#2d2457',
       textInput: '#1a1726',
-      textInputBorder:'#46464e',
+      textInputBorder: '#46464e',
       switchInput: '#1a1726',
       switchInputActiveTab:
         'linear-gradient(to bottom, #734fb3, #422d66), linear-gradient(to bottom, #3d265c, #222130)',
@@ -260,6 +262,7 @@ export const darkTheme: Theme = {
       walletAssetCopyIcon: '#ff9c1b',
       tooltip: '#2f274d',
       tooltipBorder: '#b5afaf',
+      unsupportedNetworksCard: '#3d3767',
     },
     text: {
       selectInput: '#ffeee6',
@@ -300,6 +303,7 @@ export const darkTheme: Theme = {
       settingsMenuItem: '#fff',
       settingsMenuItemHover: '#f4973a',
       tooltip: '#fff',
+      warningIcon: '#F7931A',
     },
   },
 };
