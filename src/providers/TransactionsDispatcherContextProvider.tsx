@@ -1,5 +1,5 @@
 import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { GatewayTransactionStates, NotificationTypes, Sdk, TransactionStatuses } from 'etherspot';
+import { GatewayTransactionStates, NotificationTypes, Sdk, sleep, TransactionStatuses } from 'etherspot';
 import { map as rxjsMap } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 
@@ -14,13 +14,18 @@ import {
   rejectUnsentCrossChainActionsTransactions,
   filterCrossChainActionsByStatus,
   updateCrossChainActionTransactionsStatus,
+  getCrossChainStatusByHash,
+  submitEtherspotAndWaitForTransactionHash,
 } from '../utils/transaction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { useEtherspot, useTransactionBuilderModal } from '../hooks';
 import { STORED_GROUPED_CROSS_CHAIN_ACTIONS } from '../constants/storageConstants';
 import { getItem, setItem } from '../services/storage';
 import { getTimeBasedUniqueId, isEtherspotPrime } from '../utils/common';
-import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
+import { ICrossChainAction, ICrossChainActionTransaction, KlimaStakingAction } from '../types/crossChainAction';
+import { CHAIN_ID } from '../utils/chain';
+import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
+import { POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 
 const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNode }) => {
   const context = useContext(TransactionsDispatcherContext);
@@ -99,6 +104,87 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
     [dispatchId, crossChainActions]
   );
 
+  // this should never be copied, added here in order to save time for wrong implementation that was done previously
+  const finalizeKlimaCrossChainAction = async (crossChainAction: ICrossChainAction & KlimaStakingAction) => {
+    const sdkForPolygonChain = isEtherspotPrime(etherspotMode)
+      ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+      : getSdkForChainId(CHAIN_ID.POLYGON);
+
+    const estimated = await estimateCrossChainAction(
+      sdkForPolygonChain as Sdk,
+      web3Provider,
+      crossChainAction.destinationCrossChainAction[0],
+      providerAddress,
+      accountAddress
+    );
+
+    if (estimated?.errorMessage || !estimated) {
+      showAlertModal(estimated.errorMessage ?? 'Unable to estimate!');
+      setCrossChainActions((current) => current.map((currentCrossChainAction) => {
+        if (crossChainAction.id === currentCrossChainAction.id) {
+          return {
+            ...currentCrossChainAction,
+            destinationCrossChainAction: [
+              updateCrossChainActionTransactionsStatus(
+                // @ts-ignore
+                currentCrossChainAction.destinationCrossChainAction[0],
+                CROSS_CHAIN_ACTION_STATUS.FAILED,
+              ),
+            ]
+          };
+        }
+        return currentCrossChainAction;
+      }));
+      return;
+    }
+
+    setCrossChainActions((current) => current.map((currentCrossChainAction) => {
+      if (crossChainAction.id === currentCrossChainAction.id) {
+        return {
+          ...currentCrossChainAction,
+          estimated,
+          destinationCrossChainAction: [
+            updateCrossChainActionTransactionsStatus(
+              // @ts-ignore
+              currentCrossChainAction.destinationCrossChainAction[0],
+              CROSS_CHAIN_ACTION_STATUS.PENDING,
+            ),
+          ]
+        };
+      }
+      return currentCrossChainAction;
+    }));
+
+    const result = await submitEtherspotAndWaitForTransactionHash(
+      sdkForPolygonChain as Sdk,
+      crossChainAction.destinationCrossChainAction[0].transactions,
+      POLYGON_USDC_CONTRACT_ADDRESS
+    );
+
+    if (result?.errorMessage || !result?.transactionHash?.length) {
+      showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
+      setCrossChainActions((current) => current.map((currentCrossChainAction) => {
+        if (crossChainAction.id === currentCrossChainAction.id) {
+          return {
+            ...currentCrossChainAction,
+            destinationCrossChainAction: [
+              updateCrossChainActionTransactionsStatus(
+                // @ts-ignore
+                currentCrossChainAction.destinationCrossChainAction[0],
+                CROSS_CHAIN_ACTION_STATUS.FAILED,
+              ),
+            ]
+          };
+        }
+        return currentCrossChainAction;
+      }));
+      return;
+    }
+
+    setCrossChainActions([]);
+    showAlertModal('Transaction sent');
+  }
+
   useEffect(() => {
     let expired = false;
 
@@ -169,7 +255,8 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
                 web3Provider,
                 transactionsToSend[0],
                 unsentCrossChainAction.chainId,
-                providerAddress
+                providerAddress,
+                false,
               )
             : await submitEtherspotTransactionsBatch(
                 isEtherspotPrime(etherspotMode)
@@ -201,8 +288,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
 
           const { transactionHash, batchHash } = result;
 
-          setCrossChainActions((current) =>
-            current.map((crossChainAction) => {
+          setCrossChainActions((current) => current.map((crossChainAction) => {
               if (
                 crossChainAction.id !== unsentCrossChainAction.id ||
                 unsentCrossChainAction.multiCallData?.id !== crossChainAction.multiCallData?.id
@@ -228,9 +314,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
                   }
 
                   return [...updated, transaction];
-                },
-                []
-              );
+              }, []);
 
               return {
                 ...crossChainAction,
@@ -484,76 +568,103 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
   }, [crossChainActions, getSdkForChainId, getEtherspotPrimeSdkForChainId]);
 
   useEffect(() => {
+    let timeout: any;
     let updateExpired = false;
 
     const validPendingWeb3CrossChainActions = crossChainActions.filter(
-      (crossChainAction) =>
-        crossChainAction.useWeb3Provider &&
+      (crossChainAction) => crossChainAction.useWeb3Provider &&
         getCrossChainActionTransactionsByStatus(crossChainAction.transactions, CROSS_CHAIN_ACTION_STATUS.PENDING).length
     );
 
-    const checkWeb3TransactionStatuses = () => {
-      validPendingWeb3CrossChainActions.map(async (crossChainAction) => {
+    const checkWeb3TransactionStatuses = async () => {
+      await Promise.all(validPendingWeb3CrossChainActions.map(async (crossChainAction) => {
         const sdkForChain = isEtherspotPrime(etherspotMode)
           ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
           : getSdkForChainId(crossChainAction.chainId);
+
         if (!sdkForChain) return;
 
-        await Promise.all(
-          crossChainAction.transactions.map(async (transaction) => {
-            if (!transaction?.transactionHash || updateExpired) return;
+        await Promise.all(crossChainAction.transactions.map(async (transaction) => {
+          if (!transaction?.transactionHash || updateExpired) return;
 
+          let status: string | undefined;
+
+          if (transaction?.status === CROSS_CHAIN_ACTION_STATUS.PENDING
+            && crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+            try {
+              const crossChainStatus = await getCrossChainStatusByHash(
+                crossChainAction.chainId,
+                crossChainAction.destinationCrossChainAction[0].chainId,
+                transaction.transactionHash,
+              );
+
+              if (crossChainStatus?.status
+                && crossChainStatus?.subStatus
+                && crossChainStatus.status.toLowerCase() === 'done'
+                && crossChainStatus.subStatus.toLowerCase() === 'completed') {
+                status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
+              }
+            } catch (e) {
+              //
+            }
+          } else if (transaction?.status === CROSS_CHAIN_ACTION_STATUS.PENDING) {
             try {
               const submittedTransaction = await (sdkForChain as Sdk).getTransaction({
                 hash: transaction.transactionHash,
               });
-
-              let status: string | undefined;
 
               if (submittedTransaction?.status === TransactionStatuses.Completed) {
                 status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
               } else if (submittedTransaction?.status === TransactionStatuses.Reverted) {
                 status = CROSS_CHAIN_ACTION_STATUS.FAILED;
               }
-
-              if (!status) return;
-
-              setCrossChainActions((current) =>
-                current.map((currentCrossChainAction) => {
-                  if (crossChainAction.id !== currentCrossChainAction.id) return currentCrossChainAction;
-                  return {
-                    ...currentCrossChainAction,
-                    transactions: currentCrossChainAction.transactions.map((currentTransaction) => {
-                      if (currentTransaction.transactionHash !== transaction.transactionHash) {
-                        return currentTransaction;
-                      }
-                      return { ...currentTransaction, status, finishTimestamp: +new Date() };
-                    }),
-                  };
-                })
-              );
-
-              setPendingCrossChainActionIds((current) => current.filter((id) => id !== crossChainAction.id));
             } catch (e) {
               //
             }
-          })
-        );
-      });
+          }
+
+          if (!status) return;
+
+          try {
+            setCrossChainActions((current) =>
+              current.map((currentCrossChainAction) => {
+                if (crossChainAction.id !== currentCrossChainAction.id) return currentCrossChainAction;
+                return {
+                  ...currentCrossChainAction,
+                  transactions: currentCrossChainAction.transactions.map((currentTransaction) => {
+                    if (currentTransaction.transactionHash !== transaction.transactionHash) {
+                      return currentTransaction;
+                    }
+                    return { ...currentTransaction, status, finishTimestamp: +new Date() };
+                  }),
+                };
+              })
+            );
+
+            setPendingCrossChainActionIds((current) => current.filter((id) => id !== crossChainAction.id));
+          } catch (e) {
+            //
+          }
+
+          // this is dirty fix due wrong initial implementation, do not repeat
+          if (status === CROSS_CHAIN_ACTION_STATUS.CONFIRMED
+            && crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
+            await finalizeKlimaCrossChainAction(crossChainAction);
+          }
+        }));
+      }));
+
+      timeout = setTimeout(checkWeb3TransactionStatuses, 3000);
     };
 
     checkWeb3TransactionStatuses();
-
-    const timeout = setTimeout(() => {
-      checkWeb3TransactionStatuses();
-    }, 3000);
 
     return () => {
       updateExpired = true;
       if (!timeout) return;
       clearTimeout(timeout);
     };
-  }, [crossChainActions, getSdkForChainId, getEtherspotPrimeSdkForChainId, web3Provider]);
+  }, [crossChainActions, getSdkForChainId, getEtherspotPrimeSdkForChainId, web3Provider, etherspotMode]);
 
   useEffect(() => {
     restoreProcessing();

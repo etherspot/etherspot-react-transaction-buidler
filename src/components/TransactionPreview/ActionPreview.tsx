@@ -324,9 +324,14 @@ const TransactionStatus = ({
           web3ProviderChainId !== crossChainAction.chainId &&
           transaction.status === CROSS_CHAIN_ACTION_STATUS.UNSENT;
 
-        const transactionStatus = isNetworkSwitchRequired
+        let transactionStatus = isNetworkSwitchRequired
           ? CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK
           : transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
+
+        if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
+          && transaction.status === CROSS_CHAIN_ACTION_STATUS.PENDING) {
+          transactionStatus = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
+        }
 
         const showAsApproval =
           crossChainAction.useWeb3Provider && isERC20ApprovalTransactionData(transaction.data as string) && index === 0; // show first tx approval only, bridge tx that are index > 0 can include approval method too
@@ -727,7 +732,7 @@ const ActionPreview = ({
     feeCosts?.forEach(({ amountUSD = 0 }) => {
       totalFees += +amountUSD;
     });
-  
+
     return (
       <Card
         title="Asset bridge"
@@ -1284,7 +1289,7 @@ const ActionPreview = ({
         totalFees += +amountUSD;
       });
     }
-    
+
     return (
       <Card
         title={cardTitle}
