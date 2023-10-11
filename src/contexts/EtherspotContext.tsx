@@ -7,13 +7,16 @@ import {
   WalletProviderLike,
   Web3WalletProvider,
   EnvNames as EtherspotEnvNames,
+  Transactions,
 } from 'etherspot';
+import { PrimeSdk } from '@etherspot/prime-sdk';
 
 import {
   IAssetWithBalance,
   IAsset,
   ITotalWorthPerAddress,
   IBalanceByChain,
+  IAllChainTransactions,
 } from '../providers/EtherspotContextProvider';
 import { Chain } from '../utils/chain';
 import { Theme } from '../utils/theme';
@@ -26,8 +29,9 @@ export interface EtherspotContextData {
     chainId: number;
     setChainId: (chainId: number) => void;
     getSdkForChainId: (chainId: number, forceNewInstance?: boolean) => EtherspotSdk | null;
+    getEtherspotPrimeSdkForChainId: (chainId: number) => Promise<PrimeSdk | null>;
     isConnecting: boolean;
-    sdk: EtherspotSdk | null;
+    sdk: Promise<PrimeSdk | null> | EtherspotSdk | null;
     smartWalletBalanceByChain: IBalanceByChain[] | null;
     keyBasedWalletBalanceByChain: IBalanceByChain[] | null;
     getSupportedAssetsForChainId: (chainId: number) => Promise<IAsset[]>;
@@ -46,6 +50,12 @@ export interface EtherspotContextData {
     loadSmartWalletBalancesByChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
     loadKeyBasedWalletBalancesPerChain: (walletAddress: string, supportedChains: Chain[]) => Promise<void>;
     getNftsForChainId: (chainId: number, address?: string | null, recompute?: boolean) => Promise<NftCollection[]>;
+    getTransactionsFromChain: (
+      chainId: number,
+      address?: string | null,
+      recompute?: boolean
+    ) => Promise<Transactions[]>;
+    getAllTransactions: (address?: string | null) => Promise<IAllChainTransactions[]>;
     getEnsNode: (chainId: number, address?: string | null, recompute?: boolean) => Promise<ENSNode | null>;
     web3Provider: WalletProviderLike | Web3WalletProvider | null;
     totalWorthPerAddress: ITotalWorthPerAddress;
@@ -59,6 +69,7 @@ export interface EtherspotContextData {
     changeTheme: (theme: Theme) => void;
     environment: EtherspotEnvNames;
     setEnvironment: (environment: EtherspotEnvNames) => void;
+    etherspotMode?: string;
   };
 }
 

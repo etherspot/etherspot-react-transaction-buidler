@@ -1,7 +1,7 @@
 import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { HiCheck } from 'react-icons/hi';
-import { AiOutlinePlusCircle } from 'react-icons/ai';
+import { AiFillWarning, AiOutlinePlusCircle } from 'react-icons/ai';
 import { Sdk, sleep, TokenListToken } from 'etherspot';
 import { BigNumber, utils, ethers } from 'ethers';
 
@@ -38,9 +38,9 @@ import {
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard } from '../utils/common';
+import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard, isEtherspotPrime } from '../utils/common';
 import { Theme } from '../utils/theme';
-import { CHAIN_ID, Chain } from '../utils/chain';
+import { CHAIN_ID, Chain, primeSdkSupportedChains } from '../utils/chain';
 import Card from '../components/Card';
 import { Text } from '../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
@@ -62,6 +62,7 @@ import { TbCopy, TbWallet } from 'react-icons/tb';
 import { BiCheck } from 'react-icons/bi';
 import { CgSandClock } from 'react-icons/cg';
 import { isEmpty } from 'lodash';
+import { RoundedImage } from '../components/Image';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -256,6 +257,67 @@ const SignButton = styled.button`
   cursor: pointer;
 `;
 
+const ModalContainer = styled.div`
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+`;
+
+const ModalBackDrop = styled.div`
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(21, 15, 33, 0.7);
+`;
+
+const Modal = styled.div`
+  position: relative;
+  background: transparent;
+  z-index: 2;
+  margin: 20px;
+`;
+
+const WalletUnsupportedNotes = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+`;
+
+const WalletUnsupportedNote = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 5px;
+`;
+
+const WalletUnsupportedText = styled(Text)`
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.text.settingsMenuItem};
+`;
+
+const SupportedWalletsList = styled.div`
+  display: flex;
+  flex-direction: row;
+  row-gap: 2px;
+`;
+
+const ListItem = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 8px;
+  padding: 5px 8px;
+`;
+
 const availableTransactionBlocks: ITransactionBlock[] = [
   {
     id: getTimeBasedUniqueId(),
@@ -391,10 +453,11 @@ const TransactionBuilderContextProvider = ({
   const defaultShowWallet = !mappedDefaultTransactionBlocks?.length && !hideWalletBlock;
   const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
   const [isWalletConnecting, setIsWalletConnecting] = useState(false);
+  const [isWalletSupported, setIsWalletSupported] = useState(true);
 
   const theme: Theme = useTheme();
 
-  const { environment } = useEtherspot();
+  const { environment, etherspotMode, chainId } = useEtherspot();
 
   useEffect(() => {
     setShowWalletBlock(false);
@@ -426,6 +489,7 @@ const TransactionBuilderContextProvider = ({
     sdk,
     providerAddress,
     getSdkForChainId,
+    getEtherspotPrimeSdkForChainId,
     web3Provider,
     logout,
     smartWalletOnly,
@@ -581,7 +645,9 @@ const TransactionBuilderContextProvider = ({
       );
 
       const estimated = await estimateCrossChainAction(
-        getSdkForChainId(crossChainAction.chainId),
+        isEtherspotPrime(etherspotMode)
+          ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+          : (getSdkForChainId(crossChainAction.chainId) as Sdk),
         web3Provider,
         crossChainAction,
         providerAddress,
@@ -639,156 +705,16 @@ const TransactionBuilderContextProvider = ({
       return;
     }
 
-    if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
-      let crossChainAction = crossChainActions[0];
-
-      if (!crossChainAction.receiveAmount) {
-        showAlertModal('Failed to get receiveAmount');
-        setIsSubmitting(false);
-        return;
-      }
-
-      let result: {
-        transactionHash?: string;
-        errorMessage?: string;
-      };
-
-      result = crossChainAction.useWeb3Provider
-        ? await submitWeb3ProviderTransactions(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
-            web3Provider,
-            crossChainAction.transactions,
-            crossChainAction.chainId,
-            providerAddress
-          )
-        : await submitEtherspotAndWaitForTransactionHash(
-            getSdkForChainId(crossChainAction.chainId) as Sdk,
-            crossChainAction.transactions,
-            crossChainAction.gasTokenAddress ?? undefined
-          );
-
-      if (result?.errorMessage || !result?.transactionHash?.length) {
-        // showAlertModal(result.errorMessage ?? 'Unable to send transaction!');
-        setIsSubmitting(false);
-        crossChainAction.transactions.map((transaction) => {
-          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
-        });
-        return;
-      }
-
-      crossChainAction.transactions.map((transaction) => {
-        transaction.status = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
-        transaction.submitTimestamp = Date.now();
-        transaction.transactionHash = result.transactionHash;
-      });
-      crossChainAction.transactionHash = result.transactionHash;
-
-      let flag = 1,
-        errorOnLiFi;
-      while (flag) {
-        try {
-          const status = await getCrossChainStatusByHash(
-            getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
-            crossChainAction.chainId,
-            CHAIN_ID.POLYGON,
-            result.transactionHash,
-          );
-          if (status?.status == 'DONE' && status.subStatus == 'COMPLETED') {
-            flag = 0;
-            crossChainAction.transactions.map((transaction) => {
-              transaction.status = CROSS_CHAIN_ACTION_STATUS.CONFIRMED;
-            });
-
-            crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
-              transaction.status = CROSS_CHAIN_ACTION_STATUS.ESTIMATING;
-            });
-          } else if (status?.status === 'FAILED') {
-            errorOnLiFi = 'Transaction Failed on LiFi';
-            flag = 0;
-          }
-          await sleep(30);
-        } catch (err) {
-          errorOnLiFi = 'Transaction Failed on LiFi';
-          flag = 0;
-        }
-      }
-
-      if (errorOnLiFi) {
-        showAlertModal(errorOnLiFi);
-        setIsSubmitting(false);
-        return;
-      }
-
-      const estimateGas = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
-        web3Provider,
-        crossChainAction.destinationCrossChainAction[0],
-        providerAddress,
-        accountAddress
-      );
-
-      const stakingTxns = await klimaDaoStaking(
-        transactionBlocks[0].type === 'KLIMA_STAKE' ? transactionBlocks[0].values?.routeToKlima : null,
-        transactionBlocks[0].type === 'KLIMA_STAKE' ? transactionBlocks[0].values?.receiverAddress : '',
-        getSdkForChainId(CHAIN_ID.POLYGON),
-        false,
-        BigNumber.from(crossChainAction.receiveAmount)
-          .sub(utils.parseUnits('0.02', 6))
-          .sub(estimateGas.feeAmount ?? '0')
-          .toString()
-      );
-
-      if (stakingTxns.errorMessage) {
-        showAlertModal(stakingTxns.errorMessage);
-        setIsSubmitting(false);
-        return;
-      }
-
-      const estimated = await estimateCrossChainAction(
-        getSdkForChainId(CHAIN_ID.POLYGON),
-        web3Provider,
-        crossChainAction.destinationCrossChainAction[0],
-        providerAddress,
-        accountAddress
-      );
-
-      crossChainAction = {
-        ...crossChainAction,
-        estimated,
-        transactions: stakingTxns.result?.transactions ?? [],
-        chainId: CHAIN_ID.POLYGON,
-      };
-
-      crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
-        transaction.status = CROSS_CHAIN_ACTION_STATUS.PENDING;
-      });
-
-      result = await submitEtherspotAndWaitForTransactionHash(
-        getSdkForChainId(CHAIN_ID.POLYGON) as Sdk,
-        crossChainAction.transactions,
-        POLYGON_USDC_CONTRACT_ADDRESS
-      );
-
-      if (result?.errorMessage || !result?.transactionHash?.length) {
-        showAlertModal(result.errorMessage ?? 'Unable to send Polygon transaction!');
-        crossChainAction.destinationCrossChainAction[0].transactions.map((transaction) => {
-          transaction.status = CROSS_CHAIN_ACTION_STATUS.FAILED;
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      setCrossChainActions([]);
-      setTransactionBlocks([]);
-      showAlertModal('Transaction sent');
-      setIsSubmitting(false);
-    } else if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-      const sdkForXdai = getSdkForChainId(CHAIN_ID.XDAI);
+    if (crossChainActions[0].type == TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
+      const sdkForXdai = isEtherspotPrime(etherspotMode)
+        ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+        : getSdkForChainId(CHAIN_ID.XDAI);
 
       if (!sdkForXdai) return;
 
       let crossChainAction = crossChainActions[0];
 
-      const res = await sdkForXdai.getAccountBalances({
+      const res = await (sdkForXdai as Sdk).getAccountBalances({
         tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
       });
 
@@ -839,7 +765,9 @@ const TransactionBuilderContextProvider = ({
         }
       } else {
         result = await submitEtherspotAndWaitForTransactionHash(
-          getSdkForChainId(crossChainAction.chainId) as Sdk,
+          isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+            : (getSdkForChainId(CHAIN_ID.XDAI) as Sdk),
           crossChainAction.transactions,
           crossChainAction.gasTokenAddress ?? undefined
         );
@@ -870,7 +798,7 @@ const TransactionBuilderContextProvider = ({
 
       while (flag) {
         try {
-          const res = await sdkForXdai.getAccountBalances({
+          const res = await (sdkForXdai as Sdk).getAccountBalances({
             tokens: [GNOSIS_USDC_CONTRACT_ADDRESS],
           });
 
@@ -903,7 +831,9 @@ const TransactionBuilderContextProvider = ({
 
       if (crossChainAction.destinationCrossChainAction.length) {
         const estimateGas = await estimateCrossChainAction(
-          getSdkForChainId(CHAIN_ID.XDAI),
+          isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+            : (getSdkForChainId(CHAIN_ID.XDAI) as Sdk),
           web3Provider,
           crossChainAction.destinationCrossChainAction[0],
           providerAddress,
@@ -922,7 +852,9 @@ const TransactionBuilderContextProvider = ({
         });
 
         result = await submitEtherspotAndWaitForTransactionHash(
-          getSdkForChainId(CHAIN_ID.XDAI) as Sdk,
+          isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.XDAI)
+            : (getSdkForChainId(CHAIN_ID.XDAI) as Sdk),
           crossChainAction.transactions,
           GNOSIS_USDC_CONTRACT_ADDRESS
         );
@@ -1106,8 +1038,21 @@ const TransactionBuilderContextProvider = ({
     if (sdk && connect) {
       setIsWalletConnecting(true);
       try {
-        await connect();
-      } catch {}
+        if (isEtherspotPrime(etherspotMode)) {
+          const isChainSupported = primeSdkSupportedChains.some(({ chainId: chain }) => chain === chainId);
+          if (isChainSupported) {
+            setIsWalletSupported(true);
+            await connect();
+          } else {
+            setIsWalletSupported(false);
+          }
+        } else {
+          await connect();
+        }
+      } catch (e) {
+        console.error(e);
+        /* empty */
+      }
     }
     setIsWalletConnecting(false);
   };
@@ -1142,15 +1087,17 @@ const TransactionBuilderContextProvider = ({
   const onBuyClick = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.preventDefault();
 
-    const maticSdk = getSdkForChainId(CHAIN_ID.POLYGON);
+    const maticSdk = isEtherspotPrime(etherspotMode)
+      ? await getEtherspotPrimeSdkForChainId(CHAIN_ID.POLYGON)
+      : getSdkForChainId(CHAIN_ID.POLYGON);
 
     if (!accountAddress || !maticSdk) return;
 
-    let account = await maticSdk.getAccount();
+    let account = await (maticSdk as Sdk).getAccount();
     if (!account || account.address !== accountAddress) {
       try {
-        await maticSdk.computeContractAccount();
-        account = await maticSdk.getAccount();
+        await (maticSdk as Sdk).computeContractAccount();
+        account = await (maticSdk as Sdk).getAccount();
       } catch {
         showAlertModal('There was an error fetching the account, please try again later.');
         return;
@@ -1162,7 +1109,7 @@ const TransactionBuilderContextProvider = ({
       return;
     }
 
-    openMtPelerinTab(maticSdk, account, deployingAccount, setDeployingAccount, showAlertModal);
+    openMtPelerinTab(maticSdk as Sdk, account, deployingAccount, setDeployingAccount, showAlertModal);
   };
 
   useEffect(() => {
@@ -1191,6 +1138,44 @@ const TransactionBuilderContextProvider = ({
 
   return (
     <TransactionBuilderContext.Provider value={{ data: contextData }}>
+      {isEtherspotPrime(etherspotMode) && !isWalletSupported && (
+        <ModalContainer>
+          <ModalBackDrop>
+            <Modal>
+              <Card color={theme.color?.background?.unsupportedNetworksCard}>
+                <WalletUnsupportedNotes>
+                  <WalletUnsupportedNote>
+                    <AiFillWarning size={18} color={theme.color?.text?.warningIcon} style={{ paddingRight: '5px' }} />
+                    <WalletUnsupportedText color={theme.color?.text?.button}>
+                      Your wallet network is temporarily unsupported
+                    </WalletUnsupportedText>
+                  </WalletUnsupportedNote>
+                  <WalletUnsupportedNote>
+                    <WalletUnsupportedText>
+                      To continue please connect your wallet on the following networks:
+                    </WalletUnsupportedText>
+                  </WalletUnsupportedNote>
+                  <SupportedWalletsList>
+                    {primeSdkSupportedChains.map((supportedChain) => (
+                      <ListItem key={supportedChain.chainId}>
+                        {!!supportedChain.iconUrl && (
+                          <RoundedImage
+                            url={supportedChain.iconUrl}
+                            title={supportedChain.title}
+                            size={18}
+                            marginRight={8}
+                          />
+                        )}
+                        {supportedChain.title}
+                      </ListItem>
+                    ))}
+                  </SupportedWalletsList>
+                </WalletUnsupportedNotes>
+              </Card>
+            </Modal>
+          </ModalBackDrop>
+        </ModalContainer>
+      )}
       {!hideTopNavigation && (
         <TopNavigation>
           <WalletAddressesWrapper>
@@ -1726,7 +1711,9 @@ const TransactionBuilderContextProvider = ({
                             providerAddress
                           )
                         : await submitEtherspotTransactionsBatch(
-                            getSdkForChainId(crossChainAction.chainId) as Sdk,
+                            isEtherspotPrime(etherspotMode)
+                              ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+                              : (getSdkForChainId(crossChainAction.chainId) as Sdk),
                             crossChainAction.transactions,
                             crossChainAction.gasTokenAddress ?? undefined
                           );

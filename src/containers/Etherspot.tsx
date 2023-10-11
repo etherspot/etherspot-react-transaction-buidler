@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
 import { SessionStorage, WalletProviderLike } from 'etherspot';
+import { EtherspotTransactionKit } from '@etherspot/transaction-kit';
 import { merge } from 'lodash';
 
 import {
@@ -12,6 +13,7 @@ import {
 
 import { darkTheme, getTheme, Theme, ThemeType } from '../utils/theme';
 import { IDefaultTransactionBlock, ITransactionBlockType } from '../types/transactionBlock';
+import { ETHERSPOT } from '../constants/globalConstants';
 
 interface EtherspotProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -41,6 +43,7 @@ interface EtherspotProps {
   hideWalletSwitch?: boolean;
   hideActionPreviewHeader?: boolean;
   walletBlockActionsReplaceBehaviour?: boolean;
+  etherspotMode?: 'etherspot' | 'etherspot-prime';
 }
 
 const ComponentWrapper = styled.div.attrs(
@@ -105,6 +108,7 @@ const Etherspot = ({
   hideActionPreviewHeader = false,
   walletBlockActionsReplaceBehaviour = false,
   onLogout,
+  etherspotMode = ETHERSPOT,
 }: EtherspotProps) => {
   const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));
 
@@ -119,48 +123,50 @@ const Etherspot = ({
 
   return (
     <ThemeProvider theme={merge({}, activeTheme, themeOverride)}>
-      <EtherspotContextProvider
-        provider={provider}
-        chainId={chainId}
-        etherspotSessionStorage={etherspotSessionStorage}
-        onLogout={onLogout}
-        smartWalletOnly={smartWalletOnly}
-        changeTheme={setActiveTheme}
-      >
-        <style>
-          @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css'); @import
-          url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css'); @import
-          url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css'); @import
-          url('https://unpkg.com/tippy.js@6.3.7/dist/tippy.css'); @import
-          url('https://unpkg.com/tippy.js@6.3.7/dist/border.css');
-        </style>
-        <ComponentWrapper removeOuterContainer={removeOuterContainer} componentWidth={componentWidth}>
-          <TransactionBuilderModalContextProvider>
-            <TransactionsDispatcherContextProvider>
-              <TransactionBuilderContextProvider
-                defaultTransactionBlocks={defaultTransactionBlocks}
-                hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
-                removeTransactionBlockContainer={removeTransactionBlockContainer}
-                hideAddTransactionButton={hideAddTransactionButton}
-                showMenuLogout={showMenuLogout}
-                hideWalletBlock={hideWalletBlock}
-                hideWalletBlockNavigation={hideWalletBlockNavigation}
-                hideTopNavigation={hideTopNavigation}
-                hideWalletToggle={hideWalletToggle}
-                hideBuyButton={hideBuyButton}
-                hideStatus={hideStatus}
-                hideSettingsButton={hideSettingsButton}
-                hideAddButton={hideAddButton}
-                hideCloseTransactionBlockButton={hideCloseTransactionBlockButton}
-                hideTransactionBlockTitle={hideTransactionBlockTitle}
-                hideWalletSwitch={hideWalletSwitch}
-                hideActionPreviewHeader={hideActionPreviewHeader}
-                walletBlockActionsReplaceBehaviour={walletBlockActionsReplaceBehaviour}
-              />
-            </TransactionsDispatcherContextProvider>
-          </TransactionBuilderModalContextProvider>
-        </ComponentWrapper>
-      </EtherspotContextProvider>
+      <EtherspotTransactionKit provider={provider} chainId={chainId}>
+        <EtherspotContextProvider
+          provider={provider}
+          chainId={chainId}
+          etherspotSessionStorage={etherspotSessionStorage}
+          onLogout={onLogout}
+          smartWalletOnly={smartWalletOnly}
+          changeTheme={setActiveTheme}
+          etherspotMode={etherspotMode}
+        >
+          <style>
+            @import url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Regular.css'); @import
+            url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Medium.css'); @import
+            url('https://public.etherspot.io/buidler/fonts/PT-Root-UI_Bold.css'); @import
+            url('https://unpkg.com/tippy.js@6.3.7/dist/tippy.css'); @import
+            url('https://unpkg.com/tippy.js@6.3.7/dist/border.css');
+          </style>
+          <ComponentWrapper removeOuterContainer={removeOuterContainer} componentWidth={componentWidth}>
+            <TransactionBuilderModalContextProvider>
+              <TransactionsDispatcherContextProvider>
+                <TransactionBuilderContextProvider
+                  defaultTransactionBlocks={defaultTransactionBlocks}
+                  hiddenTransactionBlockTypes={hiddenTransactionBlockTypes}
+                  removeTransactionBlockContainer={removeTransactionBlockContainer}
+                  hideAddTransactionButton={hideAddTransactionButton}
+                  showMenuLogout={showMenuLogout}
+                  hideWalletBlock={hideWalletBlock}
+                  hideWalletBlockNavigation={hideWalletBlockNavigation}
+                  hideTopNavigation={hideTopNavigation}
+                  hideWalletToggle={hideWalletToggle}
+                  hideBuyButton={hideBuyButton}
+                  hideStatus={hideStatus}
+                  hideSettingsButton={hideSettingsButton}
+                  hideAddButton={hideAddButton}
+                  hideCloseTransactionBlockButton={hideCloseTransactionBlockButton}
+                  hideTransactionBlockTitle={hideTransactionBlockTitle}
+                  hideWalletSwitch={hideWalletSwitch}
+                  hideActionPreviewHeader={hideActionPreviewHeader}
+                />
+              </TransactionsDispatcherContextProvider>
+            </TransactionBuilderModalContextProvider>
+          </ComponentWrapper>
+        </EtherspotContextProvider>
+      </EtherspotTransactionKit>
     </ThemeProvider>
   );
 };

@@ -285,8 +285,6 @@ export const klimaDaoStaking = async (
   routeToKlima?: Route | null,
   receiverAddress?: string,
   sdk?: EtherspotSdk | null,
-  flag?: Boolean,
-  amount?: string
 ): Promise<{
   errorMessage?: string;
   result?: { transactions: ICrossChainActionTransaction[]; provider?: string; iconUrl?: string };
@@ -294,16 +292,7 @@ export const klimaDaoStaking = async (
   if (!sdk) return { errorMessage: 'No sdk found' };
 
   if (!routeToKlima) {
-    const { items: quotes } = await sdk.getAdvanceRoutesLiFi({
-      fromChainId: CHAIN_ID.POLYGON,
-      toChainId: CHAIN_ID.POLYGON,
-      fromAmount: BigNumber.from(amount).sub('250000'),
-      fromTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS,
-      toTokenAddress: '0x4e78011Ce80ee02d2c3e649Fb657E45898257815',
-      toAddress: sdk.state.accountAddress,
-    });
-    if (quotes.length > 0) routeToKlima = quotes[0];
-    else return { errorMessage: 'No routes found for staking. Please try again' };
+    return { errorMessage: 'No routes found for staking. Please try again' };
   }
 
   try {
@@ -321,16 +310,6 @@ export const klimaDaoStaking = async (
         createTimestamp,
         status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     }));
-
-    if (flag) {
-      return {
-        result: {
-          transactions,
-          provider: bridgeServiceIdToDetails['lifi'].title,
-          iconUrl: bridgeServiceIdToDetails['lifi'].iconUrl,
-        },
-      };
-    }
 
     // not native asset and no erc20 approval transaction included
     if (
@@ -786,7 +765,7 @@ export const buildCrossChainAction = async (
             transactions = [approvalTransaction, ...transactions];
           }
 
-          const result = await klimaDaoStaking(routeToKlima, receiverAddress, sdk, true, '0');
+          const result = await klimaDaoStaking(routeToKlima, receiverAddress, sdk);
 
           if (result.errorMessage) return { errorMessage: result.errorMessage };
 
@@ -843,6 +822,8 @@ export const buildCrossChainAction = async (
                 estimated: null,
                 useWeb3Provider: false,
                 destinationCrossChainAction: [],
+                gasTokenAddress: POLYGON_USDC_CONTRACT_ADDRESS,
+                gasTokenDecimals: 6,
               },
             ],
           };
@@ -2173,12 +2154,10 @@ export const submitEtherspotAndWaitForTransactionHash = async (
 };
 
 export const getCrossChainStatusByHash = async (
-  sdk: EtherspotSdk,
   fromChainId: number,
   toChainId: number,
   hash: string,
 ): Promise<LiFiStatus | null> => {
-  if (!sdk) return null;
   try {
     const options = { method: 'GET', headers: { accept: 'application/json' } };
 
@@ -2251,7 +2230,8 @@ export const submitWeb3ProviderTransaction = async (
   web3Provider: WalletProviderLike | Web3WalletProvider | null,
   transaction: ExecuteAccountTransactionDto,
   chainId: number,
-  providerAddress: string | null
+  providerAddress: string | null,
+  waitForCompleted: boolean = true
 ): Promise<{
   transactionHash?: string;
   errorMessage?: string;
@@ -2280,7 +2260,13 @@ export const submitWeb3ProviderTransaction = async (
     };
     // @ts-ignore
     transactionHash = await sendWeb3ProviderRequest(web3Provider, 'eth_sendTransaction', [tx], chainId);
+  } catch (e) {
+    if (e instanceof Error) {
+      errorMessage = e?.message;
+    }
+  }
 
+  if (waitForCompleted) {
     let transactionStatus = null;
 
     while (transactionStatus === null) {
@@ -2294,10 +2280,6 @@ export const submitWeb3ProviderTransaction = async (
       } catch (err) {
         //
       }
-    }
-  } catch (e) {
-    if (e instanceof Error) {
-      errorMessage = e?.message;
     }
   }
 

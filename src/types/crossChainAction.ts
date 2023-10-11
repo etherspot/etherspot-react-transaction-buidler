@@ -108,7 +108,7 @@ interface AssetSwapAction {
   preview: AssetSwapActionPreview;
 }
 
-interface KlimaStakingAction {
+export interface KlimaStakingAction {
   type: typeof TRANSACTION_BLOCK_TYPE.KLIMA_STAKE;
   preview: KlimaStakingActionPreview;
   destinationCrossChainAction: ICrossChainAction[];
