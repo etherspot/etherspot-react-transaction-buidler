@@ -3,6 +3,7 @@ import styled, { useTheme } from 'styled-components';
 
 // Components
 import { Theme } from '../../utils/theme';
+import { isEtherspotPrime } from '../../utils/common';
 import History from '../History';
 import Deployment from '../Deployment';
 import UserProfile from '../User/UserProfile';
@@ -13,17 +14,20 @@ import { CloseButton } from '../Button';
 import ThemeModal from '../ThemeModal';
 import SystemVersion from '../SystemVersion';
 import EnvironmentModal from '../Environment';
+import PaymasterModal from '../Paymaster';
+import BundlerModal from '../Bundler';
 
 // Hooks
-import { useTransactionBuilderModal } from '../../hooks';
+import { useEtherspot, useTransactionBuilderModal } from '../../hooks';
 import useOnClickOutside from '../../hooks/useOnClickOutside';
 
 // Icons
-import { BsClockHistory } from 'react-icons/bs';
+import { BsBoxSeam, BsClockHistory } from 'react-icons/bs';
 import { MdOutlineSettings, MdOutlineDashboardCustomize, MdOutlineInfo } from 'react-icons/md';
 import { IoColorPaletteOutline, IoGlobeOutline, IoWalletOutline } from 'react-icons/io5';
 import { TbLogout } from 'react-icons/tb';
 import { HiOutlineUser } from 'react-icons/hi';
+import { BiCoinStack } from 'react-icons/bi';
 
 export interface SettingMenuProps {
   showLogout?: boolean;
@@ -33,6 +37,8 @@ export interface SettingMenuProps {
 enum SettingsSubMenuOptions {
   THEME = 'THEME',
   ENVIRONMENT = 'ENVIRONMENT',
+  BUNDLER = 'BUNDLER',
+  PAYMASTER = 'PAYMASTER',
 }
 
 const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
@@ -41,6 +47,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
   const menuRef = useRef<null | HTMLDivElement>(null);
 
   const theme: Theme = useTheme();
+  const { etherspotMode } = useEtherspot();
   const { showModal, hideModal } = useTransactionBuilderModal();
 
   const onBackButtonClick = () => {
@@ -61,6 +68,10 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
         return <ThemeModal onBackButtonClick={onBackButtonClick} onSubMenuCloseClick={closeSettingsMenu} />;
       case SettingsSubMenuOptions.ENVIRONMENT:
         return <EnvironmentModal onBackButtonClick={onBackButtonClick} onSubMenuCloseClick={closeSettingsMenu} />;
+      case SettingsSubMenuOptions.PAYMASTER:
+        return <PaymasterModal onBackButtonClick={onBackButtonClick} onSubMenuCloseClick={closeSettingsMenu} />;
+      case SettingsSubMenuOptions.BUNDLER:
+        return <BundlerModal onBackButtonClick={onBackButtonClick} onSubMenuCloseClick={closeSettingsMenu} />;
       default:
         return;
     }
@@ -96,7 +107,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
                     hideModal();
                     setShowMenu(true);
                   }}
-                />,
+                />
               );
             }}
           />
@@ -119,7 +130,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
                     hideModal();
                     setShowMenu(true);
                   }}
-                />,
+                />
               );
             }}
           />
@@ -131,6 +142,26 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
               setShowMenu(false);
             }}
           />
+          {isEtherspotPrime(etherspotMode) && (
+            <MenuItem
+              icon={<BiCoinStack size={16} style={{ marginRight: 12 }} />}
+              title="Paymaster"
+              onClick={() => {
+                setShowSubMenu(SettingsSubMenuOptions.PAYMASTER);
+                setShowMenu(false);
+              }}
+            />
+          )}
+          {isEtherspotPrime(etherspotMode) && (
+            <MenuItem
+              icon={<BsBoxSeam size={16} style={{ marginRight: 12 }} />}
+              title="Bundler"
+              onClick={() => {
+                setShowSubMenu(SettingsSubMenuOptions.BUNDLER);
+                setShowMenu(false);
+              }}
+            />
+          )}
           <MenuItem
             icon={<MdOutlineInfo size={16} style={{ marginRight: 12 }} />}
             title="System Info"
@@ -142,7 +173,7 @@ const SettingMenu = ({ showLogout, logout }: SettingMenuProps) => {
                     hideModal();
                     setShowMenu(true);
                   }}
-                />,
+                />
               );
             }}
           />
