@@ -118,6 +118,26 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
       accountAddress
     );
 
+    if (estimated?.errorMessage || !estimated) {
+      showAlertModal(estimated.errorMessage ?? 'Unable to estimate!');
+      setCrossChainActions((current) => current.map((currentCrossChainAction) => {
+        if (crossChainAction.id === currentCrossChainAction.id) {
+          return {
+            ...currentCrossChainAction,
+            destinationCrossChainAction: [
+              updateCrossChainActionTransactionsStatus(
+                // @ts-ignore
+                currentCrossChainAction.destinationCrossChainAction[0],
+                CROSS_CHAIN_ACTION_STATUS.FAILED,
+              ),
+            ]
+          };
+        }
+        return currentCrossChainAction;
+      }));
+      return;
+    }
+
     setCrossChainActions((current) => current.map((currentCrossChainAction) => {
       if (crossChainAction.id === currentCrossChainAction.id) {
         return {
