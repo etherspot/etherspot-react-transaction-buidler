@@ -626,6 +626,7 @@ const TransactionsDispatcherContextProvider = ({ children }: { children: ReactNo
             //
           }
 
+          // this is dirty fix due wrong initial implementation, do not repeat
           if (status === CROSS_CHAIN_ACTION_STATUS.CONFIRMED
             && crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE) {
             await finalizeKlimaCrossChainAction(crossChainAction);
