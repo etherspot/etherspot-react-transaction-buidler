@@ -28,7 +28,14 @@ import { BigNumber, ethers } from 'ethers';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
 import { EtherspotContext } from '../contexts';
-import { Chain, CHAIN_ID, MAINNET_CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../utils/chain';
+import {
+  Chain,
+  CHAIN_ID,
+  MAINNET_CHAIN_ID,
+  nativeAssetPerChainId,
+  primeSdkSupportedChains,
+  supportedChains,
+} from '../utils/chain';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { isCaseInsensitiveMatch, isNativeAssetAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
@@ -37,6 +44,7 @@ import { Theme } from '../utils/theme';
 import { ETHERSPOT_PRIME } from '../constants/globalConstants';
 
 import { ICrossChainAction } from '../types/crossChainAction';
+import { Bundlers, Paymasters } from '../enums/wallet.enum';
 
 export type IAsset = TokenListToken;
 
@@ -115,6 +123,9 @@ const EtherspotContextProvider = ({
   const [smartWalletBalanceByChain, setSmartWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
   const [keyBasedWalletBalanceByChain, setKeyBasedWalletBalanceByChain] = useState<IBalanceByChain[]>([]);
   const [environment, setEnvironment] = useState<EtherspotEnvNames>(EtherspotEnvNames.MainNets);
+  const [paymaster, setPaymaster] = useState<Paymasters>(Paymasters.Stackup);
+  const [bundler, setBundler] = useState<Bundlers | undefined>(Bundlers.Skandha);
+  const [isBundlerSelected, setIsBundlerSelected] = useState<boolean>(true);
 
   // map from generic web3 provider if needed
   const setMappedProvider = useCallback(async () => {
@@ -654,10 +665,10 @@ const EtherspotContextProvider = ({
       const account = address;
       if (!!sdk && !account) return [];
 
-      await sdk.computeContractAccount();
+      await (sdk as EtherspotSdk).computeContractAccount();
       try {
         let transactions: any = [];
-        const txs = await sdk.getTransactions({ account });
+        const txs = await (sdk as EtherspotSdk).getTransactions({ account });
         if (txs?.items) transactions = txs.items?.map((item) => ({ ...item, chainId }));
         return { transactions };
       } catch (e) {
@@ -744,14 +755,16 @@ const EtherspotContextProvider = ({
     async (force?: boolean) => {
       if (!sdk || !accountAddress) return;
 
+      const chains = isEtherspotPrime(etherspotMode) ? primeSdkSupportedChains : supportedChains;
+
       if (!!force || !smartWalletBalanceByChain.length) {
-        await loadSmartWalletBalancesByChain(accountAddress, supportedChains);
+        await loadSmartWalletBalancesByChain(accountAddress, chains);
       }
 
       if (!providerAddress) return;
 
       if (!!force || !keyBasedWalletBalanceByChain.length) {
-        await loadKeyBasedWalletBalancesPerChain(providerAddress, supportedChains);
+        await loadKeyBasedWalletBalancesPerChain(providerAddress, chains);
       }
     },
     [sdk, accountAddress, providerAddress, smartWalletBalanceByChain, keyBasedWalletBalanceByChain]
@@ -792,6 +805,12 @@ const EtherspotContextProvider = ({
       environment,
       setEnvironment,
       etherspotMode,
+      paymaster,
+      setPaymaster,
+      bundler,
+      setBundler,
+      isBundlerSelected,
+      setIsBundlerSelected,
     }),
     [
       connect,
@@ -827,6 +846,12 @@ const EtherspotContextProvider = ({
       environment,
       setEnvironment,
       etherspotMode,
+      paymaster,
+      setPaymaster,
+      bundler,
+      setBundler,
+      isBundlerSelected,
+      setIsBundlerSelected,
     ]
   );
 
