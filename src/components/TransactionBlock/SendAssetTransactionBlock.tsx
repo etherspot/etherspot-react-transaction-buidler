@@ -14,6 +14,12 @@ import { Pill } from '../Text';
 import { Theme } from '../../utils/theme';
 import AccountSwitchInput from '../AccountSwitchInput';
 import { IMultiCallData, ISendAssetTransactionBlock } from '../../types/transactionBlock';
+import {
+  EtherspotBatch,
+  EtherspotBatches,
+  EtherspotTransaction,
+  useEtherspotTransactions,
+} from '@etherspot/transaction-kit';
 
 export interface ISendAssetTransactionBlockValues {
   fromAddress?: string;
@@ -67,6 +73,7 @@ const SendAssetTransactionBlock = ({
     smartWalletOnly,
     updateWalletBalances,
   } = useEtherspot();
+  const { estimate, send } = useEtherspotTransactions();
 
   const onAmountChange = useCallback(
     (newAmount: string) => {
@@ -135,93 +142,104 @@ const SendAssetTransactionBlock = ({
     );
   }, [amount, selectedAsset]);
 
+  const onEstimateReceiver = (estimationData) => {
+    console.log('This is the cost estimate for all the batches', estimationData);
+
+    console.log(+ethers.utils.formatUnits(estimationData[0].cost, 4));
+  };
+
   return (
-    <>
-      {!hideTitle && <Title>Send asset</Title>}
-      {!hideWalletSwitch && (
-        <AccountSwitchInput
-          label="From wallet"
-          selectedAccountType={selectedAccountType}
-          onChange={(accountType) => {
-            if (accountType !== selectedAccountType) {
-              setSelectedNetwork(null);
-              setSelectedAsset(null);
-            }
-            setIsFromEtherspotWallet(accountType === AccountTypes.Contract);
-            resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
-            setSelectedAccountType(accountType);
-          }}
-          hideKeyBased={smartWalletOnly}
-          errorMessage={errorMessages?.accountType}
-          disabled={!!fixed || !!multiCallData}
-          showTotals
-          showHelperText
-        />
-      )}
-      <NetworkAssetSelectInput
-        label="From"
-        onAssetSelect={(asset, amountBN) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'selectedAsset');
-          setSelectedAsset(asset);
-          setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
-        }}
-        onNetworkSelect={(network) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'chain');
-          setSelectedNetwork(network);
-        }}
-        selectedNetwork={selectedNetwork}
-        selectedAsset={selectedAsset}
-        errorMessage={errorMessages?.chain || errorMessages?.selectedAsset}
-        hideChainIds={hideChainIds}
-        walletAddress={isFromEtherspotWallet ? accountAddress : providerAddress}
-        showPositiveBalanceAssets
-        showQuickInputButtons
-        disabled={!!fixed || !!multiCallData}
-        accountType={selectedAccountType}
-      />
-      {selectedAsset && selectedNetwork && (
-        <TextInput
-          label="You send"
-          onValueChange={onAmountChange}
-          value={amount}
-          placeholder="0"
-          inputBottomText={
-            selectedAsset?.assetPriceUsd && amount
-              ? `${formatAmountDisplay(+amount * selectedAsset.assetPriceUsd, '$')}`
-              : undefined
-          }
-          inputLeftComponent={
-            <CombinedRoundedImages
-              url={selectedAsset.logoURI}
-              smallImageUrl={selectedNetwork.iconUrl}
-              title={selectedAsset.symbol}
-              smallImageTitle={selectedNetwork.title}
-              borderColor={theme?.color?.background?.textInput}
+    <EtherspotBatches via={'etherspot-prime'} onEstimated={onEstimateReceiver}>
+      <EtherspotBatch>
+        <EtherspotTransaction to={receiverAddress} value={amount}>
+          {!hideTitle && <Title>Send asset</Title>}
+          {!hideWalletSwitch && (
+            <AccountSwitchInput
+              label="From wallet"
+              selectedAccountType={selectedAccountType}
+              onChange={(accountType) => {
+                if (accountType !== selectedAccountType) {
+                  setSelectedNetwork(null);
+                  setSelectedAsset(null);
+                }
+                setIsFromEtherspotWallet(accountType === AccountTypes.Contract);
+                resetTransactionBlockFieldValidationError(transactionBlockId, 'fromAddress');
+                setSelectedAccountType(accountType);
+              }}
+              hideKeyBased={smartWalletOnly}
+              errorMessage={errorMessages?.accountType}
+              disabled={!!fixed || !!multiCallData}
+              showTotals
+              showHelperText
             />
-          }
-          inputTopRightComponent={
-            <Pill
-              label="Remaining"
-              value={`${formatAmountDisplay(remainingSelectedAssetBalance ?? 0)} ${selectedAsset.symbol}`}
-              valueColor={(remainingSelectedAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined}
+          )}
+          <NetworkAssetSelectInput
+            label="From"
+            onAssetSelect={(asset, amountBN) => {
+              resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+              resetTransactionBlockFieldValidationError(transactionBlockId, 'selectedAsset');
+              setSelectedAsset(asset);
+              setAmount(amountBN ? formatMaxAmount(amountBN, asset.decimals) : '');
+            }}
+            onNetworkSelect={(network) => {
+              resetTransactionBlockFieldValidationError(transactionBlockId, 'chain');
+              setSelectedNetwork(network);
+            }}
+            selectedNetwork={selectedNetwork}
+            selectedAsset={selectedAsset}
+            errorMessage={errorMessages?.chain || errorMessages?.selectedAsset}
+            hideChainIds={hideChainIds}
+            walletAddress={isFromEtherspotWallet ? accountAddress : providerAddress}
+            showPositiveBalanceAssets
+            showQuickInputButtons
+            disabled={!!fixed || !!multiCallData}
+            accountType={selectedAccountType}
+          />
+          {selectedAsset && selectedNetwork && (
+            <TextInput
+              label="You send"
+              onValueChange={onAmountChange}
+              value={amount}
+              placeholder="0"
+              inputBottomText={
+                selectedAsset?.assetPriceUsd && amount
+                  ? `${formatAmountDisplay(+amount * selectedAsset.assetPriceUsd, '$')}`
+                  : undefined
+              }
+              inputLeftComponent={
+                <CombinedRoundedImages
+                  url={selectedAsset.logoURI}
+                  smallImageUrl={selectedNetwork.iconUrl}
+                  title={selectedAsset.symbol}
+                  smallImageTitle={selectedNetwork.title}
+                  borderColor={theme?.color?.background?.textInput}
+                />
+              }
+              inputTopRightComponent={
+                <Pill
+                  label="Remaining"
+                  value={`${formatAmountDisplay(remainingSelectedAssetBalance ?? 0)} ${selectedAsset.symbol}`}
+                  valueColor={(remainingSelectedAssetBalance ?? 0) < 0 ? theme.color?.text?.errorMessage : undefined}
+                />
+              }
+              errorMessage={errorMessages?.amount}
+              disabled={!!fixed}
             />
-          }
-          errorMessage={errorMessages?.amount}
-          disabled={!!fixed}
-        />
-      )}
-      <TextInput
-        label={`Receiver address`}
-        value={receiverAddress}
-        onValueChange={(value) => onReceiverAddressChange(value)}
-        errorMessage={errorMessages?.receiverAddress}
-        displayLabelOutside
-        smallerInput
-        showPasteButton
-        disabled={!!fixed || disableReceiverAddressInput}
-      />
-    </>
+          )}
+          <TextInput
+            label={`Receiver address`}
+            value={receiverAddress}
+            onValueChange={(value) => onReceiverAddressChange(value)}
+            errorMessage={errorMessages?.receiverAddress}
+            displayLabelOutside
+            smallerInput
+            showPasteButton
+            disabled={!!fixed || disableReceiverAddressInput}
+          />
+          <button onClick={() => estimate()}>Estimate</button>
+        </EtherspotTransaction>
+      </EtherspotBatch>
+    </EtherspotBatches>
   );
 };
 

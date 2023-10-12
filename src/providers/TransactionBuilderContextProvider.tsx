@@ -63,6 +63,7 @@ import { BiCheck } from 'react-icons/bi';
 import { CgSandClock } from 'react-icons/cg';
 import { isEmpty } from 'lodash';
 import { RoundedImage } from '../components/Image';
+import { useEtherspotTransactions } from '@etherspot/transaction-kit';
 
 export interface TransactionBuilderContextProps {
   defaultTransactionBlocks?: IDefaultTransactionBlock[];
@@ -455,6 +456,8 @@ const TransactionBuilderContextProvider = ({
   const [isWalletConnecting, setIsWalletConnecting] = useState(false);
   const [isWalletSupported, setIsWalletSupported] = useState(true);
 
+  const { estimate } = useEtherspotTransactions();
+
   const theme: Theme = useTheme();
 
   const { environment, etherspotMode, chainId } = useEtherspot();
@@ -644,15 +647,23 @@ const TransactionBuilderContextProvider = ({
         })
       );
 
-      const estimated = await estimateCrossChainAction(
-        isEtherspotPrime(etherspotMode)
-          ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
-          : (getSdkForChainId(crossChainAction.chainId) as Sdk),
-        web3Provider,
-        crossChainAction,
-        providerAddress,
-        accountAddress
-      );
+      let estimated;
+
+      if (!isEtherspotPrime(etherspotMode)) {
+        estimated = await estimateCrossChainAction(
+          isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+            : (getSdkForChainId(crossChainAction.chainId) as Sdk),
+          web3Provider,
+          crossChainAction,
+          providerAddress,
+          accountAddress,
+          etherspotMode
+        );
+      } else {
+        const primeEstimation = estimate();
+        console.log(primeEstimation);
+      }
 
       setCrossChainActions((current) =>
         current.map((currentCrossChainAction) => {
