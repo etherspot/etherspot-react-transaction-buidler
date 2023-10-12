@@ -70,7 +70,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     const valueToReceive =
       valueToReceiveRaw != null
         ? formatAmountDisplay(`${+valueToReceiveRaw * +crossChainAction.estimated.usdPrice}`, '$')
-        : '';
+        : '0 $';
     const amountString = `${+valueToReceiveRaw + ` ` + asset.symbol}・${valueToReceive}`;
 
     return (
@@ -82,13 +82,17 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
               {getTypeOfAddress(SendReceiveAddress, accountAddress, providerAddress)}
             </ClickableText>
             <ValueWrapper>
-              <CombinedRoundedImages
-                title={asset.symbol}
-                url={asset.iconUrl}
-                smallImageTitle={chainTitle}
-                smallImageUrl={network?.iconUrl}
-                size={24}
-              />
+              {asset.iconUrl && asset.iconUrl != null ? (
+                <CombinedRoundedImages
+                  title={asset.symbol}
+                  url={asset.iconUrl}
+                  smallImageTitle={chainTitle}
+                  smallImageUrl={network?.iconUrl}
+                  size={24}
+                />
+              ) : (
+                <IconPlaceHolder data-letters="Ox"></IconPlaceHolder>
+              )}
               <Text> {amountString} </Text>
             </ValueWrapper>
           </LeftWrapper>
@@ -176,4 +180,21 @@ const ValueWrapper = styled.div<{ marginTop?: number }>`
   flex-direction: row;
   align-items: center;
   ${({ marginTop }) => marginTop && `margin-top: ${marginTop}px;`}
+`;
+
+const IconPlaceHolder = styled.div`
+  &[data-letters]:before {
+    content: attr(data-letters);
+    display: inline-block;
+    font-size: 1em;
+    width: 2em;
+    height: 2em;
+    line-height: 2em;
+    text-align: center;
+    border-radius: 50%;
+    background: black;
+    vertical-align: middle;
+    margin-right: 0.5em;
+    color: white;
+  }
 `;
