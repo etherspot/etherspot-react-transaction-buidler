@@ -23,7 +23,7 @@ import { SelectOption } from '../SelectInput/SelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
-import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
+import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount, isEtherspotPrime } from '../../utils/common';
 import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
 import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
@@ -95,10 +95,10 @@ const HoneySwapLPTransactionBlock = ({
   hideTitle = false,
   hideWalletSwitch = false,
 }: IHoneySwapLPBlock) => {
-  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId } = useEtherspot();
+  const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId, etherspotMode } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Key);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [receiveAmount, setReceiveAmount] = useState<string>('');
   const [routeToUSDC, setRouteToUSDC] = useState<Route[]>([]);
@@ -407,7 +407,7 @@ const HoneySwapLPTransactionBlock = ({
             setSelectedReceiveAccountType(accountType);
             setSelectedAccountType(accountType);
           }}
-          hideKeyBased={smartWalletOnly}
+          hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
           errorMessage={errorMessages?.accountType}
           showTotals
         />
