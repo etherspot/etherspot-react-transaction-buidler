@@ -67,8 +67,6 @@ export default [
       '@etherspot/prime-sdk',
       '@etherspot/transaction-kit',
     ],
-    context: 'window',
-
   },
   {
     input: 'dist/esm/types/index.d.ts',

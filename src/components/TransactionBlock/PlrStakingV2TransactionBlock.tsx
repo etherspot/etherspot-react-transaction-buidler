@@ -22,7 +22,7 @@ import RouteOption from '../RouteOption';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
-import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput } from '../../utils/common';
+import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput, isEtherspotPrime } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
 import { Chain, supportedChains, CHAIN_ID } from '../../utils/chain';
 import { swapServiceIdToDetails } from '../../utils/swap';
@@ -161,6 +161,7 @@ const PlrStakingV2TransactionBlock = ({
     providerAddress,
     accountAddress,
     smartWalletOnly,
+    etherspotMode
   } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
@@ -234,7 +235,7 @@ const PlrStakingV2TransactionBlock = ({
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
 
   const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
-  || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
+    || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
     ? AccountTypes.Key
     : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(defaultSelectedReceiveAccountType);
@@ -667,7 +668,7 @@ const PlrStakingV2TransactionBlock = ({
           setSelectedAccountType(accountType);
         }}
         errorMessage={errorMessages?.accountType}
-        hideKeyBased={smartWalletOnly}
+        hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
         showTotals
         showHelperText
       />
@@ -751,7 +752,7 @@ const PlrStakingV2TransactionBlock = ({
           label="You will receive on"
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
-          hideKeyBased={smartWalletOnly}
+          hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
         />
       </WalletReceiveWrapper>
       {!isStakingAssetSelected &&

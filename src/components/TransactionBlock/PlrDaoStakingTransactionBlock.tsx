@@ -24,7 +24,7 @@ import { PrimaryButton } from '../Button';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
-import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput } from '../../utils/common';
+import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput, isEtherspotPrime } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
 import {
   Chain,
@@ -205,6 +205,7 @@ const PlrDaoStakingTransactionBlock = ({
     getRatesByNativeChainId,
     getNftsForChainId,
     environment,
+    etherspotMode,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -779,7 +780,7 @@ const PlrDaoStakingTransactionBlock = ({
             setAvailableOffers([]);
             setSelectedOffer(null);
           }}
-          hideKeyBased={smartWalletOnly}
+          hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
           errorMessage={errorMessages?.accountType}
           showTotals
           showHelperText
@@ -870,7 +871,7 @@ const PlrDaoStakingTransactionBlock = ({
               setUseCustomAddress(false);
               setCustomReceiverAddress(null);
             }}
-            hideKeyBased={smartWalletOnly}
+            hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
             showCustom
           />
         </WalletReceiveWrapper>

@@ -20,6 +20,7 @@ import {
 } from '../providers/EtherspotContextProvider';
 import { Chain } from '../utils/chain';
 import { Theme } from '../utils/theme';
+import { Bundlers, Paymasters } from '../enums/wallet.enum';
 
 export interface EtherspotContextData {
   data: {
@@ -69,7 +70,13 @@ export interface EtherspotContextData {
     changeTheme: (theme: Theme) => void;
     environment: EtherspotEnvNames;
     setEnvironment: (environment: EtherspotEnvNames) => void;
-    etherspotMode?: string;
+    etherspotMode: string;
+    paymaster: Paymasters;
+    setPaymaster: (paymaster: Paymasters) => void;
+    bundler: Bundlers | undefined;
+    setBundler: (bundler: Bundlers | undefined) => void;
+    isBundlerSelected: boolean;
+    setIsBundlerSelected: (flag: boolean) => void;
   };
 }
 

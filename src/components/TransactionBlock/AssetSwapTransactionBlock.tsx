@@ -8,7 +8,7 @@ import debounce from 'debounce-promise';
 import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
-import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
+import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount, isEtherspotPrime } from '../../utils/common';
 import { addressesEqual, isValidAmount } from '../../utils/validation';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -106,6 +106,7 @@ const AssetSwapTransactionBlock = ({
     updateWalletBalances,
     getRatesByNativeChainId,
     getSdkForChainId,
+    etherspotMode,
   } = useEtherspot();
   const theme: Theme = useTheme();
 
@@ -390,7 +391,7 @@ const AssetSwapTransactionBlock = ({
             }
             setSelectedAccountType(accountType);
           }}
-          hideKeyBased={smartWalletOnly}
+          hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
           errorMessage={errorMessages?.accountType}
           disabled={!!fixed || !!multiCallData}
           showTotals
