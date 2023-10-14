@@ -431,10 +431,11 @@ export const honeyswapLP = async (
   const contractAddressProxy = '0xf8D1677c8a0c961938bf2f9aDc3F3CFDA759A9d9';
 
   const createTimestamp = Date.now() + 100;
+  const deadline = Math.ceil(Date.now() / 1000) + 60 * 20; // 20 minutes from now, default on honeyswap interface
 
   try {
-    const amountMin1 = (Number(amount1) - Number(amount1) * 0.05).toFixed(0);
-    const amountMin2 = (Number(amount2) - Number(amount2) * 0.05).toFixed(0);
+    const amountMin1 = amount1.sub(amount1.div(2)); // 50%
+    const amountMin2 = amount2.sub(amount2.div(2)); // 50%
 
     const uniswapV2AbiAddLiquidity = [
       {
@@ -493,7 +494,7 @@ export const honeyswapLP = async (
         amountMin2,
         amountMin1,
         receiverAddress,
-        createTimestamp,
+        deadline,
       ]);
     }
 
@@ -504,7 +505,7 @@ export const honeyswapLP = async (
         amountMin1,
         amountMin2,
         receiverAddress,
-        createTimestamp,
+        deadline,
       ]);
     }
 
@@ -516,7 +517,7 @@ export const honeyswapLP = async (
       amountMin1,
       amountMin2,
       receiverAddress,
-      createTimestamp,
+      deadline,
     ]);
 
     const approveAbi = [
