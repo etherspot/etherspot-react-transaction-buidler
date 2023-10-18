@@ -1303,7 +1303,7 @@ const TransactionBuilderContextProvider = ({
                   <WalletUnsupportedNote>
                     <AiFillWarning size={18} color={theme.color?.text?.warningIcon} style={{ paddingRight: '5px' }} />
                     <WalletUnsupportedText color={theme.color?.text?.button}>
-                      Your wallet network is temporarily unsupported
+                      Your wallet network is temporarily unsupported.
                     </WalletUnsupportedText>
                   </WalletUnsupportedNote>
                   <WalletUnsupportedNote>
