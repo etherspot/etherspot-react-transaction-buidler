@@ -434,8 +434,8 @@ export const honeyswapLP = async (
   const deadline = Math.ceil(Date.now() / 1000) + 60 * 20; // 20 minutes from now, default on honeyswap interface
 
   try {
-    const amountMin1 = amount1.sub(amount1.div(2)); // 50%
-    const amountMin2 = amount2.sub(amount2.div(2)); // 50%
+    const amountMin1 = 0;
+    const amountMin2 = 0;
 
     const uniswapV2AbiAddLiquidity = [
       {

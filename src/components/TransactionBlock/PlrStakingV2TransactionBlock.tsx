@@ -334,7 +334,7 @@ const PlrStakingV2TransactionBlock = ({
       const newRoutes = await getAvailableRoutes();
       if (!proceedUpdate) return;
 
-      if (newRoutes) {
+      if (newRoutes?.length) {
         setAvailableRoutes(newRoutes);
         const bestRoute = getBestRouteItem(newRoutes);
         setSelectedRoute(mapRouteToOption(bestRoute));
