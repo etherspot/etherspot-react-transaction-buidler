@@ -138,7 +138,7 @@ const mapRouteToOption = (route: Route) => {
 
 interface IPlrBalancePerChain { [chainId: string]: BigNumber | undefined }
 
-const MIN_PLR_STAKE_AMOUNT = '50';
+const MIN_PLR_STAKE_AMOUNT = '10000';
 
 const chainIdsWithPlrTokens = [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.BINANCE, CHAIN_ID.XDAI, CHAIN_ID.POLYGON];
 
