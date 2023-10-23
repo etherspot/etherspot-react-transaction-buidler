@@ -32,7 +32,9 @@ import { getPlrAssetForChainId } from '../../utils/asset';
 
 // constants
 import {
-  PLR_ADDRESS_PER_CHAIN, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET, STKPLR_ADDRESS_ETHEREUM_MAINNET,
+  PLR_ADDRESS_PER_CHAIN,
+  PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
+  STKPLR_ADDRESS_ETHEREUM_MAINNET,
 } from '../../constants/assetConstants';
 
 interface ICrossChainSwap {
@@ -588,8 +590,6 @@ const PlrStakingV2TransactionBlock = ({
     || isStakingAssetSelected;
 
   const hasStkPlrBalance = !!stkPlrBalance && stkPlrBalance.gt(0);
-
-  console.log({ stkPlrBalance })
 
   return (
     <>
