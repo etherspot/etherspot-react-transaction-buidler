@@ -782,8 +782,7 @@ const PlrStakingV2TransactionBlock = ({
           hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
         />
       </WalletReceiveWrapper>
-      {!isStakingAssetSelected &&
-        !!selectedToAsset &&
+      {!!selectedToAsset &&
         !!selectedFromAsset &&
         !!amount &&
         (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
