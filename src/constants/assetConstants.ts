@@ -22,5 +22,6 @@ export const PLR_DAO_CONTRACT_PER_CHAIN = {
   [TESTNET_CHAIN_ID.POLYGON]: '0x23690E5981996cDC5eFc1e126ce9377B9876C95e',
 };
 
-// TODO: to be added once available, contract said to be deployed once QA passes UI
 export const PLR_STAKING_ADDRESS_ETHEREUM_MAINNET = '0x4fa3d9Cf11Dc94e5E0f3BCCa980aA8FB3a0d27f3';
+
+export const STKPLR_ADDRESS_ETHEREUM_MAINNET = '0xdfc4575b3cec99d756f45ed22289fa3f1fc530d7';
