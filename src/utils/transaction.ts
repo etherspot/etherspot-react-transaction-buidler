@@ -26,7 +26,7 @@ import { map as rxjsMap } from 'rxjs/operators';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
-import { getPlrAssetForChainId, plrDaoAsset, plrDaoAssetPerChainId } from './asset';
+import { plrDaoAsset, plrDaoAssetPerChainId, stkPlrAsset } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
@@ -1894,7 +1894,7 @@ export const buildCrossChainAction = async (
 
     const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-    let toAssetAmount = addressesEqual(toAssetAddress, getPlrAssetForChainId(CHAIN_ID.ETHEREUM_MAINNET).address) ? fromAmountBN : '0';
+    let toAssetAmount = addressesEqual(toAssetAddress, stkPlrAsset.address) ? fromAmountBN : '0';
 
     let providerName;
     let providerIconUrl;
@@ -1935,7 +1935,7 @@ export const buildCrossChainAction = async (
       } catch (e) {
         return { errorMessage: 'Failed to build cross chain swap transaction!' };
       }
-    } else if (addressesEqual(toAssetAddress, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET)) {
+    } else if (addressesEqual(toAssetAddress, stkPlrAsset.address)) {
       try {
         const plrV2StakingContract = sdk.registerContract<PlrV2StakingContract>(
           'plrV2StakingContract',

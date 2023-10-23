@@ -1119,7 +1119,6 @@ const TransactionBuilderContextProvider = ({
       !crossChainActionClick
     ) {
       if (transactionBlocks?.length === 0 && crossChainActions.length === 0) {
-        setShowWalletBlock(!mappedDefaultTransactionBlocks?.length && !hideWalletBlock);
         if (mappedDefaultTransactionBlocks?.length) setTransactionBlocks(mappedDefaultTransactionBlocks);
       }
     }
@@ -1131,9 +1130,7 @@ const TransactionBuilderContextProvider = ({
     crossChainActions,
     isSubmitting,
     crossChainActionClick,
-    hideWalletBlock,
     mappedDefaultTransactionBlocks,
-    showWalletBlock,
   ]);
 
   return (

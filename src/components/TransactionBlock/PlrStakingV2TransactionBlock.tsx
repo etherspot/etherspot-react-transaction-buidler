@@ -28,12 +28,11 @@ import { Chain, supportedChains, CHAIN_ID } from '../../utils/chain';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
-import { getPlrAssetForChainId } from '../../utils/asset';
+import { getPlrAssetForChainId, stkPlrAsset } from '../../utils/asset';
 
 // constants
 import {
   PLR_ADDRESS_PER_CHAIN,
-  PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
   STKPLR_ADDRESS_ETHEREUM_MAINNET,
 } from '../../constants/assetConstants';
 
@@ -139,7 +138,7 @@ const mapRouteToOption = (route: Route) => {
 
 interface IPlrBalancePerChain { [chainId: string]: BigNumber | undefined }
 
-const MIN_PLR_STAKE_AMOUNT = '10000';
+const MIN_PLR_STAKE_AMOUNT = '50';
 
 const chainIdsWithPlrTokens = [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.BINANCE, CHAIN_ID.XDAI, CHAIN_ID.POLYGON];
 
@@ -208,16 +207,23 @@ const PlrStakingV2TransactionBlock = ({
       addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.ETHEREUM_MAINNET] as BigNumber
     );
 
-    if (isEnoughPlrBalanceToStake(addressPlrBalancePerChain?.[providerAddress]?.[CHAIN_ID.ETHEREUM_MAINNET])) {
-      setSelectedFromNetwork(ethereumMainnetChain);
+    if (isEnoughPlrBalanceToStake(addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.ETHEREUM_MAINNET])
+      && (!selectedFromAsset || addressesEqual(selectedFromAsset?.address, plrAsset.address))) {
+      if (!selectedFromNetwork) {
+        setSelectedFromNetwork(ethereumMainnetChain);
+      }
+      if (!selectedFromAsset) {
+        setSelectedFromAsset(plrAsset);
+      }
       setSelectedToNetwork(ethereumMainnetChain);
-      setSelectedFromAsset(plrAsset);
-      setSelectedToAsset({ ...getPlrAssetForChainId(CHAIN_ID.ETHEREUM_MAINNET), symbol: 'stkPLR' });
-    } else {
+      setSelectedToAsset(stkPlrAsset);
+    } else if (!addressesEqual(selectedFromAsset?.address, plrAsset.address)) {
       setSelectedToNetwork(ethereumMainnetChain);
       setSelectedToAsset(plrAsset);
     }
   }, [
+    selectedFromAsset,
+    selectedFromNetwork,
     addressPlrBalancePerChain,
     selectedAccountType,
     providerAddress,
@@ -421,7 +427,7 @@ const PlrStakingV2TransactionBlock = ({
         route,
       }
     } else if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId
-      && !addressesEqual(selectedFromAsset?.address, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET)) {
+      && !addressesEqual(selectedFromAsset?.address, stkPlrAsset.address)) {
       const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
       swap = {
         type: 'SAME_CHAIN_SWAP',
@@ -583,7 +589,7 @@ const PlrStakingV2TransactionBlock = ({
     return sum + walletSum;
   }, 0), [addressPlrBalancePerChain]);
 
-  const isStakingAssetSelected = addressesEqual(selectedToAsset?.address, getPlrAssetForChainId(CHAIN_ID.ETHEREUM_MAINNET).address);
+  const isStakingAssetSelected = addressesEqual(selectedToAsset?.address, stkPlrAsset.address);
 
   const assetToSelectDisabled = !selectedFromNetwork
     || !selectedFromAsset
@@ -782,7 +788,8 @@ const PlrStakingV2TransactionBlock = ({
           hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
         />
       </WalletReceiveWrapper>
-      {!!selectedToAsset &&
+      {!isStakingAssetSelected &&
+        !!selectedToAsset &&
         !!selectedFromAsset &&
         !!amount &&
         (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
