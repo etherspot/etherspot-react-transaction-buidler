@@ -28,12 +28,13 @@ import { Chain, supportedChains, CHAIN_ID } from '../../utils/chain';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
-import { getPlrAssetForChainId, plrStakedAssetEthereumMainnet } from '../../utils/asset';
+import { getPlrAssetForChainId } from '../../utils/asset';
 
 // constants
 import {
   PLR_ADDRESS_PER_CHAIN,
   PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
+  STKPLR_ADDRESS_ETHEREUM_MAINNET,
 } from '../../constants/assetConstants';
 
 interface ICrossChainSwap {
@@ -174,6 +175,7 @@ const PlrStakingV2TransactionBlock = ({
     addressPlrBalancePerChain,
     setAddressPlrBalancePerChain,
   ] = useState<{ [address: string]: IPlrBalancePerChain }>({});
+  const [stkPlrBalance, setStkPlrBalance] = useState<BigNumber | undefined>(undefined);
 
   const hasEnoughPlrToStake = useMemo(() => [providerAddress, accountAddress].some((address) => {
     if (!address || !addressPlrBalancePerChain?.[address]?.[CHAIN_ID.ETHEREUM_MAINNET]) return false;
@@ -210,7 +212,7 @@ const PlrStakingV2TransactionBlock = ({
       setSelectedFromNetwork(ethereumMainnetChain);
       setSelectedToNetwork(ethereumMainnetChain);
       setSelectedFromAsset(plrAsset);
-      setSelectedToAsset(plrStakedAssetEthereumMainnet);
+      setSelectedToAsset({ ...getPlrAssetForChainId(CHAIN_ID.ETHEREUM_MAINNET), symbol: 'stkPLR' });
     } else {
       setSelectedToNetwork(ethereumMainnetChain);
       setSelectedToAsset(plrAsset);
@@ -477,10 +479,14 @@ const PlrStakingV2TransactionBlock = ({
 
           const plrAddressForChain = PLR_ADDRESS_PER_CHAIN[chain.chainId];
 
+          const tokensForBalance = chain.chainId === CHAIN_ID.ETHEREUM_MAINNET
+            ? [plrAddressForChain, STKPLR_ADDRESS_ETHEREUM_MAINNET] // query for sktPLR balance on ethereum mainnet
+            : [plrAddressForChain];
+
           try {
             const { items: balances } = await sdk.getAccountBalances({
               account: address,
-              tokens: [plrAddressForChain],
+              tokens: tokensForBalance,
               chainId: chain.chainId,
             });
 
@@ -497,8 +503,14 @@ const PlrStakingV2TransactionBlock = ({
                 [chain.chainId]: plrBalance,
               },
             }));
+
+            const stkPlrBalance = balances
+              .find((balance) => addressesEqual(STKPLR_ADDRESS_ETHEREUM_MAINNET, balance.token))
+              ?.balance;
+
+            setStkPlrBalance(stkPlrBalance ?? undefined);
           } catch (e) {
-            //
+            console.warn('Failed to get token balances', tokensForBalance, e);
           }
         }));
       }));
@@ -571,11 +583,13 @@ const PlrStakingV2TransactionBlock = ({
     return sum + walletSum;
   }, 0), [addressPlrBalancePerChain]);
 
-  const isStakingAssetSelected = selectedToAsset?.address === plrStakedAssetEthereumMainnet.address;
+  const isStakingAssetSelected = addressesEqual(selectedToAsset?.address, getPlrAssetForChainId(CHAIN_ID.ETHEREUM_MAINNET).address);
 
   const assetToSelectDisabled = !selectedFromNetwork
     || !selectedFromAsset
     || isStakingAssetSelected;
+
+  const hasStkPlrBalance = !!stkPlrBalance && stkPlrBalance.gt(0);
 
   return (
     <>
@@ -593,21 +607,34 @@ const PlrStakingV2TransactionBlock = ({
             {hasEnoughPlrToStake && <>You can stake your PLR tokens.</>}
           </Text>
           <HorizontalLine />
+          {hasStkPlrBalance && (
+            <Text size={14}>
+              You have
+              <Highlighted
+                color={theme.color?.text?.blockParagraphHighlightSecondary}
+              >
+                &nbsp;{formatAmountDisplay(ethers.utils.formatUnits(stkPlrBalance, 18))} stkPLR
+              </Highlighted>
+              &nbsp;tokens:
+            </Text>
+          )}
           {plrTokensSum > 0 && (
             <>
-              <Text size={14}>
-                You have
-                <Highlighted
-                  color={
-                    hasEnoughPlrCrossChainToStake
-                      ? theme.color?.text?.blockParagraphHighlightSecondary
-                      : theme.color?.text?.errorMessage
-                  }
-                >
-                  &nbsp;{formatAmountDisplay(plrTokensSum)} PLR
-                </Highlighted>
-                &nbsp;tokens:
-              </Text>
+              {!hasStkPlrBalance && (
+                <Text size={14}>
+                  You have
+                  <Highlighted
+                    color={
+                      hasEnoughPlrCrossChainToStake
+                        ? theme.color?.text?.blockParagraphHighlightSecondary
+                        : theme.color?.text?.errorMessage
+                    }
+                  >
+                    &nbsp;{formatAmountDisplay(plrTokensSum)} PLR
+                  </Highlighted>
+                  &nbsp;tokens:
+                </Text>
+              )}
               {supportedChains
                 .filter((chain) => chainIdsWithPlrTokens.includes(chain.chainId))
                 .map((chain) => {

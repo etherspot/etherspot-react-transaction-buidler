@@ -26,7 +26,7 @@ import { map as rxjsMap } from 'rxjs/operators';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
-import { plrDaoAsset, plrDaoAssetPerChainId, plrStakedAssetEthereumMainnet } from './asset';
+import { getPlrAssetForChainId, plrDaoAsset, plrDaoAssetPerChainId } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
@@ -46,8 +46,6 @@ import {
   POLYGON_USDC_CONTRACT_ADDRESS,
 } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
-import { UNISWAP_ROUTER_ABI } from '../constants/uniswapRouterAbi';
-import { UniswapV2RouterContract } from '../contracts/UniswapV2Router';
 import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 
 interface IPillarDao {
@@ -1896,7 +1894,7 @@ export const buildCrossChainAction = async (
 
     const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-    let toAssetAmount = addressesEqual(toAssetAddress, plrStakedAssetEthereumMainnet.address) ? fromAmountBN : '0';
+    let toAssetAmount = addressesEqual(toAssetAddress, getPlrAssetForChainId(CHAIN_ID.ETHEREUM_MAINNET).address) ? fromAmountBN : '0';
 
     let providerName;
     let providerIconUrl;
