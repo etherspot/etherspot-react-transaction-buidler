@@ -1930,7 +1930,9 @@ export const buildCrossChainAction = async (
         if (routeData.errorMessage) return { errorMessage: routeData.errorMessage };
         if (!routeData.bestRoute) return { errorMessage: 'Failed build swap transaction!' };
 
-        transactions = routeData.destinationTxns ?? [];
+        transactions = routeData.transactions ?? [];
+        if (!transactions.length) return { errorMessage: 'Failed build swap transactions!' };
+
         toAssetAmount = BigNumber.from(routeData.bestRoute.toAmount);
       } catch (e) {
         return { errorMessage: 'Failed to build cross chain swap transaction!' };
@@ -2003,10 +2005,15 @@ export const buildCrossChainAction = async (
       }
     }
 
-    if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
+    // cross chain swaps transfers to receiver already
+    if (receiverAddress
+      && isValidEthereumAddress(receiverAddress)
+      && !addressesEqual(toAssetAddress, nativeAssetPerChainId[toChainId].address)
+      && transactions.length > 0
+      && swap?.type !== 'CROSS_CHAIN_SWAP') {
       try {
         const abi = getContractAbi(ContractNames.ERC20Token);
-        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, toAssetAddress);
         const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, toAssetAmount);
         if (!transferTransactionRequest || !transferTransactionRequest.to) {
           return { errorMessage: 'Failed build transfer transaction!' };
