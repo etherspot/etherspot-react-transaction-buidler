@@ -35,7 +35,6 @@ interface TransactionPreviewInterface {
 const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
   const { accountAddress, providerAddress, web3Provider } = useEtherspot();
   const theme: Theme = useTheme();
-  console.log('crosschain', crossChainAction);
 
   const { chainId, type } = crossChainAction;
 
