@@ -1,21 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { debounce } from 'lodash';
 import styled, { useTheme } from 'styled-components';
-import { AccountStates, AccountTypes, BridgingQuote, CrossChainServiceProvider, ExchangeOffer } from 'etherspot';
+import { AccountStates, AccountTypes, ExchangeOffer } from 'etherspot';
 import { Route } from '@lifi/sdk';
-import { BigNumber, ethers, utils } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 
 // Types
-import { IHoneySwapLPBlock, IKlimaStakingTransactionBlock } from '../../types/transactionBlock';
+import { IHoneySwapLPBlock } from '../../types/transactionBlock';
 
 // Components
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import AccountSwitchInput from '../AccountSwitchInput';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
+import { CombinedRoundedImages } from '../Image';
 import TextInput from '../TextInput';
 import { Pill } from '../Text';
-import Text from '../Text/Text';
 import SelectInput from '../SelectInput';
 import { SelectOption } from '../SelectInput/SelectInput';
 
@@ -24,21 +23,19 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 
 // utils
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount, isEtherspotPrime } from '../../utils/common';
-import { addressesEqual, isValidAmount, isValidEthereumAddress } from '../../utils/validation';
+import { isValidAmount, isValidEthereumAddress } from '../../utils/validation';
 import { Theme } from '../../utils/theme';
-import { Chain, CHAIN_ID, supportedChains, klimaAsset } from '../../utils/chain';
+import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
 
 // constants
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
-import { DestinationWalletEnum } from '../../enums/wallet.enum';
+import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 
 // hooks
-import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
-import { BiCheck } from 'react-icons/bi';
-import { getNativeAssetPriceInUsd } from '../../services/coingecko';
-import RouteOption from '../RouteOption/RouteOption';
-import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
+
+// services
+import { getNativeAssetPriceInUsd } from '../../services/coingecko';
 
 export interface IHoneySwapLPTransactionBlockValues {
   fromChainId?: number;
@@ -98,7 +95,7 @@ const HoneySwapLPTransactionBlock = ({
   const { smartWalletOnly, providerAddress, accountAddress, sdk, getSdkForChainId, etherspotMode } = useEtherspot();
   const [amount, setAmount] = useState<string>('');
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Contract);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(AccountTypes.Key);
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(null);
   const [receiveAmount, setReceiveAmount] = useState<string>('');
   const [routeToUSDC, setRouteToUSDC] = useState<Route[]>([]);
