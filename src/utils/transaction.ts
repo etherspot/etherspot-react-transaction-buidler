@@ -2148,9 +2148,16 @@ export const submitWeb3ProviderTransaction = async (
     return { errorMessage: 'Unable to find connected Web3 provider!' };
   }
 
-  // TODO: check against current
+  let currentChainId;
+  try {
+    // @ts-ignore
+    currentChainId = +ethers.BigNumber.from(web3Provider.web3.chainId).toString();
+  } catch (e) {
+    console.warn('Unable to extract current chain ID');
+  }
+
   // @ts-ignore
-  if (chainId !== 1 && web3Provider?.type !== 'WalletConnect') {
+  if (chainId !== currentChainId && web3Provider?.type !== 'WalletConnect') {
     const changed = await changeToChain(chainId);
     if (!changed) return { errorMessage: 'Unable to change to selected network!' };
   }
@@ -2171,7 +2178,7 @@ export const submitWeb3ProviderTransaction = async (
     }
   }
 
-  if (waitForCompleted) {
+  if (transactionHash && waitForCompleted) {
     let transactionStatus = null;
 
     while (transactionStatus === null) {
