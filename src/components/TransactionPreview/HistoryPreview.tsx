@@ -5,11 +5,11 @@ import { ethers } from 'ethers';
 // Components
 import Card from '../Card';
 import { ClickableText, Text } from '../Text';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
+import { CombinedRoundedImages } from '../Image';
 
 // Utils
-import { formatAmountDisplay, humanizeHexString, copyToClipboard, getTypeOfAddress } from '../../utils/common';
-import { Chain, CHAIN_ID, klimaAsset, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { copyToClipboard, getTypeOfAddress } from '../../utils/common';
+import { Chain, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
 import { Theme } from '../../utils/theme';
 
 // Constants
@@ -60,18 +60,28 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
       asset.gasCost,
       nativeAssetPerChainId[crossChainAction.chainId].decimals
     );
-    const gasAssetSymbol = nativeAssetPerChainId[crossChainAction.chainId].symbol;
-    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${gasAssetSymbol}`;
-    const gasFeesUSD = formatAmountDisplay(`${+gasCostNumericString * +crossChainAction.estimated.usdPrice}`, '$');
 
-    const valueToReceiveRaw =
-      asset.feeAmount && asset.feeAmount != null ? ethers.utils.formatUnits(asset?.feeAmount, asset?.decimals) : null;
+    const gasCost = asset.gasCost.toNumber();
 
-    const valueToReceive =
-      valueToReceiveRaw != null
-        ? formatAmountDisplay(`${+valueToReceiveRaw * +crossChainAction.estimated.usdPrice}`, '$')
-        : '0 $';
-    const amountString = `${+valueToReceiveRaw + ` ` + asset.symbol}・${valueToReceive}`;
+    // Convert gas wei to ETH
+    const gasInETHAmount = (gasCost / 1e18).toFixed(18);
+
+    // Convert to USD
+    let gasFees = gasInETHAmount * crossChainAction.estimated.usdPrice;
+    gasFees = gasFees.toFixed(2) == '0.00' ? gasFees.toFixed(8) : gasFees.toFixed(2);
+
+    const gasFeesUSD = `${gasFees} $`;
+
+    // Calculate transaction fees
+    let transactionfees = gasInETHAmount * asset.gasUsed;
+    transactionfees = transactionfees.toFixed(2) == '0.00' ? transactionfees.toFixed(6) : transactionfees.toFixed(2);
+
+    // convert Tx fee to USD
+    let transactionfeesInUsd = transactionfees * crossChainAction.estimated.usdPrice;
+    transactionfeesInUsd =
+      transactionfeesInUsd.toFixed(2) == '0.00' ? transactionfeesInUsd.toFixed(6) : transactionfeesInUsd.toFixed(2);
+
+    const amountString = `${+transactionfees + ` ` + asset.symbol}・ $ ${transactionfeesInUsd}`;
 
     return (
       <>
