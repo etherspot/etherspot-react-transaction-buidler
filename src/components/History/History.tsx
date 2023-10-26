@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { uniqueId } from 'lodash';
+import { ethers } from 'ethers';
 
 import HistoryPreview from '../TransactionPreview/HistoryPreview';
 import { ICrossChainAction } from '../../types/crossChainAction';
 
 // Hooks
 import { useEtherspot } from '../../hooks';
-import { getNativeAssetPriceInUsd } from '../../services/coingecko';
+import { getAssetPriceInUsd } from '../../services/coingecko';
 
 // utils
 import { Theme } from '../../utils/theme';
@@ -27,7 +28,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   }>({});
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { getAllTransactions, getSupportedAssetsForChainId, accountAddress } = useEtherspot();
+  const { getAllTransactions, getSupportedAssetsForChainId, accountAddress, sdk } = useEtherspot();
   const theme: Theme = useTheme();
 
   //pull all Transaction data and set in array to display on UI
@@ -41,7 +42,8 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
     let crossChainAction: ICrossChainAction[] = [];
     transactions &&
       Object.entries(transactions).forEach(async ([chain_id, value]) => {
-        let UsdPrice = await getNativeAssetPriceInUsd(chain_id);
+        let UsdPrice = await getAssetPriceInUsd(chain_id, ethers.constants.AddressZero, sdk);
+
         if (!UsdPrice) UsdPrice = 0;
         const assets = await getSupportedAssetsForChainId(chain_id);
 
@@ -74,6 +76,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
               iconUrl: assetnetwork != null ? assetnetwork?.logoURI : '',
               usdPrice: UsdPrice,
               gasCost: item.gasPrice,
+              gasUsed: item.gasUsed,
               feeAmount: item.asset && item.asset != null && item.asset.value ? item.asset.value : null,
               createTimestamp: item.timestamp,
             },
