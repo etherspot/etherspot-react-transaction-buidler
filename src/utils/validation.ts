@@ -11,6 +11,7 @@ import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/Pl
 import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
 import { IHoneySwapLPTransactionBlockValues } from '../components/TransactionBlock/HoneySwapLPTransactionBlock';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { stkPlrAsset } from './asset';
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {
   if (!address) return false;
@@ -110,10 +111,14 @@ export const validateTransactionBlockValues = (transactionBlock: ITransactionBlo
     if (!isValidAmount(transactionBlockValues?.amount)) errors.amount = 'Incorrect asset amount!';
     if (!transactionBlockValues?.fromAsset) errors.fromAsset = 'Invalid source asset selected!';
     if (!transactionBlockValues?.toAsset) errors.toAsset = 'Invalid destination asset selected!';
-    if (transactionBlockValues?.swap?.type === 'CROSS_CHAIN_SWAP' && !transactionBlockValues?.swap?.route) {
+    if (transactionBlockValues?.swap?.type === 'CROSS_CHAIN_SWAP'
+      && !transactionBlockValues?.swap?.route
+      && !addressesEqual(transactionBlockValues?.toAsset?.address, stkPlrAsset.address)) {
       errors.route = 'No route selected!';
     }
-    if (transactionBlockValues?.swap?.type === 'SAME_CHAIN_SWAP' && !transactionBlockValues?.swap?.offer) {
+    if (transactionBlockValues?.swap?.type === 'SAME_CHAIN_SWAP'
+      && !transactionBlockValues?.swap?.offer
+      && !addressesEqual(transactionBlockValues?.toAsset?.address, stkPlrAsset.address)) {
       errors.route = 'No offer selected!';
     }
     if (transactionBlockValues?.receiverAddress && !isValidEthereumAddress(transactionBlockValues?.receiverAddress)) {

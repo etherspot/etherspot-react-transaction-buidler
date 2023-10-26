@@ -1,7 +1,5 @@
 import {
   AccountTypes,
-  BridgingQuote,
-  CrossChainServiceProvider,
   ExchangeOffer,
   GatewayTransactionStates,
   LiFiStatus,
@@ -12,7 +10,7 @@ import {
   Web3WalletProvider,
 } from 'etherspot';
 import { Route } from '@lifi/sdk';
-import { BigNumber, BigNumberish, ethers, utils } from 'ethers';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
@@ -26,7 +24,7 @@ import { map as rxjsMap } from 'rxjs/operators';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
-import { plrDaoAsset, plrDaoAssetPerChainId, plrStakedAssetEthereumMainnet } from './asset';
+import { plrDaoAssetPerChainId, stkPlrAsset } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
@@ -46,8 +44,6 @@ import {
   POLYGON_USDC_CONTRACT_ADDRESS,
 } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
-import { UNISWAP_ROUTER_ABI } from '../constants/uniswapRouterAbi';
-import { UniswapV2RouterContract } from '../contracts/UniswapV2Router';
 import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 
 interface IPillarDao {
@@ -69,97 +65,6 @@ interface IPlrTransaction {
   createTimestamp: number;
   status: string;
 }
-
-const fetchBestRoute = async (
-  sdk: EtherspotSdk,
-  fromChainId: number,
-  toChainId: number,
-  fromAmount: BigNumber,
-  fromTokenAddress: string,
-  toTokenAddress: string,
-  toAddress?: string
-) => {
-  try {
-    const createTimestamp = +new Date();
-    const routes = await sdk.getAdvanceRoutesLiFi({
-      fromChainId,
-      toChainId, //Polygon
-      fromAmount,
-      fromTokenAddress,
-      toTokenAddress,
-      toAddress,
-    });
-    const bestRoute = routes.items.reduce((best: Route, route) => {
-      if (!best?.toAmount || BigNumber.from(best.toAmount).lt(route.toAmount)) return route;
-      return best;
-    });
-
-    if (!bestRoute) {
-      return { errorMessage: 'Failed to get bridge route' };
-    }
-    const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
-
-    let destinationTxns: ICrossChainActionTransaction[] = [];
-    let transactions: ICrossChainActionTransaction[] = [];
-
-    if (bestRoute.containsSwitchChain) {
-      advancedRouteSteps.forEach((step) => {
-        if (step.chainId === plrDaoAsset.chainId) {
-          return destinationTxns.push({
-            to: step.to as string,
-            value: step.value,
-            data: step.data,
-            createTimestamp,
-            status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-          });
-        }
-        return transactions.push({
-          to: step.to as string,
-          value: step.value,
-          data: step.data,
-          createTimestamp,
-          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-        });
-      });
-    } else {
-      transactions = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
-        to: to as string,
-        value,
-        data,
-        chainId: chainId ?? fromChainId,
-        createTimestamp,
-        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-      }));
-    }
-
-    if (
-      ethers.utils.isAddress(bestRoute.fromToken.address) &&
-      !addressesEqual(bestRoute.fromToken.address, nativeAssetPerChainId[fromChainId].address) &&
-      transactions.length === 1 &&
-      bestRoute.fromAmount
-    ) {
-      const abi = getContractAbi(ContractNames.ERC20Token);
-      const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, bestRoute.fromToken.address);
-      const approvalTransactionRequest = erc20Contract?.encodeApprove?.(transactions[0].to, bestRoute.fromAmount);
-      if (!approvalTransactionRequest || !approvalTransactionRequest.to) {
-        return { errorMessage: 'Failed build bridge approval transaction!' };
-      }
-
-      const approvalTransaction = {
-        to: approvalTransactionRequest.to,
-        data: approvalTransactionRequest.data,
-        value: 0,
-        createTimestamp,
-        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-      };
-
-      transactions = [approvalTransaction, ...transactions];
-    }
-    return { bestRoute, transactions, destinationTxns };
-  } catch (err) {
-    return { errorMessage: 'Failed to get bridge route' };
-  }
-};
 
 const fetchSwapAssetTransaction = async (
   chainId: number,
@@ -232,22 +137,27 @@ const fetchSwapAssetTransaction = async (
   }
 };
 
-const buildBridgeAssetToPlrTransactions = async (
+const buildLiFiBridgeTransactions = async (
   chainId: number,
   route: Route | null,
   sdk?: EtherspotSdk | null
-): Promise<{ errorMessage?: string; result?: { transactions: ICrossChainActionTransaction[] } }> => {
+): Promise<{ errorMessage?: string; transactions?: ICrossChainActionTransaction[] }> => {
   try {
     const createTimestamp = +new Date();
     if (!sdk) return { errorMessage: 'No sdk found' };
     if (!route) return { errorMessage: 'Failed to fetch routes' };
     const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });
 
-    let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(({ to, value, data, chainId }) => ({
+    let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(({
+      to,
+      value,
+      data,
+      chainId: routeChainId
+    }) => ({
       to: to as string,
       value,
       data,
-      chainId: chainId,
+      chainId: routeChainId,
       createTimestamp,
       status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     }));
@@ -275,7 +185,7 @@ const buildBridgeAssetToPlrTransactions = async (
 
       transactions = [approvalTransaction, ...transactions];
     }
-    return { result: { transactions } };
+    return { transactions };
   } catch (err) {
     return { errorMessage: 'Failed build transfer transaction!' };
   }
@@ -1022,7 +932,7 @@ export const buildCrossChainAction = async (
           route,
         };
 
-        const result = await buildBridgeAssetToPlrTransactions(fromChainId, route, sdk);
+        const result = await buildLiFiBridgeTransactions(fromChainId, route, sdk);
 
         if (result?.errorMessage) return { errorMessage: result.errorMessage };
         const crossChainAction: ICrossChainAction = {
@@ -1031,7 +941,7 @@ export const buildCrossChainAction = async (
           chainId: fromChainId,
           type: TRANSACTION_BLOCK_TYPE.PLR_DAO_STAKE,
           preview,
-          transactions: result?.result?.transactions || [],
+          transactions: result?.transactions || [],
           destinationCrossChainAction: [],
           isEstimating: false,
           estimated: null,
@@ -1896,7 +1806,7 @@ export const buildCrossChainAction = async (
 
     const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
-    let toAssetAmount = addressesEqual(toAssetAddress, plrStakedAssetEthereumMainnet.address) ? fromAmountBN : '0';
+    let toAssetAmount = addressesEqual(toAssetAddress, stkPlrAsset.address) ? fromAmountBN : '0';
 
     let providerName;
     let providerIconUrl;
@@ -1918,26 +1828,15 @@ export const buildCrossChainAction = async (
         return { errorMessage: 'Failed to build same chain swap transaction!' };
       }
     } else if (swap?.type === 'CROSS_CHAIN_SWAP' && swap.route) {
-      try {
-        const routeData = await fetchBestRoute(
-          sdk,
-          fromChainId,
-          toChainId,
-          fromAmountBN,
-          fromAssetAddress,
-          toAssetAddress,
-          receiverAddress
-        );
+      const result = await buildLiFiBridgeTransactions(fromChainId, swap.route, sdk);
 
-        if (routeData.errorMessage) return { errorMessage: routeData.errorMessage };
-        if (!routeData.bestRoute) return { errorMessage: 'Failed build swap transaction!' };
+      if (result?.errorMessage) return { errorMessage: result.errorMessage };
 
-        transactions = routeData.destinationTxns ?? [];
-        toAssetAmount = BigNumber.from(routeData.bestRoute.toAmount);
-      } catch (e) {
-        return { errorMessage: 'Failed to build cross chain swap transaction!' };
-      }
-    } else if (addressesEqual(toAssetAddress, PLR_STAKING_ADDRESS_ETHEREUM_MAINNET)) {
+      if (!result?.transactions?.length) return { errorMessage: 'Failed build swap transactions!' };
+
+      transactions = result.transactions;
+      toAssetAmount = BigNumber.from(swap.route.toAmount);
+    } else if (addressesEqual(toAssetAddress, stkPlrAsset.address)) {
       try {
         const plrV2StakingContract = sdk.registerContract<PlrV2StakingContract>(
           'plrV2StakingContract',
@@ -2005,10 +1904,15 @@ export const buildCrossChainAction = async (
       }
     }
 
-    if (receiverAddress && isValidEthereumAddress(receiverAddress)) {
+    // cross chain swaps transfers to receiver already
+    if (receiverAddress
+      && isValidEthereumAddress(receiverAddress)
+      && !addressesEqual(toAssetAddress, nativeAssetPerChainId[toChainId].address)
+      && transactions.length > 0
+      && swap?.type !== 'CROSS_CHAIN_SWAP') {
       try {
         const abi = getContractAbi(ContractNames.ERC20Token);
-        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, fromAssetAddress);
+        const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, toAssetAddress);
         const transferTransactionRequest = erc20Contract?.encodeTransfer?.(receiverAddress, toAssetAmount);
         if (!transferTransactionRequest || !transferTransactionRequest.to) {
           return { errorMessage: 'Failed build transfer transaction!' };
@@ -2244,9 +2148,16 @@ export const submitWeb3ProviderTransaction = async (
     return { errorMessage: 'Unable to find connected Web3 provider!' };
   }
 
-  // TODO: check against current
+  let currentChainId;
+  try {
+    // @ts-ignore
+    currentChainId = +ethers.BigNumber.from(web3Provider.web3.chainId).toString();
+  } catch (e) {
+    console.warn('Unable to extract current chain ID');
+  }
+
   // @ts-ignore
-  if (chainId !== 1 && web3Provider?.type !== 'WalletConnect') {
+  if (chainId !== currentChainId && web3Provider?.type !== 'WalletConnect') {
     const changed = await changeToChain(chainId);
     if (!changed) return { errorMessage: 'Unable to change to selected network!' };
   }
@@ -2267,7 +2178,7 @@ export const submitWeb3ProviderTransaction = async (
     }
   }
 
-  if (waitForCompleted) {
+  if (transactionHash && waitForCompleted) {
     let transactionStatus = null;
 
     while (transactionStatus === null) {
