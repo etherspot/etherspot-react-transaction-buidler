@@ -40,7 +40,7 @@ import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
 import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard, isEtherspotPrime } from '../utils/common';
 import { Theme } from '../utils/theme';
-import { CHAIN_ID, Chain, primeSdkSupportedChains } from '../utils/chain';
+import { CHAIN_ID, Chain } from '../utils/chain';
 import Card from '../components/Card';
 import { Text } from '../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
@@ -441,7 +441,7 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [crossChainActionClick, setCrossChainActionClick] = useState<boolean>(false);
+    const [crossChainActionClick, setCrossChainActionClick] = useState<boolean>(false);
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
@@ -455,12 +455,12 @@ const TransactionBuilderContextProvider = ({
   const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
   const [isWalletConnecting, setIsWalletConnecting] = useState(false);
   const [isWalletSupported, setIsWalletSupported] = useState(true);
-
+  
   const { estimate } = useEtherspotTransactions();
 
   const theme: Theme = useTheme();
 
-  const { environment, etherspotMode, chainId } = useEtherspot();
+  const { environment, etherspotMode, chainId, supportedChains } = useEtherspot();
 
   useEffect(() => {
     setShowWalletBlock(false);
@@ -555,7 +555,7 @@ const TransactionBuilderContextProvider = ({
     if (!accountAddress) {
       await connect();
     }
-
+    
     let validationErrors = await onValidate();
 
     let newCrossChainActions: ICrossChainAction[] = [];
@@ -634,7 +634,7 @@ const TransactionBuilderContextProvider = ({
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
 
   const estimateCrossChainActions = useCallback(async () => {
-    const unestimatedCrossChainActions = crossChainActions?.filter(
+        const unestimatedCrossChainActions = crossChainActions?.filter(
       (crossChainAction) => !crossChainAction.isEstimating && !crossChainAction.estimated
     );
     if (!unestimatedCrossChainActions?.length) return;
@@ -647,23 +647,16 @@ const TransactionBuilderContextProvider = ({
         })
       );
 
-      let estimated;
-
-      if (!isEtherspotPrime(etherspotMode)) {
-        estimated = await estimateCrossChainAction(
-          isEtherspotPrime(etherspotMode)
-            ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
-            : (getSdkForChainId(crossChainAction.chainId) as Sdk),
-          web3Provider,
-          crossChainAction,
-          providerAddress,
-          accountAddress,
-          etherspotMode
-        );
-      } else {
-        const primeEstimation = estimate();
-        console.log(primeEstimation);
-      }
+      const estimated = await estimateCrossChainAction(
+        isEtherspotPrime(etherspotMode)
+          ? await getEtherspotPrimeSdkForChainId(crossChainAction.chainId)
+          : (getSdkForChainId(crossChainAction.chainId) as Sdk),
+        web3Provider,
+        crossChainAction,
+        providerAddress,
+        accountAddress,
+        etherspotMode
+      );
 
       setCrossChainActions((current) =>
         current.map((currentCrossChainAction) => {
@@ -1206,7 +1199,7 @@ const TransactionBuilderContextProvider = ({
       setIsWalletConnecting(true);
       try {
         if (isEtherspotPrime(etherspotMode)) {
-          const isChainSupported = primeSdkSupportedChains.some(({ chainId: chain }) => chain === chainId);
+          const isChainSupported = supportedChains.some(({ chainId: chain }) => chain === chainId);
           if (isChainSupported) {
             setIsWalletSupported(true);
             await connect();
@@ -1323,7 +1316,7 @@ const TransactionBuilderContextProvider = ({
                     </WalletUnsupportedText>
                   </WalletUnsupportedNote>
                   <SupportedWalletsList>
-                    {primeSdkSupportedChains.map((supportedChain) => (
+                    {supportedChains.map((supportedChain) => (
                       <ListItem key={supportedChain.chainId}>
                         {!!supportedChain.iconUrl && (
                           <RoundedImage

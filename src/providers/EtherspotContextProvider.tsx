@@ -28,7 +28,15 @@ import { BigNumber, ethers } from 'ethers';
 import { CHAIN_ID_TO_NETWORK_NAME } from 'etherspot/dist/sdk/network/constants';
 
 import { EtherspotContext } from '../contexts';
-import { Chain, CHAIN_ID, MAINNET_CHAIN_ID, nativeAssetPerChainId, supportedChains } from '../utils/chain';
+import {
+  Chain,
+  CHAIN_ID,
+  MAINNET_CHAIN_ID,
+  nativeAssetPerChainId as etherspotNativeAssetPerChainId,
+  primeNativeAssetPerChainId,
+  primeSdkSupportedChains,
+  supportedChains as etherspotSupportedChains,
+} from '../utils/chain';
 import { TokenListToken } from 'etherspot/dist/sdk/assets/classes/token-list-token';
 import { isCaseInsensitiveMatch, isNativeAssetAddress } from '../utils/validation';
 import { sessionStorageInstance } from '../services/etherspot';
@@ -87,6 +95,10 @@ const EtherspotContextProvider = ({
   etherspotMode?: string;
 }) => {
   const context = useContext(EtherspotContext);
+  const supportedChains = isEtherspotPrime(etherspotMode) ? primeSdkSupportedChains : etherspotSupportedChains;
+  const nativeAssetPerChainId = isEtherspotPrime(etherspotMode)
+    ? primeNativeAssetPerChainId
+    : etherspotNativeAssetPerChainId;
   const { providerWalletAddress, connect: walletConnect } = useEtherspot();
   const { getAssets } = useEtherspotAssets();
   const { getAccountBalances } = useEtherspotBalances();
@@ -266,9 +278,11 @@ const EtherspotContextProvider = ({
   const getSupportedAssetsForChainId = useCallback(
     async (assetsChainId: number, force: boolean = false) => {
       const sdk =
-        assetsChainId !== CHAIN_ID.AVALANCHE && isEtherspotPrime(etherspotMode)
-          ? await getEtherspotPrimeSdkForChainId(assetsChainId)
-          : getSdkForChainId(assetsChainId); // Preload SDK if not Avalanche
+        assetsChainId !== CHAIN_ID.AVALANCHE
+          ? isEtherspotPrime(etherspotMode)
+            ? await getEtherspotPrimeSdkForChainId(assetsChainId)
+            : getSdkForChainId(assetsChainId)
+          : null; // Preload SDK if not Avalanche
 
       if (!sdk) return [];
 
@@ -365,7 +379,7 @@ const EtherspotContextProvider = ({
             // `token === null` means it's chain native token
             if (balanceAssetAddress === null)
               return isCaseInsensitiveMatch(supportedSymbol, nativeAssetPerChainId[assetsChainId]?.symbol);
-            return addressesEqual(supportedAddress, balanceAssetAddress);
+                        return addressesEqual(supportedAddress, balanceAssetAddress);
           });
 
           if (!supportedAsset) return false;
@@ -792,6 +806,8 @@ const EtherspotContextProvider = ({
       environment,
       setEnvironment,
       etherspotMode,
+      supportedChains,
+      nativeAssetPerChainId,
     }),
     [
       connect,
@@ -827,6 +843,8 @@ const EtherspotContextProvider = ({
       environment,
       setEnvironment,
       etherspotMode,
+      supportedChains,
+      nativeAssetPerChainId,
     ]
   );
 

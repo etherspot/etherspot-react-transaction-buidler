@@ -16,7 +16,7 @@ import GasTokenSelect from '../GasTokenSelect';
 // Utils
 import { getTransactionExplorerLink, isERC20ApprovalTransactionData } from '../../utils/transaction';
 import { formatAmountDisplay, humanizeHexString, copyToClipboard, getTypeOfAddress } from '../../utils/common';
-import { Chain, CHAIN_ID, klimaAsset, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { Chain, CHAIN_ID, klimaAsset } from '../../utils/chain';
 import { Theme } from '../../utils/theme';
 
 // Constants
@@ -226,7 +226,7 @@ const TransactionStatus = ({
   web3ProviderChainId?: number;
 }) => {
   const theme: Theme = useTheme();
-  const { getSdkForChainId, web3Provider } = useEtherspot();
+  const { getSdkForChainId, web3Provider, supportedChains } = useEtherspot();
   const [isGettingExplorerLink, setIsGettingExplorerLink] = useState<boolean>(false);
   const [, setSecondsAfter] = useState<number>(0);
   const [prevStatus, setPrevStatus] = useState<{ [id: string]: string }>({});
@@ -506,7 +506,7 @@ const ActionPreview = ({
   hideActionPreviewHeader = false,
 }: TransactionPreviewInterface) => {
   const [timer, setTimer] = useState(0);
-  const { accountAddress, providerAddress, web3Provider } = useEtherspot();
+  const { accountAddress, providerAddress, web3Provider, supportedChains, nativeAssetPerChainId } = useEtherspot();
   const theme: Theme = useTheme();
 
   const { preview, chainId, type, estimated, isEstimating } = crossChainAction;
@@ -727,7 +727,7 @@ const ActionPreview = ({
     feeCosts?.forEach(({ amountUSD = 0 }) => {
       totalFees += +amountUSD;
     });
-  
+
     return (
       <Card
         title="Asset bridge"
@@ -1284,7 +1284,7 @@ const ActionPreview = ({
         totalFees += +amountUSD;
       });
     }
-    
+
     return (
       <Card
         title={cardTitle}
@@ -1447,11 +1447,11 @@ const ActionPreview = ({
         {crossChainAction.transactions[crossChainAction.transactions.length - 1].status === CROSS_CHAIN_ACTION_STATUS.CONFIRMED
           && !!crossChainAction.destinationCrossChainAction.length
           && (
-          <TransactionStatus
-            crossChainAction={crossChainAction.destinationCrossChainAction[0]}
-            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
-          />
-        )}
+            <TransactionStatus
+              crossChainAction={crossChainAction.destinationCrossChainAction[0]}
+              setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            />
+          )}
       </Card>
     );
   }

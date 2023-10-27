@@ -8,6 +8,7 @@ import {
   Web3WalletProvider,
   EnvNames as EtherspotEnvNames,
   Transactions,
+  TokenListToken,
 } from 'etherspot';
 import { PrimeSdk } from '@etherspot/prime-sdk';
 
@@ -70,6 +71,10 @@ export interface EtherspotContextData {
     environment: EtherspotEnvNames;
     setEnvironment: (environment: EtherspotEnvNames) => void;
     etherspotMode?: string;
+    supportedChains: Chain[];
+    nativeAssetPerChainId: {
+      [chainId: number]: TokenListToken;
+    };
   };
 }
 

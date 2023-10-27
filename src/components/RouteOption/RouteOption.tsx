@@ -10,9 +10,9 @@ import {
 } from '../Image';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import Text from '../Text/Text';
-import { supportedChains } from '../../utils/chain';
 import styled, { useTheme } from 'styled-components';
 import { Theme } from '../../utils/theme';
+import { useEtherspot } from '../../hooks';
 
 interface RouteOptionProps {
   route?: Route;
@@ -74,6 +74,7 @@ const RouteOption = ({
   fees,
 }: RouteOptionProps) => {
   const theme: Theme = useTheme();
+  const { supportedChains } = useEtherspot();
 
   if (!route) return null;
 

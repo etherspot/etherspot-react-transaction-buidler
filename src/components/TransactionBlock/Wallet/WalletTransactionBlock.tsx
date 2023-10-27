@@ -3,7 +3,7 @@ import styled, { useTheme } from 'styled-components';
 import { HiChevronDown, HiChevronUp } from 'react-icons/hi';
 
 import { useEtherspot, useTransactionBuilder } from '../../../hooks';
-import { CHAIN_ID, Chain, supportedChains } from '../../../utils/chain';
+import { CHAIN_ID, Chain } from '../../../utils/chain';
 import { IAssetWithBalance } from '../../../providers/EtherspotContextProvider';
 import { RoundedImage } from '../../Image';
 import { Theme } from '../../../utils/theme';
@@ -76,6 +76,7 @@ const WalletTransactionBlock = ({
     getAssetsBalancesForChainId,
     getSupportedAssetsWithBalancesForChainId,
     getNftsForChainId,
+    supportedChains,
   } = useEtherspot();
 
   const [tab, setTab] = useState<ITabs>('tokens');

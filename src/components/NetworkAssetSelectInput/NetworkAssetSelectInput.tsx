@@ -6,7 +6,7 @@ import { orderBy, uniqueId } from 'lodash';
 import { BigNumber, ethers } from 'ethers';
 
 import { useEtherspot } from '../../hooks';
-import { Chain, CHAIN_ID, supportedChains } from '../../utils/chain';
+import { Chain, CHAIN_ID } from '../../utils/chain';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { addressesEqual, containsText } from '../../utils/validation';
 import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../utils/common';
@@ -291,6 +291,7 @@ const NetworkAssetSelectInput = ({
     providerAddress,
     accountAddress,
     setKeyBasedWalletBalanceByChain,
+    supportedChains,
   } = useEtherspot();
 
   const onSelectClick = useCallback(() => {

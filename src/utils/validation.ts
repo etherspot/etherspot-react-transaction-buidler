@@ -4,13 +4,14 @@ import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants
 import { IAssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
 import { ISendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
 import { ISwapAssetTransactionBlockValues } from '../components/TransactionBlock/AssetSwapTransactionBlock';
-import { nativeAssetPerChainId } from './chain';
+import { nativeAssetPerChainId as etherspotNativeAssetsPerChainId, primeNativeAssetPerChainId } from './chain';
 import { ITransactionBlock } from '../types/transactionBlock';
 import { IKlimaStakingTransactionBlockValues } from '../components/TransactionBlock/KlimaStakingTransactionBlock';
 import { IPlrDaoTransactionBlockValues } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { IPlrStakingV2BlockValues } from '../components/TransactionBlock/PlrStakingV2TransactionBlock';
 import { IHoneySwapLPTransactionBlockValues } from '../components/TransactionBlock/HoneySwapLPTransactionBlock';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { isEtherspotPrime } from './common';
 
 export const isValidEthereumAddress = (address: string | undefined): boolean => {
   if (!address) return false;
@@ -168,8 +169,16 @@ const zeroAddressConstants = [
 export const isZeroAddress = (address: string | undefined | null): boolean =>
   !address || (!!address && zeroAddressConstants.some((zeroAddress) => addressesEqual(address, zeroAddress)));
 
-export const isNativeAssetAddress = (address: string | undefined, chainId: number): boolean =>
-  !address || isZeroAddress(address) || addressesEqual(address, nativeAssetPerChainId[chainId]?.address);
+export const isNativeAssetAddress = (
+  address: string | undefined,
+  chainId: number,
+  etherspotMode?: string | undefined
+): boolean => {
+  const nativeAssetPerChainId = isEtherspotPrime(etherspotMode)
+    ? primeNativeAssetPerChainId
+    : etherspotNativeAssetsPerChainId;
+  return !address || isZeroAddress(address) || addressesEqual(address, nativeAssetPerChainId[chainId]?.address);
+};
 
 export const containsText = (text: string | undefined, query: string): boolean => {
   try {

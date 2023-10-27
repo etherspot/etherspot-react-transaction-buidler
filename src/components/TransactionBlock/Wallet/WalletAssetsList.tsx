@@ -3,12 +3,13 @@ import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 
 import { IAssetWithBalance, IBalanceByChain } from '../../../providers/EtherspotContextProvider';
-import { Chain, supportedChains } from '../../../utils/chain';
+import { Chain } from '../../../utils/chain';
 import { Text } from '../../Text';
 import RoundedImage from '../../Image/RoundedImage';
 import { WalletCopyIcon, WalletDropdownDownIcon, WalletDropdownUpIcon } from '../Icons';
 import { formatAmountDisplay, sumAssetsBalanceWorth } from '../../../utils/common';
 import { Theme } from '../../../utils/theme';
+import { useEtherspot } from '../../../hooks';
 
 export interface IChainAssets {
   title: string;
@@ -40,6 +41,7 @@ const WalletAssetsList = ({
   toggleChainBlock,
 }: IWalletAssetsList) => {
   const theme: Theme = useTheme();
+  const { supportedChains } = useEtherspot();
 
   return (
     <>

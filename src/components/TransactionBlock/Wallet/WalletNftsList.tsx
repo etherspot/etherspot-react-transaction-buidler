@@ -3,10 +3,11 @@ import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 import { Nft, NftCollection } from 'etherspot';
 
-import { Chain, supportedChains } from '../../../utils/chain';
+import { Chain } from '../../../utils/chain';
 import { Text } from '../../Text';
 import RoundedImage from '../../Image/RoundedImage';
 import { WalletCopyIcon, WalletDropdownDownIcon, WalletDropdownUpIcon } from '../Icons';
+import { useEtherspot } from '../../../hooks';
 
 export interface INft {
   chain: Chain;
@@ -44,6 +45,7 @@ const WalletNftsList = ({
   onCopy,
   toggleChainBlock,
 }: IWalletNftsList) => {
+  const { supportedChains } = useEtherspot();
   return (
     <>
       {tab === 'nfts' &&
