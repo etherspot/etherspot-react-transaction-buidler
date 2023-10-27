@@ -6,7 +6,7 @@ import { AccountTypes } from 'etherspot';
 import TextInput from '../TextInput';
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
 import { formatAmountDisplay, formatAssetAmountInput, formatMaxAmount } from '../../utils/common';
-import { Chain, supportedChains } from '../../utils/chain';
+import { Chain } from '../../utils/chain';
 import NetworkAssetSelectInput from '../NetworkAssetSelectInput';
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 import { CombinedRoundedImages } from '../Image';
@@ -73,7 +73,6 @@ const SendAssetTransactionBlock = ({
     smartWalletOnly,
     updateWalletBalances,
   } = useEtherspot();
-  const { estimate, send } = useEtherspotTransactions();
 
   const onAmountChange = useCallback(
     (newAmount: string) => {
@@ -144,12 +143,10 @@ const SendAssetTransactionBlock = ({
 
   const onEstimateReceiver = (estimationData) => {
     console.log('This is the cost estimate for all the batches', estimationData);
-
-    console.log(+ethers.utils.formatUnits(estimationData[0].cost, 4));
   };
 
   return (
-    <EtherspotBatches via={'etherspot-prime'} onEstimated={onEstimateReceiver}>
+    <EtherspotBatches onEstimated={onEstimateReceiver}>
       <EtherspotBatch>
         <EtherspotTransaction to={receiverAddress} value={amount}>
           {!hideTitle && <Title>Send asset</Title>}
@@ -236,7 +233,6 @@ const SendAssetTransactionBlock = ({
             showPasteButton
             disabled={!!fixed || disableReceiverAddressInput}
           />
-          <button onClick={() => estimate()}>Estimate</button>
         </EtherspotTransaction>
       </EtherspotBatch>
     </EtherspotBatches>

@@ -15,7 +15,11 @@ import {
   ITransactionBlockType,
   ITransactionBlockValues,
 } from '../types/transactionBlock';
-import { ICrossChainAction, ICrossChainActionTransaction } from '../types/crossChainAction';
+import {
+  ICrossChainAction,
+  ICrossChainActionEstimation,
+  ICrossChainActionTransaction,
+} from '../types/crossChainAction';
 
 import { PrimaryButton, SecondaryButton } from '../components/Button';
 import { useEtherspot, useTransactionBuilderModal, useTransactionsDispatcher } from '../hooks';
@@ -441,7 +445,8 @@ const TransactionBuilderContextProvider = ({
   const [showTransactionBlockSelect, setShowTransactionBlockSelect] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [crossChainActionClick, setCrossChainActionClick] = useState<boolean>(false);
+  const [isEstimating, setIsEstimating] = useState<boolean>(false);
+  const [crossChainActionClick, setCrossChainActionClick] = useState<boolean>(false);
   const [crossChainActions, setCrossChainActions] = useState<ICrossChainAction[]>([]);
   const [isSigningAction, setIsSigningAction] = useState<boolean>(false);
   const [editingTransactionBlock, setEditingTransactionBlock] = useState<ITransactionBlock | null>(null);
@@ -455,7 +460,8 @@ const TransactionBuilderContextProvider = ({
   const [showWalletBlock, setShowWalletBlock] = useState(defaultShowWallet);
   const [isWalletConnecting, setIsWalletConnecting] = useState(false);
   const [isWalletSupported, setIsWalletSupported] = useState(true);
-  
+  const [estimatedData, setEstimatedData] = useState<ICrossChainActionEstimation>({});
+
   const { estimate } = useEtherspotTransactions();
 
   const theme: Theme = useTheme();
@@ -555,7 +561,8 @@ const TransactionBuilderContextProvider = ({
     if (!accountAddress) {
       await connect();
     }
-    
+    setIsEstimating(true);
+
     let validationErrors = await onValidate();
 
     let newCrossChainActions: ICrossChainAction[] = [];
@@ -634,7 +641,19 @@ const TransactionBuilderContextProvider = ({
   }, [transactionBlocks, isChecking, sdk, connect, accountAddress, isConnecting]);
 
   const estimateCrossChainActions = useCallback(async () => {
-        const unestimatedCrossChainActions = crossChainActions?.filter(
+    if (isEstimating) {
+      const estimation = await estimate();
+      if (estimation?.length) {
+        const { estimatedBatches } = estimation[0];
+        const estimatedCost = estimatedBatches[0].cost;
+        const estimated = {
+          gasCost: estimatedCost,
+        };
+        setEstimatedData(estimated);
+      }
+      setIsEstimating(false);
+    }
+    const unestimatedCrossChainActions = crossChainActions?.filter(
       (crossChainAction) => !crossChainAction.isEstimating && !crossChainAction.estimated
     );
     if (!unestimatedCrossChainActions?.length) return;
@@ -661,11 +680,25 @@ const TransactionBuilderContextProvider = ({
       setCrossChainActions((current) =>
         current.map((currentCrossChainAction) => {
           if (currentCrossChainAction.id !== crossChainAction.id) return currentCrossChainAction;
-          return { ...crossChainAction, isEstimating: false, estimated };
+          return {
+            ...crossChainAction,
+            isEstimating: false,
+            estimated: !isEtherspotPrime(etherspotMode) ? estimated : estimatedData!,
+          };
         })
       );
     });
-  }, [crossChainActions, setCrossChainActions, getSdkForChainId, web3Provider, providerAddress, accountAddress]);
+  }, [
+    crossChainActions,
+    setCrossChainActions,
+    getSdkForChainId,
+    estimate,
+    web3Provider,
+    providerAddress,
+    accountAddress,
+    isEstimating,
+    estimatedData,
+  ]);
 
   const setCrossChainActionGasToken = async (
     crossChainActionId: string,
