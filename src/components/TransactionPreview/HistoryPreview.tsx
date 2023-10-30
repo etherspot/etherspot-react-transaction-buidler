@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 
@@ -35,6 +35,7 @@ interface TransactionPreviewInterface {
 const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
   const { accountAddress, providerAddress, web3Provider } = useEtherspot();
   const theme: Theme = useTheme();
+  const [showFullGasAmount, setShowFullGasAmount] = useState(false);
 
   const { chainId, type } = crossChainAction;
 
@@ -43,6 +44,10 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
       alert('The transaction hash is not yet available. Please try again later.');
       return;
     } else window.open(transactionUrl, '_blank');
+  };
+
+  const handleTap = () => {
+    setShowFullGasAmount(!showFullGasAmount);
   };
 
   const previewSend = (
@@ -56,21 +61,27 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     const { asset, fromAddress, transactionUrl } = preview;
     const receiverAddress = preview.receiverAddress as string;
     const SendReceiveAddress = direction == 'Sender' ? receiverAddress : fromAddress;
-    const gasCostNumericString = ethers.utils.formatUnits(
-      asset.gasCost,
-      nativeAssetPerChainId[crossChainAction.chainId].decimals
-    );
-
     const gasCost = asset.gasCost.toNumber();
 
     // Convert gas wei to ETH
-    const gasInETHAmount = (gasCost / 1e18).toFixed(18);
+    const gasInETHAmount = gasCost / 1e18;
 
     // Convert to USD
     let gasFees = gasInETHAmount * crossChainAction.estimated.usdPrice;
-    gasFees = gasFees.toFixed(2) == '0.00' ? gasFees.toFixed(8) : gasFees.toFixed(2);
+    let gasFeesNative = gasInETHAmount;
+
+    gasFeesNative = gasInETHAmount.toFixed(4) >= '0.0001' ? gasInETHAmount.toFixed(4) : gasInETHAmount.toFixed(6);
+    console.log(gasFeesNative);
+    const partialgasFees = gasFeesNative.toString();
+    let fullGasFees = gasInETHAmount.toFixed(15);
+    const finalgasFees = fullGasFees.toString();
+    console.log(fullGasFees);
 
     const gasFeesUSD = `${gasFees} $`;
+    const gasFeesNativeToken = `${partialgasFees + ` ` + asset.symbol}`;
+    console.log(gasFeesNativeToken);
+    const fullGasFeesNativeToken = `${finalgasFees + ` ` + asset.symbol}`;
+    console.log(fullGasFeesNativeToken);
 
     // Calculate transaction fees
     let transactionfees = gasInETHAmount * asset.gasUsed;
@@ -117,10 +128,12 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
                 onClick={() => openBlockExplorerUrl(transactionUrl)}
               />
             </ClickableText>
-            <Text size={12} marginBottom={2} marginRight={3} medium block>
-              <LuFuel size={16} style={{ marginRight: 5 }} color={theme?.color?.text?.innerLabel} />
-              <Text> {gasFeesUSD}</Text>
-            </Text>
+            <ClickableText onClick={handleTap}>
+              <Text size={12} marginBottom={2} marginRight={3} medium block>
+                <LuFuel size={16} style={{ marginRight: 5 }} color={theme?.color?.text?.innerLabel} />
+                {showFullGasAmount ? <Text> {fullGasFeesNativeToken}</Text> : <Text> {gasFeesNativeToken}</Text>}
+              </Text>
+            </ClickableText>
           </RightWrapper>
         </MainWrapper>
       </>
