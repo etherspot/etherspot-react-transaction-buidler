@@ -70,8 +70,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     let gasFees = gasInETHAmount * crossChainAction.estimated.usdPrice;
     let gasFeesNative = gasInETHAmount;
 
-    gasFeesNative = gasInETHAmount.toFixed(4) >= '0.0001' ? gasInETHAmount.toFixed(4) : gasInETHAmount.toFixed(6);
-    console.log(gasFeesNative);
+    gasFeesNative = gasInETHAmount.toFixed(4) < '0.0001' ? '>0.0001' : gasInETHAmount.toFixed(5);
     const partialgasFees = gasFeesNative.toString();
     let fullGasFees = gasInETHAmount.toFixed(15);
     const finalgasFees = fullGasFees.toString();
