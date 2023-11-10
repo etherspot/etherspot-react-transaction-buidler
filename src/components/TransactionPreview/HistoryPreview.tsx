@@ -123,12 +123,8 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
             <ClickableText onClick={handleTap}>
               <Text size={16} marginBottom={2} marginRight={5} medium block>
                 <LuFuel size={16} style={{ marginRight: 8 }} color={theme?.color?.text?.innerLabel} />
-                {parseFloat(gasfeesInUsd.toFixed(3)) < 0.001 ? (
-                  showFullGasAmount ? (
-                    <Text> {fullgasFee}</Text>
-                  ) : (
-                    <Text> {gasfeeDisplay}</Text>
-                  )
+                {parseFloat(gasfeesInUsd.toFixed(3)) < 0.001 && showFullGasAmount ? (
+                  <Text> {fullgasFee}</Text>
                 ) : (
                   <Text> {gasfeeDisplay}</Text>
                 )}
