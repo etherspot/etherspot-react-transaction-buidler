@@ -73,7 +73,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     const gasFeesInUsd = gasFees * crossChainAction.estimated.usdPrice;
     const fullGasFee = gasFeesInUsd.toFixed(6);
     const partialGasFeesInUsd = parseFloat(gasFeesInUsd.toFixed(3)) < 0.001 ? '<0.001' : gasFeesInUsd.toFixed(2);
-    const gasFeeDisplay = `${partialGasFeesInUsd}  $`;
+    const gasFeeDisplay = `$${partialGasFeesInUsd}`;
 
     // calculate Token value
     const tokenValue =
@@ -81,7 +81,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
 
     // convert Token value to USD
     const tokenValueUsd =
-      tokenValue != null ? formatAmountDisplay(`${+tokenValue * +crossChainAction.estimated.usdPrice}`, '$') : '$ 0';
+      tokenValue != null ? formatAmountDisplay(`${+tokenValue * +crossChainAction.estimated.usdPrice}`, '$') : '$0';
     const tokenFeeDisplay = `${direction === 'Sender' ? '-' : '+'} ${tokenValue} ${asset.symbol}・${tokenValueUsd}`;
 
     return (
