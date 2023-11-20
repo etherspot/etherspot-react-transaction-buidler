@@ -34,7 +34,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   //pull all Transaction data and set in array to display on UI
   const pullAllNewTx = async (accountAddress: string | null) => {
     setIsLoadingTransactions(true);
-    const transactions = await getAllTransactions('0x89a3d6AF00a3627DA25E2e8FFCCb97FE74D52631');
+    const transactions = await getAllTransactions(accountAddress);
     if (!transactions) {
       setErrorMessage('Failed to get transactions!');
       return;
@@ -106,9 +106,6 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
           ];
 
           storedTransactionsDetails[crossChainActionId] = [...crossChainAction];
-
-          //const storedGroupedCrossChainActionsUpdated = storedTransactionsDetails;
-
           setStoredGroupedCrossChainActions(storedTransactionsDetails);
         });
       });
