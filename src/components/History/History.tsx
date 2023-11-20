@@ -34,7 +34,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   //pull all Transaction data and set in array to display on UI
   const pullAllNewTx = async (accountAddress: string | null) => {
     setIsLoadingTransactions(true);
-    const transactions = await getAllTransactions(accountAddress);
+    const transactions = await getAllTransactions('0x89a3d6AF00a3627DA25E2e8FFCCb97FE74D52631');
     if (!transactions) {
       setErrorMessage('Failed to get transactions!');
       return;
@@ -48,69 +48,68 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
         const assets = await getSupportedAssetsForChainId(chain_id);
 
         value.map((item) => {
-          if (item.asset != null) {
-            const assetnetwork =
-              item.asset && assets ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol) : null;
-            const chainId = chain_id;
-            const crossChainActionId = uniqueId(`${item.timestamp}-`);
-            const receiverAddress = item.asset ? item.asset.to : item.to;
-            const fromAddress = item.asset ? item.asset.from : item.from;
-            const isFromEtherspotWallet = false;
-            const transactionUrl = item.blockExplorerUrl;
+          if (!item?.asset) return;
+          const assetNetwork =
+            item.asset && assets ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol) : null;
+          const chainId = chain_id;
+          const crossChainActionId = uniqueId(`${item.timestamp}-`);
+          const receiverAddress = item.asset ? item.asset.to : item.to;
+          const fromAddress = item.asset ? item.asset.from : item.from;
+          const isFromEtherspotWallet = false;
+          const transactionUrl = item.blockExplorerUrl;
 
-            let estimated = {
+          let estimated = {
+            usdPrice: UsdPrice,
+            gasCost: item.gasPrice,
+            feeAmount: item.asset && item.asset != null && item.asset.value ? item.asset.value : null,
+          };
+          let preview = {
+            chainId,
+            receiverAddress,
+            fromAddress,
+            isFromEtherspotWallet,
+            transactionUrl,
+            asset: {
+              address: item.asset ? item.asset.from : item.from,
+              decimals: item.asset ? item.asset.decimal : 2,
+              symbol: item.asset ? item.asset.symbol : '',
+              amount: '100000000000000000',
+              iconUrl: assetNetwork != null ? assetNetwork?.logoURI : '',
               usdPrice: UsdPrice,
               gasCost: item.gasPrice,
+              gasUsed: item.gasUsed,
               feeAmount: item.asset && item.asset != null && item.asset.value ? item.asset.value : null,
-            };
-            let preview = {
-              chainId,
-              receiverAddress,
-              fromAddress,
-              isFromEtherspotWallet,
-              transactionUrl,
-              asset: {
-                address: item.asset ? item.asset.from : item.from,
-                decimals: item.asset ? item.asset.decimal : 2,
-                symbol: item.asset ? item.asset.symbol : '',
-                amount: '100000000000000000',
-                iconUrl: assetnetwork != null ? assetnetwork?.logoURI : '',
-                usdPrice: UsdPrice,
-                gasCost: item.gasPrice,
-                gasUsed: item.gasUsed,
-                feeAmount: item.asset && item.asset != null && item.asset.value ? item.asset.value : null,
-                createTimestamp: item.timestamp,
-              },
-            };
-
-            let transferTransaction: ICrossChainActionTransaction = {
-              to: receiverAddress,
-              value: item.value,
               createTimestamp: item.timestamp,
-              status: CROSS_CHAIN_ACTION_STATUS.CONFIRMED,
-            };
+            },
+          };
 
-            crossChainAction = [
-              {
-                id: crossChainActionId,
-                relatedTransactionBlockId: uniqueId(`${item.timestamp}-`),
-                chainId: chainId,
-                estimated,
-                preview,
-                transactions: [transferTransaction],
-                type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
-                isEstimating: false,
-                useWeb3Provider: !isFromEtherspotWallet,
-                direction: item.direction,
-              },
-            ];
+          let transferTransaction: ICrossChainActionTransaction = {
+            to: receiverAddress,
+            value: item.value,
+            createTimestamp: item.timestamp,
+            status: CROSS_CHAIN_ACTION_STATUS.CONFIRMED,
+          };
 
-            storedTransactionsDetails[crossChainActionId] = [...crossChainAction];
+          crossChainAction = [
+            {
+              id: crossChainActionId,
+              relatedTransactionBlockId: uniqueId(`${item.timestamp}-`),
+              chainId: chainId,
+              estimated,
+              preview,
+              transactions: [transferTransaction],
+              type: TRANSACTION_BLOCK_TYPE.SEND_ASSET,
+              isEstimating: false,
+              useWeb3Provider: !isFromEtherspotWallet,
+              direction: item.direction,
+            },
+          ];
 
-            const storedGroupedCrossChainActionsUpdated = storedTransactionsDetails;
+          storedTransactionsDetails[crossChainActionId] = [...crossChainAction];
 
-            setStoredGroupedCrossChainActions(storedGroupedCrossChainActionsUpdated);
-          }
+          //const storedGroupedCrossChainActionsUpdated = storedTransactionsDetails;
+
+          setStoredGroupedCrossChainActions(storedTransactionsDetails);
         });
       });
     setIsLoadingTransactions(false);

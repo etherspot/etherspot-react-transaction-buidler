@@ -9,7 +9,7 @@ import { CombinedRoundedImages } from '../Image';
 
 // Utils
 import { copyToClipboard, getTypeOfAddress, formatAmountDisplay } from '../../utils/common';
-import { Chain, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { Chain, supportedChains } from '../../utils/chain';
 import { Theme } from '../../utils/theme';
 
 // Constants
@@ -33,7 +33,7 @@ interface TransactionPreviewInterface {
 }
 
 const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
-  const { accountAddress, providerAddress, web3Provider } = useEtherspot();
+  const { accountAddress, providerAddress } = useEtherspot();
   const theme: Theme = useTheme();
   const [showFullGasAmount, setShowFullGasAmount] = useState(false);
 
@@ -67,24 +67,22 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     const gasInETHAmount = gasCost / 1e18;
 
     // calculate gas fees
-    const gasfees = gasInETHAmount * asset.gasUsed;
+    const gasFees = gasInETHAmount * asset.gasUsed;
 
     // convert gas fee to USD
-    const gasfeesInUsd = gasfees * crossChainAction.estimated.usdPrice;
-    const fullgasFee = gasfeesInUsd.toFixed(6);
-    const partialgasfeesInUsd = parseFloat(gasfeesInUsd.toFixed(3)) < 0.001 ? '<0.001' : gasfeesInUsd.toFixed(2);
-    const gasfeeDisplay = `${partialgasfeesInUsd}  $`;
+    const gasFeesInUsd = gasFees * crossChainAction.estimated.usdPrice;
+    const fullGasFee = gasFeesInUsd.toFixed(6);
+    const partialGasFeesInUsd = parseFloat(gasFeesInUsd.toFixed(3)) < 0.001 ? '<0.001' : gasFeesInUsd.toFixed(2);
+    const gasFeeDisplay = `${partialGasFeesInUsd}  $`;
 
     // calculate Token value
     const tokenValue =
-      asset.feeAmount && asset.feeAmount != null ? ethers.utils.formatUnits(asset?.feeAmount, asset?.decimals) : null;
+      asset.feeAmount && asset.feeAmount != null ? ethers.utils.formatUnits(asset.feeAmount, asset.decimals) : null;
 
     // convert Token value to USD
     const tokenValueUsd =
-      tokenValue != null ? formatAmountDisplay(`${+tokenValue * +crossChainAction.estimated.usdPrice}`, '$') : '0 $';
-    const tokenfeeDisplay = `${direction === 'Sender' ? '-' : '+'} ${
-      +tokenValue + ` ` + asset.symbol
-    }・${tokenValueUsd}`;
+      tokenValue != null ? formatAmountDisplay(`${+tokenValue * +crossChainAction.estimated.usdPrice}`, '$') : '$ 0';
+    const tokenFeeDisplay = `${direction === 'Sender' ? '-' : '+'} ${tokenValue} ${asset.symbol}・${tokenValueUsd}`;
 
     return (
       <>
@@ -106,7 +104,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
               ) : (
                 <IconPlaceHolder data-letters="Ox"></IconPlaceHolder>
               )}
-              <Text> {tokenfeeDisplay} </Text>
+              <Text> {tokenFeeDisplay} </Text>
             </ValueWrapper>
           </LeftWrapper>
           <RightWrapper>
@@ -123,11 +121,10 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
             <ClickableText onClick={handleTap}>
               <Text size={16} marginBottom={2} marginRight={5} medium block>
                 <LuFuel size={16} style={{ marginRight: 8 }} color={theme?.color?.text?.innerLabel} />
-                {parseFloat(gasfeesInUsd.toFixed(3)) < 0.001 && showFullGasAmount ? (
-                  <Text> {fullgasFee}</Text>
-                ) : (
-                  <Text> {gasfeeDisplay}</Text>
-                )}
+                <Text>
+                  {' '}
+                  {parseFloat(gasFeesInUsd.toFixed(3)) < 0.001 && showFullGasAmount ? fullGasFee : gasFeeDisplay}
+                </Text>
               </Text>
             </ClickableText>
           </RightWrapper>
