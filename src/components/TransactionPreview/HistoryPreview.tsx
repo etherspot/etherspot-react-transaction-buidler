@@ -8,8 +8,8 @@ import { ClickableText, Text } from '../Text';
 import { CombinedRoundedImages } from '../Image';
 
 // Utils
-import { copyToClipboard, getTypeOfAddress } from '../../utils/common';
-import { Chain, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { copyToClipboard, getTypeOfAddress, formatAmountDisplay } from '../../utils/common';
+import { Chain, supportedChains } from '../../utils/chain';
 import { Theme } from '../../utils/theme';
 
 // Constants
@@ -33,7 +33,7 @@ interface TransactionPreviewInterface {
 }
 
 const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
-  const { accountAddress, providerAddress, web3Provider } = useEtherspot();
+  const { accountAddress, providerAddress } = useEtherspot();
   const theme: Theme = useTheme();
   const [showFullGasAmount, setShowFullGasAmount] = useState(false);
 
@@ -66,32 +66,23 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     // Convert gas wei to ETH
     const gasInETHAmount = gasCost / 1e18;
 
-    // Convert to USD
-    let gasFees = gasInETHAmount * crossChainAction.estimated.usdPrice;
-    let gasFeesNative = gasInETHAmount;
+    // calculate gas fees
+    const gasFees = gasInETHAmount * asset.gasUsed;
 
-    gasFeesNative = parseFloat(gasInETHAmount.toFixed(4)) < 0.0001 ? '<0.0001' : gasInETHAmount.toFixed(5);
-    const partialgasFees = gasFeesNative.toString();
-    let fullGasFees = gasInETHAmount.toFixed(15);
-    const finalgasFees = fullGasFees.toString();
-    console.log(fullGasFees);
+    // convert gas fee to USD
+    const gasFeesInUsd = gasFees * crossChainAction.estimated.usdPrice;
+    const fullGasFee = gasFeesInUsd.toFixed(6);
+    const partialGasFeesInUsd = parseFloat(gasFeesInUsd.toFixed(3)) < 0.001 ? '<0.001' : gasFeesInUsd.toFixed(2);
+    const gasFeeDisplay = `$${partialGasFeesInUsd}`;
 
-    const gasFeesUSD = `${gasFees} $`;
-    const gasFeesNativeToken = `${partialgasFees + ` ` + asset.symbol}`;
-    console.log(gasFeesNativeToken);
-    const fullGasFeesNativeToken = `${finalgasFees + ` ` + asset.symbol}`;
-    console.log(fullGasFeesNativeToken);
+    // calculate Token value
+    const tokenValue =
+      asset.feeAmount && asset.feeAmount != null ? ethers.utils.formatUnits(asset.feeAmount, asset.decimals) : null;
 
-    // Calculate transaction fees
-    let transactionfees = gasInETHAmount * asset.gasUsed;
-    transactionfees = transactionfees.toFixed(2) == '0.00' ? transactionfees.toFixed(6) : transactionfees.toFixed(2);
-
-    // convert Tx fee to USD
-    let transactionfeesInUsd = transactionfees * crossChainAction.estimated.usdPrice;
-    transactionfeesInUsd =
-      transactionfeesInUsd.toFixed(2) == '0.00' ? transactionfeesInUsd.toFixed(6) : transactionfeesInUsd.toFixed(2);
-
-    const amountString = `${+transactionfees + ` ` + asset.symbol}・ $ ${transactionfeesInUsd}`;
+    // convert Token value to USD
+    const tokenValueUsd =
+      tokenValue != null ? formatAmountDisplay(`${+tokenValue * +crossChainAction.estimated.usdPrice}`, '$') : '$0';
+    const tokenFeeDisplay = `${direction === 'Sender' ? '-' : '+'} ${tokenValue} ${asset.symbol}・${tokenValueUsd}`;
 
     return (
       <>
@@ -113,7 +104,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
               ) : (
                 <IconPlaceHolder data-letters="Ox"></IconPlaceHolder>
               )}
-              <Text> {amountString} </Text>
+              <Text> {tokenFeeDisplay} </Text>
             </ValueWrapper>
           </LeftWrapper>
           <RightWrapper>
@@ -128,9 +119,12 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
               />
             </ClickableText>
             <ClickableText onClick={handleTap}>
-              <Text size={12} marginBottom={2} marginRight={3} medium block>
-                <LuFuel size={16} style={{ marginRight: 5 }} color={theme?.color?.text?.innerLabel} />
-                {showFullGasAmount ? <Text> {fullGasFeesNativeToken}</Text> : <Text> {gasFeesNativeToken}</Text>}
+              <Text size={16} marginBottom={2} marginRight={5} medium block>
+                <LuFuel size={16} style={{ marginRight: 8 }} color={theme?.color?.text?.innerLabel} />
+                <Text>
+                  {' '}
+                  {parseFloat(gasFeesInUsd.toFixed(3)) < 0.001 && showFullGasAmount ? fullGasFee : gasFeeDisplay}
+                </Text>
               </Text>
             </ClickableText>
           </RightWrapper>

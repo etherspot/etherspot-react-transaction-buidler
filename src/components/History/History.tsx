@@ -48,7 +48,8 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
         const assets = await getSupportedAssetsForChainId(chain_id);
 
         value.map((item) => {
-          const assetnetwork =
+          if (!item?.asset) return;
+          const assetNetwork =
             item.asset && assets ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol) : null;
           const chainId = chain_id;
           const crossChainActionId = uniqueId(`${item.timestamp}-`);
@@ -73,7 +74,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
               decimals: item.asset ? item.asset.decimal : 2,
               symbol: item.asset ? item.asset.symbol : '',
               amount: '100000000000000000',
-              iconUrl: assetnetwork != null ? assetnetwork?.logoURI : '',
+              iconUrl: assetNetwork != null ? assetNetwork?.logoURI : '',
               usdPrice: UsdPrice,
               gasCost: item.gasPrice,
               gasUsed: item.gasUsed,
@@ -105,10 +106,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
           ];
 
           storedTransactionsDetails[crossChainActionId] = [...crossChainAction];
-
-          const storedGroupedCrossChainActionsUpdated = storedTransactionsDetails;
-
-          setStoredGroupedCrossChainActions(storedGroupedCrossChainActionsUpdated);
+          setStoredGroupedCrossChainActions(storedTransactionsDetails);
         });
       });
     setIsLoadingTransactions(false);
