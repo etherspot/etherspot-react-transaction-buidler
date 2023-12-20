@@ -523,7 +523,7 @@ const PlrStakingV2TransactionBlock = ({
     };
   }, [sdk, providerAddress, accountAddress]);
 
-  const remainingSelectedFromAssetBalance: any = useMemo(() => {
+  const remainingSelectedFromAssetBalance = useMemo(() => {
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
 
     if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals);
@@ -599,13 +599,6 @@ const PlrStakingV2TransactionBlock = ({
   const isStakingAssetSelected = addressesEqual(selectedToAsset?.address, stkPlrAsset.address);
 
   const hasStkPlrBalance = !!stkPlrBalance && stkPlrBalance.gt(0);
-
-  const visibleRoutes =
-    !isStakingAssetSelected &&
-    !!selectedToAsset &&
-    !!selectedFromAsset &&
-    !!amount &&
-    (remainingSelectedFromAssetBalance ?? 0) >= 0;
 
   return (
     <>
@@ -771,7 +764,11 @@ const PlrStakingV2TransactionBlock = ({
           hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
         />
       </WalletReceiveWrapper>
-      {visibleRoutes && (
+      {!isStakingAssetSelected &&
+        !!selectedToAsset &&
+        !!selectedFromAsset &&
+        !!amount &&
+        (remainingSelectedFromAssetBalance ?? 0) >= 0 &&  && (
         <>
           {selectedFromNetwork?.chainId !== selectedToNetwork?.chainId && (
             <SelectInput
