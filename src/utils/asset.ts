@@ -1,10 +1,7 @@
 import { BigNumber } from 'ethers';
 import { IAssetWithBalance } from '../providers/EtherspotContextProvider';
 import { CHAIN_ID, MAINNET_CHAIN_ID, TESTNET_CHAIN_ID } from './chain';
-import {
-  PLR_ADDRESS_PER_CHAIN,
-  STKPLR_ADDRESS_ETHEREUM_MAINNET
-} from '../constants/assetConstants';
+import { PLR_ADDRESS_PER_CHAIN, STKPLR_POLYGON_TOKEN_ADDRESS } from '../constants/assetConstants';
 
 export const plrDaoAsset: IAssetWithBalance = {
   address: '0xa6b37fc85d870711c56fbcb8afe2f8db049ae774',
@@ -56,8 +53,8 @@ export const getPlrAssetForChainId = (chainId: number, balance: BigNumber = BigN
 });
 
 export const stkPlrAsset = {
-  address: STKPLR_ADDRESS_ETHEREUM_MAINNET,
-  chainId: CHAIN_ID.ETHEREUM_MAINNET,
+  address: STKPLR_POLYGON_TOKEN_ADDRESS,
+  chainId: CHAIN_ID.POLYGON,
   name: 'Staked Pillar',
   symbol: 'stkPLR',
   decimals: 18,
@@ -65,4 +62,4 @@ export const stkPlrAsset = {
   balance: BigNumber.from(0),
   assetPriceUsd: null,
   balanceWorthUsd: null,
-}
+};

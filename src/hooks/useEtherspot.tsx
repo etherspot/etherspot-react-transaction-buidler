@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 
 import { EtherspotContext } from '../contexts';
 
-const useEtherspot = () => {
+const useEtherspot = (): any => {
   const context = useContext(EtherspotContext);
 
   if (context === null) {
