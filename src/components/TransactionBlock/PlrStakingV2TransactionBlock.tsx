@@ -768,48 +768,48 @@ const PlrStakingV2TransactionBlock = ({
         !!selectedToAsset &&
         !!selectedFromAsset &&
         !!amount &&
-        (remainingSelectedFromAssetBalance ?? 0) >= 0 &&  && (
-        <>
-          {selectedFromNetwork?.chainId !== selectedToNetwork?.chainId && (
-            <SelectInput
-              label={'Route'}
-              options={availableRoutesOptions ?? []}
-              isLoading={isLoadingAvailableRoutes}
-              selectedOption={selectedRoute}
-              onOptionSelect={(option) => {
-                resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
-                setSelectedRoute(option);
-              }}
-              placeholder="Select route"
-              renderOptionListItemContent={renderRouteOption}
-              renderSelectedOptionContent={renderRouteOption}
-              errorMessage={errorMessages?.route}
-              disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
-              noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
-              forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
-            />
-          )}
-          {selectedFromNetwork?.chainId === selectedToNetwork?.chainId && (
-            <SelectInput
-              label={'Offer'}
-              options={availableOffersOptions ?? []}
-              isLoading={isLoadingAvailableOffers}
-              disabled={!availableOffersOptions?.length || isLoadingAvailableOffers}
-              selectedOption={selectedOffer}
-              onOptionSelect={(option) => {
-                resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
-                setSelectedOffer(option);
-              }}
-              renderOptionListItemContent={renderOfferOption}
-              renderSelectedOptionContent={renderOfferOption}
-              placeholder="Select offer"
-              errorMessage={errorMessages?.offer}
-              noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
-              forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1}
-            />
-          )}
-        </>
-      )}
+        (remainingSelectedFromAssetBalance ?? 0) >= 0 && (
+          <>
+            {selectedFromNetwork?.chainId !== selectedToNetwork?.chainId && (
+              <SelectInput
+                label={'Route'}
+                options={availableRoutesOptions ?? []}
+                isLoading={isLoadingAvailableRoutes}
+                selectedOption={selectedRoute}
+                onOptionSelect={(option) => {
+                  resetTransactionBlockFieldValidationError(transactionBlockId, 'route');
+                  setSelectedRoute(option);
+                }}
+                placeholder="Select route"
+                renderOptionListItemContent={renderRouteOption}
+                renderSelectedOptionContent={renderRouteOption}
+                errorMessage={errorMessages?.route}
+                disabled={!availableRoutesOptions?.length || isLoadingAvailableRoutes}
+                noOpen={!!selectedRoute && availableRoutesOptions?.length === 1}
+                forceShow={!!availableRoutesOptions?.length && availableRoutesOptions?.length > 1 && !selectedRoute}
+              />
+            )}
+            {selectedFromNetwork?.chainId === selectedToNetwork?.chainId && (
+              <SelectInput
+                label={'Offer'}
+                options={availableOffersOptions ?? []}
+                isLoading={isLoadingAvailableOffers}
+                disabled={!availableOffersOptions?.length || isLoadingAvailableOffers}
+                selectedOption={selectedOffer}
+                onOptionSelect={(option) => {
+                  resetTransactionBlockFieldValidationError(transactionBlockId, 'offer');
+                  setSelectedOffer(option);
+                }}
+                renderOptionListItemContent={renderOfferOption}
+                renderSelectedOptionContent={renderOfferOption}
+                placeholder="Select offer"
+                errorMessage={errorMessages?.offer}
+                noOpen={!!selectedOffer && availableOffersOptions?.length === 1}
+                forceShow={!!availableOffersOptions?.length && availableOffersOptions?.length > 1}
+              />
+            )}
+          </>
+        )}
     </>
   );
 };
