@@ -523,7 +523,7 @@ const PlrStakingV2TransactionBlock = ({
     };
   }, [sdk, providerAddress, accountAddress]);
 
-  const remainingSelectedFromAssetBalance = useMemo(() => {
+  const remainingSelectedFromAssetBalance: any = useMemo(() => {
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
 
     if (!amount) return +ethers.utils.formatUnits(selectedFromAsset.balance, selectedFromAsset.decimals);
