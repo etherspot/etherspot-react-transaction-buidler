@@ -6,7 +6,7 @@ import debounce from 'debounce-promise';
 import { Route } from '@lifi/sdk';
 
 // types
-import { IPlrStakingV2Block } from '../../types/transactionBlock';
+import { IPlrStakingV2Block, AccountBalance } from '../../types/transactionBlock';
 
 // components
 import { useEtherspot, useTransactionBuilder } from '../../hooks';
@@ -31,18 +31,15 @@ import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { getPlrAssetForChainId, stkPlrAsset } from '../../utils/asset';
 
 // constants
-import {
-  PLR_ADDRESS_PER_CHAIN,
-  STKPLR_ADDRESS_ETHEREUM_MAINNET,
-} from '../../constants/assetConstants';
+import { PLR_ADDRESS_PER_CHAIN, STKPLR_POLYGON_TOKEN_ADDRESS } from '../../constants/assetConstants';
 
 interface ICrossChainSwap {
-  type: 'CROSS_CHAIN_SWAP',
+  type: 'CROSS_CHAIN_SWAP';
   route?: Route;
 }
 
 interface ISameChainSwap {
-  type: 'SAME_CHAIN_SWAP',
+  type: 'SAME_CHAIN_SWAP';
   offer?: ExchangeOffer;
 }
 
@@ -136,19 +133,19 @@ const mapRouteToOption = (route: Route) => {
   };
 };
 
-interface IPlrBalancePerChain { [chainId: string]: BigNumber | undefined }
+interface IPlrBalancePerChain {
+  [chainId: string]: BigNumber | undefined;
+}
 
-const MIN_PLR_STAKE_AMOUNT = '10000';
+const MIN_PLR_STAKE_AMOUNT = '1';
 
 const chainIdsWithPlrTokens = [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.BINANCE, CHAIN_ID.XDAI, CHAIN_ID.POLYGON];
 
-const isEnoughPlrBalanceToStake = (
-  plrBalance: BigNumber | undefined,
-): boolean => {
+const isEnoughPlrBalanceToStake = (plrBalance: BigNumber | undefined): boolean => {
   if (!plrBalance) return false;
   const requiredAmountBN = ethers.utils.parseUnits(MIN_PLR_STAKE_AMOUNT, 18);
   return plrBalance.gte(requiredAmountBN);
-}
+};
 
 const PlrStakingV2TransactionBlock = ({
   id: transactionBlockId,
@@ -156,13 +153,7 @@ const PlrStakingV2TransactionBlock = ({
   values,
   hideTitle = false,
 }: IPlrStakingV2Block) => {
-  const {
-    sdk,
-    providerAddress,
-    accountAddress,
-    smartWalletOnly,
-    etherspotMode
-  } = useEtherspot();
+  const { sdk, providerAddress, accountAddress, smartWalletOnly, etherspotMode } = useEtherspot();
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
@@ -170,16 +161,19 @@ const PlrStakingV2TransactionBlock = ({
   const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(values?.toChain ?? null);
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
   const [selectedToAsset, setSelectedToAsset] = useState<IAssetWithBalance | null>(values?.toAsset ?? null);
-  const [
-    addressPlrBalancePerChain,
-    setAddressPlrBalancePerChain,
-  ] = useState<{ [address: string]: IPlrBalancePerChain }>({});
+  const [addressPlrBalancePerChain, setAddressPlrBalancePerChain] = useState<{
+    [address: string]: IPlrBalancePerChain;
+  }>({});
   const [stkPlrBalance, setStkPlrBalance] = useState<BigNumber | undefined>(undefined);
 
-  const hasEnoughPlrToStake = useMemo(() => [providerAddress, accountAddress].some((address) => {
-    if (!address || !addressPlrBalancePerChain?.[address]?.[CHAIN_ID.ETHEREUM_MAINNET]) return false;
-    return isEnoughPlrBalanceToStake(addressPlrBalancePerChain[address][CHAIN_ID.ETHEREUM_MAINNET]);
-  }), [providerAddress, accountAddress, addressPlrBalancePerChain]);
+  const hasEnoughPlrToStake = useMemo(
+    () =>
+      [providerAddress, accountAddress].some((address) => {
+        if (!address || !addressPlrBalancePerChain?.[address]?.[CHAIN_ID.POLYGON]) return false;
+        return isEnoughPlrBalanceToStake(addressPlrBalancePerChain[address][CHAIN_ID.POLYGON]);
+      }),
+    [providerAddress, accountAddress, addressPlrBalancePerChain]
+  );
 
   const hasEnoughPlrCrossChainToStake = useMemo(() => {
     const plrBalanceCrossChain = [providerAddress, accountAddress].reduce((total, address) => {
@@ -201,24 +195,26 @@ const PlrStakingV2TransactionBlock = ({
 
     const balanceAddress = (selectedAccountType === AccountTypes.Key ? providerAddress : accountAddress) as string;
 
-    const ethereumMainnetChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.ETHEREUM_MAINNET) as Chain;
+    const polygonMainnetChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON) as Chain;
     const plrAsset = getPlrAssetForChainId(
-      CHAIN_ID.ETHEREUM_MAINNET,
-      addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.ETHEREUM_MAINNET] as BigNumber
+      CHAIN_ID.POLYGON,
+      addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.POLYGON] as BigNumber
     );
 
-    if (isEnoughPlrBalanceToStake(addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.ETHEREUM_MAINNET])
-      && (!selectedFromAsset || addressesEqual(selectedFromAsset?.address, plrAsset.address))) {
+    if (
+      isEnoughPlrBalanceToStake(addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.POLYGON]) &&
+      (!selectedFromAsset || addressesEqual(selectedFromAsset?.address, plrAsset.address))
+    ) {
       if (!selectedFromNetwork) {
-        setSelectedFromNetwork(ethereumMainnetChain);
+        setSelectedFromNetwork(polygonMainnetChain);
       }
       if (!selectedFromAsset) {
         setSelectedFromAsset(plrAsset);
       }
-      setSelectedToNetwork(ethereumMainnetChain);
+      setSelectedToNetwork(polygonMainnetChain);
       setSelectedToAsset(stkPlrAsset);
     } else if (!addressesEqual(selectedFromAsset?.address, plrAsset.address)) {
-      setSelectedToNetwork(ethereumMainnetChain);
+      setSelectedToNetwork(polygonMainnetChain);
       setSelectedToAsset(plrAsset);
     }
   }, [
@@ -232,21 +228,30 @@ const PlrStakingV2TransactionBlock = ({
 
   // cross chain swaps
   const defaultRoute = values?.swap?.type === 'CROSS_CHAIN_SWAP' && values?.swap?.route;
-  const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(defaultRoute ? mapRouteToOption(defaultRoute) : null);
+  const [selectedRoute, setSelectedRoute] = useState<SelectOption | null>(
+    defaultRoute ? mapRouteToOption(defaultRoute) : null
+  );
   const [availableRoutes, setAvailableRoutes] = useState<Route[] | null>(defaultRoute ? [defaultRoute] : null);
   const [isLoadingAvailableRoutes, setIsLoadingAvailableRoutes] = useState<boolean>(false);
 
   // same chain swaps
   const defaultOffer = values?.swap?.type === 'SAME_CHAIN_SWAP' && values?.swap?.offer;
-  const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(defaultOffer ? mapOfferToOption(defaultOffer) : null);
+  const [selectedOffer, setSelectedOffer] = useState<SelectOption | null>(
+    defaultOffer ? mapOfferToOption(defaultOffer) : null
+  );
   const [availableOffers, setAvailableOffers] = useState<ExchangeOffer[] | null>(defaultOffer ? [defaultOffer] : null);
   const [isLoadingAvailableOffers, setIsLoadingAvailableOffers] = useState<boolean>(false);
 
-  const defaultSelectedReceiveAccountType = (!values?.receiverAddress && values?.accountType === AccountTypes.Key)
-    || (values?.receiverAddress && values?.accountType === AccountTypes.Contract && addressesEqual(providerAddress, values?.receiverAddress))
-    ? AccountTypes.Key
-    : AccountTypes.Contract;
-  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(defaultSelectedReceiveAccountType);
+  const defaultSelectedReceiveAccountType =
+    (!values?.receiverAddress && values?.accountType === AccountTypes.Key) ||
+    (values?.receiverAddress &&
+      values?.accountType === AccountTypes.Contract &&
+      addressesEqual(providerAddress, values?.receiverAddress))
+      ? AccountTypes.Key
+      : AccountTypes.Contract;
+  const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
+    defaultSelectedReceiveAccountType
+  );
 
   const {
     setTransactionBlockValues,
@@ -254,7 +259,7 @@ const PlrStakingV2TransactionBlock = ({
     setTransactionBlockFieldValidationError,
   } = useTransactionBuilder();
 
-  const theme: Theme = useTheme()
+  const theme: Theme = useTheme();
 
   useEffect(() => {
     setSelectedRoute(null);
@@ -264,56 +269,43 @@ const PlrStakingV2TransactionBlock = ({
 
   const receiverAddress = useMemo(() => {
     if (selectedReceiveAccountType === selectedAccountType) return null;
-    return selectedReceiveAccountType === AccountTypes.Key
-      ? providerAddress
-      : accountAddress;
-  }, [
-    providerAddress,
-    selectedReceiveAccountType,
-    selectedAccountType,
-    accountAddress,
-  ]);
+    return selectedReceiveAccountType === AccountTypes.Key ? providerAddress : accountAddress;
+  }, [providerAddress, selectedReceiveAccountType, selectedAccountType, accountAddress]);
 
-  const getAvailableRoutes = useCallback<() => Promise<Route[] | undefined>>(debounce(async () => {
-    if (!sdk
-      || !selectedToAsset
-      || !selectedFromAsset
-      || !amount
-      || !selectedFromNetwork?.chainId
-      || !selectedToNetwork?.chainId
-      || !isValidAmount(amount)) return;
+  const getAvailableRoutes = useCallback<() => Promise<Route[] | undefined>>(
+    debounce(async () => {
+      if (
+        !sdk ||
+        !selectedToAsset ||
+        !selectedFromAsset ||
+        !amount ||
+        !selectedFromNetwork?.chainId ||
+        !selectedToNetwork?.chainId ||
+        !isValidAmount(amount)
+      )
+        return;
 
-    if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
-      setTransactionBlockFieldValidationError(
-        transactionBlockId,
-        'receiverAddress',
-        'Invalid receiver address',
-      );
-      return;
-    }
+      if (receiverAddress && !isValidEthereumAddress(receiverAddress)) {
+        setTransactionBlockFieldValidationError(transactionBlockId, 'receiverAddress', 'Invalid receiver address');
+        return;
+      }
 
-    try {
-      const { items: routes } = await sdk.getAdvanceRoutesLiFi({
-        fromChainId: selectedFromNetwork.chainId,
-        toChainId: selectedToNetwork.chainId,
-        fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-        fromTokenAddress: selectedFromAsset.address,
-        toTokenAddress: selectedToAsset.address,
-        toAddress: receiverAddress ?? undefined,
-      });
-      return routes;
-    } catch (e) {
-      //
-    }
-  }, 200), [
-    sdk,
-    selectedFromAsset,
-    selectedToAsset,
-    amount,
-    selectedFromNetwork,
-    selectedToNetwork,
-    receiverAddress,
-  ]);
+      try {
+        const { items: routes } = await sdk.getAdvanceRoutesLiFi({
+          fromChainId: selectedFromNetwork.chainId,
+          toChainId: selectedToNetwork.chainId,
+          fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+          fromTokenAddress: selectedFromAsset.address,
+          toTokenAddress: selectedToAsset.address,
+          toAddress: receiverAddress ?? undefined,
+        });
+        return routes;
+      } catch (e) {
+        //
+      }
+    }, 200),
+    [sdk, selectedFromAsset, selectedToAsset, amount, selectedFromNetwork, selectedToNetwork, receiverAddress]
+  );
 
   const getBestRouteItem = (routes: Route[]) => {
     let bestRoute = routes[0];
@@ -349,45 +341,44 @@ const PlrStakingV2TransactionBlock = ({
       }
 
       setIsLoadingAvailableRoutes(false);
-    }
+    };
 
     updateRoutes();
 
-    return () => { proceedUpdate = false };
+    return () => {
+      proceedUpdate = false;
+    };
   }, [getAvailableRoutes]);
 
-  const getAvailableOffers = useCallback<() => Promise<ExchangeOffer[] | undefined>>(debounce(async () => {
-    if (!sdk
-      || !selectedToAsset
-      || !selectedFromAsset
-      || !amount
-      || !selectedToNetwork
-      || (selectedToNetwork?.chainId !== selectedFromNetwork?.chainId)
-      || !isValidAmount(amount)
-    ) return;
+  const getAvailableOffers = useCallback<() => Promise<ExchangeOffer[] | undefined>>(
+    debounce(async () => {
+      if (
+        !sdk ||
+        !selectedToAsset ||
+        !selectedFromAsset ||
+        !amount ||
+        !selectedToNetwork ||
+        selectedToNetwork?.chainId !== selectedFromNetwork?.chainId ||
+        !isValidAmount(amount)
+      )
+        return;
 
-    try {
-      // needed computed account address before calling getExchangeOffers
-      if (!accountAddress) await sdk.computeContractAccount();
+      try {
+        // needed computed account address before calling getExchangeOffers
+        if (!accountAddress) await sdk.computeContractAccount();
 
-      return sdk.getExchangeOffers({
-        fromChainId: selectedToNetwork.chainId,
-        fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
-        fromTokenAddress: selectedFromAsset.address,
-        toTokenAddress: selectedToAsset.address,
-      });
-    } catch (e) {
-      //
-    }
-  }, 200), [
-    sdk,
-    selectedFromAsset,
-    selectedToAsset,
-    amount,
-    selectedToNetwork,
-    selectedFromNetwork,
-    accountAddress,
-  ]);
+        return sdk.getExchangeOffers({
+          fromChainId: selectedToNetwork.chainId,
+          fromAmount: ethers.utils.parseUnits(amount, selectedFromAsset.decimals),
+          fromTokenAddress: selectedFromAsset.address,
+          toTokenAddress: selectedToAsset.address,
+        });
+      } catch (e) {
+        //
+      }
+    }, 200),
+    [sdk, selectedFromAsset, selectedToAsset, amount, selectedToNetwork, selectedFromNetwork, accountAddress]
+  );
 
   useEffect(() => {
     let proceedUpdate = true;
@@ -403,19 +394,24 @@ const PlrStakingV2TransactionBlock = ({
       if (newOffers?.length) setAvailableOffers(newOffers);
 
       setIsLoadingAvailableOffers(false);
-    }
+    };
 
     updateOffers();
 
-    return () => { proceedUpdate = false };
+    return () => {
+      proceedUpdate = false;
+    };
   }, [getAvailableOffers]);
 
-  const onAmountChange = useCallback((newAmount: string) => {
-    resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
-    const decimals = selectedToAsset?.decimals ?? 18;
-    const updatedAmount = formatAssetAmountInput(newAmount, decimals);
-    setAmount(updatedAmount)
-  }, [selectedFromAsset, selectedToAsset]);
+  const onAmountChange = useCallback(
+    (newAmount: string) => {
+      resetTransactionBlockFieldValidationError(transactionBlockId, 'amount');
+      const decimals = selectedToAsset?.decimals ?? 18;
+      const updatedAmount = formatAssetAmountInput(newAmount, decimals);
+      setAmount(updatedAmount);
+    },
+    [selectedFromAsset, selectedToAsset]
+  );
 
   useEffect(() => {
     let swap: IPlrStakingV2BlockSwap | undefined;
@@ -425,29 +421,28 @@ const PlrStakingV2TransactionBlock = ({
       swap = {
         type: 'CROSS_CHAIN_SWAP',
         route,
-      }
-    } else if (selectedFromNetwork?.chainId === selectedToNetwork?.chainId
-      && !addressesEqual(selectedFromAsset?.address, stkPlrAsset.address)) {
+      };
+    } else if (
+      selectedFromNetwork?.chainId === selectedToNetwork?.chainId &&
+      !addressesEqual(selectedFromAsset?.address, stkPlrAsset.address)
+    ) {
       const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
       swap = {
         type: 'SAME_CHAIN_SWAP',
         offer,
-      }
+      };
     }
 
-    setTransactionBlockValues(
-      transactionBlockId,
-      {
-        fromChain: selectedFromNetwork ?? undefined,
-        toChain: selectedToNetwork ?? undefined,
-        fromAsset: selectedFromAsset ?? undefined,
-        toAsset: selectedToAsset ?? undefined,
-        receiverAddress: receiverAddress ?? undefined,
-        accountType: selectedAccountType,
-        amount,
-        swap,
-      },
-    );
+    setTransactionBlockValues(transactionBlockId, {
+      fromChain: selectedFromNetwork ?? undefined,
+      toChain: selectedToNetwork ?? undefined,
+      fromAsset: selectedFromAsset ?? undefined,
+      toAsset: selectedToAsset ?? undefined,
+      receiverAddress: receiverAddress ?? undefined,
+      accountType: selectedAccountType,
+      amount,
+      swap,
+    });
   }, [
     selectedFromNetwork,
     selectedToNetwork,
@@ -460,15 +455,9 @@ const PlrStakingV2TransactionBlock = ({
     selectedAccountType,
   ]);
 
-  const availableRoutesOptions = useMemo(
-    () => availableRoutes?.map(mapRouteToOption),
-    [availableRoutes],
-  );
+  const availableRoutesOptions = useMemo(() => availableRoutes?.map(mapRouteToOption), [availableRoutes]);
 
-  const availableOffersOptions = useMemo(
-    () => availableOffers?.map(mapOfferToOption),
-    [availableOffers],
-  );
+  const availableOffersOptions = useMemo(() => availableOffers?.map(mapOfferToOption), [availableOffers]);
 
   useEffect(() => {
     let shouldUpdate = true;
@@ -477,59 +466,62 @@ const PlrStakingV2TransactionBlock = ({
       // is connected
       if (!accountAddress || !sdk) return;
 
-      await Promise.all([accountAddress, providerAddress].map(async (address) => {
-        if (!address) return;
+      await Promise.all(
+        [accountAddress, providerAddress].map(async (address) => {
+          if (!address) return;
 
-        await Promise.all(supportedChains.map(async (chain) => {
-          if (!chainIdsWithPlrTokens.includes(chain.chainId)) return;
+          await Promise.all(
+            supportedChains.map(async (chain) => {
+              if (!chainIdsWithPlrTokens.includes(chain.chainId)) return;
 
-          const plrAddressForChain = PLR_ADDRESS_PER_CHAIN[chain.chainId];
+              const plrAddressForChain = PLR_ADDRESS_PER_CHAIN[chain.chainId];
 
-          const tokensForBalance = chain.chainId === CHAIN_ID.ETHEREUM_MAINNET
-            ? [plrAddressForChain, STKPLR_ADDRESS_ETHEREUM_MAINNET] // query for sktPLR balance on ethereum mainnet
-            : [plrAddressForChain];
+              const tokensForBalance =
+                chain.chainId === CHAIN_ID.POLYGON
+                  ? [plrAddressForChain, STKPLR_POLYGON_TOKEN_ADDRESS] // query for sktPLR balance on polygon network
+                  : [plrAddressForChain];
 
-          try {
-            const { items: balances } = await sdk.getAccountBalances({
-              account: address,
-              tokens: tokensForBalance,
-              chainId: chain.chainId,
-            });
+              try {
+                const { items: balances } = await sdk.getAccountBalances({
+                  account: address,
+                  tokens: tokensForBalance,
+                  chainId: chain.chainId,
+                });
 
-            if (!shouldUpdate) return;
+                if (!shouldUpdate) return;
 
-            const plrBalance = balances
-              .find((balance) => addressesEqual(plrAddressForChain, balance.token))
-              ?.balance;
+                const plrBalance = balances.find((balance: AccountBalance) =>
+                  addressesEqual(plrAddressForChain, balance.token)
+                )?.balance;
 
-            setAddressPlrBalancePerChain((current) => ({
-              ...current,
-              [address]: {
-                ...current[address] ?? {},
-                [chain.chainId]: plrBalance,
-              },
-            }));
+                setAddressPlrBalancePerChain((current) => ({
+                  ...current,
+                  [address]: {
+                    ...(current[address] ?? {}),
+                    [chain.chainId]: plrBalance,
+                  },
+                }));
 
-            const stkPlrBalance = balances
-              .find((balance) => addressesEqual(STKPLR_ADDRESS_ETHEREUM_MAINNET, balance.token))
-              ?.balance;
+                const stkPlrBalance = balances.find((balance: AccountBalance) =>
+                  addressesEqual(STKPLR_POLYGON_TOKEN_ADDRESS, balance.token)
+                )?.balance;
 
-            setStkPlrBalance(stkPlrBalance ?? undefined);
-          } catch (e) {
-            console.warn('Failed to get token balances', tokensForBalance, e);
-          }
-        }));
-      }));
-    }
+                setStkPlrBalance(stkPlrBalance ?? undefined);
+              } catch (e) {
+                console.warn('Failed to get token balances', tokensForBalance, e);
+              }
+            })
+          );
+        })
+      );
+    };
 
     updateBalances();
 
-    return () => { shouldUpdate = false; };
-  }, [
-    sdk,
-    providerAddress,
-    accountAddress,
-  ]);
+    return () => {
+      shouldUpdate = false;
+    };
+  }, [sdk, providerAddress, accountAddress]);
 
   const remainingSelectedFromAssetBalance = useMemo(() => {
     if (!selectedFromAsset?.balance || selectedFromAsset.balance.isZero()) return 0;
@@ -572,28 +564,39 @@ const PlrStakingV2TransactionBlock = ({
         </div>
       </OfferDetails>
     );
-  }
+  };
 
-  const plrTokensSum = useMemo(() => Object.values(addressPlrBalancePerChain).reduce((sum, balancePerChain) => {
-    let walletSum = 0;
+  const plrTokensSum = useMemo(
+    () =>
+      Object.values(addressPlrBalancePerChain).reduce((sum, balancePerChain) => {
+        let walletSum = 0;
 
-    Object.keys(balancePerChain).forEach((chain) => {
-      if (!balancePerChain[chain]) return;
+        Object.keys(balancePerChain).forEach((chain) => {
+          if (!balancePerChain[chain]) return;
 
-      const plrBalance = balancePerChain[chain];
-      if (!plrBalance) return;
+          const plrBalance = balancePerChain[chain];
+          if (!plrBalance) return;
 
-      walletSum += +ethers.utils.formatUnits(plrBalance, 18);
-    });
+          walletSum += +ethers.utils.formatUnits(plrBalance, 18);
+        });
 
-    return sum + walletSum;
-  }, 0), [addressPlrBalancePerChain]);
+        return sum + walletSum;
+      }, 0),
+    [addressPlrBalancePerChain]
+  );
+
+  const clearState = () => {
+    setSelectedFromNetwork(null);
+    setSelectedFromAsset(null);
+    setSelectedToNetwork(null);
+    setSelectedToAsset(null);
+    setAvailableRoutes(null);
+    setSelectedRoute(null);
+    setAvailableOffers(null);
+    setSelectedOffer(null);
+  };
 
   const isStakingAssetSelected = addressesEqual(selectedToAsset?.address, stkPlrAsset.address);
-
-  const assetToSelectDisabled = !selectedFromNetwork
-    || !selectedFromAsset
-    || isStakingAssetSelected;
 
   const hasStkPlrBalance = !!stkPlrBalance && stkPlrBalance.gt(0);
 
@@ -606,19 +609,17 @@ const PlrStakingV2TransactionBlock = ({
             {!hasEnoughPlrToStake && (
               <>
                 You need a minimum of &nbsp;
-                <Highlighted color={theme.color?.text?.blockParagraphHighlight}>10,000 PLR</Highlighted>
-                &nbsp;tokens on Ethereum, swap more assets to PLR on Ethereum Mainnet.
+                <Highlighted color={theme.color?.text?.blockParagraphHighlight}>1 PLR</Highlighted>
+                &nbsp;tokens on Polygon, swap more assets to PLR on Polygon Mainnet.
               </>
             )}
-            {hasEnoughPlrToStake && <>You can stake your PLR tokens.</>}
+            {hasEnoughPlrToStake && <>You can stake your PLR tokens (Min 1 PLR and Max 20 PLR).</>}
           </Text>
           <HorizontalLine />
           {hasStkPlrBalance && (
             <Text size={14}>
               You have
-              <Highlighted
-                color={theme.color?.text?.blockParagraphHighlightSecondary}
-              >
+              <Highlighted color={theme.color?.text?.blockParagraphHighlightSecondary}>
                 &nbsp;{formatAmountDisplay(ethers.utils.formatUnits(stkPlrBalance, 18))} stkPLR
               </Highlighted>
               &nbsp;tokens:
@@ -642,17 +643,16 @@ const PlrStakingV2TransactionBlock = ({
                 </Text>
               )}
               {supportedChains
-                .filter((chain) => chainIdsWithPlrTokens.includes(chain.chainId))
-                .map((chain) => {
+                .filter(({ chainId }) => chainIdsWithPlrTokens.includes(chainId))
+                .map(({ chainId, title }) => {
                   const [plrOnKeyBased, plrOnSmartWallet] = [providerAddress, accountAddress].map((address) => {
-                    if (!address || !addressPlrBalancePerChain?.[address]?.[chain.chainId]) return;
+                    if (!address || !addressPlrBalancePerChain?.[address]?.[chainId]) return;
 
-                    const plrBalance = addressPlrBalancePerChain[address][chain.chainId];
+                    const plrBalance = addressPlrBalancePerChain[address][chainId];
                     if (!plrBalance) return;
 
-                    // color only for ethereum mainnet lines
                     let textColor;
-                    if (chain.chainId === CHAIN_ID.ETHEREUM_MAINNET) {
+                    if (chainId === stkPlrAsset.chainId) {
                       textColor = isEnoughPlrBalanceToStake(plrBalance)
                         ? theme.color?.text?.blockParagraphHighlightSecondary
                         : theme.color?.text?.errorMessage;
@@ -668,12 +668,12 @@ const PlrStakingV2TransactionBlock = ({
                     <>
                       {plrOnKeyBased && (
                         <Text size={12} marginTop={4} color={plrOnKeyBased.textColor} block>
-                          • {plrOnKeyBased.amount} PLR on {chain.title} on Wallet
+                          • {plrOnKeyBased.amount} PLR on {title} on Wallet
                         </Text>
                       )}
                       {plrOnSmartWallet && (
                         <Text size={12} marginTop={4} color={plrOnSmartWallet.textColor} block>
-                          • {plrOnSmartWallet.amount} PLR on {chain.title} on Smart Wallet
+                          • {plrOnSmartWallet.amount} PLR on {title} on Smart Wallet
                         </Text>
                       )}
                     </>
@@ -688,16 +688,7 @@ const PlrStakingV2TransactionBlock = ({
         label="From wallet"
         selectedAccountType={selectedAccountType}
         onChange={(accountType) => {
-          if (accountType !== selectedAccountType) {
-            setSelectedFromNetwork(null);
-            setSelectedFromAsset(null);
-            setSelectedToNetwork(null);
-            setSelectedToAsset(null);
-            setAvailableRoutes(null);
-            setSelectedRoute(null);
-            setAvailableOffers(null);
-            setSelectedOffer(null);
-          }
+          if (accountType !== selectedAccountType) clearState();
           setSelectedAccountType(accountType);
         }}
         errorMessage={errorMessages?.accountType}
@@ -728,25 +719,10 @@ const PlrStakingV2TransactionBlock = ({
       />
       <NetworkAssetSelectInput
         label="To"
-        onAssetSelect={(asset) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toAsset');
-          setSelectedToAsset(asset);
-        }}
-        onNetworkSelect={(network) => {
-          resetTransactionBlockFieldValidationError(transactionBlockId, 'toChain');
-          setSelectedToNetwork(network);
-        }}
         selectedNetwork={selectedToNetwork}
         selectedAsset={selectedToAsset}
         errorMessage={errorMessages?.toChain || errorMessages?.toAsset}
-        disabled={assetToSelectDisabled}
-        readOnly={assetToSelectDisabled}
-        hideChainIds={[CHAIN_ID.AVALANCHE]}
-        hideAssets={
-          selectedFromNetwork && selectedFromAsset
-            ? [{ chainId: selectedFromNetwork.chainId, address: selectedFromAsset.address }]
-            : undefined
-        }
+        readOnly
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
         accountType={selectedAccountType}
       />
