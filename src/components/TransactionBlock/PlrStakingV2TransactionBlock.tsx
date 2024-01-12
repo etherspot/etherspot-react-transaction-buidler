@@ -24,7 +24,7 @@ import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
 // utils
 import { formatAmountDisplay, formatMaxAmount, formatAssetAmountInput, isEtherspotPrime } from '../../utils/common';
 import { addressesEqual, isValidEthereumAddress, isValidAmount } from '../../utils/validation';
-import { Chain, supportedChains, CHAIN_ID } from '../../utils/chain';
+import { Chain, supportedChains as chains, CHAIN_ID } from '../../utils/chain';
 import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
@@ -152,8 +152,14 @@ const PlrStakingV2TransactionBlock = ({
   errorMessages,
   values,
   hideTitle = false,
+  onlyPolygonInPLRStaking = false,
 }: IPlrStakingV2Block) => {
   const { sdk, providerAddress, accountAddress, smartWalletOnly, etherspotMode } = useEtherspot();
+
+  const supportedChains = chains.filter(({ chainId }) => (onlyPolygonInPLRStaking ? chainId === 137 : true));
+  const hideChainIds = chains
+    .filter(({ chainId }) => (onlyPolygonInPLRStaking ? chainId !== 137 : chainId === 43114))
+    .map(({ chainId }) => chainId);
 
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
   const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
@@ -712,7 +718,7 @@ const PlrStakingV2TransactionBlock = ({
         selectedAsset={selectedFromAsset}
         errorMessage={errorMessages?.fromChain || errorMessages?.fromAsset}
         walletAddress={selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress}
-        hideChainIds={[CHAIN_ID.AVALANCHE]}
+        hideChainIds={hideChainIds}
         showPositiveBalanceAssets
         showQuickInputButtons
         accountType={selectedAccountType}
