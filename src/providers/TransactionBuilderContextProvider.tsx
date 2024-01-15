@@ -84,6 +84,7 @@ export interface TransactionBuilderContextProps {
   hideWalletSwitch?: boolean;
   hideActionPreviewHeader?: boolean;
   walletBlockActionsReplaceBehaviour?: boolean;
+  onlyPolygonInPLRStaking?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -423,6 +424,7 @@ const TransactionBuilderContextProvider = ({
   hideWalletSwitch = false,
   hideActionPreviewHeader = false,
   walletBlockActionsReplaceBehaviour = false,
+  onlyPolygonInPLRStaking = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -1017,7 +1019,7 @@ const TransactionBuilderContextProvider = ({
       );
       return;
     }
-    if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled){
+    if (availableTransactionBlock.type === TRANSACTION_BLOCK_TYPE.DISABLED || isBridgeTransactionBlockAndDisabled) {
       return;
     }
     const transactionBlock: ITransactionBlock = {
@@ -1498,6 +1500,7 @@ const TransactionBuilderContextProvider = ({
                               errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                               hideTitle={hideTransactionBlockTitle}
                               hideWalletSwitch={hideWalletSwitch}
+                              onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
                             />
                             {j === multiCallBlocks.length - 1 &&
                               multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
@@ -1531,7 +1534,11 @@ const TransactionBuilderContextProvider = ({
                             current.filter((addedTransactionBlock) => addedTransactionBlock.id !== transactionBlock.id)
                           )
                         }
-                        showCloseButton={!hideCloseTransactionBlockButton && !editingTransactionBlock && (transactionBlock.closeable ?? true)}
+                        showCloseButton={
+                          !hideCloseTransactionBlockButton &&
+                          !editingTransactionBlock &&
+                          (transactionBlock.closeable ?? true)
+                        }
                         removeContainer={removeTransactionBlockContainer}
                       >
                         <TransactionBlock
@@ -1540,6 +1547,7 @@ const TransactionBuilderContextProvider = ({
                           errorMessages={transactionBlockValidationErrors[transactionBlock.id]}
                           hideTitle={hideTransactionBlockTitle}
                           hideWalletSwitch={hideWalletSwitch}
+                          onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
                         />
                         {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                           transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&

@@ -29,6 +29,7 @@ export type ITransactionBlockBase = {
   multiCallData?: IMultiCallData | null;
   hideTitle?: boolean;
   hideWalletSwitch?: boolean;
+  onlyPolygonInPLRStaking?: boolean;
 };
 
 export type ITransactionBlockType =
