@@ -40,7 +40,7 @@ import { ITransactionBlock } from '../types/transactionBlock';
 import {
   GNOSIS_USDC_CONTRACT_ADDRESS,
   PLR_DAO_CONTRACT_PER_CHAIN,
-  PLR_STAKING_ADDRESS_ETHEREUM_MAINNET,
+  PLR_STAKING_POLYGON_CONTRACT_ADDRESS,
   POLYGON_USDC_CONTRACT_ADDRESS,
 } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
@@ -148,19 +148,16 @@ const buildLiFiBridgeTransactions = async (
     if (!route) return { errorMessage: 'Failed to fetch routes' };
     const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route });
 
-    let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(({
-      to,
-      value,
-      data,
-      chainId: routeChainId
-    }) => ({
-      to: to as string,
-      value,
-      data,
-      chainId: routeChainId,
-      createTimestamp,
-      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
-    }));
+    let transactions: ICrossChainActionTransaction[] = advancedRouteSteps.map(
+      ({ to, value, data, chainId: routeChainId }) => ({
+        to: to as string,
+        value,
+        data,
+        chainId: routeChainId,
+        createTimestamp,
+        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      })
+    );
 
     if (
       ethers.utils.isAddress(route.fromToken.address) &&
@@ -194,7 +191,7 @@ const buildLiFiBridgeTransactions = async (
 export const klimaDaoStaking = async (
   routeToKlima?: Route | null,
   receiverAddress?: string,
-  sdk?: EtherspotSdk | null,
+  sdk?: EtherspotSdk | null
 ): Promise<{
   errorMessage?: string;
   result?: { transactions: ICrossChainActionTransaction[]; provider?: string; iconUrl?: string };
@@ -214,11 +211,11 @@ export const klimaDaoStaking = async (
     const { items: advancedRouteSteps } = await sdk.getStepTransaction({ route: bestRoute });
 
     let transactions = advancedRouteSteps.map((transaction) => ({
-        to: transaction.to as string,
-        value: transaction.value,
-        data: transaction.data,
-        createTimestamp,
-        status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+      to: transaction.to as string,
+      value: transaction.value,
+      data: transaction.data,
+      createTimestamp,
+      status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
     }));
 
     // not native asset and no erc20 approval transaction included
@@ -296,7 +293,7 @@ export const klimaDaoStaking = async (
     // transfer back to receiver address if not the same as contract
     if (receiverAddress && !addressesEqual(receiverAddress, sdk.state.accountAddress)) {
       const erc20Abi = getContractAbi(ContractNames.ERC20Token);
-      const sKlimaContractAddress = '0xb0c22d8d350c67420f06f48936654f567c73e8c8'
+      const sKlimaContractAddress = '0xb0c22d8d350c67420f06f48936654f567c73e8c8';
       const sKlimaContract = sdk.registerContract<ERC20TokenContract>('erc20Contract', erc20Abi, sKlimaContractAddress);
       const sKlimaTransferTransactionRequest = sKlimaContract?.encodeTransfer?.(receiverAddress, bestRoute.toAmountMin);
       if (!sKlimaTransferTransactionRequest || !sKlimaTransferTransactionRequest.to) {
@@ -1193,10 +1190,7 @@ export const buildCrossChainAction = async (
       const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
       // // not native asset and no erc20 approval transaction included
-      if (
-        toToken1.address &&
-        offer1
-      ) {
+      if (toToken1.address && offer1) {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>(
           'erc20Contract',
@@ -1237,10 +1231,7 @@ export const buildCrossChainAction = async (
         ];
       }
 
-      if (
-        toToken2.address &&
-        offer2
-      ) {
+      if (toToken2.address && offer2) {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>(
           'erc20Contract',
@@ -1326,7 +1317,6 @@ export const buildCrossChainAction = async (
 
             transactions = [approvalTransaction, ...transactions];
           }
-
 
           const addressToSendTo = receiverAddress ?? sdk.state.accountAddress;
 
@@ -1535,21 +1525,24 @@ export const buildCrossChainAction = async (
             useWeb3Provider: accountType === AccountTypes.Key,
             multiCallData: transactionBlock?.multiCallData,
             receiveAmount: amount,
-            destinationCrossChainAction: accountType !== AccountTypes.Key
-              ? []
-              : [{
-                  id: uniqueId(`${createTimestamp}-`),
-                  relatedTransactionBlockId: transactionBlock.id,
-                  chainId: CHAIN_ID.XDAI,
-                  type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
-                  preview,
-                  transactions: destinationTxns,
-                  isEstimating: false,
-                  estimated: null,
-                  useWeb3Provider: false,
-                  gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
-                  destinationCrossChainAction: [],
-                }]
+            destinationCrossChainAction:
+              accountType !== AccountTypes.Key
+                ? []
+                : [
+                    {
+                      id: uniqueId(`${createTimestamp}-`),
+                      relatedTransactionBlockId: transactionBlock.id,
+                      chainId: CHAIN_ID.XDAI,
+                      type: TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP,
+                      preview,
+                      transactions: destinationTxns,
+                      isEstimating: false,
+                      estimated: null,
+                      useWeb3Provider: false,
+                      gasTokenAddress: GNOSIS_USDC_CONTRACT_ADDRESS,
+                      destinationCrossChainAction: [],
+                    },
+                  ],
           };
 
           return { crossChainAction: crossChainAction };
@@ -1841,12 +1834,24 @@ export const buildCrossChainAction = async (
         const plrV2StakingContract = sdk.registerContract<PlrV2StakingContract>(
           'plrV2StakingContract',
           ['function stake(uint256)'],
-          PLR_STAKING_ADDRESS_ETHEREUM_MAINNET
+          PLR_STAKING_POLYGON_CONTRACT_ADDRESS
         );
         const stakeTransactionRequest = plrV2StakingContract?.encodeStake?.(toAssetAmount);
+
         if (!stakeTransactionRequest || !stakeTransactionRequest.to) {
           return { errorMessage: 'Failed build stake transaction!' };
         }
+
+        const stakingTransaction = {
+          to: stakeTransactionRequest.to,
+          data: stakeTransactionRequest.data,
+          value: stakeTransactionRequest?.value || 0,
+          chainId: fromChainId,
+          createTimestamp,
+          status: CROSS_CHAIN_ACTION_STATUS.UNSENT,
+        };
+
+        transactions = [stakingTransaction];
       } catch (e) {
         return { errorMessage: 'Failed to build stake transaction!' };
       }
@@ -1905,11 +1910,13 @@ export const buildCrossChainAction = async (
     }
 
     // cross chain swaps transfers to receiver already
-    if (receiverAddress
-      && isValidEthereumAddress(receiverAddress)
-      && !addressesEqual(toAssetAddress, nativeAssetPerChainId[toChainId].address)
-      && transactions.length > 0
-      && swap?.type !== 'CROSS_CHAIN_SWAP') {
+    if (
+      receiverAddress &&
+      isValidEthereumAddress(receiverAddress) &&
+      !addressesEqual(toAssetAddress, nativeAssetPerChainId[toChainId].address) &&
+      transactions.length > 0 &&
+      swap?.type !== 'CROSS_CHAIN_SWAP'
+    ) {
       try {
         const abi = getContractAbi(ContractNames.ERC20Token);
         const erc20Contract = sdk.registerContract<ERC20TokenContract>('erc20Contract', abi, toAssetAddress);
@@ -2061,16 +2068,13 @@ export const submitEtherspotAndWaitForTransactionHash = async (
 export const getCrossChainStatusByHash = async (
   fromChainId: number,
   toChainId: number,
-  hash: string,
+  hash: string
 ): Promise<LiFiStatus | null> => {
   try {
     const options = { method: 'GET', headers: { accept: 'application/json' } };
 
     const result = await (
-      await fetch(
-        `https://li.quest/v1/status?fromChain=${fromChainId}&toChain=${toChainId}&txHash=${hash}`,
-        options
-      )
+      await fetch(`https://li.quest/v1/status?fromChain=${fromChainId}&toChain=${toChainId}&txHash=${hash}`, options)
     ).json();
 
     return {
@@ -2184,7 +2188,12 @@ export const submitWeb3ProviderTransaction = async (
     while (transactionStatus === null) {
       try {
         // @ts-ignore
-        let status = await sendWeb3ProviderRequest(web3Provider, 'eth_getTransactionByHash', [transactionHash], chainId);
+        let status = await sendWeb3ProviderRequest(
+          web3Provider,
+          'eth_getTransactionByHash',
+          [transactionHash],
+          chainId
+        );
         if (status && status.blockNumber !== null) {
           transactionStatus = status;
         }
@@ -2290,7 +2299,7 @@ export const estimateCrossChainAction = async (
               data,
             },
           ],
-          crossChainAction.chainId,
+          crossChainAction.chainId
         );
         gasLimit = gasLimit.add(estimatedTx);
       }
@@ -2434,17 +2443,12 @@ export const deployAccount = async (sdk: EtherspotSdk | null) => {
   return sdk.submitGatewayBatch();
 };
 
-export const sendWeb3ProviderRequest = async (
-  web3Provider: any,
-  method: string,
-  params: any[],
-  chainId: number,
-) => {
+export const sendWeb3ProviderRequest = async (web3Provider: any, method: string, params: any[], chainId: number) => {
   // @ts-ignore
   if (web3Provider.type === 'WalletConnect') {
     let updatedParams;
     if (method === 'eth_sendTransaction') {
-      updatedParams = [{ ...params[0], data: params[0].data ?? '0x' }]
+      updatedParams = [{ ...params[0], data: params[0].data ?? '0x' }];
     }
     return web3Provider.connector.signer.request({ method, params: updatedParams ?? params }, `eip155:${chainId}`);
   }

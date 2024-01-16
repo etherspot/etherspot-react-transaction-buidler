@@ -1,15 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { ethers } from 'ethers';
 
 // Components
 import Card from '../Card';
 import { ClickableText, Text } from '../Text';
-import { CombinedRoundedImages, RoundedImage } from '../Image';
+import { CombinedRoundedImages } from '../Image';
 
 // Utils
-import { formatAmountDisplay, humanizeHexString, copyToClipboard, getTypeOfAddress } from '../../utils/common';
-import { Chain, CHAIN_ID, klimaAsset, nativeAssetPerChainId, supportedChains } from '../../utils/chain';
+import { copyToClipboard, getTypeOfAddress, formatAmountDisplay } from '../../utils/common';
+import { Chain, supportedChains } from '../../utils/chain';
 import { Theme } from '../../utils/theme';
 
 // Constants
@@ -33,8 +33,9 @@ interface TransactionPreviewInterface {
 }
 
 const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
-  const { accountAddress, providerAddress, web3Provider } = useEtherspot();
+  const { accountAddress, providerAddress } = useEtherspot();
   const theme: Theme = useTheme();
+  const [showFullGasAmount, setShowFullGasAmount] = useState(false);
 
   const { chainId, type } = crossChainAction;
 
@@ -43,6 +44,10 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
       alert('The transaction hash is not yet available. Please try again later.');
       return;
     } else window.open(transactionUrl, '_blank');
+  };
+
+  const handleTap = () => {
+    setShowFullGasAmount(!showFullGasAmount);
   };
 
   const previewSend = (
@@ -56,22 +61,28 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
     const { asset, fromAddress, transactionUrl } = preview;
     const receiverAddress = preview.receiverAddress as string;
     const SendReceiveAddress = direction == 'Sender' ? receiverAddress : fromAddress;
-    const gasCostNumericString = ethers.utils.formatUnits(
-      asset.gasCost,
-      nativeAssetPerChainId[crossChainAction.chainId].decimals
-    );
-    const gasAssetSymbol = nativeAssetPerChainId[crossChainAction.chainId].symbol;
-    const gasCostFormatted = `${formatAmountDisplay(gasCostNumericString)} ${gasAssetSymbol}`;
-    const gasFeesUSD = formatAmountDisplay(`${+gasCostNumericString * +crossChainAction.estimated.usdPrice}`, '$');
+    const gasCost = asset.gasCost.toNumber();
 
-    const valueToReceiveRaw =
-      asset.feeAmount && asset.feeAmount != null ? ethers.utils.formatUnits(asset?.feeAmount, asset?.decimals) : null;
+    // Convert gas wei to ETH
+    const gasInETHAmount = gasCost / 1e18;
 
-    const valueToReceive =
-      valueToReceiveRaw != null
-        ? formatAmountDisplay(`${+valueToReceiveRaw * +crossChainAction.estimated.usdPrice}`, '$')
-        : '0 $';
-    const amountString = `${+valueToReceiveRaw + ` ` + asset.symbol}・${valueToReceive}`;
+    // calculate gas fees
+    const gasFees = gasInETHAmount * asset.gasUsed;
+
+    // convert gas fee to USD
+    const gasFeesInUsd = gasFees * crossChainAction.estimated.usdPrice;
+    const fullGasFee = gasFeesInUsd.toFixed(6);
+    const partialGasFeesInUsd = parseFloat(gasFeesInUsd.toFixed(3)) < 0.001 ? '<0.001' : gasFeesInUsd.toFixed(2);
+    const gasFeeDisplay = `$${partialGasFeesInUsd}`;
+
+    // calculate Token value
+    const tokenValue =
+      asset.feeAmount && asset.feeAmount != null ? ethers.utils.formatUnits(asset.feeAmount, asset.decimals) : null;
+
+    // convert Token value to USD
+    const tokenValueUsd =
+      tokenValue != null ? formatAmountDisplay(`${+tokenValue * +crossChainAction.estimated.usdPrice}`, '$') : '$0';
+    const tokenFeeDisplay = `${direction === 'Sender' ? '-' : '+'} ${tokenValue} ${asset.symbol}・${tokenValueUsd}`;
 
     return (
       <>
@@ -93,7 +104,7 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
               ) : (
                 <IconPlaceHolder data-letters="Ox"></IconPlaceHolder>
               )}
-              <Text> {amountString} </Text>
+              <Text> {tokenFeeDisplay} </Text>
             </ValueWrapper>
           </LeftWrapper>
           <RightWrapper>
@@ -107,10 +118,15 @@ const HistoryPreview = ({ crossChainAction }: TransactionPreviewInterface) => {
                 onClick={() => openBlockExplorerUrl(transactionUrl)}
               />
             </ClickableText>
-            <Text size={12} marginBottom={2} marginRight={3} medium block>
-              <LuFuel size={16} style={{ marginRight: 5 }} color={theme?.color?.text?.innerLabel} />
-              <Text> {gasFeesUSD}</Text>
-            </Text>
+            <ClickableText onClick={handleTap}>
+              <Text size={16} marginBottom={2} marginRight={5} medium block>
+                <LuFuel size={16} style={{ marginRight: 8 }} color={theme?.color?.text?.innerLabel} />
+                <Text>
+                  {' '}
+                  {parseFloat(gasFeesInUsd.toFixed(3)) < 0.001 && showFullGasAmount ? fullGasFee : gasFeeDisplay}
+                </Text>
+              </Text>
+            </ClickableText>
           </RightWrapper>
         </MainWrapper>
       </>

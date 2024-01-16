@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { uniqueId } from 'lodash';
+import { ethers } from 'ethers';
 
 import HistoryPreview from '../TransactionPreview/HistoryPreview';
 import { ICrossChainAction } from '../../types/crossChainAction';
 
 // Hooks
 import { useEtherspot } from '../../hooks';
-import { getNativeAssetPriceInUsd } from '../../services/coingecko';
+import { getAssetPriceInUsd } from '../../services/coingecko';
 
 // utils
 import { Theme } from '../../utils/theme';
@@ -27,7 +28,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
   }>({});
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { getAllTransactions, getSupportedAssetsForChainId, accountAddress } = useEtherspot();
+  const { getAllTransactions, getSupportedAssetsForChainId, accountAddress, sdk } = useEtherspot();
   const theme: Theme = useTheme();
 
   //pull all Transaction data and set in array to display on UI
@@ -41,12 +42,14 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
     let crossChainAction: ICrossChainAction[] = [];
     transactions &&
       Object.entries(transactions).forEach(async ([chain_id, value]) => {
-        let UsdPrice = await getNativeAssetPriceInUsd(chain_id);
+        let UsdPrice = await getAssetPriceInUsd(chain_id, ethers.constants.AddressZero, sdk);
+
         if (!UsdPrice) UsdPrice = 0;
         const assets = await getSupportedAssetsForChainId(chain_id);
 
         value.map((item) => {
-          const assetnetwork =
+          if (!item?.asset) return;
+          const assetNetwork =
             item.asset && assets ? assets.find((supportedAsset) => supportedAsset.symbol == item.asset.symbol) : null;
           const chainId = chain_id;
           const crossChainActionId = uniqueId(`${item.timestamp}-`);
@@ -71,9 +74,10 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
               decimals: item.asset ? item.asset.decimal : 2,
               symbol: item.asset ? item.asset.symbol : '',
               amount: '100000000000000000',
-              iconUrl: assetnetwork != null ? assetnetwork?.logoURI : '',
+              iconUrl: assetNetwork != null ? assetNetwork?.logoURI : '',
               usdPrice: UsdPrice,
               gasCost: item.gasPrice,
+              gasUsed: item.gasUsed,
               feeAmount: item.asset && item.asset != null && item.asset.value ? item.asset.value : null,
               createTimestamp: item.timestamp,
             },
@@ -102,10 +106,7 @@ const History = ({ onBackButtonClick }: { onBackButtonClick: () => void }) => {
           ];
 
           storedTransactionsDetails[crossChainActionId] = [...crossChainAction];
-
-          const storedGroupedCrossChainActionsUpdated = storedTransactionsDetails;
-
-          setStoredGroupedCrossChainActions(storedGroupedCrossChainActionsUpdated);
+          setStoredGroupedCrossChainActions(storedTransactionsDetails);
         });
       });
     setIsLoadingTransactions(false);

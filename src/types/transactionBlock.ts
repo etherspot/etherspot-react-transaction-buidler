@@ -1,4 +1,5 @@
 import { TokenListToken } from 'etherspot';
+import { BigNumber } from 'ethers';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { ISendAssetTransactionBlockValues } from '../components/TransactionBlock/SendAssetTransactionBlock';
 import { IAssetBridgeTransactionBlockValues } from '../components/TransactionBlock/AssetBridgeTransactionBlock';
@@ -28,6 +29,7 @@ export type ITransactionBlockBase = {
   multiCallData?: IMultiCallData | null;
   hideTitle?: boolean;
   hideWalletSwitch?: boolean;
+  onlyPolygonInPLRStaking?: boolean;
 };
 
 export type ITransactionBlockType =
@@ -105,3 +107,9 @@ export type ITransactionBlockValues =
   | IPlrStakingV2BlockValues;
 
 export type IMulticallBlock = { icon: string } & ITransactionBlock;
+
+export type AccountBalance = {
+  token: string;
+  balance: BigNumber;
+  superBalance: BigNumber;
+};
