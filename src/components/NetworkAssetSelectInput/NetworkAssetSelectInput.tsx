@@ -251,6 +251,7 @@ interface SelectInputProps {
   readOnly?: boolean;
   allowNetworkSelection?: boolean;
   assetIdsToSelectFrom?: AssetsToSelectByChainId[];
+  showOnlyPLRToken?: boolean;
 }
 
 const NetworkAssetSelectInput = ({
@@ -272,6 +273,7 @@ const NetworkAssetSelectInput = ({
   readOnly = false,
   allowNetworkSelection = true,
   assetIdsToSelectFrom,
+  showOnlyPLRToken = false,
 }: SelectInputProps) => {
   const [inputId] = useState(uniqueId('etherspot-network-asset-select-input-'));
   const [searchInputId] = useState(uniqueId('etherspot-network-asset--select-search-input-'));
@@ -328,7 +330,12 @@ const NetworkAssetSelectInput = ({
         );
       });
 
-      setSelectedNetworkAssets(supportedAssets);
+      if (showOnlyPLRToken) {
+        const plrAsset = supportedAssets.filter((asset) => asset.symbol === 'PLR');
+        setSelectedNetworkAssets(plrAsset);
+      } else {
+        setSelectedNetworkAssets(supportedAssets);
+      }
       setIsLoadingAssets(false);
     };
 
