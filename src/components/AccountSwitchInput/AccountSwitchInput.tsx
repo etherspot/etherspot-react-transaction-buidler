@@ -14,6 +14,7 @@ interface AccountSwitchInputProps {
   hideKeyBased?: boolean;
   showTotals?: boolean;
   showHelperText?: boolean;
+  hideSwitchInput?: boolean;
 }
 
 const AccountSwitchInput = ({
@@ -27,7 +28,12 @@ const AccountSwitchInput = ({
   hideKeyBased = false,
   showTotals = false,
   showHelperText = false,
+  hideSwitchInput = false,
 }: AccountSwitchInputProps) => {
+  if (hideSwitchInput) {
+    return null;
+  }
+
   let walletOptions = [
     {
       title: 'Smart Wallet',
@@ -68,6 +74,6 @@ const AccountSwitchInput = ({
       showHelperText={showHelperText}
     />
   );
-}
+};
 
 export default AccountSwitchInput;
