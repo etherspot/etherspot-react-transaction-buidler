@@ -153,6 +153,7 @@ const PlrStakingV2TransactionBlock = ({
   values,
   hideTitle = false,
   onlyPolygonInPLRStaking = false,
+  simplePLRStakingDashboard = false,
 }: IPlrStakingV2Block) => {
   const { sdk, providerAddress, accountAddress, smartWalletOnly, etherspotMode } = useEtherspot();
 
@@ -161,8 +162,13 @@ const PlrStakingV2TransactionBlock = ({
     .filter(({ chainId }) => (onlyPolygonInPLRStaking ? chainId !== 137 : chainId === 43114))
     .map(({ chainId }) => chainId);
 
+  const hideSwitchInput = simplePLRStakingDashboard && !isEtherspotPrime(etherspotMode);
+  const addressList = hideSwitchInput ? [providerAddress] : [providerAddress, accountAddress];
+
   const [amount, setAmount] = useState<string>(values?.amount ?? '');
-  const [selectedAccountType, setSelectedAccountType] = useState<string>(values?.accountType ?? AccountTypes.Contract);
+  const [selectedAccountType, setSelectedAccountType] = useState<string>(
+    values?.accountType ?? (hideSwitchInput ? AccountTypes.Key : AccountTypes.Contract)
+  );
   const [selectedFromNetwork, setSelectedFromNetwork] = useState<Chain | null>(values?.fromChain ?? null);
   const [selectedToNetwork, setSelectedToNetwork] = useState<Chain | null>(values?.toChain ?? null);
   const [selectedFromAsset, setSelectedFromAsset] = useState<IAssetWithBalance | null>(values?.fromAsset ?? null);
@@ -174,7 +180,7 @@ const PlrStakingV2TransactionBlock = ({
 
   const hasEnoughPlrToStake = useMemo(
     () =>
-      [providerAddress, accountAddress].some((address) => {
+      addressList.some((address) => {
         if (!address || !addressPlrBalancePerChain?.[address]?.[CHAIN_ID.POLYGON]) return false;
         return isEnoughPlrBalanceToStake(addressPlrBalancePerChain[address][CHAIN_ID.POLYGON]);
       }),
@@ -182,7 +188,7 @@ const PlrStakingV2TransactionBlock = ({
   );
 
   const hasEnoughPlrCrossChainToStake = useMemo(() => {
-    const plrBalanceCrossChain = [providerAddress, accountAddress].reduce((total, address) => {
+    const plrBalanceCrossChain = addressList.reduce((total, address) => {
       if (!address) return total;
 
       const totalPerChains = supportedChains.reduce((chainsTotal, chain) => {
@@ -473,7 +479,7 @@ const PlrStakingV2TransactionBlock = ({
       if (!accountAddress || !sdk) return;
 
       await Promise.all(
-        [accountAddress, providerAddress].map(async (address) => {
+        addressList.map(async (address) => {
           if (!address) return;
 
           await Promise.all(
@@ -539,6 +545,7 @@ const PlrStakingV2TransactionBlock = ({
   }, [amount, selectedFromAsset]);
 
   const inputTitle = useMemo(() => {
+    if (hideSwitchInput) return 'You stake';
     return 'You swap';
   }, []);
 
@@ -699,6 +706,7 @@ const PlrStakingV2TransactionBlock = ({
         }}
         errorMessage={errorMessages?.accountType}
         hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
+        hideSwitchInput={hideSwitchInput}
         showTotals
         showHelperText
       />
@@ -722,6 +730,7 @@ const PlrStakingV2TransactionBlock = ({
         showPositiveBalanceAssets
         showQuickInputButtons
         accountType={selectedAccountType}
+        showOnlyPLRToken={simplePLRStakingDashboard}
       />
       <NetworkAssetSelectInput
         label="To"
@@ -768,6 +777,7 @@ const PlrStakingV2TransactionBlock = ({
           selectedAccountType={selectedReceiveAccountType}
           onChange={setSelectedReceiveAccountType}
           hideKeyBased={smartWalletOnly || isEtherspotPrime(etherspotMode)}
+          hideSwitchInput={hideSwitchInput}
         />
       </WalletReceiveWrapper>
       {!isStakingAssetSelected &&

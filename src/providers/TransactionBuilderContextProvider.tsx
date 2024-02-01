@@ -85,6 +85,7 @@ export interface TransactionBuilderContextProps {
   hideActionPreviewHeader?: boolean;
   walletBlockActionsReplaceBehaviour?: boolean;
   onlyPolygonInPLRStaking?: boolean;
+  simplePLRStakingDashboard?: boolean;
 }
 
 export interface IMulticallBlock {
@@ -425,6 +426,7 @@ const TransactionBuilderContextProvider = ({
   hideActionPreviewHeader = false,
   walletBlockActionsReplaceBehaviour = false,
   onlyPolygonInPLRStaking = false,
+  simplePLRStakingDashboard = false,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
 
@@ -1501,6 +1503,7 @@ const TransactionBuilderContextProvider = ({
                               hideTitle={hideTransactionBlockTitle}
                               hideWalletSwitch={hideWalletSwitch}
                               onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
+                              simplePLRStakingDashboard={simplePLRStakingDashboard}
                             />
                             {j === multiCallBlocks.length - 1 &&
                               multiCallBlock.type == TRANSACTION_BLOCK_TYPE.ASSET_SWAP && (
@@ -1548,6 +1551,7 @@ const TransactionBuilderContextProvider = ({
                           hideTitle={hideTransactionBlockTitle}
                           hideWalletSwitch={hideWalletSwitch}
                           onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
+                          simplePLRStakingDashboard={simplePLRStakingDashboard}
                         />
                         {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
                           transactionBlock.values?.accountType === DestinationWalletEnum.Contract &&
