@@ -154,6 +154,7 @@ const PlrStakingV2TransactionBlock = ({
   hideTitle = false,
   onlyPolygonInPLRStaking = false,
   simplePLRStakingDashboard = false,
+  plrStakingTitle,
 }: IPlrStakingV2Block) => {
   const { sdk, providerAddress, accountAddress, smartWalletOnly, etherspotMode } = useEtherspot();
 
@@ -262,7 +263,7 @@ const PlrStakingV2TransactionBlock = ({
       ? AccountTypes.Key
       : AccountTypes.Contract;
   const [selectedReceiveAccountType, setSelectedReceiveAccountType] = useState<string>(
-    defaultSelectedReceiveAccountType
+    hideSwitchInput ? AccountTypes.Key : defaultSelectedReceiveAccountType
   );
 
   const {
@@ -436,7 +437,8 @@ const PlrStakingV2TransactionBlock = ({
       };
     } else if (
       selectedFromNetwork?.chainId === selectedToNetwork?.chainId &&
-      !addressesEqual(selectedFromAsset?.address, stkPlrAsset.address)
+      !addressesEqual(selectedFromAsset?.address, stkPlrAsset.address) &&
+      !addressesEqual(selectedToAsset?.address, stkPlrAsset.address)
     ) {
       const offer = availableOffers?.find((availableOffer) => availableOffer.provider === selectedOffer?.value);
       swap = {
@@ -615,7 +617,7 @@ const PlrStakingV2TransactionBlock = ({
 
   return (
     <>
-      {!hideTitle && <Title>Pillar Validator Staking</Title>}
+      {!hideTitle && <Title>{plrStakingTitle ?? 'Pillar Validator Staking'}</Title>}
       <ContainerWrapper>
         <Container>
           <Text size={14}>
