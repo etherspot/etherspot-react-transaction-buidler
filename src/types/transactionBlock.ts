@@ -31,6 +31,7 @@ export type ITransactionBlockBase = {
   hideWalletSwitch?: boolean;
   onlyPolygonInPLRStaking?: boolean;
   simplePLRStakingDashboard?: boolean;
+  plrStakingTitle?: string;
 };
 
 export type ITransactionBlockType =
