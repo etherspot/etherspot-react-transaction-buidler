@@ -46,6 +46,7 @@ interface EtherspotProps {
   etherspotMode?: 'etherspot' | 'etherspot-prime';
   onlyPolygonInPLRStaking?: boolean;
   simplePLRStakingDashboard?: boolean;
+  plrStakingTitle?: string;
 }
 
 const ComponentWrapper = styled.div.attrs(
@@ -113,6 +114,7 @@ const Etherspot = ({
   etherspotMode = ETHERSPOT,
   onlyPolygonInPLRStaking = false,
   simplePLRStakingDashboard = false,
+  plrStakingTitle,
 }: EtherspotProps) => {
   const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));
 
@@ -167,6 +169,7 @@ const Etherspot = ({
                   hideActionPreviewHeader={hideActionPreviewHeader}
                   onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
                   simplePLRStakingDashboard={simplePLRStakingDashboard}
+                  plrStakingTitle={plrStakingTitle}
                 />
               </TransactionsDispatcherContextProvider>
             </TransactionBuilderModalContextProvider>

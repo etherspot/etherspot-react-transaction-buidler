@@ -28,7 +28,12 @@ import moment from 'moment';
 import { useEtherspot } from '../../hooks';
 
 // Types
-import { AssetBridgeActionPreview, AssetSwapActionPreview, ICrossChainAction, SendAssetActionPreview } from '../../types/crossChainAction';
+import {
+  AssetBridgeActionPreview,
+  AssetSwapActionPreview,
+  ICrossChainAction,
+  SendAssetActionPreview,
+} from '../../types/crossChainAction';
 import useAssetPriceUsd from '../../hooks/useAssetPriceUsd';
 import HoneySwapRoute from '../HoneySwapRoute/HoneySwapRoute';
 import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../../constants/assetConstants';
@@ -328,8 +333,10 @@ const TransactionStatus = ({
           ? CROSS_CHAIN_ACTION_STATUS.SWITCH_NETWORK
           : transaction.status || CROSS_CHAIN_ACTION_STATUS.PENDING;
 
-        if (crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE
-          && transaction.status === CROSS_CHAIN_ACTION_STATUS.PENDING) {
+        if (
+          crossChainAction.type === TRANSACTION_BLOCK_TYPE.KLIMA_STAKE &&
+          transaction.status === CROSS_CHAIN_ACTION_STATUS.PENDING
+        ) {
           transactionStatus = CROSS_CHAIN_ACTION_STATUS.RECEIVING;
         }
 
@@ -1274,7 +1281,7 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
-    const cardTitle = swap ? 'Asset swap' : 'PLR stake';
+    const cardTitle = swap ? 'Asset swap' : 'Asset stake';
 
     let gasCost;
     let totalFees = 0;
@@ -1370,17 +1377,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.HONEY_SWAP_LP) {
-    const {
-      fromAsset,
-      fromChainId,
-      route,
-      token1,
-      token2,
-      offer1,
-      offer2,
-      tokenOneAmount,
-      tokenTwoAmount,
-    } = preview;
+    const { fromAsset, fromChainId, route, token1, token2, offer1, offer2, tokenOneAmount, tokenTwoAmount } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
 
@@ -1406,7 +1403,7 @@ const ActionPreview = ({
 
     return (
       <Card
-        title={!hideActionPreviewHeader ? "Honeyswap Liquidity Pool" : undefined}
+        title={!hideActionPreviewHeader ? 'Honeyswap Liquidity Pool' : undefined}
         onCloseButtonClick={!hideActionPreviewHeader ? onRemove : () => {}}
         showCloseButton={!hideActionPreviewHeader && showCloseButton}
         additionalTopButtons={additionalTopButtons}
@@ -1449,14 +1446,14 @@ const ActionPreview = ({
           crossChainAction={crossChainAction}
           setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
         />
-        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status === CROSS_CHAIN_ACTION_STATUS.CONFIRMED
-          && !!crossChainAction.destinationCrossChainAction.length
-          && (
-          <TransactionStatus
-            crossChainAction={crossChainAction.destinationCrossChainAction[0]}
-            setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
-          />
-        )}
+        {crossChainAction.transactions[crossChainAction.transactions.length - 1].status ===
+          CROSS_CHAIN_ACTION_STATUS.CONFIRMED &&
+          !!crossChainAction.destinationCrossChainAction.length && (
+            <TransactionStatus
+              crossChainAction={crossChainAction.destinationCrossChainAction[0]}
+              setIsTransactionDone={setIsTransactionDone ? setIsTransactionDone : (value: boolean) => {}}
+            />
+          )}
       </Card>
     );
   }
