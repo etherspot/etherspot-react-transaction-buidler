@@ -94,6 +94,7 @@ const ContainerWrapper = styled.div`
 
 const Highlighted = styled.span<{ color?: string }>`
   ${({ color }) => color && `color: ${color};`};
+  font-size: 20px;
 `;
 
 const HorizontalLine = styled.div`
