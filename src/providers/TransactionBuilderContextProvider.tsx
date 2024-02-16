@@ -23,18 +23,12 @@ import TransactionBlock from '../components/TransactionBlock';
 import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
 import {
   buildCrossChainAction,
-  estimateCrossChainAction,
-  getCrossChainStatusByHash,
-  klimaDaoStaking,
   submitEtherspotTransactionsBatch,
   submitWeb3ProviderTransaction,
-  submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
-  getFirstCrossChainActionByStatus,
-  honeyswapLP,
   isERC20ApprovalTransactionData,
-  getTransactionStatus,
 } from '../utils/transaction';
+import { estimateCrossChainAction, getFirstCrossChainActionByStatus } from '../utils/crossChain';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
