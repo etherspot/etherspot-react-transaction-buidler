@@ -128,7 +128,7 @@ export const buildPlrDaoUnStakeTransaction = (
 
 export const buildPlrUnStakeTransaction = (
   sdk: EtherspotSdk | null,
-  transactionBlock: ITransactionBlock
+  transactionBlock: ITransactionBlock | any
 ): { errorMessage?: string; crossChainAction?: ICrossChainAction } => {
   if (!sdk) {
     return { errorMessage: 'Failed to build Unstake transaction!' };

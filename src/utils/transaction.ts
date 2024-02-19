@@ -1,16 +1,13 @@
 import {
   AccountTypes,
-  ExchangeOffer,
   GatewayTransactionStates,
-  LiFiStatus,
   NotificationTypes,
   Sdk as EtherspotSdk,
   TransactionStatuses,
   WalletProviderLike,
   Web3WalletProvider,
 } from 'etherspot';
-import { Route } from '@lifi/sdk';
-import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 
@@ -26,15 +23,10 @@ import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validat
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
 import { plrDaoAssetPerChainId, stkPlrAsset } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
-import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
-import { TransactionRequest, sleep } from 'etherspot/dist/sdk/common';
-import {
-  ICrossChainActionEstimation,
-  ICrossChainActionTransaction,
-  ICrossChainAction,
-} from '../types/crossChainAction';
+import { sleep } from 'etherspot/dist/sdk/common';
+import { ICrossChainActionTransaction, ICrossChainAction } from '../types/crossChainAction';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
 import {
@@ -44,7 +36,6 @@ import {
   POLYGON_USDC_CONTRACT_ADDRESS,
 } from '../constants/assetConstants';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
-import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 import { klimaDaoStaking } from './klimaDaoStakingTxs';
 import { buildPlrDaoUnStakeTransaction, buildPlrUnStakeTransaction } from './buildUnstakeTransaction';
 import { honeyswapLP } from './honeyswapLP';
