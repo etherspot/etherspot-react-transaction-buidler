@@ -1284,10 +1284,6 @@ export const buildCrossChainAction = async (
       },
     } = transactionBlock;
 
-    console.log('====================================');
-    console.log('CALLLLL RANSACTION_BLOCK_TYPE.PLR_STAKING_V2');
-    console.log('====================================');
-
     const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
     let toAssetAmount = addressesEqual(toAssetAddress, stkPlrAsset.address) ? fromAmountBN : '0';

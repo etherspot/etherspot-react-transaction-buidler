@@ -205,10 +205,6 @@ export const buildPlrUnStakeTransaction = (
       }
     }
 
-    console.log('====================================');
-    console.log('CALLLL plrUnstakeContract', transactions);
-    console.log('====================================');
-
     const preview = {
       isUnStake: true,
       fromChainId,
