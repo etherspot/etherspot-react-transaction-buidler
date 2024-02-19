@@ -26,6 +26,11 @@ import {
   POLYGON_USDC_CONTRACT_ADDRESS,
 } from '../constants/assetConstants';
 
+// Types
+import { ICrossChainActionTransaction, ICrossChainAction } from '../types/crossChainAction';
+import { ITransactionBlock } from '../types/transactionBlock';
+import { PlrV2StakingContract } from '../types/etherspotContracts';
+
 // Local
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
@@ -37,11 +42,6 @@ import { klimaDaoStaking } from './klimaDaoStakingTxs';
 import { buildPlrDaoUnStakeTransaction, buildPlrUnStakeTransaction } from './buildUnstakeTransaction';
 import { honeyswapLP } from './honeyswapLP';
 import { buildLiFiBridgeTransactions, fetchSwapAssetTransaction } from './buildTransactions';
-
-// Types
-import { ICrossChainActionTransaction, ICrossChainAction } from '../types/crossChainAction';
-import { ITransactionBlock } from '../types/transactionBlock';
-import { PlrV2StakingContract } from '../types/etherspotContracts';
 
 interface IPillarDao {
   encodeDeposit(amount: BigNumber): {

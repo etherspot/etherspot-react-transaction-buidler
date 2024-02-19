@@ -77,7 +77,7 @@ export interface IPlrDaoStakingMembershipBlock extends ITransactionBlockBase {
 
 export interface IPlrStakingV2Block extends ITransactionBlockBase {
   type: typeof TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2;
-  values?: IPlrStakingV2BlockValues;
+  values: IPlrStakingV2BlockValues;
 }
 
 export interface IHoneySwapLPBlock extends ITransactionBlockBase {
