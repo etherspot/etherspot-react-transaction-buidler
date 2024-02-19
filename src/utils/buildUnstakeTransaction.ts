@@ -136,9 +136,11 @@ export const buildPlrUnStakeTransaction = (
   sdk: EtherspotSdk | null,
   transactionBlock: ITransactionBlock | any
 ): { errorMessage?: string; crossChainAction?: ICrossChainAction } => {
-  if (!sdk || isEmpty(transactionBlock?.values)) {
+  if (!sdk || !transactionBlock) {
     return { errorMessage: 'Failed to build Unstake transaction!' };
   }
+
+  const { values } = transactionBlock;
 
   const {
     amount,
@@ -153,7 +155,7 @@ export const buildPlrUnStakeTransaction = (
     toAsset: { address: toAssetAddress, symbol: toAssetSymbol, decimals: toAssetDecimals, logoURI: toAssetIconUrl },
     receiverAddress,
     accountType,
-  } = transactionBlock?.values;
+  } = values;
 
   try {
     const createTimestamp = +new Date();
