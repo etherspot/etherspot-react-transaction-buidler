@@ -1241,7 +1241,7 @@ export const buildCrossChainAction = async (
     !!transactionBlock?.values?.toAsset &&
     !!transactionBlock?.values?.amount
   ) {
-    if (transactionBlock?.values?.isUnStake) {
+    if (!!transactionBlock?.values?.isUnStake) {
       let result = buildPlrUnStakeTransaction(sdk, transactionBlock);
 
       if (result.errorMessage) return { errorMessage: result.errorMessage };
