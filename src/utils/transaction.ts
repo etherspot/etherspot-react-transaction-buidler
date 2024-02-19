@@ -38,9 +38,9 @@ import { buildPlrDaoUnStakeTransaction, buildPlrUnStakeTransaction } from './bui
 import { honeyswapLP } from './honeyswapLP';
 import { buildLiFiBridgeTransactions, fetchSwapAssetTransaction } from './buildTransactions';
 
-// Type
+// Types
 import { ICrossChainActionTransaction, ICrossChainAction } from '../types/crossChainAction';
-import type { ITransactionBlock } from '../types/transactionBlock';
+import { ITransactionBlock } from '../types/transactionBlock';
 import { PlrV2StakingContract } from '../types/etherspotContracts';
 
 interface IPillarDao {
@@ -65,7 +65,7 @@ interface IPlrTransaction {
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
-  transactionBlock: ITransactionBlock
+  transactionBlock: ITransactionBlock | any
 ): Promise<{ errorMessage?: string; crossChainAction?: ICrossChainAction }> => {
   const createTimestamp = +new Date();
   const crossChainActionId = uniqueId(`${createTimestamp}-`);
