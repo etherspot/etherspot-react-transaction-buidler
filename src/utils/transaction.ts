@@ -1256,8 +1256,7 @@ export const buildCrossChainAction = async (
     !!transactionBlock?.values?.toChain &&
     !!transactionBlock?.values?.fromAsset &&
     !!transactionBlock?.values?.toAsset &&
-    !!transactionBlock?.values?.amount &&
-    !transactionBlock?.values?.isUnStake
+    !!transactionBlock?.values?.amount
   ) {
     const {
       values: {
