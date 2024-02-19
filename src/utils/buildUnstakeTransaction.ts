@@ -15,7 +15,7 @@ import { plrDaoAssetPerChainId } from './asset';
 
 // Type
 import { ICrossChainAction } from '../types/crossChainAction';
-import type { IPlrStakingV2Block, ITransactionBlock } from '../types/transactionBlock';
+import { ITransactionBlock } from '../types/transactionBlock';
 
 // Component
 import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
@@ -136,7 +136,7 @@ export const buildPlrUnStakeTransaction = (
   sdk: EtherspotSdk | null,
   transactionBlock: ITransactionBlock
 ): { errorMessage?: string; crossChainAction?: ICrossChainAction } => {
-  if (!sdk | !transactionBlock?.values) {
+  if (!sdk) {
     return { errorMessage: 'Failed to build Unstake transaction!' };
   }
 
