@@ -10,34 +10,28 @@ import {
 import { BigNumber, ethers } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
-import { sleep } from 'etherspot/dist/sdk/common';
 import { ExecuteAccountTransactionDto } from 'etherspot/dist/sdk/dto/execute-account-transaction.dto';
 import { ContractNames, getContractAbi } from '@etherspot/contracts';
 import { Subscription } from 'rxjs';
 import { map as rxjsMap } from 'rxjs/operators';
-
-// Constant
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import {
-  GNOSIS_USDC_CONTRACT_ADDRESS,
-  PLR_DAO_CONTRACT_PER_CHAIN,
-  PLR_STAKING_POLYGON_CONTRACT_ADDRESS,
-  POLYGON_USDC_CONTRACT_ADDRESS,
-} from '../constants/assetConstants';
-
-// Types
-import { ICrossChainActionTransaction, ICrossChainAction } from '../types/crossChainAction';
-import { ITransactionBlock } from '../types/transactionBlock';
-import { PlrV2StakingContract } from '../types/etherspotContracts';
-
-// Local
 import { addressesEqual, isValidEthereumAddress, isZeroAddress } from './validation';
 import { CHAIN_ID, changeToChain, nativeAssetPerChainId, plrDaoMemberNft, supportedChains } from './chain';
 import { plrDaoAssetPerChainId, stkPlrAsset } from './asset';
 import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 import { bridgeServiceIdToDetails } from './bridge';
 import { swapServiceIdToDetails } from './swap';
+import { sleep } from 'etherspot/dist/sdk/common';
+import { ICrossChainActionTransaction, ICrossChainAction } from '../types/crossChainAction';
+import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
+import { ITransactionBlock } from '../types/transactionBlock';
+import {
+  GNOSIS_USDC_CONTRACT_ADDRESS,
+  PLR_DAO_CONTRACT_PER_CHAIN,
+  PLR_STAKING_POLYGON_CONTRACT_ADDRESS,
+  POLYGON_USDC_CONTRACT_ADDRESS,
+} from '../constants/assetConstants';
+import { PlrV2StakingContract } from '../types/etherspotContracts';
 import { klimaDaoStaking } from './klimaDaoStakingTxs';
 import { buildPlrDaoUnStakeTransaction, buildPlrUnStakeTransaction } from './buildUnstakeTransaction';
 import { honeyswapLP } from './honeyswapLP';
@@ -65,7 +59,7 @@ interface IPlrTransaction {
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
-  transactionBlock: any | ITransactionBlock
+  transactionBlock: ITransactionBlock
 ): Promise<{ errorMessage?: string; crossChainAction?: ICrossChainAction }> => {
   const createTimestamp = +new Date();
   const crossChainActionId = uniqueId(`${createTimestamp}-`);
@@ -1256,7 +1250,8 @@ export const buildCrossChainAction = async (
     !!transactionBlock?.values?.toChain &&
     !!transactionBlock?.values?.fromAsset &&
     !!transactionBlock?.values?.toAsset &&
-    !!transactionBlock?.values?.amount
+    !!transactionBlock?.values?.amount &&
+    !transactionBlock?.values?.isUnStake
   ) {
     const {
       values: {
