@@ -68,6 +68,7 @@ interface PlrStakingV2ActionPreview {
   providerIconUrl?: string;
   receiverAddress?: string;
   swap?: IPlrStakingV2BlockSwap;
+  isUnStake?: boolean;
 }
 
 export interface AssetSwapActionPreview {

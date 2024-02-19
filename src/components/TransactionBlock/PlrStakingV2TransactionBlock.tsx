@@ -17,6 +17,7 @@ import TextInput from '../TextInput';
 import SelectInput, { SelectOption } from '../SelectInput/SelectInput';
 import { CombinedRoundedImages, RoundedImage } from '../Image';
 import RouteOption from '../RouteOption';
+import { PrimaryButton } from '../Button';
 
 // providers
 import { IAssetWithBalance } from '../../providers/EtherspotContextProvider';
@@ -29,6 +30,9 @@ import { swapServiceIdToDetails } from '../../utils/swap';
 import { Theme } from '../../utils/theme';
 import { bridgeServiceIdToDetails } from '../../utils/bridge';
 import { getPlrAssetForChainId, stkPlrAsset } from '../../utils/asset';
+
+// Hooks
+import useGetContractState from '../../hooks/useGetContractState';
 
 // constants
 import { PLR_ADDRESS_PER_CHAIN, STKPLR_POLYGON_TOKEN_ADDRESS } from '../../constants/assetConstants';
@@ -54,6 +58,7 @@ export interface IPlrStakingV2BlockValues {
   amount?: string;
   accountType?: string;
   receiverAddress?: string;
+  isUnStake?: boolean;
 }
 
 const Title = styled.h3`
@@ -102,6 +107,15 @@ const HorizontalLine = styled.div`
   width: 100%;
   height: 1px;
   background: ${({ theme }) => theme.color.background.horizontalLine};
+`;
+
+const UnstakeButton = styled(PrimaryButton)`
+  text-align: center;
+  padding: 8px 0;
+  font-size: 16px;
+  border-radius: 6px;
+  background: ${({ theme }) => theme.color.background.primary};
+  color: #fff;
 `;
 
 const mapOfferToOption = (offer: ExchangeOffer) => {
@@ -180,6 +194,8 @@ const PlrStakingV2TransactionBlock = ({
   }>({});
   const [stkPlrBalance, setStkPlrBalance] = useState<BigNumber | undefined>(undefined);
 
+  const { contractState, stakedAmount } = useGetContractState(selectedAccountType);
+
   const hasEnoughPlrToStake = useMemo(
     () =>
       addressList.some((address) => {
@@ -205,7 +221,7 @@ const PlrStakingV2TransactionBlock = ({
   }, [providerAddress, accountAddress, addressPlrBalancePerChain]);
 
   useEffect(() => {
-    if (!selectedAccountType || !providerAddress || !accountAddress) return;
+    if (!selectedAccountType || !providerAddress || !accountAddress || contractState !== 1) return;
 
     const balanceAddress = (selectedAccountType === AccountTypes.Key ? providerAddress : accountAddress) as string;
 
@@ -430,6 +446,8 @@ const PlrStakingV2TransactionBlock = ({
   useEffect(() => {
     let swap: IPlrStakingV2BlockSwap | undefined;
 
+    if (contractState !== 1) return;
+
     if (selectedFromNetwork?.chainId !== selectedToNetwork?.chainId) {
       const route = availableRoutes?.find((availableRoute) => availableRoute.id === selectedRoute?.value);
       swap = {
@@ -449,6 +467,7 @@ const PlrStakingV2TransactionBlock = ({
     }
 
     setTransactionBlockValues(transactionBlockId, {
+      isUnStake: false,
       fromChain: selectedFromNetwork ?? undefined,
       toChain: selectedToNetwork ?? undefined,
       fromAsset: selectedFromAsset ?? undefined,
@@ -611,6 +630,67 @@ const PlrStakingV2TransactionBlock = ({
     setAvailableOffers(null);
     setSelectedOffer(null);
   };
+
+  const onUnstake = async () => {
+    const polygonMainnetChain = supportedChains.find((chain) => chain.chainId === CHAIN_ID.POLYGON) as Chain;
+    const balanceAddress = (selectedAccountType === AccountTypes.Key ? providerAddress : accountAddress) as string;
+    const plrAsset = getPlrAssetForChainId(
+      CHAIN_ID.POLYGON,
+      addressPlrBalancePerChain?.[balanceAddress]?.[CHAIN_ID.POLYGON] as BigNumber
+    );
+    setSelectedFromNetwork(polygonMainnetChain);
+    setSelectedToNetwork(polygonMainnetChain);
+    setSelectedFromAsset(stkPlrAsset);
+    setSelectedToAsset(plrAsset);
+
+    setTransactionBlockValues(transactionBlockId, {
+      isUnStake: true,
+      fromChain: polygonMainnetChain,
+      toChain: polygonMainnetChain,
+      fromAsset: stkPlrAsset,
+      toAsset: plrAsset,
+      receiverAddress: receiverAddress ?? undefined,
+      accountType: selectedAccountType,
+      amount: stakedAmount,
+    });
+  };
+
+  if (contractState !== 1) {
+    return (
+      <>
+        {!hideTitle && <Title>{plrStakingTitle ?? 'Pillar Validator Staking'}</Title>}
+        <ContainerWrapper>
+          <Container>
+            {contractState !== 0 && (
+              <>
+                <Text size={18} color={theme?.color?.text?.tokenValue}>
+                  Thank You!
+                </Text>
+                <br />
+                <br />
+              </>
+            )}
+            {contractState === 0 && (
+              <Text size={16} marginTop={2}>
+                Waiting for staking period to be ready
+              </Text>
+            )}
+            {contractState === 2 && (
+              <Text size={16} marginTop={2}>
+                You have staked your Pillar tokens
+              </Text>
+            )}
+            {contractState === 3 && (
+              <Text size={16} marginTop={2}>
+                The token lockup period has passed. You can unstake your tokens
+              </Text>
+            )}
+          </Container>
+        </ContainerWrapper>
+        {contractState === 3 && <UnstakeButton onClick={onUnstake}>Unstake</UnstakeButton>}
+      </>
+    );
+  }
 
   const isStakingAssetSelected = addressesEqual(selectedToAsset?.address, stkPlrAsset.address);
 

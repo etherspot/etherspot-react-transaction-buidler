@@ -1,9 +1,9 @@
-import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { HiCheck } from 'react-icons/hi';
 import { AiFillWarning, AiOutlinePlusCircle } from 'react-icons/ai';
-import { Sdk, sleep, TokenListToken } from 'etherspot';
-import { BigNumber, utils, ethers } from 'ethers';
+import { Sdk, TokenListToken } from 'etherspot';
+import { ethers } from 'ethers';
 
 // Types
 import {
@@ -23,37 +23,24 @@ import TransactionBlock from '../components/TransactionBlock';
 import { ErrorMessages, validateTransactionBlockValues } from '../utils/validation';
 import {
   buildCrossChainAction,
-  estimateCrossChainAction,
-  getCrossChainStatusByHash,
-  klimaDaoStaking,
   submitEtherspotTransactionsBatch,
   submitWeb3ProviderTransaction,
-  submitWeb3ProviderTransactions,
   submitEtherspotAndWaitForTransactionHash,
-  getFirstCrossChainActionByStatus,
-  honeyswapLP,
   isERC20ApprovalTransactionData,
-  getTransactionStatus,
 } from '../utils/transaction';
+import { estimateCrossChainAction, getFirstCrossChainActionByStatus } from '../utils/crossChain';
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { TransactionBuilderContext } from '../contexts';
 import { ActionPreview } from '../components/TransactionPreview';
-import { getTimeBasedUniqueId, humanizeHexString, copyToClipboard, isEtherspotPrime } from '../utils/common';
+import { getTimeBasedUniqueId, copyToClipboard, isEtherspotPrime } from '../utils/common';
 import { Theme } from '../utils/theme';
 import { CHAIN_ID, Chain, primeSdkSupportedChains } from '../utils/chain';
 import Card from '../components/Card';
 import { Text } from '../components/Text';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
-import {
-  SendActionIcon,
-  SwapActionIcon,
-  BridgeActionIcon,
-  ChainIcon,
-  WalletCopyIcon,
-  WalletIcon,
-} from '../components/TransactionBlock/Icons';
+import { SendActionIcon, SwapActionIcon, BridgeActionIcon, ChainIcon } from '../components/TransactionBlock/Icons';
 import { DestinationWalletEnum } from '../enums/wallet.enum';
-import { GNOSIS_USDC_CONTRACT_ADDRESS, POLYGON_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
+import { GNOSIS_USDC_CONTRACT_ADDRESS } from '../constants/assetConstants';
 import WalletTransactionBlock from '../components/TransactionBlock/Wallet/WalletTransactionBlock';
 import { openMtPelerinTab } from '../utils/pelerin';
 import useInterval from '../hooks/useInterval';
