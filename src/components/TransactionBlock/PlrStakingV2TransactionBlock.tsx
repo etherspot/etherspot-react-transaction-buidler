@@ -467,6 +467,7 @@ const PlrStakingV2TransactionBlock = ({
     }
 
     setTransactionBlockValues(transactionBlockId, {
+      isUnStake: false,
       fromChain: selectedFromNetwork ?? undefined,
       toChain: selectedToNetwork ?? undefined,
       fromAsset: selectedFromAsset ?? undefined,
