@@ -1233,7 +1233,7 @@ export const buildCrossChainAction = async (
     }
   }
 
-  if (!transactionBlock) {
+  if (transactionBlock === null) {
     return { errorMessage: 'Failed to build transaction!' };
   }
 
