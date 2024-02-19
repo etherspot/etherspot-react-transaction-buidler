@@ -65,7 +65,7 @@ interface IPlrTransaction {
 
 export const buildCrossChainAction = async (
   sdk: EtherspotSdk,
-  transactionBlock: ITransactionBlock | any
+  transactionBlock: any | ITransactionBlock
 ): Promise<{ errorMessage?: string; crossChainAction?: ICrossChainAction }> => {
   const createTimestamp = +new Date();
   const crossChainActionId = uniqueId(`${createTimestamp}-`);
