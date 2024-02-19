@@ -1241,13 +1241,6 @@ export const buildCrossChainAction = async (
     !!transactionBlock?.values?.toAsset &&
     !!transactionBlock?.values?.amount
   ) {
-    if (!!transactionBlock?.values?.isUnStake) {
-      let result = buildPlrUnStakeTransaction(sdk, transactionBlock);
-
-      if (result.errorMessage) return { errorMessage: result.errorMessage };
-      if (result.crossChainAction) return { crossChainAction: result.crossChainAction };
-    }
-
     const {
       values: {
         amount,
@@ -1263,8 +1256,16 @@ export const buildCrossChainAction = async (
         swap,
         receiverAddress,
         accountType,
+        isUnStake,
       },
     } = transactionBlock;
+
+    if (isUnStake) {
+      let result = buildPlrUnStakeTransaction(sdk, transactionBlock);
+
+      if (result.errorMessage) return { errorMessage: result.errorMessage };
+      if (result.crossChainAction) return { crossChainAction: result.crossChainAction };
+    }
 
     const fromAmountBN = ethers.utils.parseUnits(amount, fromAssetDecimals);
 
