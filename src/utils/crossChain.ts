@@ -1,16 +1,23 @@
 import { AccountTypes, LiFiStatus, Sdk as EtherspotSdk, WalletProviderLike, Web3WalletProvider } from 'etherspot';
 import { ethers } from 'ethers';
 
-import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
-import { addressesEqual, isZeroAddress } from './validation';
-import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
-import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
-import {
+// Type
+import type {
   ICrossChainActionEstimation,
   ICrossChainActionTransaction,
   ICrossChainAction,
 } from '../types/crossChainAction';
+
+// Constant
+import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
 import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
+
+// Service
+import { getAssetPriceInUsd, getNativeAssetPriceInUsd } from '../services/coingecko';
+
+// Local
+import { addressesEqual, isZeroAddress } from './validation';
+import { parseEtherspotErrorMessageIfAvailable } from './etherspot';
 
 export const getCrossChainStatusByHash = async (
   fromChainId: number,

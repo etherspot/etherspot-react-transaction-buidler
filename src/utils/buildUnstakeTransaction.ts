@@ -2,16 +2,22 @@ import { AccountTypes, Sdk as EtherspotSdk } from 'etherspot';
 import { BigNumber } from 'ethers';
 import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
-
 import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
+// Constants
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
+import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
+import { PLR_DAO_CONTRACT_PER_CHAIN, PLR_STAKING_POLYGON_CONTRACT_ADDRESS } from '../constants/assetConstants';
+
+// Local
 import { CHAIN_ID, plrDaoMemberNft } from './chain';
 import { plrDaoAssetPerChainId } from './asset';
+
+// Type
 import { ICrossChainAction } from '../types/crossChainAction';
-import { CROSS_CHAIN_ACTION_STATUS } from '../constants/transactionDispatcherConstants';
 import { ITransactionBlock } from '../types/transactionBlock';
-import { PLR_DAO_CONTRACT_PER_CHAIN, PLR_STAKING_POLYGON_CONTRACT_ADDRESS } from '../constants/assetConstants';
+
+// Component
 import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
 
 interface IPillarDao {
