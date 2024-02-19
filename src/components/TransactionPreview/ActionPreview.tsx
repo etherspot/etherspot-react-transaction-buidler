@@ -1268,7 +1268,7 @@ const ActionPreview = ({
   }
 
   if (type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2) {
-    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, swap } = preview;
+    const { fromAsset, toAsset, fromChainId, toChainId, receiverAddress, swap, isUnStake } = preview;
 
     const fromNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === fromChainId);
     const toNetwork = supportedChains.find((supportedChain) => supportedChain.chainId === toChainId);
@@ -1281,7 +1281,7 @@ const ActionPreview = ({
 
     const senderAddress = crossChainAction.useWeb3Provider ? providerAddress : accountAddress;
 
-    const cardTitle = swap ? 'Asset swap' : 'Asset stake';
+    const cardTitle = swap ? 'Asset swap' : isUnStake ? 'Asset unstake' : 'Asset stake';
 
     let gasCost;
     let totalFees = 0;
@@ -1300,9 +1300,8 @@ const ActionPreview = ({
     return (
       <Card
         title={cardTitle}
-        onCloseButtonClick={onRemove}
-        showCloseButton={showCloseButton}
-        additionalTopButtons={additionalTopButtons}
+        showCloseButton={!isUnStake && showCloseButton}
+        additionalTopButtons={!isUnStake ? additionalTopButtons : []}
       >
         <DoubleTransactionActionsInSingleRow>
           <TransactionAction>
