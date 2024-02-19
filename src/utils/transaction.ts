@@ -1233,11 +1233,7 @@ export const buildCrossChainAction = async (
     }
   }
 
-  if (
-    transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2 &&
-    transactionBlock?.values?.isUnStake &&
-    transactionBlock?.values?.amount
-  ) {
+  if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2 && transactionBlock?.values?.isUnStake) {
     let result = buildPlrUnStakeTransaction(sdk, transactionBlock);
 
     if (result.errorMessage) return { errorMessage: result.errorMessage };
@@ -1246,12 +1242,12 @@ export const buildCrossChainAction = async (
 
   if (
     transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2 &&
+    !transactionBlock?.values?.isUnStake &&
     !!transactionBlock?.values?.fromChain &&
     !!transactionBlock?.values?.toChain &&
     !!transactionBlock?.values?.fromAsset &&
     !!transactionBlock?.values?.toAsset &&
-    !!transactionBlock?.values?.amount &&
-    !transactionBlock?.values?.isUnStake
+    !!transactionBlock?.values?.amount
   ) {
     const {
       values: {

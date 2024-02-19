@@ -1,8 +1,12 @@
 import { AccountTypes, Sdk as EtherspotSdk } from 'etherspot';
 import { BigNumber } from 'ethers';
-import { uniqueId } from 'lodash';
+import { isEmpty, uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 import { ContractNames, getContractAbi } from '@etherspot/contracts';
+
+// Type
+import { ICrossChainAction } from '../types/crossChainAction';
+import { ITransactionBlock } from '../types/transactionBlock';
 
 // Constants
 import { TRANSACTION_BLOCK_TYPE } from '../constants/transactionBuilderConstants';
@@ -12,10 +16,6 @@ import { PLR_DAO_CONTRACT_PER_CHAIN, PLR_STAKING_POLYGON_CONTRACT_ADDRESS } from
 // Local
 import { CHAIN_ID, plrDaoMemberNft } from './chain';
 import { plrDaoAssetPerChainId } from './asset';
-
-// Type
-import { ICrossChainAction } from '../types/crossChainAction';
-import { ITransactionBlock } from '../types/transactionBlock';
 
 // Component
 import { MAX_PLR_TOKEN_LIMIT } from '../components/TransactionBlock/PlrDaoStakingTransactionBlock';
@@ -134,9 +134,9 @@ export const buildPlrDaoUnStakeTransaction = (
 
 export const buildPlrUnStakeTransaction = (
   sdk: EtherspotSdk | null,
-  transactionBlock: ITransactionBlock
+  transactionBlock: ITransactionBlock | any
 ): { errorMessage?: string; crossChainAction?: ICrossChainAction } => {
-  if (!sdk) {
+  if (!sdk || isEmpty(transactionBlock?.values)) {
     return { errorMessage: 'Failed to build Unstake transaction!' };
   }
 
