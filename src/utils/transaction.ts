@@ -1233,6 +1233,10 @@ export const buildCrossChainAction = async (
     }
   }
 
+  if (!transactionBlock) {
+    return { errorMessage: 'Failed to build transaction!' };
+  }
+
   if (transactionBlock.type === TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2 && transactionBlock?.values?.isUnStake) {
     let result = buildPlrUnStakeTransaction(sdk, transactionBlock);
 

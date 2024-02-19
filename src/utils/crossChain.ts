@@ -56,7 +56,7 @@ export const estimateCrossChainAction = async (
   let errorMessage;
   let feeAmount = null;
 
-  if (!sdk || (crossChainAction.useWeb3Provider && !web3Provider)) {
+  if (!sdk || !crossChainAction || (crossChainAction.useWeb3Provider && !web3Provider)) {
     return { errorMessage: 'Failed to estimate!' };
   }
   let feeAssetBalanceBN = ethers.BigNumber.from(0);

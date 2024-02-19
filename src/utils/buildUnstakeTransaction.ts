@@ -1,6 +1,6 @@
 import { AccountTypes, Sdk as EtherspotSdk } from 'etherspot';
 import { BigNumber } from 'ethers';
-import { isEmpty, uniqueId } from 'lodash';
+import { uniqueId } from 'lodash';
 import { ERC20TokenContract } from 'etherspot/dist/sdk/contract/internal/erc20-token.contract';
 import { ContractNames, getContractAbi } from '@etherspot/contracts';
 
