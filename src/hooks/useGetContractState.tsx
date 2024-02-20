@@ -16,7 +16,7 @@ import { AccountTypes } from 'etherspot';
  * @returns number
  */
 const useGetContractState = (selectedAccountType: string) => {
-  const [contractState, setContractState] = useState<Number>(0);
+  const [contractState, setContractState] = useState<Number>(1);
   const [stakedAmount, setStakedAmount] = useState('0');
 
   const { sdk, providerAddress, accountAddress } = useEtherspot();
@@ -46,21 +46,22 @@ const useGetContractState = (selectedAccountType: string) => {
         );
         const getContactState = await plrStakingGetContract?.callGetContractState();
         const staked = await plrStakingGetContract?.callGetStakedAmountForAccount?.(
-          selectedAccountType === AccountTypes.Key ? providerAddress : accountAddress
+          selectedAccountType === AccountTypes.Contract ? accountAddress : providerAddress
         );
 
         if (Number(staked)) {
           setStakedAmount(staked);
           setContractState(getContactState);
         } else {
-          setContractState(1);
+          if(getContactState === 0) setContractState(0);  
+          else setContractState(1);
         }
       } catch (e) {
         setContractState(1);
         console.error(e);
       }
     })();
-  }, [selectedAccountType]);
+  }, [selectedAccountType, accountAddress, providerAddress]);
 
   return { contractState, stakedAmount };
 };

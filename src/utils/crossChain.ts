@@ -243,3 +243,15 @@ const prepareValueForRpcCall = (rawValue: any): string | undefined => {
 
   return value;
 };
+
+const sendWeb3ProviderRequest = async (web3Provider: any, method: string, params: any[], chainId: number) => {
+  // @ts-ignore
+  if (web3Provider.type === 'WalletConnect') {
+    let updatedParams;
+    if (method === 'eth_sendTransaction') {
+      updatedParams = [{ ...params[0], data: params[0].data ?? '0x' }];
+    }
+    return web3Provider.connector.signer.request({ method, params: updatedParams ?? params }, `eip155:${chainId}`);
+  }
+  return web3Provider.sendRequest(method, params);
+};
