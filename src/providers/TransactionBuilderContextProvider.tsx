@@ -72,7 +72,6 @@ export interface TransactionBuilderContextProps {
   hideActionPreviewHeader?: boolean;
   walletBlockActionsReplaceBehaviour?: boolean;
   onlyPolygonInPLRStaking?: boolean;
-  simplePLRStakingDashboard?: boolean;
   plrStakingTitle?: string;
 }
 
@@ -308,7 +307,7 @@ const ListItem = styled.div`
   padding: 5px 8px;
 `;
 
-const availableTransactionBlocks: ITransactionBlock[] = [
+let availableTransactionBlocks: ITransactionBlock[] = [
   {
     id: getTimeBasedUniqueId(),
     title: 'Asset bridge',
@@ -337,7 +336,7 @@ const availableTransactionBlocks: ITransactionBlock[] = [
   {
     id: getTimeBasedUniqueId(),
     title: 'PLR Staking',
-    type: TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2,
+    type: TRANSACTION_BLOCK_TYPE.DISABLED,
   },
   {
     id: getTimeBasedUniqueId(),
@@ -414,7 +413,6 @@ const TransactionBuilderContextProvider = ({
   hideActionPreviewHeader = false,
   walletBlockActionsReplaceBehaviour = false,
   onlyPolygonInPLRStaking = false,
-  simplePLRStakingDashboard = false,
   plrStakingTitle,
 }: TransactionBuilderContextProps) => {
   const context = useContext(TransactionBuilderContext);
@@ -487,6 +485,18 @@ const TransactionBuilderContextProvider = ({
     logout,
     smartWalletOnly,
   } = useEtherspot();
+
+  if (web3Provider?.web3?.isMetaMask) {
+    availableTransactionBlocks = availableTransactionBlocks.map((block) => {
+      if (block.title === 'PLR Staking') {
+        return {
+          ...block,
+          type: TRANSACTION_BLOCK_TYPE.PLR_STAKING_V2,
+        };
+      }
+      return block;
+    });
+  }
 
   const { showConfirmModal, showAlertModal, showModal } = useTransactionBuilderModal();
   const {
@@ -1492,7 +1502,6 @@ const TransactionBuilderContextProvider = ({
                               hideTitle={hideTransactionBlockTitle}
                               hideWalletSwitch={hideWalletSwitch}
                               onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
-                              simplePLRStakingDashboard={simplePLRStakingDashboard}
                               plrStakingTitle={plrStakingTitle}
                             />
                             {j === multiCallBlocks.length - 1 &&
@@ -1541,7 +1550,6 @@ const TransactionBuilderContextProvider = ({
                           hideTitle={hideTransactionBlockTitle}
                           hideWalletSwitch={hideWalletSwitch}
                           onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
-                          simplePLRStakingDashboard={simplePLRStakingDashboard}
                           plrStakingTitle={plrStakingTitle}
                         />
                         {transactionBlock.type === TRANSACTION_BLOCK_TYPE.ASSET_SWAP &&
