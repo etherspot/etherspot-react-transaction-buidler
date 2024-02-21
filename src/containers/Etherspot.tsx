@@ -45,7 +45,6 @@ interface EtherspotProps {
   walletBlockActionsReplaceBehaviour?: boolean;
   etherspotMode?: 'etherspot' | 'etherspot-prime';
   onlyPolygonInPLRStaking?: boolean;
-  simplePLRStakingDashboard?: boolean;
   plrStakingTitle?: string;
 }
 
@@ -113,7 +112,6 @@ const Etherspot = ({
   onLogout,
   etherspotMode = ETHERSPOT,
   onlyPolygonInPLRStaking = false,
-  simplePLRStakingDashboard = false,
   plrStakingTitle,
 }: EtherspotProps) => {
   const [activeTheme, setActiveTheme] = useState(getTheme(ThemeType.DARK));
@@ -168,7 +166,6 @@ const Etherspot = ({
                   hideWalletSwitch={hideWalletSwitch}
                   hideActionPreviewHeader={hideActionPreviewHeader}
                   onlyPolygonInPLRStaking={onlyPolygonInPLRStaking}
-                  simplePLRStakingDashboard={simplePLRStakingDashboard}
                   plrStakingTitle={plrStakingTitle}
                 />
               </TransactionsDispatcherContextProvider>
