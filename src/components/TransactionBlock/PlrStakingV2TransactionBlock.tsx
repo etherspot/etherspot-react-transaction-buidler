@@ -234,7 +234,7 @@ const PlrStakingV2TransactionBlock = ({
       setSelectedToAsset(stkPlrAsset);
     } else if (!addressesEqual(selectedFromAsset?.address, plrAsset.address)) {
       setSelectedToNetwork(polygonMainnetChain);
-      setSelectedToAsset(plrAsset);
+      setSelectedToAsset(stkPlrAsset);
     }
   }, [selectedFromAsset, selectedFromNetwork, addressPlrBalancePerChain, providerAddress]);
 
