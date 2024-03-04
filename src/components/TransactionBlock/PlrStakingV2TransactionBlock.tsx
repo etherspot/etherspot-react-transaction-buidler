@@ -146,7 +146,7 @@ interface IPlrBalancePerChain {
   [chainId: string]: BigNumber | undefined;
 }
 
-const MIN_PLR_STAKE_AMOUNT = '1';
+const MIN_PLR_STAKE_AMOUNT = '10000';
 
 const chainIdsWithPlrTokens = [CHAIN_ID.ETHEREUM_MAINNET, CHAIN_ID.BINANCE, CHAIN_ID.XDAI, CHAIN_ID.POLYGON];
 
@@ -658,11 +658,11 @@ const PlrStakingV2TransactionBlock = ({
             {!hasEnoughPlrToStake && (
               <>
                 You need a minimum of &nbsp;
-                <Highlighted color={theme.color?.text?.blockParagraphHighlight}>1 PLR</Highlighted>
-                &nbsp;tokens on Polygon, swap more assets to PLR on Polygon Mainnet.
+                <Highlighted color={theme.color?.text?.blockParagraphHighlight}>10,000 PLR</Highlighted>
+                &nbsp;tokens on Polygon to participate in the staking program.
               </>
             )}
-            {hasEnoughPlrToStake && <>You can stake your PLR tokens (Min 1 PLR and Max 20 PLR).</>}
+            {hasEnoughPlrToStake && <>You can stake your PLR tokens (Min 10,000 PLR and Max 250,000 PLR).</>}
           </Text>
           <HorizontalLine />
           {hasStkPlrBalance && (
