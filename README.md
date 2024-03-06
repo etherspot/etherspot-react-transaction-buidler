@@ -51,7 +51,7 @@ function RenderEtherspot(props) {
 ```
 
 ## Developing locally
-You can set up BUIDLER locally and develop new features for it. Please follow the instructures below:
+You can set up BUIDLER locally and develop new features for it. Please follow the instructions below:
 
 - First, check out the Etherspot BUIDLER Example dapp [here](https://github.com/etherspot/etherspot-react-transaction-buidler-demo-dapp)
 - Then, checkout this repository
